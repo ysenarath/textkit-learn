@@ -19,4 +19,8 @@ class Dataset(ObserverMixin, DocumentArray):
 
     def notify(self, *args, **kwargs):
         # schema has been updated
-        self._group.attrs['schema'] = self._schema.to_dict()
+        self._data.attrs['schema'] = self._schema.to_dict()
+
+    @property
+    def metadata(self):
+        return self._data.attrs['metadata']
