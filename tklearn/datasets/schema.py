@@ -139,10 +139,10 @@ class Schema(ObserverMixin, ObservableMixin):
     def pytype(self, value: typing.Union[str, types.PyType, type_]):
         if not isinstance(value, types.PyType):
             value = pytypes.get(value)
-        if value is not None:
-            self._pytype = value.name
-        else:
+        if value is None:
             self._pytype = None
+        else:
+            self._pytype = value.name
         self.observers.notify()
 
     @property
@@ -259,7 +259,7 @@ class Schema(ObserverMixin, ObservableMixin):
         self = Schema()
         self.pytype = type(data)
         if self.pytype is not None:
-            data = self.pytype.transform(data)
+            data = self.pytype.encode(data)
         self.type = types.from_data(data)
         if self.type == 'object':
             for key, value in data.items():
@@ -282,7 +282,7 @@ class Schema(ObserverMixin, ObservableMixin):
 
     def validate(self, data: typing.Any) -> None:
         if self.pytype is not None:
-            data = self.pytype.transform(data)
+            data = self.pytype.decode(data)
         dtype = types.from_data(data)
         if data is None:
             return
@@ -320,7 +320,7 @@ class Schema(ObserverMixin, ObservableMixin):
         if self.pytype is not None:
             normalize = self.pytype.normalize
             # if pytype is defined stop normalization
-            data = self.pytype.transform(data)
+            data = self.pytype.encode(data)
         if normalize and self.type == 'object':
             if data is None:
                 data = {}
@@ -429,7 +429,7 @@ class Schema(ObserverMixin, ObservableMixin):
                     raise ex
                 result = None
         if self.pytype is not None:
-            result = self.pytype.inverse_transform(result)
+            result = self.pytype.decode(result)
         return result
 
     def to_dict(self) -> dict[str, typing.Union[str, dict]]:

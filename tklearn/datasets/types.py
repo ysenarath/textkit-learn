@@ -56,6 +56,7 @@ class PyType(object):
             types = (types,)
         self._types = types
         self._normalize = bool(normalize)
+        self._ = False
 
     @property
     def normalize(self):
@@ -65,10 +66,10 @@ class PyType(object):
     def name(self):
         return self._name
 
-    def transform(self, data):
+    def encode(self, data):
         return data
 
-    def inverse_transform(self, data):
+    def decode(self, data):
         return data
 
     def __repr__(self):
@@ -88,6 +89,7 @@ class PyTypeManager(object):
         def decorator(cls):
             pytype = cls(name, types, normalize)
             self._ptypes[name] = pytype
+            return cls
 
         return decorator
 
