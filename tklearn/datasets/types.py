@@ -8,8 +8,8 @@ import xarray as xr
 ___all__ = [
     'result_type',
     'from_data',
-    'PyType',
-    'get_pytype',
+    'LogicalType',
+    'logical_types',
 ]
 
 
@@ -47,7 +47,8 @@ def from_data(data: typing.Any) -> str:
     return type(data).__name__
 
 
-class PyType(object):
+# Logical types
+class LogicalType(object):
     def __init__(self, name, types=None, normalize=False):
         self._name = name
         if types is None:
@@ -81,7 +82,7 @@ class PyType(object):
         return issubclass(other, self._types)
 
 
-class PyTypeManager(object):
+class LogicalTypeManager(object):
     def __init__(self):
         self._ptypes = dict()
 
@@ -109,4 +110,4 @@ class PyTypeManager(object):
             return default
 
 
-pytypes = PyTypeManager()
+logical_types = LogicalTypeManager()

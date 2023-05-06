@@ -3,7 +3,7 @@ import typing
 from collections.abc import MutableMapping
 
 from tklearn.datasets import types
-from tklearn.datasets.types import pytypes
+from tklearn.datasets.types import logical_types
 from tklearn.exceptions import ValidationError
 from tklearn.utils.observable import ObservableMixin, ObserverMixin
 
@@ -64,7 +64,7 @@ class PropertyMapping(ObserverMixin, ObservableMixin, MutableMapping):
 
 class Schema(ObserverMixin, ObservableMixin):
     def __init__(self, type=None, properties=None, items=None, required=None,  # noqa
-                 min_items=None, max_items=None, pytype=None):
+                 min_items=None, max_items=None, logical_type=None):
         super(Schema, self).__init__()
         self.type = type
         if properties is None:
@@ -74,7 +74,7 @@ class Schema(ObserverMixin, ObservableMixin):
         self.min_items = min_items
         self.max_items = max_items
         self.required = required
-        self.pytype = pytype
+        self.logical_type = logical_type
 
     @property
     def type(self):
@@ -130,19 +130,19 @@ class Schema(ObserverMixin, ObservableMixin):
         self.observers.notify()
 
     @property
-    def pytype(self) -> typing.Optional[types.PyType]:
-        if self._pytype is None:
+    def logical_type(self) -> typing.Optional[types.LogicalType]:
+        if self._logical_type is None:
             return None
-        return pytypes.get(self._pytype)
+        return logical_types.get(self._logical_type)
 
-    @pytype.setter
-    def pytype(self, value: typing.Union[str, types.PyType, type_]):
-        if not isinstance(value, types.PyType):
-            value = pytypes.get(value)
+    @logical_type.setter
+    def logical_type(self, value: typing.Union[str, types.LogicalType, type_]):
+        if not isinstance(value, types.LogicalType):
+            value = logical_types.get(value)
         if value is None:
-            self._pytype = None
+            self._logical_type = None
         else:
-            self._pytype = value.name
+            self._logical_type = value.name
         self.observers.notify()
 
     @property
@@ -220,7 +220,7 @@ class Schema(ObserverMixin, ObservableMixin):
         # - e.g., updating a (non initialized) schema from other
         if override:
             dtype = types.result_type(other)
-            self.pytype = other.pytype
+            self.logical_type = other.logical_type
         else:
             try:
                 dtype = types.result_type(self, other)
@@ -228,9 +228,9 @@ class Schema(ObserverMixin, ObservableMixin):
                 # failing type match stops adding the document
                 raise ValidationError(ex.args[0]) from ex
         self.type = dtype
-        if self.pytype is None and other.pytype is not None:
-            # copies pytype from other if self.pytype is None
-            self.pytype = other.pytype
+        if self.logical_type is None and other.logical_type is not None:
+            # copies logical_type from other if self.logical_type is None
+            self.logical_type = other.logical_type
         if self.type == 'object':
             if override:
                 self.properties.clear()
@@ -257,9 +257,9 @@ class Schema(ObserverMixin, ObservableMixin):
     @classmethod
     def from_data(cls, data: typing.Any) -> 'Schema':
         self = Schema()
-        self.pytype = type(data)
-        if self.pytype is not None:
-            data = self.pytype.encode(data)
+        self.logical_type = type(data)
+        if self.logical_type is not None:
+            data = self.logical_type.encode(data)
         self.type = types.from_data(data)
         if self.type == 'object':
             for key, value in data.items():
@@ -281,8 +281,8 @@ class Schema(ObserverMixin, ObservableMixin):
         return self
 
     def validate(self, data: typing.Any) -> None:
-        if self.pytype is not None:
-            data = self.pytype.decode(data)
+        if self.logical_type is not None:
+            data = self.logical_type.decode(data)
         dtype = types.from_data(data)
         if data is None:
             return
@@ -317,10 +317,10 @@ class Schema(ObserverMixin, ObservableMixin):
         if validate:
             self.validate(data)
         normalize = True
-        if self.pytype is not None:
-            normalize = self.pytype.normalize
-            # if pytype is defined stop normalization
-            data = self.pytype.encode(data)
+        if self.logical_type is not None:
+            normalize = self.logical_type.normalize
+            # if logical_type is defined stop normalization
+            data = self.logical_type.encode(data)
         if normalize and self.type == 'object':
             if data is None:
                 data = {}
@@ -409,7 +409,7 @@ class Schema(ObserverMixin, ObservableMixin):
         return result
 
     def denormalize(self, data, key=None, level=0):
-        normalize = self.pytype.normalize if self.pytype is not None else True
+        normalize = self.logical_type.normalize if self.logical_type is not None else True
         if normalize and self.type == 'object':
             result = {}
             base = key
@@ -428,16 +428,16 @@ class Schema(ObserverMixin, ObservableMixin):
                 if self.required:
                     raise ex
                 result = None
-        if self.pytype is not None:
-            result = self.pytype.decode(result)
+        if self.logical_type is not None:
+            result = self.logical_type.decode(result)
         return result
 
     def to_dict(self) -> dict[str, typing.Union[str, dict]]:
         result = {
             'type': self.type,
         }
-        if self.pytype is not None:
-            result['pytype'] = self.pytype.name
+        if self.logical_type is not None:
+            result['logical_type'] = self.logical_type.name
         if self.type == 'object':
             result['properties'] = self.properties.to_dict()
             if self.required is not None:
@@ -458,8 +458,8 @@ class Schema(ObserverMixin, ObservableMixin):
         self = cls()
         if 'type' in data:
             self.type = data['type']
-        if 'pytype' in data:
-            self.pytype = data['pytype']
+        if 'logical_type' in data:
+            self.logical_type = data['logical_type']
         if self.type == 'object':
             if 'required' in data:
                 self.required = data['required']

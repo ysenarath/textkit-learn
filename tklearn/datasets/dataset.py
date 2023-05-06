@@ -16,35 +16,106 @@ __all__ = [
 
 
 class FieldMapping(MutableMapping):
-    def __init__(self, docs: 'DocumentList'):
-        self._docs = docs  # type: DocumentList
+    def __init__(self, data, schema):
+        """Initialize a new FieldMapping.
+        
+        Parameters
+        ----------
+        data : MutableMapping
+            The data of the field mapping.
+        schema : Schema
+            The schema of the field mapping.
+        """
+        self._data = data
+        self._schema = schema
 
     def __getitem__(self, key):
-        return DocumentList(self._docs._data[key], schema=self._docs._schema[key])
+        """Return the field at the given key.
+        
+        Parameters
+        ----------
+        key : str
+            The key of the field to return.
+
+        Returns
+        -------
+        field : array-like
+            The field at the given key.
+
+        Raises
+        ------
+        KeyError
+            If the key does not exist.
+        """
+        fields = FieldMapping(self._data[key], schema=self._schema[key])
+        return DocumentList(fields)
 
     def __setitem__(self, key, value):
+        """Set the value of the field at the given key.
+        
+        Parameters
+        ----------
+        key : str
+            The key of the field to set.
+        value : array-like
+            The value of the field to set.
+
+        Raises
+        ------
+        ValidationError
+            If the value is not compatible with the current schema.
+        NotImplementedError
+            If the value is not an array-like.
+        """
         if isinstance(value, np.ndarray):
-            arr = self._docs._data.create_dataset(
+            arr = self._data.create_dataset(
                 key, shape=value.shape,
                 fill_value=None, dtype=value.dtype
             )
             arr[:] = value
-            self._docs._schema = Schema.from_data(value)
+            self._schema = Schema.from_data(value)
         raise NotImplementedError
 
     def __delitem__(self, key):
+        """Delete the field at the given key. (Not implemented)
+        
+        Parameters
+        ----------
+        key : str   
+            The key of the field to delete.
+
+        Raises
+        ------
+        KeyError
+            If the key does not exist.
+        """
         raise NotImplementedError
 
     def __len__(self):
-        if isinstance(self._docs._data, zarr.Group):
-            return len(self._docs._data)
+        """Return the length of the array.
+        
+        Returns
+        -------
+        length: int
+            The length of the array.
+        """
+        if isinstance(self._data, zarr.Group):
+            return len(self._data)
         return 0
 
     def __iter__(self):
+        """Return an iterator over the keys of the array.
+        
+        Returns
+        -------
+        keys : Iterator[str]
+            An iterator over the keys of the array.
+        """
         keys = []
-        if isinstance(self._docs._data, zarr.Group):
-            self._docs._data.visitkeys(
-                lambda x: keys.append(x) if isinstance(self._docs._data[x], zarr.core.Array) else None
+        if isinstance(self._data, zarr.Group):
+            self._data.visitkeys(
+                lambda x: keys.append(x) if isinstance(
+                    self._data[x], zarr.core.Array) else None
             )
         for key in keys:
             yield key
@@ -53,19 +124,47 @@ class FieldMapping(MutableMapping):
 class DocumentList(Sequence):
     IndexerType = typing.Union[int, slice, tuple[typing.Union[int, slice]]]
 
-    def __init__(self, data: typing.Union[zarr.Group, zarr.Array] = None, schema: typing.Optional[Schema] = None):
-        if data is None:
-            data = zarr.group()
-        self._data = data
-        if schema is None:
-            schema = Schema('array', items=Schema())
-        self._schema = schema
-        if isinstance(self._data, zarr.Group):
-            self.fields = FieldMapping(self)
-        else:
-            self.fields = None
+    def __init__(self, fields: FieldMapping):
+        """Initialize a new DocumentList.
+        
+        Parameters
+        ----------
+        fields : FieldMapping
+            The fields of the document list.
+        """
+        self.fields = fields
+
+    @property
+    def _data(self):
+        """Return the data of the array."""
+        return self.fields._data
+
+    @property
+    def _schema(self):
+        """Return the schema of the array."""
+        return self.fields._schema
 
     def __getitem__(self, index):
+        """Return the document at the given index.
+        
+        Parameters
+        ----------
+        index : int, slice, tuple[int, ...], tuple[slice, ...]
+            The index of the document to return.
+
+        Returns
+        -------
+        doc : dict
+            The document at the given index.
+
+        Raises
+        ------
+        TypeError
+            If the index is not an integer, a sequence of integers or a slice.
+        ValueError
+            If the index is a sequence of integers and the length of the sequence 
+            is not equal to the length of the array.
+        """
         index_iter = self._index_to_list(index)
         if index_iter is not None:
             # return Sequence of documents
@@ -86,6 +185,21 @@ class DocumentList(Sequence):
         return self._schema.items.denormalize(data)
 
     def __setitem__(self, index, value):
+        """Set the value of the document at the given index.
+        
+        
+        Parameters
+        ----------
+        index : int, slice, tuple[int, ...], tuple[slice, ...]
+            The index of the document to set.
+        value : dict
+            The value of the document to set.
+
+        Raises
+        ------
+        ValidationError
+            If the value is not compatible with the current schema.
+        """
         index_iter = self._index_to_list(index)
         if index_iter is not None:
             iterable_value = False
@@ -111,7 +225,8 @@ class DocumentList(Sequence):
         elif isinstance(self._data, zarr.Array):
             self._data[index] = self._schema.items.normalize(value)
         else:
-            doc, schema = self._schema.items.normalize(value, return_schema=True)
+            doc, schema = self._schema.items.normalize(
+                value, return_schema=True)
             for key, prop in schema.properties.items():
                 value = doc.get(key)
                 prop = schema.properties[key]
@@ -121,6 +236,20 @@ class DocumentList(Sequence):
                 field[index] = value
 
     def append(self, doc: dict, dynamic=True):
+        """Append a document to the array.
+
+        Parameters
+        ----------
+        doc : dict
+            The document to append.
+        dynamic : bool  (default=True)  
+            If True, the schema will be updated with the new document.
+
+        Raises
+        ------
+        ValidationError
+            If the document is not compatible with the current schema.
+        """
         if dynamic:
             schema = Schema.from_data(doc)
             self._schema.items.update(schema)
@@ -130,6 +259,13 @@ class DocumentList(Sequence):
         self[-1] = doc
 
     def __len__(self):
+        """Return the length of the array.
+        
+        Returns
+        -------
+        length: int
+            The length of the array.
+        """
         if isinstance(self._data, zarr.Array):
             return self._data.shape[0]
         length = 0
@@ -139,19 +275,39 @@ class DocumentList(Sequence):
 
     @property
     def shape(self):
+        """Return the shape of the array.
+        
+        Returns
+        -------
+        shape: tuple[int]
+            The shape of the array.
+        """
         return (len(self),)
 
     def resize(self, *args):
+        """Resize the array.
+        
+        Parameters
+        ----------
+        *args : int
+            The new shape of the array.
+        """
+        # todo: check if following error is raised
+        # Raises
+        # ------
+        # ValueError
+        #     If the new shape is not compatible with the current shape.
         if isinstance(self._data, zarr.Array):
             self._data.resize(*args)
         else:
             length = args[0]
             group = self._data
-            _, schema = self._schema.normalize(None, return_schema=True, validate=False)
+            _, schema = self._schema.normalize(
+                None, return_schema=True, validate=False)
             for key, prop in schema.properties.items():
                 if key not in group:
-                    if prop.items.pytype is not None and hasattr(prop.items.pytype, 'create_dataset'):
-                        prop.items.pytype.create_dataset(
+                    if hasattr(prop.items.logical_type, 'create_dataset'):
+                        prop.items.logical_type.create_dataset(
                             group, key, prop.items
                         )
                     elif prop.type == 'object':
@@ -178,6 +334,18 @@ class DocumentList(Sequence):
                 field.resize(length, *shape[1:])
 
     def _index_to_list(self, index):
+        """Convert index to list of indices.
+        
+        Parameters
+        ----------
+        index: int, slice, tuple[int, ...], tuple[slice, ...]
+            The index to convert.
+        
+        Returns
+        -------
+        index_iter: list[int]
+            The list of indices.
+        """
         index_iter = None
         if isinstance(index, slice):
             index_iter = range(
@@ -190,18 +358,66 @@ class DocumentList(Sequence):
         return index_iter
 
 
-@types.pytypes.register('numpy.ndarray', types=np.ndarray)
-class NumpyArrayType(types.PyType):
+@types.logical_types.register('numpy.ndarray', types=np.ndarray)
+class NumpyArrayType(types.LogicalType):
     def encode(self, data):
-        return data
+        """Encode a numpy array.
+        
+        Parameters
+        ----------
+        data: np.ndarray
+            The numpy array to encode.
 
-    def decode(self, data):
+        Returns
+        -------
+        data: np.ndarray
+            The encoded numpy array.
+        """
         if isinstance(data, np.ndarray):
             return data
-        raise TypeError('expected \'np.ndarray\', found {}'.format(type(data).__name__))
+        return np.array(data)
+
+    def decode(self, data):
+        """Decode a numpy array.
+        
+        Parameters
+        ----------
+        data: np.ndarray
+            The numpy array to decode.
+            
+        Returns
+        -------
+        data: np.ndarray
+            The decoded numpy array.
+                
+        Raises
+        ------
+        TypeError
+        If the data is not a numpy array.
+        """
+        if isinstance(data, np.ndarray):
+            return data
+        raise TypeError(
+            'expected \'np.ndarray\', found {}'.format(type(data).__name__))
 
     @staticmethod
     def create_dataset(group, key, schema):
+        """Create a dataset for a numpy array.
+
+        Parameters
+        ----------
+        group: zarr.Group
+            The group to create the dataset in.
+        key: str
+            The key to create the dataset with.
+        schema: Schema
+            The schema of the dataset.
+
+        Returns
+        -------
+        dataset: zarr.Dataset
+            The created dataset.
+        """
         group.create_dataset(
             key, shape=(0, *schema.shape),
             dtype=schema.dtype
@@ -209,30 +425,86 @@ class NumpyArrayType(types.PyType):
 
 
 class Dataset(ObserverMixin, DocumentList):
-    """
-    A more or less complete user-defined wrapper around DocumentArray objects.
-    """
+    """A dataset is a collection of documents with a schema."""
 
     @typing.overload
-    def __init__(self, path: typing.Optional[typing.Union[zarr.storage.BaseStore, MutableMapping, str]]):
+    def __init__(self, path: typing.Optional[typing.Union[zarr.storage.BaseStore, MutableMapping, str]] = None):
+        """Create a new dataset.
+
+        Parameters
+        ----------
+        path: str
+            The path to the zarr file to load.
+        """
         ...
 
+    @typing.overload
     def __init__(self, data: typing.Optional[typing.Union[zarr.Group, zarr.Array]] = None):
+        ...
+
+    def __init__(self, *args, **kwargs):
+        """Create a new dataset.
+
+        Examples
+        --------
+        >>> import zarr
+        >>> from tklearn.datasets import Dataset
+        >>> dataset = Dataset()
+        >>> dataset.append({'a': 1, 'b': 2})
+
+        Parameters
+        ----------
+        data: zarr.Group or zarr.Array
+            The data to load into the dataset. Can be a path to a zarr file, a zarr group or array, or a zarr store.
+        """
+        data = kwargs.get('data', kwargs.get(
+            'path', args[0] if len(args) > 0 else None
+        ))
         if isinstance(data, str):
             data = zarr.open(data, mode='r+')
+        if data is None:
+            data = zarr.group()
+        elif not isinstance(data, (zarr.Group, zarr.Array)):
+            raise TypeError('expected \'zarr.Group\' or \'zarr.Array\', found {}'.format(
+                type(data).__name__))
         schema = None
-        if data is not None:
-            schema_dict = self._data.attrs['schema']  # type: dict
+        # load schema from data
+        if data is not None and 'schema' in data.attrs:
+            schema_dict = data.attrs['schema']  # type: dict
             schema = Schema.from_dict(schema_dict)
-        super(Dataset, self).__init__(data, schema)
+        if schema is None:
+            schema = Schema('array', items=Schema())
+        super(Dataset, self).__init__(fields=FieldMapping(data, schema))
         # for root group only attach it to sync the schema
         self._schema.observers.attach(self)
         self.notify()
 
     def notify(self, *args, **kwargs):
-        # schema has been updated
+        """Notify the observers of a change in the schema.
+
+        Parameters
+        ----------
+        *args:
+            The arguments to pass to the observers.
+        **kwargs:
+            The keyword arguments to pass to the observers.
+
+        Returns
+        -------
+        None
+        """
+        # update schema in data
         self._data.attrs['schema'] = self._schema.to_dict()
 
     @property
     def metadata(self):
+        """The metadata of the dataset.
+
+        Returns
+        -------
+        metadata: dict
+            The metadata of the dataset.
+        """
+        # "metadata" is a special attribute that is stored in the root group of the zarr hierarchy
+        # return metadata
         return self._data.attrs['metadata']
