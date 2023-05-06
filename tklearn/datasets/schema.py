@@ -1,3 +1,7 @@
+"""Schema module.
+
+This module provides a schema for describing datasets.
+"""
 import json
 import typing
 from collections.abc import MutableMapping
@@ -16,15 +20,48 @@ type_ = type
 
 
 class PropertyMapping(ObserverMixin, ObservableMixin, MutableMapping):
+    """A mapping of property names to properties.
+
+    Notes
+    -----
+    The property mapping is an observable object. Observers are notified when a property is added, removed, or updated.
+
+    Attributes
+    ----------
+    props : dict
+        A dictionary of property names to properties.
+    """
     def __init__(self):  # noqa
+        """Initialize a property mapping."""
         super(PropertyMapping, self).__init__()
         super(ObservableMixin, self).__init__()
         self._props = {}
 
     def __getitem__(self, key: str) -> 'Schema':
+        """Get the property with the given name.
+        
+        Parameters
+        ----------
+        key : str
+            The name of the property to get.
+
+        Returns
+        -------
+        Schema
+            The property with the given name.
+        """
         return self._props[key]
 
     def __setitem__(self, key: str, value: 'Schema'):
+        """Set the property with the given name.
+        
+        Note that the property schema is copied before being set.
+
+        Parameters
+        ----------
+        key : str
+            The name of the property to set.
+        """
         # copies the object
         value = value.copy()
         value.observers.attach(self)
@@ -32,24 +69,72 @@ class PropertyMapping(ObserverMixin, ObservableMixin, MutableMapping):
         self.observers.notify()
 
     def __delitem__(self, key) -> None:
+        """Delete the property with the given name.
+        
+        Parameters
+        ----------
+        key : str
+            The name of the property to delete.
+        """
         del self._props[key]
         self.observers.notify()
 
     def __iter__(self) -> typing.Generator[str, None, None]:
-        for key in self._props:
-            yield key
+        """Get an iterator over the property names.
+        
+        Returns
+        -------
+        Iterator[str]
+            An iterator over the property names.
+        """
+        yield from self._props
 
     def __len__(self) -> int:
+        """Get the number of properties.
+        
+        Returns
+        -------
+        int
+            The number of properties.
+        """
         return len(self._props)
 
     def notify(self, *args, **kwargs):
+        """Notify observers of a change.
+        
+        Parameters
+        ----------
+        args : tuple
+            The positional arguments to pass to the observers.
+        kwargs : dict
+            The keyword arguments to pass to the observers.
+        """
         self.observers.notify(*args, **kwargs)
 
     def to_dict(self):
+        """Get a dictionary representation of the property mapping.
+
+        Returns
+        -------
+        dict
+            A dictionary representation of the property mapping.
+        """
         return {key: value.to_dict() for key, value in self.items()}
 
     @classmethod
     def from_dict(cls, data):
+        """Create a property mapping from a dictionary.
+        
+        Parameters
+        ----------
+        data : dict
+            A dictionary representation of the property mapping.
+
+        Returns
+        -------
+        PropertyMapping
+            The property mapping.
+        """
         if data is None:
             data = {}
         self = cls()
@@ -59,12 +144,40 @@ class PropertyMapping(ObserverMixin, ObservableMixin, MutableMapping):
         return self
 
     def __repr__(self):
+        """Get a string representation of the property mapping.
+        
+        Returns
+        -------
+        str
+            A string representation of the property mapping.
+        """
         return json.dumps(self.to_dict(), indent=2)
 
 
 class Schema(ObserverMixin, ObservableMixin):
+    """A schema for describing datasets."""
+
     def __init__(self, type=None, properties=None, items=None, required=None,  # noqa
                  min_items=None, max_items=None, logical_type=None):
+        """Initialize a schema.
+        
+        Parameters
+        ----------
+        type : str
+            The type of the schema. Must be one of the following: 'object', 'array', or str repr of numpy.dtype.
+        properties : PropertyMapping or dict
+            A mapping of property names to properties.
+        items : Schema
+            The schema of the items in the dataset.
+        required : list of str
+            The names of the required properties.
+        min_items : int
+            The minimum number of items in the array.
+        max_items : int
+            The maximum number of items in the array.
+        logical_type : str
+            The logical type of the data described by schema.
+        """
         super(Schema, self).__init__()
         self.type = type
         if properties is None:
@@ -77,11 +190,18 @@ class Schema(ObserverMixin, ObservableMixin):
         self.logical_type = logical_type
 
     @property
-    def type(self):
+    def type(self) -> str:
+        """Get the type of the schema.
+        
+        Returns
+        -------
+        str
+            The type of the schema.
+        """
         return self._type
 
     @type.setter
-    def type(self, value):
+    def type(self, value: str):
         self._type = value
         self.observers.notify()
 

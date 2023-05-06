@@ -1,3 +1,7 @@
+"""Dataset loader module. 
+
+This module provides a decorator for dataset loader functions.
+"""
 import functools
 
 from tklearn.datasets import Dataset
@@ -9,9 +13,11 @@ __all__ = [
 
 
 class DatasetLoader(object):
-    loaders = {}
+    """A decorator for dataset loader functions."""
+    loaders = {}  # A dictionary of dataset loaders.
 
     def __new__(cls, func=None, name=None):
+        """Create a new dataset loader."""
         if name in cls.loaders:
             return cls.loaders[name]
         self = super(DatasetLoader, cls).__new__(cls)
@@ -20,6 +26,15 @@ class DatasetLoader(object):
         return self
 
     def __init__(self, func=None, name=None):
+        """Initialize a dataset loader.
+        
+        Parameters
+        ----------
+        func : callable
+            The dataset loader function.
+        name : str
+            The name of the dataset.
+        """
         self.name = name
         if func is not None:
             self.func = func
@@ -27,6 +42,20 @@ class DatasetLoader(object):
             self.func = None
 
     def load(self, *args, **kwargs):
+        """Load a dataset.
+        
+        Parameters
+        ----------
+        args : tuple
+            The positional arguments to pass to the dataset loader.
+        kwargs : dict
+            The keyword arguments to pass to the dataset loader.
+
+        Returns
+        -------
+        Dataset
+            The loaded dataset.
+        """
         func = self.func
         if func is None:
             docs = None
@@ -39,8 +68,31 @@ class DatasetLoader(object):
 
 
 def load_dataset(name, *args, **kwargs):
+    """Load a dataset.
+
+    Parameters
+    ----------
+    name : str
+        The name of the dataset to load.
+    args : tuple
+        The positional arguments to pass to the dataset loader.
+    kwargs : dict
+        The keyword arguments to pass to the dataset loader.
+
+    Returns
+    -------
+    Dataset
+        The loaded dataset.
+    """
     return DatasetLoader(name).load(*args, **kwargs)
 
 
 def dataloader(name):
+    """A decorator for dataset loader functions.
+
+    Parameters
+    ----------
+    name : str
+        The name of the dataset.
+    """
     return functools.partial(DatasetLoader, name=name)

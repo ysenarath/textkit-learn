@@ -1,3 +1,7 @@
+"""Dataset module.
+
+A module for working with datasets.
+"""
 import typing
 from collections.abc import Iterable, Sequence, MutableMapping
 
@@ -16,7 +20,9 @@ __all__ = [
 
 
 class FieldMapping(MutableMapping):
-    def __init__(self, data, schema):
+    """A mapping of fields to arrays."""
+
+    def __init__(self, data, schema=None):
         """Initialize a new FieldMapping.
         
         Parameters
@@ -122,6 +128,8 @@ class FieldMapping(MutableMapping):
 
 
 class DocumentList(Sequence):
+    """A list of documents."""
+
     IndexerType = typing.Union[int, slice, tuple[typing.Union[int, slice]]]
 
     def __init__(self, fields: FieldMapping):
@@ -360,6 +368,8 @@ class DocumentList(Sequence):
 
 @types.logical_types.register('numpy.ndarray', types=np.ndarray)
 class NumpyArrayType(types.LogicalType):
+    """A logical type for numpy arrays."""
+
     def encode(self, data):
         """Encode a numpy array.
         
