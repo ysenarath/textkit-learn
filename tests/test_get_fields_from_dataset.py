@@ -15,7 +15,7 @@ class TestGetFieldsFromDataset(unittest.TestCase):
             'tokens': {'token_ids': [1, 2, 3], 'mask': [0, 1, 1]},
 
         })
-        field_embedding = dataset.get_field('embedding')
+        field_embedding = dataset.fields['embedding']
         embedding = field_embedding[0]
         self.assertIsInstance(embedding, np.ndarray)
         self.assertEquals(embedding.shape[0], 3)
