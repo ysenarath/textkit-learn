@@ -24,7 +24,7 @@ class FieldMapping(MutableMapping):
 
     def __init__(self, data, schema=None):
         """Initialize a new FieldMapping.
-        
+
         Parameters
         ----------
         data : MutableMapping
@@ -37,7 +37,7 @@ class FieldMapping(MutableMapping):
 
     def __getitem__(self, key):
         """Return the field at the given key.
-        
+
         Parameters
         ----------
         key : str
@@ -53,12 +53,12 @@ class FieldMapping(MutableMapping):
         KeyError
             If the key does not exist.
         """
-        fields = FieldMapping(self._data[key], schema=self._schema[key])
-        return DocumentList(fields)
+        data, schema = self._data[key], self._schema[key]
+        return DocumentList(fields=FieldMapping(data, schema))
 
     def __setitem__(self, key, value):
         """Set the value of the field at the given key.
-        
+
         Parameters
         ----------
         key : str
@@ -84,7 +84,7 @@ class FieldMapping(MutableMapping):
 
     def __delitem__(self, key):
         """Delete the field at the given key. (Not implemented)
-        
+
         Parameters
         ----------
         key : str   
@@ -99,7 +99,7 @@ class FieldMapping(MutableMapping):
 
     def __len__(self):
         """Return the length of the array.
-        
+
         Returns
         -------
         length: int
@@ -111,7 +111,7 @@ class FieldMapping(MutableMapping):
 
     def __iter__(self):
         """Return an iterator over the keys of the array.
-        
+
         Returns
         -------
         keys : Iterator[str]
@@ -126,6 +126,57 @@ class FieldMapping(MutableMapping):
         for key in keys:
             yield key
 
+    def resize(self, *args):
+        """Resize the array.
+
+        Parameters
+        ----------
+        *args : int
+            The new shape of the array.
+        """
+        # todo: check if following error is raised
+        # Raises
+        # ------
+        # ValueError
+        #     If the new shape is not compatible with the current shape.
+        if isinstance(self._data, zarr.Array):
+            self._data.resize(*args)
+        else:
+            length = args[0]
+            group = self._data
+            _, schema = self._schema.normalize(
+                None, return_schema=True, validate=False)
+            for key, prop in schema.properties.items():
+                if key in group:
+                    continue
+                if hasattr(prop.items.logical_type, 'create_dataset'):
+                    prop.items.logical_type.create_dataset(
+                        group, key, prop.items
+                    )
+                elif prop.type == 'object':
+                    group.create_dataset(
+                        key, shape=(0,),
+                        fill_value=None,
+                        dtype=object, object_codec=numcodecs.JSON()
+                    )
+                elif prop.type == 'array':
+                    group.create_dataset(
+                        key, shape=(0,),
+                        fill_value=None,
+                        dtype=object, object_codec=numcodecs.JSON()
+                    )
+                else:
+                    group.create_dataset(
+                        key, shape=(0,),
+                        dtype=prop.type
+                    )
+            for key, prop in schema.properties.items():
+                field = self.fields[key]
+                if not isinstance(field._data, zarr.Array):
+                    continue
+                shape = field._data.shape
+                field.resize(length, *shape[1:])
+
 
 class DocumentList(Sequence):
     """A list of documents."""
@@ -134,7 +185,7 @@ class DocumentList(Sequence):
 
     def __init__(self, fields: FieldMapping):
         """Initialize a new DocumentList.
-        
+
         Parameters
         ----------
         fields : FieldMapping
@@ -154,7 +205,7 @@ class DocumentList(Sequence):
 
     def __getitem__(self, index):
         """Return the document at the given index.
-        
+
         Parameters
         ----------
         index : int, slice, tuple[int, ...], tuple[slice, ...]
@@ -194,8 +245,8 @@ class DocumentList(Sequence):
 
     def __setitem__(self, index, value):
         """Set the value of the document at the given index.
-        
-        
+
+
         Parameters
         ----------
         index : int, slice, tuple[int, ...], tuple[slice, ...]
@@ -208,6 +259,7 @@ class DocumentList(Sequence):
         ValidationError
             If the value is not compatible with the current schema.
         """
+        self._schema.items.validate(value)
         index_iter = self._index_to_list(index)
         if index_iter is not None:
             iterable_value = False
@@ -261,14 +313,12 @@ class DocumentList(Sequence):
         if dynamic:
             schema = Schema.from_data(doc)
             self._schema.items.update(schema)
-        else:
-            self._schema.items.validate(doc)
         self.resize(len(self) + 1)
         self[-1] = doc
 
     def __len__(self):
         """Return the length of the array.
-        
+
         Returns
         -------
         length: int
@@ -284,7 +334,7 @@ class DocumentList(Sequence):
     @property
     def shape(self):
         """Return the shape of the array.
-        
+
         Returns
         -------
         shape: tuple[int]
@@ -292,63 +342,14 @@ class DocumentList(Sequence):
         """
         return (len(self),)
 
-    def resize(self, *args):
-        """Resize the array.
-        
-        Parameters
-        ----------
-        *args : int
-            The new shape of the array.
-        """
-        # todo: check if following error is raised
-        # Raises
-        # ------
-        # ValueError
-        #     If the new shape is not compatible with the current shape.
-        if isinstance(self._data, zarr.Array):
-            self._data.resize(*args)
-        else:
-            length = args[0]
-            group = self._data
-            _, schema = self._schema.normalize(
-                None, return_schema=True, validate=False)
-            for key, prop in schema.properties.items():
-                if key not in group:
-                    if hasattr(prop.items.logical_type, 'create_dataset'):
-                        prop.items.logical_type.create_dataset(
-                            group, key, prop.items
-                        )
-                    elif prop.type == 'object':
-                        group.create_dataset(
-                            key, shape=(0,),
-                            fill_value=None,
-                            dtype=object, object_codec=numcodecs.JSON()
-                        )
-                    elif prop.type == 'array':
-                        group.create_dataset(
-                            key, shape=(0,),
-                            fill_value=None,
-                            dtype=object, object_codec=numcodecs.JSON()
-                        )
-                    else:
-                        group.create_dataset(
-                            key, shape=(0,),
-                            dtype=prop.type
-                        )
-                field = self.fields[key]
-                if not isinstance(field._data, zarr.Array):
-                    continue
-                shape = field._data.shape
-                field.resize(length, *shape[1:])
-
     def _index_to_list(self, index):
         """Convert index to list of indices.
-        
+
         Parameters
         ----------
         index: int, slice, tuple[int, ...], tuple[slice, ...]
             The index to convert.
-        
+
         Returns
         -------
         index_iter: list[int]
@@ -372,7 +373,7 @@ class NumpyArrayType(types.LogicalType):
 
     def encode(self, data):
         """Encode a numpy array.
-        
+
         Parameters
         ----------
         data: np.ndarray
@@ -389,17 +390,17 @@ class NumpyArrayType(types.LogicalType):
 
     def decode(self, data):
         """Decode a numpy array.
-        
+
         Parameters
         ----------
         data: np.ndarray
             The numpy array to decode.
-            
+
         Returns
         -------
         data: np.ndarray
             The decoded numpy array.
-                
+
         Raises
         ------
         TypeError
@@ -471,7 +472,7 @@ class Dataset(ObserverMixin, DocumentList):
             'path', args[0] if len(args) > 0 else None
         ))
         if isinstance(data, str):
-            data = zarr.open(data, mode='r+')
+            data = zarr.open(data, mode='a')
         if data is None:
             data = zarr.group()
         elif not isinstance(data, (zarr.Group, zarr.Array)):
@@ -489,6 +490,19 @@ class Dataset(ObserverMixin, DocumentList):
         self._schema.observers.attach(self)
         self.notify()
 
+    @property
+    def metadata(self):
+        """The metadata of the dataset.
+
+        Returns
+        -------
+        metadata: dict
+            The metadata of the dataset.
+        """
+        # "metadata" is a special attribute that is stored in the root group of the zarr hierarchy
+        # return metadata
+        return self._data.attrs['metadata']
+
     def notify(self, *args, **kwargs):
         """Notify the observers of a change in the schema.
 
@@ -503,18 +517,13 @@ class Dataset(ObserverMixin, DocumentList):
         -------
         None
         """
-        # update schema in data
+        # update dtypes of data or data shapes according to changed schema schema
+        _, schema = self._schema.normalize(None,return_schema=True,validate=False)
+        for key in self.fields.keys():
+            field = self.fields[key]
+            if field._data.dtype != schema[key].dtype:
+                field.dtype = schema[key].dtype
         self._data.attrs['schema'] = self._schema.to_dict()
-
-    @property
-    def metadata(self):
-        """The metadata of the dataset.
-
-        Returns
-        -------
-        metadata: dict
-            The metadata of the dataset.
-        """
-        # "metadata" is a special attribute that is stored in the root group of the zarr hierarchy
-        # return metadata
-        return self._data.attrs['metadata']
+        # revert schema to original schema
+        schema_dict = self._data.attrs['schema']  # type: dict
+        self._schema = Schema.from_dict(schema_dict)

@@ -433,7 +433,7 @@ class Schema(ObserverMixin, ObservableMixin):
             if dtype != self.type:
                 raise ValidationError('expected \'{}\', found \'{}\''.format(self.type, dtype))
 
-    def normalize(self, data: typing.Any, return_schema=False, validate=True) -> (typing.Any, 'Schema'):
+    def normalize(self, data: typing.Any, return_schema=False, validate=True) -> typing.Any:
         if validate:
             self.validate(data)
         normalize = True
