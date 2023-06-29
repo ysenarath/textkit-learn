@@ -1,11 +1,7 @@
-from tklearn.datasets.base import Dataset
+from tklearn.datasets.dataset import Dataset, load_dataset, write_dataset
 
 __all__ = [
     'Dataset',
-    'load',
-    'dump',
+    'load_dataset',
+    'write_dataset',
 ]
-
-load = Dataset.load
-
-dump = Dataset.dump

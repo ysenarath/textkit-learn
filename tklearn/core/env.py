@@ -30,14 +30,3 @@ class Environment(object):
         if formatted != text:
             return self.format(formatted)
         return formatted
-
-    def progress(self, iterable, total=None, desc=None, unit='it', ncols=80,
-                 leave=True, file=None, **kwargs):
-        try:
-            from tqdm import tqdm
-            return tqdm(
-                iterable, total=total, desc=desc, unit=unit, ncols=ncols,
-                leave=leave, file=file, **kwargs
-            )
-        except ImportError:
-            return iterable
