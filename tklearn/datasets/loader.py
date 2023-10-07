@@ -1,65 +1,70 @@
-"""Defines base-classes for types of datasets."""
-from typing import Any
+from functools import partial, wraps
 import typing
+from weakref import WeakValueDictionary
+from urllib.parse import urlparse
 
+import pyarrow as pa
+from pyarrow import json
+import datasets
+
+from tklearn.datasets.dataset import Dataset, MapBatch
 
 __all__ = [
-    'get_dataset_loader',
-    'register',
+    "DatasetLoader",
 ]
 
 
-datasets = {}
-dataset_aliases = {}
+loaders = WeakValueDictionary()
 
 
 class DatasetLoader(object):
-    def __init__(self, name, loader, *, aliases=None, splits=None, citation=None, description=None) -> None:
-        self._name = name
-        self._loader = loader
-        self._citation = citation
-        self._description = description
-        self._splits = tuple(splits) if splits is not None else tuple()
-        self._aliases = tuple(aliases) if aliases is not None else tuple()
+    def __init__(self, func, name=None, batched=False):
+        self.func = func
+        self.name = name or func.__name__
+        self.batched = batched
+        loaders[self.name] = self
 
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def aliases(self):
-        return self._aliases
-
-    @property
-    def splits(self):
-        return self._splits
-
-    @property
-    def citation(self):
-        return self._citation
-
-    @property
-    def description(self):
-        return self._description
-
-    def load(self, *args: Any, **kwds: Any) -> Any:
-        return self._loader(*args, **kwds)
-
-    def __call__(self, *args: Any, **kwds: Any) -> Any:
-        return self.load(*args, **kwds)
+    def __call__(self, *args, **kwargs):
+        return MapBatch(
+            partial(self.func, *args, **kwargs), batched=self.batched
+        ).to_dataset()
 
 
-def register(name, aliases=None, splits=None):
-    def decorator(loader: typing.Callable):
-        datasets[name] = DatasetLoader(
-            name, loader=loader, aliases=aliases, splits=splits)
-        dataset_aliases[name] = name
-        if aliases is not None:
-            for alias in aliases:
-                dataset_aliases[alias] = name
-        return loader
-    return decorator
+def register(
+    func=None, *, name=None, batched=False
+) -> typing.Union[DatasetLoader, partial]:
+    if isinstance(func, str):
+        # replace name with func
+        return partial(register, name=func, batched=batched)
+    return DatasetLoader(func, name=name, batched=batched)
 
 
-def get_dataset_loader(name):
-    return datasets[dataset_aliases[name]]
+@register("json", batched=True)
+def read_json(path: str) -> pa.Table:
+    """Read a Dataset from a stream of JSON data.."""
+    yield json.read_json(path)
+
+
+@register("hf", batched=False)
+def read_hf_dataset(*args, **kwargs) -> pa.Table:
+    """Read a Dataset from HuggingFace Datasets."""
+    dataset = datasets.load_dataset(*args, **kwargs)
+    for record in dataset:
+        yield record
+
+
+def load_dataset(__name__: typing.Optional[str] = None, *args, **kwargs) -> Dataset:
+    """Load a Dataset by name."""
+    if __name__ is None:
+        path = None
+        if len(args) > 0:
+            path = args[0]
+        path = str(kwargs.get("path", path))
+        if path.endswith(".json"):
+            __name__ = "json"
+    if __name__ is None:
+        raise ValueError("unable to determine loader name")
+    if __name__ not in loaders:
+        raise ValueError(f"no loader named {__name__}")
+    loader = loaders[__name__]
+    return loader(*args, **kwargs)

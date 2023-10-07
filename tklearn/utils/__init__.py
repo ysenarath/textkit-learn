@@ -1,5 +1,8 @@
-from tklearn.utils import logging
+from tklearn.utils._utils import concat
+from tklearn.utils import _utils
 
 __all__ = [
-    'logging',
+    "concat",
 ]
+
+del _utils

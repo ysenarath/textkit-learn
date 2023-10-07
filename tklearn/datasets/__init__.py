@@ -1,7 +1,4 @@
-from tklearn.datasets.dataset import Dataset, load_dataset, write_dataset
+from tklearn.datasets.dataset import Dataset
+from tklearn.datasets.loader import load_dataset, register
 
-__all__ = [
-    'Dataset',
-    'load_dataset',
-    'write_dataset',
-]
+__all__ = ["Dataset", "load_dataset", "register"]

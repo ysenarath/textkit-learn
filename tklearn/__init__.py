@@ -1,9 +1,7 @@
-from tklearn.core import Config, Environment
+from tklearn import config
 
-__version__ = '0.0.2'
+__version__ = "0.0.3"
 
+__all__ = []
 
-__all__ = [
-    'Config',
-    'Environment',
-]
+config.init_config()
