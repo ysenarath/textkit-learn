@@ -1,44 +1,16 @@
 from __future__ import annotations
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 import typing
 
-import numpy as np
 import pandas as pd
-import torch
 from torch.utils.data import IterableDataset
 from datasets import Dataset as HuggingFaceDataset
+
+from tklearn.nn.utils import to_tensor, get_index
 
 __all__ = [
     "TrainerDataset",
 ]
-
-
-def to_tensor(data: typing.Any) -> typing.Any:
-    if isinstance(data, Mapping):
-        # convert mapping to numpy array (values only)
-        return {key: to_tensor(value) for key, value in data.items()}
-    elif isinstance(data, Sequence) and not isinstance(data, str):
-        return torch.tensor(data)
-    elif isinstance(data, np.generic):
-        return torch.tensor(data.item())
-    else:
-        return torch.tensor(data)
-
-
-def get_index(
-    data: typing.Union[typing.Sequence, typing.Mapping], idx: int
-) -> typing.Any:
-    """Get the data at the specified index."""
-    if isinstance(data, pd.Series):
-        # get row at specified index
-        return data.iloc[idx]
-    if isinstance(data, pd.DataFrame):
-        # get row at specified index
-        return data.iloc[idx].to_dict()
-    if isinstance(data, Mapping):
-        # get index for each value in mapping
-        return {key: get_index(value, idx) for key, value in data.items()}
-    return data[idx]
 
 
 class TrainerDataset(IterableDataset):
@@ -85,7 +57,9 @@ class TrainerDataset(IterableDataset):
 
     def __getitem__(self, idx) -> typing.Mapping[str, typing.Any]:
         """Get the data at the specified index."""
-        return to_tensor(get_index(self._datasets, idx))
+        record = get_index(self._datasets, idx)
+        record["index"] = idx
+        return to_tensor(record)
 
     def __len__(self) -> int:
         """Get the length of the dataset."""
