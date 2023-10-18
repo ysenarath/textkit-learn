@@ -6,7 +6,7 @@ import typing
 
 from joblib import Memory
 
-from tklearn.config import config
+from tklearn.utils.resources import resources
 from tklearn.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -18,7 +18,7 @@ __all__ = [
 
 
 def getcachedir() -> Path:
-    return Path(config.resource_dir) / "cache"
+    return resources.path / "cache"
 
 
 def clear(prefix: typing.Optional[str] = None, create: bool = True):
@@ -40,7 +40,7 @@ def mkdtemp(
     suffix: typing.Optional[str] = None,
 ) -> Path:
     if cachedir is None:
-        resource_dir = Path(config.resource_dir)
+        resource_dir = Path(resources.path)
         try:
             resource_dir.mkdir(parents=True, exist_ok=True)
         except PermissionError:

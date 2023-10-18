@@ -1,8 +1,9 @@
+from typing import Optional, Dict, Any
 import logging
 
 from tqdm import auto as tqdm
 
-from tklearn.config import config
+from tklearn.config import configurable, config_scope
 
 __all__ = [
     "get_logger",
@@ -18,7 +19,24 @@ class ProgressBar(tqdm.tqdm):
 Progbar = ProgressBar  # alias
 
 
-def get_logger(name: str) -> logging.Logger:
+def default_stream_handler(
+    level: Optional[str],
+    fmt: str = "[%(asctime)s] %(levelname)s %(name)s: %(message)s",
+    datefmt: str = "%Y-%m-%d %H:%M:%S",
+) -> logging.StreamHandler:
+    handler = logging.StreamHandler()
+    handler.setLevel(level)
+    formatter = logging.Formatter(fmt, datefmt=datefmt)
+    handler.setFormatter(formatter)
+    return handler
+
+
+@configurable("logging")
+def get_logger(
+    name: str,
+    level: Optional[str] = None,
+    stream_handler: Optional[Dict[str, Any]] = None,
+) -> logging.Logger:
     """Get default logger by name.
 
     Parameters
@@ -32,27 +50,11 @@ def get_logger(name: str) -> logging.Logger:
         Logger object.
     """
     logger = logging.getLogger(name)
-    if not config.logging:
-        logger.setLevel(logging.DEBUG)
+    if level is None:
         logger.debug("logger configuration not found, using 'ERROR'")
-        logger.setLevel(logging.ERROR)
-        return logger
-    logger_level = config.logging.level
-    if not logger_level:
-        logger.debug("logger level configuration not found, using 'ERROR'")
-        logger.setLevel(logging.ERROR)
-    logger.setLevel(logger_level)
-    if not config.logging.stream_handler:
-        logger.debug("stream handler configuration not found, using default")
-        return logger
-    handler = logging.StreamHandler()
-    handler.setLevel(config.logging.stream_handler.level or logger_level)
-    fmt = "[%(asctime)s] %(levelname)s %(name)s: %(message)s"
-    datefmt = "%Y-%m-%d %H:%M:%S"
-    formatter = logging.Formatter(
-        config.logging.stream_handler.fmt or fmt,
-        datefmt=config.logging.stream_handler.datefmt or datefmt,
-    )
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+        level = logging.ERROR
+    logger.setLevel(level)
+    if stream_handler is not None:
+        handler = default_stream_handler(**stream_handler)
+        logger.addHandler(handler)
     return logger

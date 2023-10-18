@@ -1,26 +1,32 @@
 from __future__ import annotations
 import os
-from typing import Optional, Any
-from collections import UserDict
+from typing import Iterator, Optional, Any
+from collections.abc import Mapping
 import contextlib
 from contextvars import ContextVar
 from functools import wraps
 from functools import partial as partial_func
 import inspect
 
+from werkzeug.local import LocalProxy
 import yaml
 
 __all__ = [
     "init_config",
+    "config_scope",
 ]
 
 load_yaml = partial_func(yaml.load, Loader=yaml.Loader)
 dump_yaml = partial_func(yaml.dump, Dumper=yaml.Dumper)
 
+# config sentinel
+
 __placeholder__ = object()
 
 
 default = __placeholder__
+
+# config utils
 
 
 def construct(cls, config=None, partial=False):
@@ -32,6 +38,8 @@ def construct(cls, config=None, partial=False):
     try:
         if config is None:
             config = {}
+        if not isinstance(config, dict):
+            raise TypeError(f"config must be a dict, found {type(config).__name__}")
         if partial:
             return partial_func(cls, **config)
         return cls(**config)
@@ -39,20 +47,37 @@ def construct(cls, config=None, partial=False):
         raise ex
 
 
-class Config(UserDict):
+# config main
+
+
+class FrozenConfig(Mapping):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__()
+        self.data = dict(*args, **kwargs)
+
+    def __iter__(self) -> Iterator:
+        yield from self.data
+
+    def __len__(self) -> int:
+        return len(self.data)
+
     def __getitem__(self, key: str) -> Any:
-        value = super().__getitem__(key)
-        name = key.split("/")[-1]
-        if name.startswith("@"):
-            return construct(name[1:], value)
+        value = self.data[key]
+        name = key.split("/")[-1]  # remove the scope from the key
+        # if name.startswith("@"):
+        #     return construct(name[1:], value)
         if isinstance(value, dict):
             if "$type" in value:
                 attrs = dict(value.items())
                 cls = attrs.pop("$type")
                 partial = attrs.pop("$partial", False)
-                return construct(cls, config=Config(attrs).to_dict(), partial=partial)
+                return construct(
+                    cls,
+                    config=FrozenConfig(attrs).to_dict(),
+                    partial=partial,
+                )
             else:
-                return Config(value)
+                return FrozenConfig(value)
         return value
 
     def __getattr__(self, name: str) -> Any:
@@ -60,15 +85,51 @@ class Config(UserDict):
             return self[name]
         return None
 
-    def to_dict(self):
-        return {k: self[k] for k in self}
+    def to_dict(self) -> dict:
+        out = {}
+        for k, v in self.items():
+            out[k] = v.to_dict() if isinstance(v, FrozenConfig) else v
+        return out
+
+    def __reduce__(self) -> tuple:
+        return (self.__class__, (self.data,))
 
 
-config_cv: ContextVar[Config] = ContextVar("config", default=Config())
+class ContextVarConfig(FrozenConfig):
+    def update(self, items):
+        config: FrozenConfig = config_cv.get()
+        config.data.update(items)
+        config_cv.set(config)
+
+    def clear(self):
+        config_cv.reset()
+
+
+config_cv: ContextVar[ContextVarConfig] = ContextVar(
+    "config", default=ContextVarConfig()
+)
+
+config: ContextVarConfig = LocalProxy(config_cv)
+
+# config scoping
+
 scope_cv: ContextVar[Optional[str]] = ContextVar("scope", default=None)
 
 
-class ConfigurableWrapper(object):
+@contextlib.contextmanager
+def config_scope(scope: str):
+    current_scope = scope_cv.get()
+    if current_scope:
+        yield scope_cv.set(f"{current_scope}.{scope}")
+    else:
+        yield scope_cv.set(scope)
+    scope_cv.set(current_scope)
+
+
+# config wrappers (auto init)
+
+
+class ConfigWrapper(object):
     """Configure the object."""
 
     def __init__(self, builder, name=None, params=None):
@@ -84,10 +145,12 @@ class ConfigurableWrapper(object):
         )
         if self.name is None:
             raise ValueError("name is required")
-        self.params = Config(params)
+        if params is None:
+            params = {}
+        self.params = FrozenConfig(**params)
 
-    def set_params(self, **params) -> ConfigurableWrapper:
-        return ConfigurableWrapper(self.builder, name=self.name, params=params)
+    def set_params(self, **params) -> ConfigWrapper:
+        return ConfigWrapper(self.builder, name=self.name, params=params)
 
     def _update_args(self, args, name):
         # func_name / class_name -> args
@@ -96,15 +159,15 @@ class ConfigurableWrapper(object):
         else:
             config = config_cv.get()
             if name not in config:
-                # function or class name not in config
+                # function or class name or alias is not in config
                 return args
             config = config[name]
         # update args
-        for k, v in config.items():
+        for k in config.keys():
             if k in args and args[k] is not __placeholder__:
                 # already set - do not override
                 continue
-            args[k] = v
+            args[k] = config[k]
         return args
 
     def get_args(self, *args, **kwargs):
@@ -132,10 +195,24 @@ class ConfigurableWrapper(object):
         return self.builder(**self.get_args(*args, **kwargs))
 
 
-def configurable(builder):
-    if not isinstance(builder, type):
-        return wraps(builder)(ConfigurableWrapper(builder))
-    wrapper = ConfigurableWrapper(builder)
+def configurable(builder=None, **kwargs):
+    if isinstance(builder, str):
+        return partial_func(
+            configurable,
+            name=builder,
+        )
+    elif builder is None:
+        return partial_func(configurable, **kwargs)
+    name = kwargs.get("name", None)
+    wrapper = ConfigWrapper(builder, name=name)
+    if not isinstance(builder, type):  # if not a class
+
+        @wraps(builder)
+        def builder_wrapper(*args, **kwargs):
+            return wrapper(*args, **kwargs)
+
+        return builder_wrapper
+
     orig_init = builder.__init__
 
     @wraps(builder.__init__)
@@ -146,33 +223,20 @@ def configurable(builder):
     return builder
 
 
-@contextlib.contextmanager
-def config_scope(scope: str):
-    current_scope = scope_cv.get()
-    if current_scope:
-        yield scope_cv.set(f"{current_scope}.{scope}")
-    else:
-        yield scope_cv.set(scope)
-    scope_cv.set(current_scope)
-
-
-def __getattr__(name):
-    if name == "config":
-        return config_cv.get()
-    elif name == "scope":
-        return scope_cv.get()
-    raise AttributeError(name)
+# tklearn default configs
 
 
 def init_config():
-    config = config_cv.get()
+    global config
     config.update(
         dict(
-            resource_dir=os.path.expanduser("~/.tklearn"),
+            resource=dict(
+                path=os.path.expanduser("~/.tklearn"),
+            ),
             logging=dict(
-                level="WARNING",
+                level="DEBUG",
                 stream_handler=dict(
-                    level="WARNING",
+                    level="DEBUG",
                     fmt="[%(asctime)s] %(levelname)s %(name)s: %(message)s",
                     datefmt="%Y-%m-%d %H:%M:%S",
                 ),

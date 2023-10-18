@@ -1,7 +1,6 @@
 import functools
 import inspect
 
-import pickle
 import joblib
 
 __all__ = [
