@@ -311,6 +311,24 @@ class EarlyStopping(TrainerCallback):
         return self.monitor_op(monitor_value - self.min_delta, reference_value)
 
 
+class ModelSelectionCallback(TrainerCallback):
+    def __init__(
+        self,
+        trial: Trial,
+        monitor: str = "val_loss",
+    ) -> None:
+        self.trial = trial
+        self.monitor = monitor
+
+    def on_epoch_end(self, epoch: int, logs: Optional[dict] = None):
+        if logs is None:
+            logs = {}
+        if self.monitor not in logs:
+            return
+        intermediate_value = logs[self.monitor]
+        self.trial.report(intermediate_value, epoch)
+
+
 class TrackingCallback(TrainerCallback):
     def __init__(
         self,
@@ -336,21 +354,3 @@ class TrackingCallback(TrainerCallback):
         if logs is None:
             logs = {}
         self.run.log_metrics(logs, step=epoch)
-
-
-class ModelSelectionCallback(TrainerCallback):
-    def __init__(
-        self,
-        trial: Trial,
-        monitor: str = "val_loss",
-    ) -> None:
-        self.trial = trial
-        self.monitor = monitor
-
-    def on_epoch_end(self, epoch: int, logs: Optional[dict] = None):
-        if logs is None:
-            logs = {}
-        if self.monitor not in logs:
-            return
-        intermediate_value = logs[self.monitor]
-        self.trial.report(intermediate_value, epoch)
