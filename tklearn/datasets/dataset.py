@@ -6,6 +6,7 @@ from pathlib import Path
 import typing
 from typing import Union
 
+import numpy as np
 import pandas as pd
 import polars as pl
 import pyarrow as pa
@@ -155,6 +156,8 @@ class Dataset(DatasetPathMixin):
 
     @batched
     def take(self, indices: list[int]) -> typing.Generator[pa.Table, None, None]:
+        if not isinstance(indices, list):
+            indices = list(indices)
         for idx_batch in range(0, len(indices), DEFAULT_BATCH_SIZE):
             idx_slice = indices[idx_batch : idx_batch + DEFAULT_BATCH_SIZE]  # noqa
             base_table = self._pyarrow_base.take(idx_slice)
@@ -224,6 +227,7 @@ class Dataset(DatasetPathMixin):
         batched: bool = None,
         batch_size: typing.Optional[int] = None,
         batch_into: typing.Optional[type] = None,
+        keep_columns: bool = False,
     ) -> typing.Generator[pa.Table, None, None]:
         total = len(self)
         pbar = None
@@ -241,21 +245,19 @@ class Dataset(DatasetPathMixin):
                     result = func(pl.from_arrow(table))
                 else:
                     result = func(table)
-                if pbar is not None:
-                    pbar.update(table.num_rows)
             else:
-                result = []
-                for item in table.to_pylist():
-                    res = func(item)
-                    result.append(res)
-                    if pbar:
-                        pbar.update(1)
+                result = [func(item) for item in table.to_pylist()]
             if not isinstance(result, pa.Table):
                 # convert to table
                 result = create_table(result)
             # result is always a table
-            yield merge_tables(table, result)
+            if keep_columns:
+                yield merge_tables(table, result)
+            else:
+                yield result
             # update progress bar
+            if pbar is not None:
+                pbar.update(table.num_rows)
         if pbar:
             pbar.close()
 
@@ -460,3 +462,31 @@ class Dataset(DatasetPathMixin):
 
     def __repr__(self) -> str:
         return f"Dataset({self.path}, {self.format}, {len(self)})"
+
+    def _repr_html_(self) -> str:
+        table_html_str = self.head().to_pandas().to_html(notebook=True)
+        return f"""<style>
+            .tklearn-container {{
+                border: 1px solid #ccc;
+                padding: 10px;
+                margin: 10px;
+            }}
+            </style>
+            <div class="tklearn-container">
+                <table style="width: 100%;">
+                    <tr>
+                        <th class="label">Path</th>
+                        <th>Format</th>
+                        <th>#Rows</th>
+                        <th>#Columns</th>
+                    </tr>
+                    <tr>
+                        <td>{self.path}</td>
+                        <td>{self.format}</td>
+                        <td>{len(self)}</td>
+                        <td>{len(self.schema.names)}</td>
+                    </tr>
+                </table>
+                <hr>
+                <div>{table_html_str}</div>
+            </div>"""

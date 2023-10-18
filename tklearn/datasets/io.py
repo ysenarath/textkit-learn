@@ -37,27 +37,33 @@ class DatasetWriter:
         self._format = format
         self._batch_size = batch_size
         self._verbose = verbose
+        self._table_buffer = []
         self._buffer = []
 
-    def flush(self):
+    def flush(self, force=False):
+        if (len(self._buffer) >= self._batch_size) or (force and len(self._buffer) > 0):
+            buffer_table = create_table(self._buffer)
+            self._table_buffer.append(buffer_table)
+            self._buffer = []
+        if len(self._table_buffer) == 0:
+            return
         # write to locked folder only
         path = self._path.with_suffix(".lock")
-        if len(self._buffer) == 0:
-            return
         # list of dicts
-        uuid_hex = uuid.uuid4().hex
-        name_template = f"part-{uuid_hex}-{{i}}.{self._format}"
         base_dir = path / "data"
         if not base_dir.exists():
             base_dir.mkdir(parents=True, exist_ok=True)
-        ds.write_dataset(
-            create_table(self._buffer),
-            base_dir=base_dir,
-            format=self._format,
-            basename_template=name_template,
-            existing_data_behavior="overwrite_or_ignore",
-        )
-        self._buffer = []
+        for table in self._table_buffer:
+            uuid_hex = uuid.uuid4().hex
+            name_template = f"part-{uuid_hex}-{{i}}.{self._format}"
+            ds.write_dataset(
+                table,  # from list of tables
+                base_dir=base_dir,
+                format=self._format,
+                basename_template=name_template,
+                existing_data_behavior="overwrite_or_ignore",
+            )
+        self._table_buffer = []
 
     def write(self, data: Union[dict, list, pa.Table]):
         if isinstance(data, dict):
@@ -65,10 +71,12 @@ class DatasetWriter:
         elif isinstance(data, list):
             self._buffer.extend(data)
         else:
-            data = create_table(data).to_pylist()
-            self._buffer.extend(data)
-        if len(self._buffer) >= self._batch_size:
-            self.flush()
+            data = create_table(data)
+            self._table_buffer.append(data)
+        self.flush()
+
+    def close(self):
+        self.flush(force=True)
 
     def __enter__(self):
         """Enter the runtime context related to this object."""
@@ -84,9 +92,6 @@ class DatasetWriter:
         if locked_path.exists():
             os.rename(locked_path, self._path)
 
-    def close(self):
-        self.flush()
-
 
 class DatasetReader(object):
     def __init__(
@@ -99,6 +104,8 @@ class DatasetReader(object):
 
     def read(self) -> ds.Dataset:
         base_dir = self.path / "data"
+        if not base_dir.exists():
+            base_dir.mkdir(parents=True, exist_ok=True)
         return ds.dataset(
             str(base_dir),
             format=self.format,
