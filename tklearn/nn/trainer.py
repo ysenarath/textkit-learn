@@ -149,10 +149,14 @@ def train_step(
     # move the data to device
     if accelerator is None:
         x = move_to_device(x, device)
+    # pop the labels from x
     if y is None:
         # pop label from x
         y = x["labels"]
-        del x["labels"]
+        # del x["labels"]
+    # move to device (if needed)
+    if accelerator is None:
+        y = move_to_device(y, device)
     # forward pass
     outputs = model(**x)
     # HuggingFase transformers output
@@ -163,10 +167,11 @@ def train_step(
         logits_or_proba = getattr(outputs, "logits")
     else:
         logits_or_proba = outputs
-    # move to device (if needed)
-    if accelerator is None:
-        y = move_to_device(y, device)
     loss_val: torch.Tensor = criterion(logits_or_proba, y)
+    if hasattr(outputs, "loss") and outputs.loss:
+        assert (
+            outputs.loss == loss_val
+        ), f"loss value mismatch, found {outputs.loss}, expected {loss_val}"
     # backpropagation
     if accelerator is None:
         loss_val.backward()
@@ -315,7 +320,7 @@ class Trainer(BaseTrainer):
 
     def _predict_batch_iter(self, x):
         # convert x to dataset if needed
-        dataset = x if isinstance(x, TrainerDataset) else TrainerDataset(x=dataset)
+        dataset = x if isinstance(x, TrainerDataset) else TrainerDataset(x=x)
         del x
         dataloader = DataLoader(dataset, batch_size=self.batch_size)
         if self.accelerator is None:
@@ -334,6 +339,8 @@ class Trainer(BaseTrainer):
         for batch, batch_data in enumerate(dataloader):
             self.callbacks.on_predict_batch_begin(batch, logs={})
             x_batch = batch_data["x"]
+            # if "labels" in x_batch:
+            #     del x_batch["labels"]
             if self.accelerator is None:
                 x_batch = move_to_device(x_batch, self.device)
             with torch.no_grad():
