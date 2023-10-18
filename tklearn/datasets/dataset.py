@@ -6,7 +6,6 @@ from pathlib import Path
 import typing
 from typing import Union
 
-import numpy as np
 import pandas as pd
 import polars as pl
 import pyarrow as pa
