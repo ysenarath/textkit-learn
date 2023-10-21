@@ -1,4 +1,4 @@
-from __future__ import annotations
+from __future__ import annotations, print_function
 import abc
 
 from torch import Tensor
@@ -15,11 +15,7 @@ __all__ = [
 
 class LossFunction(abc.ABC):
     @abc.abstractmethod
-    def __call__(
-        self,
-        logits: Tensor,
-        target: Tensor,
-    ):
+    def __call__(self, *args, **kwargs):
         raise NotImplementedError()
 
 
@@ -87,6 +83,18 @@ class AutoLoss(LossFunction):
 
     @classmethod
     def from_pretrained(cls, model: PreTrainedModel):
+        """Builds loss function from the provided pre-trained model.
+
+        Parameters
+        ----------
+        model : PreTrainedModel
+            Pre-trained model.
+
+        Returns
+        -------
+        loss : Callable
+            Callable for the given task.
+        """
         try:
             label2id = model.config.label2id
         except (AttributeError, KeyError):
