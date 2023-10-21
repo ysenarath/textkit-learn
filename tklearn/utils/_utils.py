@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from typing import Union, List
 
 import numpy as np
 import pandas as pd
@@ -6,6 +7,7 @@ import torch
 
 __all__ = [
     "concat",
+    "tolist",
 ]
 
 
@@ -40,3 +42,11 @@ def concat(a, b):
         return {key: concat(value, b[key]) for key, value in a.items()}
     # any other sequence type
     return a + b
+
+
+def tolist(x: Union[List, np.ndarray, torch.Tensor]):
+    if isinstance(x, list):
+        return x
+    elif hasattr(x, "numpy"):  # Checks for TF tensors without needing the import
+        x = x.numpy()
+    return x.tolist()
