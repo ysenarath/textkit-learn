@@ -11,7 +11,10 @@ __all__ = [
 
 
 class Tokenizer:
-    def tokenize(self, texts: Union[str, List[str]]) -> List[List[str]]:
+    def tokenize(
+        self,
+        texts: Union[List[str], str],
+    ) -> List[List[str]]:
         raise NotImplementedError
 
 
@@ -33,7 +36,10 @@ class EmbeddingTokenizer(Tokenizer):
         self.truncation = truncation
         self.max_length = max_length
 
-    def pad_features(self, tokenized_texts):
+    def pad(
+        self,
+        input_ids: List[List[int]],
+    ) -> np.ndarray:
         """Return features of tokenized_texts, where each review is padded with 0's
         or truncated to the input seq_length.
         """
@@ -41,20 +47,25 @@ class EmbeddingTokenizer(Tokenizer):
             padding_length = self.max_length
         elif self.padding == "longest" or self.padding is True:
             # get the longest length of the batch
-            padding_length = np.max(list(map(len, tokenized_texts)))
+            padding_length = np.max(list(map(len, input_ids)))
         # getting the correct rows x cols shape
-        features = np.zeros((len(tokenized_texts), padding_length), dtype=int)
+        features = np.zeros((len(input_ids), padding_length), dtype=int)
         if self.padding_idx != 0:
             features[:] = self.padding_idx
-        for i, row in enumerate(tokenized_texts):
+        for i, row in enumerate(input_ids):
             if not self.truncation and len(row) > padding_length:
                 raise NotImplementedError
             features[i, -len(row) :] = np.array(row)[:padding_length]
         return features
 
-    def tokenize(self, texts: List[str]):
+    def tokenize(
+        self,
+        texts: Union[List[str], str],
+    ) -> Union[List[List[int]], np.ndarray]:
         # split each review into a list of words
-        sents = [text.split() for text in texts]
+        if isinstance(texts, str):
+            texts = [texts]
+        sents: List[List[str]] = [text.split() for text in texts]
         tokenized_texts = []
         for tokens in sents:
             ints = []
@@ -69,4 +80,4 @@ class EmbeddingTokenizer(Tokenizer):
             tokenized_texts.append(ints)
         if not self.padding:
             return tokenized_texts
-        return self.pad_features(tokenized_texts)
+        return self.pad(tokenized_texts)
