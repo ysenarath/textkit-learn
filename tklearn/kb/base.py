@@ -1,11 +1,10 @@
-from pathlib import Path
-from typing import Iterable, Tuple, Union
+from typing import Iterable
 
+from tklearn.core.model import Span
 
-class Span:
-    def __init__(self, start: int, end: int):
-        self.start = start
-        self.end = end
+__all__ = [
+    "KnowledgeBase",
+]
 
 
 class KnowledgeBase:
@@ -13,8 +12,6 @@ class KnowledgeBase:
     their textual aliases, to support entity linking of named entities to
     real-world concepts.
     This is an abstract class and requires its operations to be implemented.
-
-    DOCS: https://spacy.io/api/kb
     """
 
     def __init__(self):
@@ -22,17 +19,6 @@ class KnowledgeBase:
         # Make sure abstract KB is not instantiated.
         if self.__class__ == KnowledgeBase:
             raise TypeError()
-
-    def get_candidates_batch(self, mentions: Iterable[Span]) -> Iterable[Iterable[str]]:
-        """
-        Return candidate entities for specified texts. Each candidate defines
-        the entity, the original alias, and the prior probability of that
-        alias resolving to that entity.
-        If no candidate is found for a given text, an empty list is returned.
-        mentions (Iterable[Span]): Mentions for which to get candidates.
-        RETURNS (Iterable[Iterable[Candidate]]): Identified candidates.
-        """
-        return [self.get_candidates(span) for span in mentions]
 
     def get_candidates(self, mention: Span) -> Iterable[str]:
         """
@@ -44,6 +30,17 @@ class KnowledgeBase:
         RETURNS (Iterable[Candidate]): Identified candidates.
         """
         raise NotImplementedError
+
+    def get_candidates_batch(self, mentions: Iterable[Span]) -> Iterable[Iterable[str]]:
+        """
+        Return candidate entities for specified texts. Each candidate defines
+        the entity, the original alias, and the prior probability of that
+        alias resolving to that entity.
+        If no candidate is found for a given text, an empty list is returned.
+        mentions (Iterable[Span]): Mentions for which to get candidates.
+        RETURNS (Iterable[Iterable[Candidate]]): Identified candidates.
+        """
+        return [self.get_candidates(span) for span in mentions]
 
     def get_vectors(self, entities: Iterable[str]) -> Iterable[Iterable[float]]:
         """
