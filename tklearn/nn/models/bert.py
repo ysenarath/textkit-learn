@@ -1,15 +1,17 @@
 from typing import Optional, Union, Tuple
 
-from transformers import BertModel
+from transformers import AutoModel
 import torch
 from torch import nn
+
+from tklearn.nn.base import Module
 
 __all__ = [
     "BertSequenceAndTokenClassification",
 ]
 
 
-class BertForSequenceAndTokenClassification(nn.Module):
+class BertForSequenceAndTokenClassification(Module):
     """BertForSequenceAndTokenClassification
 
     Examples
@@ -18,7 +20,7 @@ class BertForSequenceAndTokenClassification(nn.Module):
     >>> base_model = BertModel.from_pretrained("bert-base-uncased")
     """
 
-    def __init__(self, base_model: BertModel, num_sequence_labels, num_token_labels):
+    def __init__(self, base_model: AutoModel, num_sequence_labels, num_token_labels):
         super(BertForSequenceAndTokenClassification, self).__init__()
         self.bert = base_model
         config = base_model.config
