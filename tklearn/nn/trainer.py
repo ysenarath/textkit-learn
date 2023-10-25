@@ -18,7 +18,7 @@ from transformers.utils import ModelOutput
 from accelerate import Accelerator
 
 from tklearn.nn.base import BaseTrainer
-from tklearn.nn.losses import AutoLoss
+from tklearn.nn.losses import LossFunction, AutoLoss
 from tklearn.nn.dataset import TrainerDataset
 from tklearn.nn.evaluator import Evaluator
 from tklearn.exceptions import EarlyStoppingException
@@ -94,6 +94,8 @@ def build_criterion(
         criterion = criterion_cls()
     elif loss is None and isinstance(model, PreTrainedModel):
         criterion = AutoLoss.from_pretrained(model)
+    elif callable(loss) or isinstance(loss, LossFunction):
+        criterion = loss
     else:
         raise ValueError(f"unsupported loss: {loss}")
     return criterion
@@ -159,14 +161,13 @@ def train_step(
         y = move_to_device(y, device)
     # forward pass
     outputs = model(**x)
-    # HuggingFase transformers output
-    hft_output = isinstance(outputs, ModelOutput)
-    # compute the prediction error
-    if hft_output and hasattr(outputs, "logits"):
+    # HuggingFace transformers
+    if isinstance(outputs, ModelOutput) and hasattr(outputs, "logits"):
         # huggingface pretrained model output
         logits_or_proba = getattr(outputs, "logits")
     else:
         logits_or_proba = outputs
+    # compute the prediction error
     loss_val: torch.Tensor = criterion(logits_or_proba, y)
     if hasattr(outputs, "loss") and outputs.loss:
         assert (

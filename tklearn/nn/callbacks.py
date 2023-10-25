@@ -11,6 +11,7 @@ from tklearn.core.tracking import Run, Experiment
 from tklearn.exceptions import EarlyStoppingException
 from tklearn.utils.logging import Progbar
 
+
 if TYPE_CHECKING:
     from optuna.trial import Trial
 else:
@@ -329,7 +330,7 @@ class ModelSelectionCallback(TrainerCallback):
         self.trial.report(intermediate_value, epoch)
 
 
-class TrackingCallback(TrainerCallback):
+class TrackerCallback(TrainerCallback):
     def __init__(
         self,
         run_or_experiment: Union[Run, Experiment],
@@ -337,20 +338,22 @@ class TrackingCallback(TrainerCallback):
     ) -> None:
         super().__init__()
         self.nested = nested
-        if not isinstance(run_or_experiment, Run):
+        if isinstance(run_or_experiment, Experiment):
             run_or_experiment = run_or_experiment.start_run()
         self.run_or_experiment = run_or_experiment
-        self.run: Run = None  # type: ignore
+        # the actual run used to track the trainer progress
+        self.run: Optional[Run] = None  # type: ignore
 
     def on_train_begin(self, logs=None):
-        if self.run:
+        if self.run is not None:
             return
-        run = self.run_or_experiment
-        if self.nested:
-            run = run.start_run()
-        self.run = run
+        self.run = (
+            self.run_or_experiment.start_run()
+            if self.nested
+            else self.run_or_experiment
+        )
 
     def on_epoch_end(self, epoch: int, logs: Optional[dict] = None):
-        if logs is None:
-            logs = {}
+        if self.run is None or logs is None:
+            return
         self.run.log_metrics(logs, step=epoch)
