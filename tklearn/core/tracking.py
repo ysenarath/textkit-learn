@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections.abc import Mapping
-from typing import Any, Optional, Union, Dict
+from typing import Any, Optional, Union, Dict, List, Generator
 from pathlib import Path
 
 import numpy as np
@@ -8,14 +8,17 @@ import pandas as pd
 import mlflow
 from matplotlib.figure import Figure
 from plotly import graph_objects as go
+from mlflow.store.tracking import SEARCH_MAX_RESULTS_DEFAULT
 from mlflow.entities import (
     Experiment as MLflowExperiment,
     Run as MLflowRun,
+    ViewType,
 )
 
 __all__ = [
     "Run",
     "Experiment",
+    "ViewType",
 ]
 
 
@@ -271,3 +274,33 @@ class Experiment(object):
             self._mlflow_experiment.experiment_id, run_name=run_name
         )
         return Run(self, mlflow_run)
+
+    def search_runs(
+        self,
+        filter_string: str,
+        run_view_type: int = ViewType.ACTIVE_ONLY,
+        max_results: int = SEARCH_MAX_RESULTS_DEFAULT,
+        order_by: Union[List[str], None] = None,
+    ) -> Generator[Run, None, None]:
+        result = self._mlflow_client.search_runs(
+            experiment_ids=[self._mlflow_experiment.experiment_id],
+            filter_string=filter_string,
+            run_view_type=run_view_type,
+            max_results=max_results,
+            order_by=order_by,
+        )
+        total_results = 0
+        while result.token is not None:
+            for mlflow_run in result:
+                yield Run(self, mlflow_run)
+                total_results += 1
+            if total_results >= max_results:
+                break
+            result = self._mlflow_client.search_runs(
+                experiment_ids=[self._mlflow_experiment.experiment_id],
+                filter_string=filter_string,
+                run_view_type=run_view_type,
+                max_results=max_results,
+                order_by=order_by,
+                page_token=result.token,
+            )
