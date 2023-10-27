@@ -250,7 +250,7 @@ class Trainer(BaseTrainer):
             lr_scheduler.step()
         return loss_val
 
-    def _predict_batch_iter(self, x):
+    def _predict_batch_iter(self, x, postprocess: bool = False):
         # convert x to dataset if needed
         dataset = x if isinstance(x, TrainerDataset) else TrainerDataset(x=x)
         del x
@@ -275,21 +275,21 @@ class Trainer(BaseTrainer):
                 x_batch = move_to_device(x_batch, self.device)
             with torch.no_grad():
                 output = model(**x_batch)
-            output_proba = self.postprocess(output)
-            output_proba = move_to_device(
-                output_proba,
+            if postprocess:
+                output = self.postprocess(output)
+            yield batch_data, move_to_device(
+                output,
                 device="cpu",
                 detach=True,
                 numpy=False,
             )
-            yield batch_data, output_proba
             self.callbacks.on_predict_batch_end(batch, logs={})
         self.callbacks.on_predict_end(logs={})
 
     def predict_proba(self, x) -> Any:
         """this will output the proba"""
         y_pred = None
-        for _, y_pred_batch in self._predict_batch_iter(x):
+        for _, y_pred_batch in self._predict_batch_iter(x, postprocess=True):
             y_pred = _utils.concat(y_pred, y_pred_batch)
         return y_pred
 
