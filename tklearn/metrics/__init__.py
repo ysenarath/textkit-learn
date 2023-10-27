@@ -1,15 +1,14 @@
 from tklearn.metrics.base import (
     Metric,
     UnionMetric,
-    HuggingFaceMetric,
-    TextClassificationMetric,
     MetricOutputType,
 )
+from tklearn.metrics.huggingface import HuggingFaceMetric, TextClassificationMetric
 
 __all__ = [
     "Metric",
     "UnionMetric",
+    "MetricOutputType",
     "HuggingFaceMetric",
     "TextClassificationMetric",
-    "MetricOutputType",
 ]

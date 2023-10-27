@@ -8,7 +8,6 @@ import pandas as pd
 from tklearn.metrics.base import Metric, MetricOutputType
 from tklearn.nn.dataset import TrainerDataset
 from tklearn.nn.base import BaseTrainer
-from tklearn.nn.utils import get_index
 
 __all__ = [
     "Evaluator",
@@ -47,39 +46,42 @@ class Evaluator(object):
             return None
         return list(self.groups.columns)
 
-    def _postprocess(self, logits_or_probs: torch.Tensor) -> torch.Tensor:
+    def _postprocess(self, logits: torch.Tensor) -> torch.Tensor:
         # check if the labels are multi class or multi label
         if self.postprocessor == "argmax":
-            y_score = torch.argmax(logits_or_probs, dim=1)
+            y_score = torch.argmax(logits, dim=1)
         elif self.postprocessor == "binarize":
-            y_score = logits_or_probs >= self.threshold
+            y_score = logits >= self.threshold
         elif self.postprocessor == "binary":
-            y_score = torch.reshape(logits_or_probs, (-1,)) >= self.threshold
+            y_score = torch.reshape(logits, (-1,)) >= self.threshold
         elif self.postprocessor == "softmax":
-            y_score = F.softmax(logits_or_probs, dim=1)  # multi class scenario
+            y_score = F.softmax(logits, dim=1)  # multi class scenario
         elif self.postprocessor == "sigmoid":
-            y_score = F.sigmoid(logits_or_probs)  # binary or multi label scenario
+            y_score = F.sigmoid(logits)  # binary or multi label scenario
         elif callable(self.postprocessor):
-            y_score = self.postprocessor(logits_or_probs)
+            y_score = self.postprocessor(logits)
         elif self.postprocessor is None:
-            y_score = logits_or_probs
+            y_score = logits
         else:
             raise ValueError(f"invalid post-processor: {self.postprocessor}")
         return y_score
 
-    def evaluate(self, trainer: BaseTrainer) -> MetricOutputType:
-        metric = None
-        if self.metric is not None:
-            metric = self.metric.copy()
-            metric.reset_states()
-        group_metrics: Dict[str, Metric] = {}
-        for group_name in self.group_names or []:
-            grouped_metric = self.metric.copy()
-            grouped_metric.reset_states()
-            group_metrics[group_name] = grouped_metric
-        criterion = None
+    def evaluate(
+        self,
+        trainer: BaseTrainer,
+    ) -> MetricOutputType:
+        criterion: Callable = None
         if hasattr(trainer, "criterion"):
-            criterion = getattr(trainer, "criterion")
+            criterion = trainer.criterion
+        metric = None
+        group_metrics: Dict[str, Metric] = {}
+        if self.metric is not None:
+            metric = self.metric.clone()
+            metric.reset_states()
+            for group_name in self.group_names or []:
+                group_metric = self.metric.clone()
+                group_metric.reset_states()
+                group_metrics[group_name] = group_metric
         try:
             _predict_batch_iter: Callable = getattr(trainer, "_predict_batch_iter")
         except AttributeError as ex:
@@ -94,18 +96,14 @@ class Evaluator(object):
             y_true = y_true.detach().cpu()
             y_score = self._postprocess(output)
             if self.groups is not None:
-                try:
-                    idxs = batch_data["index"].detach().cpu()
-                    groups = self.groups.iloc[idxs]
-                except KeyError:
-                    groups = None
-            else:
-                groups = None
-            for group_name in group_metrics.keys():
-                index = groups[group_name].reset_index(drop=True)
-                y_group_true = y_true[index]
-                y_group_score = y_score[index]
-                group_metrics[group_name].update_state(y_group_true, y_group_score)
+                batch_index: torch.Tensor = batch_data["index"]
+                batch_index = batch_index.detach().cpu()
+                group_metrics = self.update_group_states(
+                    group_metrics,
+                    y_true,
+                    y_score,
+                    batch_index,
+                )
             # logits, target = concat(logits, output), concat(target, y_true)
             if metric is not None:
                 metric.update_state(y_true, y_score)
@@ -116,8 +114,42 @@ class Evaluator(object):
         result: dict = {} if metric is None else metric.result() or {}
         if val_loss is not None:
             result["val_loss"] = val_loss
+        group_results = self.group_results(group_metrics)
+        result.update(group_results)
+        return result
+
+    def update_group_states(
+        self,
+        group_metrics: Dict[str, Metric],
+        y_true: torch.Tensor,
+        y_score: torch.Tensor,
+        batch_index: torch.Tensor,
+    ) -> Dict[str, Metric]:
+        group_names = set(self.groups.columns)
         for group_name in group_metrics.keys():
-            group_metric_results = group_metrics[group_name].result() or {}
-            for group_metric_key, group_metric_value in group_metric_results.items():
-                result[f"{group_name}_{group_metric_key}"] = group_metric_value
+            if group_name not in group_names:
+                continue
+            group_index: pd.Series = self.groups[group_name].iloc[batch_index]
+            group_index = group_index.reset_index(drop=True)
+            y_group_true = y_true[group_index]
+            y_group_score = y_score[group_index]
+            if len(y_group_true) == 0:
+                continue
+            group_metrics[group_name].update_state(y_group_true, y_group_score)
+        return group_metrics
+
+    def group_results(
+        self,
+        group_metrics: Dict[str, Metric],
+    ) -> dict:
+        result = {}
+        for subgroup_name in group_metrics.keys():
+            try:
+                group_metric_results = group_metrics[subgroup_name].result() or {}
+            except ValueError as ex:
+                group_metric_results = {}
+            if subgroup_name not in result:
+                result[subgroup_name] = {}
+            for metric_name, metric_value in group_metric_results.items():
+                result[subgroup_name][metric_name] = metric_value
         return result

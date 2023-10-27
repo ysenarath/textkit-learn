@@ -101,6 +101,9 @@ class ContextVarConfig(FrozenConfig):
         config.data.update(items)
         config_cv.set(config)
 
+    def __setitem__(self, key, value):
+        self.update({key: value})
+
     def clear(self):
         config_cv.reset()
 

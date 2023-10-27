@@ -6,24 +6,30 @@ This trainer is designed to be compatible with HuggingFace
 datasets and torch style datasets.
 """
 from __future__ import annotations
-from collections.abc import Mapping, Sequence
 from typing import Union, Callable, Any
 import functools
+import warnings
 
 import torch
-from torch.utils.data import DataLoader
+from torch import Tensor
 from torch.optim import Optimizer
-from transformers import get_scheduler, PreTrainedModel
-from transformers.utils import ModelOutput
+from torch.nn import MSELoss, CrossEntropyLoss, BCEWithLogitsLoss
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
+
+
 from accelerate import Accelerator
+from transformers import get_scheduler
+from transformers.utils import ModelOutput
 
 from tklearn.nn.base import BaseTrainer
-from tklearn.nn.losses import LossFunction, AutoLoss
 from tklearn.nn.dataset import TrainerDataset
 from tklearn.nn.evaluator import Evaluator
+from tklearn.nn.utils import move_to_device
 from tklearn.exceptions import EarlyStoppingException
 from tklearn.utils import _utils, logging
 from tklearn.config import configurable
+
 
 try:
     from torch.optim.lr_scheduler import LRScheduler
@@ -35,70 +41,6 @@ __all__ = [
 ]
 
 logger = logging.get_logger(__name__)
-
-
-def move_to_device(data: Any, device, detach=False, numpy=False) -> Any:
-    """Move data to device.
-
-    This function is a recursive function that will
-    move all tensors in a mapping or sequence to
-    the specified device.
-
-    Notes
-    -----
-    If the data cannot be cannot be moved to the
-    specified device, then the data is returned
-    as is.
-
-    Parameters
-    ----------
-    data : torch.Tensor or Mapping or Sequence or typing.Any
-        The data to move to device.
-    device : torch.device or str
-        The device to move the data to.
-    detach : bool, optional
-        Whether to detach the data from the computation graph.
-        Defaults to False.
-    numpy : bool, optional
-        Whether to convert the data to a numpy array.
-
-    Returns
-    -------
-    torch.Tensor or Mapping or Sequence or typing.Any
-        The data moved to device.
-    """
-    if torch.is_tensor(data):
-        if detach:
-            data = data.detach()
-        data = data.to(device)
-        if numpy:
-            data = data.numpy()
-        return data
-    elif isinstance(data, Mapping):
-        return {key: move_to_device(value, device) for key, value in data.items()}
-    elif isinstance(data, Sequence) and not isinstance(data, str):
-        # try moving each element to device
-        # assuming that they are already tensors
-        return [move_to_device(value, device) for value in data]
-    # if we cannot move the data to device
-    # then just return the data as is
-    return data
-
-
-def build_criterion(
-    model: torch.nn.Module,
-    loss: Union[str, Callable] = None,
-) -> Callable:
-    if isinstance(loss, str):
-        criterion_cls = getattr(torch.nn, loss)
-        criterion = criterion_cls()
-    elif loss is None and isinstance(model, PreTrainedModel):
-        criterion = AutoLoss.from_pretrained(model)
-    elif callable(loss) or isinstance(loss, LossFunction):
-        criterion = loss
-    else:
-        raise ValueError(f"unsupported loss: {loss}")
-    return criterion
 
 
 def build_optimizer(
@@ -131,72 +73,6 @@ def build_lr_scheduler(
     elif isinstance(lr_scheduler, functools.partial):
         lr_scheduler = lr_scheduler(optimizer)
     return lr_scheduler
-
-
-def train_step(
-    model: torch.nn.Module,
-    x: dict,
-    y,
-    criterion: Union[Callable, None] = None,
-    optimizer: Union[Optimizer, None] = None,
-    lr_scheduler: Union[LRScheduler, None] = None,
-    accelerator: Union[Accelerator, None] = None,
-    device: Union[torch.device, str] = "cpu",
-    clip_grad_strategy: str = "norm",
-    clip_grad_value: float = 1.0,
-):
-    if not model.training:
-        # change the model if needed
-        model.train()
-    # move the data to device
-    if accelerator is None:
-        x = move_to_device(x, device)
-    # pop the labels from x
-    if y is None:
-        # pop label from x
-        y = x["labels"]
-        # del x["labels"]
-    # move to device (if needed)
-    if accelerator is None:
-        y = move_to_device(y, device)
-    # forward pass
-    outputs = model(**x)
-    # HuggingFace transformers
-    if isinstance(outputs, ModelOutput) and hasattr(outputs, "logits"):
-        # huggingface pretrained model output
-        logits_or_proba = getattr(outputs, "logits")
-    else:
-        logits_or_proba = outputs
-    # compute the prediction error
-    loss_val: torch.Tensor = criterion(logits_or_proba, y)
-    if hasattr(outputs, "loss") and outputs.loss:
-        assert (
-            outputs.loss == loss_val
-        ), f"loss value mismatch, found {outputs.loss}, expected {loss_val}"
-    # backpropagation
-    if accelerator is None:
-        loss_val.backward()
-    else:
-        accelerator.backward(loss_val)
-    clip_grad_type = clip_grad_strategy
-    if clip_grad_type == "norm":
-        clip_grad_value = clip_grad_value
-        # Clips gradient norm of an iterable of parameters.
-        torch.nn.utils.clip_grad.clip_grad_norm_(
-            model.parameters(),
-            clip_grad_value,
-        )
-    elif clip_grad_type == "value":
-        clip_grad_value = clip_grad_value
-        # Clips gradient of an iterable of parameters at specified value.
-        torch.nn.utils.clip_grad.clip_grad_value_(
-            model.parameters(),
-            clip_grad_value,
-        )
-    optimizer.step()
-    if lr_scheduler is not None:
-        lr_scheduler.step()
-    return loss_val
 
 
 @configurable
@@ -237,6 +113,10 @@ class Trainer(BaseTrainer):
     @property
     def device(self) -> Union[torch.device, str]:
         """The device to use for training."""
+        if self.accelerator:
+            raise ValueError(
+                "accelerator is active, disable accelerator to enable device"
+            )
         return self._device
 
     @device.setter
@@ -265,14 +145,13 @@ class Trainer(BaseTrainer):
         self.callbacks.set_trainer(self)
         num_batches = len(dataloader)
         num_training_steps = num_batches * self.epochs
-        criterion = build_criterion(self.model, self.loss)
         optimizer = build_optimizer(self.model, self.optimizer)
         if self.accelerator:
-            dataloader, model, optimizer = self.accelerator.prepare(
+            dataloader, self.model, optimizer = self.accelerator.prepare(
                 dataloader, self.model, optimizer
             )
         else:
-            model = self.model.to(self.device)
+            self.model = self.model.to(self.device)
         self.model.train()
         lr_scheduler = build_lr_scheduler(
             self.lr_scheduler, optimizer, num_training_steps
@@ -294,14 +173,11 @@ class Trainer(BaseTrainer):
                     self.callbacks.on_train_batch_begin(batch_idx + 1, logs=batch_log)
                     x_batch, y_batch = batch["x"], batch.get("y", None)
                     # train the model
-                    loss = train_step(
-                        model,
+                    loss = self.train_step(
                         x_batch,
                         y_batch,
-                        criterion=criterion,
                         optimizer=optimizer,
                         lr_scheduler=lr_scheduler,
-                        accelerator=self.accelerator,
                     )
                     batch_loss = loss.item()
                     running_loss += batch_loss
@@ -318,6 +194,61 @@ class Trainer(BaseTrainer):
         final_logs = {}
         self.callbacks.on_train_end(final_logs)
         return self
+
+    def train_step(
+        self,
+        x: dict,
+        y,
+        optimizer: Union[Optimizer, None] = None,
+        lr_scheduler: Union[LRScheduler, None] = None,
+        device: Union[torch.device, str] = "cpu",
+        clip_grad_strategy: str = "norm",
+        clip_grad_value: float = 1.0,
+    ):
+        accelerator = self.accelerator
+        model = self.model
+        if not model.training:
+            # change the model if needed
+            model.train()
+        # move the data to device
+        if accelerator is None:
+            x = move_to_device(x, device)
+        # pop the labels from x
+        if y is None:
+            y = x["labels"]
+        if accelerator is None:
+            # move to device (if needed)
+            y = move_to_device(y, device)
+        # forward pass
+        outputs = model(**x)
+        # compute the prediction error
+        loss_val: torch.Tensor = self.criterion(outputs, y)
+        if hasattr(outputs, "loss") and outputs.loss and outputs.loss != loss_val:
+            warnings.warn(f"loss mismatch, found {outputs.loss}, expected {loss_val}")
+        # backpropagation
+        if accelerator is None:
+            loss_val.backward()
+        else:
+            accelerator.backward(loss_val)
+        clip_grad_type = clip_grad_strategy
+        if clip_grad_type == "norm":
+            clip_grad_value = clip_grad_value
+            # Clips gradient norm of an iterable of parameters.
+            torch.nn.utils.clip_grad.clip_grad_norm_(
+                model.parameters(),
+                clip_grad_value,
+            )
+        elif clip_grad_type == "value":
+            clip_grad_value = clip_grad_value
+            # Clips gradient of an iterable of parameters at specified value.
+            torch.nn.utils.clip_grad.clip_grad_value_(
+                model.parameters(),
+                clip_grad_value,
+            )
+        optimizer.step()
+        if lr_scheduler is not None:
+            lr_scheduler.step()
+        return loss_val
 
     def _predict_batch_iter(self, x):
         # convert x to dataset if needed
@@ -340,30 +271,23 @@ class Trainer(BaseTrainer):
         for batch, batch_data in enumerate(dataloader):
             self.callbacks.on_predict_batch_begin(batch, logs={})
             x_batch = batch_data["x"]
-            # if "labels" in x_batch:
-            #     del x_batch["labels"]
             if self.accelerator is None:
                 x_batch = move_to_device(x_batch, self.device)
             with torch.no_grad():
                 output = model(**x_batch)
-            if hasattr(output, "logits"):
-                # huggingface pretrained model output
-                output = getattr(output, "logits")
-            yield batch_data, move_to_device(
-                output, device="cpu", detach=True, numpy=False
+            output_proba = self.postprocess(output)
+            output_proba = move_to_device(
+                output_proba,
+                device="cpu",
+                detach=True,
+                numpy=False,
             )
+            yield batch_data, output_proba
             self.callbacks.on_predict_batch_end(batch, logs={})
         self.callbacks.on_predict_end(logs={})
 
-    def predict_logits(self, x) -> Any:
-        """this will output the logits -- need to convert to probabilities"""
-        y_pred = None
-        for _, y_pred_batch in self._predict_batch_iter(x):
-            y_pred = _utils.concat(y_pred, y_pred_batch)
-        return y_pred
-
     def predict_proba(self, x) -> Any:
-        """this will output the logits -- need to convert to probabilities"""
+        """this will output the proba"""
         y_pred = None
         for _, y_pred_batch in self._predict_batch_iter(x):
             y_pred = _utils.concat(y_pred, y_pred_batch)
@@ -371,3 +295,89 @@ class Trainer(BaseTrainer):
 
     def predict(self, x):
         return self.predict_proba(x)
+
+    def postprocess(self, output):
+        config = self.model_builder.config
+        if isinstance(output, ModelOutput) and hasattr(output, "logits"):
+            # huggingface pretrained model output
+            logits = getattr(output, "logits")
+        else:
+            logits = output
+        if config is None or config.problem_type == "regression":
+            y_pred = logits
+        elif config.problem_type == "single_label_classification":
+            y_pred = F.softmax(logits, dim=1)
+        elif config.problem_type == "masked_language_modeling":
+            y_pred = F.softmax(logits, dim=1)
+        elif config.problem_type == "multi_label_classification":
+            y_pred = F.sigmoid(logits)
+        else:
+            raise ValueError("invalid problem type")
+        return y_pred
+
+    def criterion(
+        self,
+        output: Union[Tensor, ModelOutput],
+        target: Tensor,
+    ):
+        if not hasattr(self, "_criterion"):
+            self._criterion = self.build_criterion()
+        criterion = self._criterion
+        config = self.model_builder.config
+        logits_based_criterion = True
+        if (
+            logits_based_criterion
+            and isinstance(output, ModelOutput)
+            and hasattr(output, "logits")
+        ):
+            # huggingface pretrained model output
+            output = getattr(output, "logits")
+        if target is None:
+            return None
+        if not hasattr(self, "_num_labels"):
+            self._num_labels = None
+        if self._num_labels is None and config.num_labels is not None:
+            self._num_labels = config.num_labels
+        else:
+            self._num_labels = output.shape[-1]
+        loss = None
+        if config.problem_type == "regression":
+            if self._num_labels == 1:
+                loss = criterion(output.squeeze(), target.squeeze())
+            else:
+                loss = criterion(output, target)
+        elif config.problem_type == "single_label_classification":
+            loss = criterion(output.view(-1, self._num_labels), target.view(-1))
+        elif config.problem_type == "multi_label_classification":
+            input_shape = output.size()
+            loss = criterion(output, target.view(*input_shape))
+        elif config.problem_type == "masked_language_modeling":
+            loss = criterion(output.view(-1, self._num_labels), target.view(-1))
+        else:
+            loss = criterion(output, target)
+        return loss
+
+    def build_criterion(self) -> Callable:
+        if isinstance(self.loss, str):
+            criterion_cls = getattr(torch.nn, self.loss)
+            criterion = criterion_cls()
+        elif callable(self.loss):
+            criterion = self.loss
+        elif self.loss is None:
+            criterion = self.default_criterion()
+        else:
+            raise ValueError(f"unsupported loss: {self.loss}")
+        return criterion
+
+    def default_criterion(self):
+        problem_type = self.model_builder.config.problem_type
+        if problem_type == "regression":
+            return MSELoss()
+        elif problem_type == "single_label_classification":
+            return CrossEntropyLoss()
+        elif problem_type == "masked_language_modeling":
+            return CrossEntropyLoss()
+        elif problem_type == "multi_label_classification":
+            return BCEWithLogitsLoss()
+        else:
+            raise ValueError(f"invalid problem type: {problem_type}")

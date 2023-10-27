@@ -1,5 +1,6 @@
 from collections.abc import Mapping
-from typing import Union, List
+from typing import Union, List, Dict
+from copy import deepcopy
 
 import numpy as np
 import pandas as pd
@@ -8,6 +9,7 @@ import torch
 __all__ = [
     "concat",
     "tolist",
+    "merge",
 ]
 
 
@@ -42,6 +44,37 @@ def concat(a, b):
         return {key: concat(value, b[key]) for key, value in a.items()}
     # any other sequence type
     return a + b
+
+
+def merge(
+    x: Dict,
+    y: Dict,
+    inplace: bool = False,
+    exists_strategy: str = "replace",
+):
+    out = x
+    if not inplace:
+        out = deepcopy(out)
+    for key, value in y.items():
+        if key in out:
+            out_value = out[key]
+            if isinstance(out_value, Mapping):
+                # merge inplace - assumes value is dict
+                merge(
+                    out_value,
+                    value,
+                    inplace=True,
+                    exists_strategy=exists_strategy,
+                )
+            else:
+                if exists_strategy == "raise":
+                    raise ValueError(f"value for {key} exists")
+                elif exists_strategy not in {"keep", "ignore"}:
+                    out[key] = value  # replace
+        else:
+            # set
+            out[key] = value
+    return out
 
 
 def tolist(x: Union[List, np.ndarray, torch.Tensor]):
