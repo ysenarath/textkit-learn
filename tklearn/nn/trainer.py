@@ -11,9 +11,7 @@ import functools
 import warnings
 
 import torch
-from torch import Tensor
 from torch.optim import Optimizer
-from torch.nn import MSELoss, CrossEntropyLoss, BCEWithLogitsLoss
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
@@ -25,11 +23,11 @@ from transformers.utils import ModelOutput
 from tklearn.nn.base import BaseTrainer
 from tklearn.nn.dataset import TrainerDataset
 from tklearn.nn.evaluator import Evaluator
+from tklearn.nn.loss import AutoLoss
 from tklearn.nn.utils import move_to_device
 from tklearn.exceptions import EarlyStoppingException
 from tklearn.utils import _utils, logging
 from tklearn.config import configurable
-
 
 try:
     from torch.optim.lr_scheduler import LRScheduler
@@ -300,84 +298,30 @@ class Trainer(BaseTrainer):
         config = self.model_builder.config
         if isinstance(output, ModelOutput) and hasattr(output, "logits"):
             # huggingface pretrained model output
-            logits = getattr(output, "logits")
-        else:
-            logits = output
+            output = getattr(output, "logits")
         if config is None or config.problem_type == "regression":
-            y_pred = logits
+            y_pred = output
         elif config.problem_type == "single_label_classification":
-            y_pred = F.softmax(logits, dim=1)
+            y_pred = F.softmax(output, dim=1)
         elif config.problem_type == "masked_language_modeling":
-            y_pred = F.softmax(logits, dim=1)
+            y_pred = F.softmax(output, dim=1)
         elif config.problem_type == "multi_label_classification":
-            y_pred = F.sigmoid(logits)
+            y_pred = F.sigmoid(output)
         else:
             raise ValueError("invalid problem type")
         return y_pred
 
-    def criterion(
-        self,
-        output: Union[Tensor, ModelOutput],
-        target: Tensor,
-    ):
+    def criterion(self, *args, **kwargs):
         if not hasattr(self, "_criterion"):
-            self._criterion = self.build_criterion()
-        criterion = self._criterion
-        config = self.model_builder.config
-        logits_based_criterion = True
-        if (
-            logits_based_criterion
-            and isinstance(output, ModelOutput)
-            and hasattr(output, "logits")
-        ):
-            # huggingface pretrained model output
-            output = getattr(output, "logits")
-        if target is None:
-            return None
-        if not hasattr(self, "_num_labels"):
-            self._num_labels = None
-        if self._num_labels is None and config.num_labels is not None:
-            self._num_labels = config.num_labels
-        else:
-            self._num_labels = output.shape[-1]
-        loss = None
-        if config.problem_type == "regression":
-            if self._num_labels == 1:
-                loss = criterion(output.squeeze(), target.squeeze())
+            if isinstance(self.loss, str) or self.loss is None:
+                config = self.model_builder.config
+                self._criterion = AutoLoss(
+                    loss=self.loss,
+                    problem_type=config.problem_type,
+                    num_labels=config.num_labels,
+                )
+            elif callable(self.loss):
+                self._criterion = self.loss
             else:
-                loss = criterion(output, target)
-        elif config.problem_type == "single_label_classification":
-            loss = criterion(output.view(-1, self._num_labels), target.view(-1))
-        elif config.problem_type == "multi_label_classification":
-            input_shape = output.size()
-            loss = criterion(output, target.view(*input_shape))
-        elif config.problem_type == "masked_language_modeling":
-            loss = criterion(output.view(-1, self._num_labels), target.view(-1))
-        else:
-            loss = criterion(output, target)
-        return loss
-
-    def build_criterion(self) -> Callable:
-        if isinstance(self.loss, str):
-            criterion_cls = getattr(torch.nn, self.loss)
-            criterion = criterion_cls()
-        elif callable(self.loss):
-            criterion = self.loss
-        elif self.loss is None:
-            criterion = self.default_criterion()
-        else:
-            raise ValueError(f"unsupported loss: {self.loss}")
-        return criterion
-
-    def default_criterion(self):
-        problem_type = self.model_builder.config.problem_type
-        if problem_type == "regression":
-            return MSELoss()
-        elif problem_type == "single_label_classification":
-            return CrossEntropyLoss()
-        elif problem_type == "masked_language_modeling":
-            return CrossEntropyLoss()
-        elif problem_type == "multi_label_classification":
-            return BCEWithLogitsLoss()
-        else:
-            raise ValueError(f"invalid problem type: {problem_type}")
+                raise ValueError("invalid ")
+        return self._criterion(*args, **kwargs)

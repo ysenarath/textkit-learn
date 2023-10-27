@@ -1,9 +1,11 @@
 from __future__ import annotations
 from typing import Optional, Any, Union, Callable, List, Dict
+from collections.abc import Mapping
 
 import torch
 import torch.nn.functional as F
 import pandas as pd
+from transformers.utils import ModelOutput
 
 from tklearn.metrics.base import Metric, MetricOutputType
 from tklearn.nn.dataset import TrainerDataset
@@ -46,22 +48,25 @@ class Evaluator(object):
             return None
         return list(self.groups.columns)
 
-    def _postprocess(self, logits: torch.Tensor) -> torch.Tensor:
+    def postprocess(self, output: Union[torch.Tensor, ModelOutput]) -> torch.Tensor:
         # check if the labels are multi class or multi label
+        if isinstance(output, Mapping) and "logits" in output:
+            # huggingface pretrained model output
+            output = output["logits"]
         if self.postprocessor == "argmax":
-            y_score = torch.argmax(logits, dim=1)
+            y_score = torch.argmax(output, dim=1)
         elif self.postprocessor == "binarize":
-            y_score = logits >= self.threshold
+            y_score = output >= self.threshold
         elif self.postprocessor == "binary":
-            y_score = torch.reshape(logits, (-1,)) >= self.threshold
+            y_score = torch.reshape(output, (-1,)) >= self.threshold
         elif self.postprocessor == "softmax":
-            y_score = F.softmax(logits, dim=1)  # multi class scenario
+            y_score = F.softmax(output, dim=1)  # multi class scenario
         elif self.postprocessor == "sigmoid":
-            y_score = F.sigmoid(logits)  # binary or multi label scenario
+            y_score = F.sigmoid(output)  # binary or multi label scenario
         elif callable(self.postprocessor):
-            y_score = self.postprocessor(logits)
+            y_score = self.postprocessor(output)
         elif self.postprocessor is None:
-            y_score = logits
+            y_score = output
         else:
             raise ValueError(f"invalid post-processor: {self.postprocessor}")
         return y_score
@@ -94,7 +99,7 @@ class Evaluator(object):
             except KeyError:
                 y_true: torch.Tensor = batch_data["x"]["labels"]
             y_true = y_true.detach().cpu()
-            y_score = self._postprocess(output)
+            y_score = self.postprocess(output)
             if self.groups is not None:
                 batch_index: torch.Tensor = batch_data["index"]
                 batch_index = batch_index.detach().cpu()
