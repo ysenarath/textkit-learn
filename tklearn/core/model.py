@@ -24,11 +24,11 @@ class Annotation(object):
         self,
         doc: TextDocument,
         span: Optional[Span] = None,
-        labels: List[str] = None,
+        label: str = None,
     ):
         self.doc = doc
         self.span = span
-        self.labels = labels
+        self.label = label
 
     @property
     def text(self) -> str:
