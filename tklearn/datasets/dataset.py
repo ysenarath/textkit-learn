@@ -288,28 +288,6 @@ class Dataset(DatasetPathMixin):
         if pbar:
             pbar.close()
 
-    @typing.overload
-    def map(
-        self,
-        func: typing.Callable,
-        *,
-        mode: str = "arrow",
-        verbose: bool = True,
-        batch_size: typing.Optional[int] = None,
-        batch_into: typing.Optional[type] = None,
-    ) -> Dataset:
-        ...
-
-    @typing.overload
-    def map(
-        self,
-        func: typing.Callable,
-        *,
-        mode: str = "polars",
-        verbose: bool = True,
-    ) -> Dataset:
-        ...
-
     def map(
         self,
         func: typing.Callable,
