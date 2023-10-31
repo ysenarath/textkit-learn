@@ -2,6 +2,7 @@ from typing import List, Union, Optional, Dict
 from collections.abc import Mapping, Sequence
 
 import numpy as np
+import pandas as pd
 from transformers import (
     AutoTokenizer,
     BatchEncoding,
@@ -258,7 +259,12 @@ class HuggingFaceTokenizer(Tokenizer):
 
     def get_aligned_labels(
         self,
-        batch_encoding: BatchEncoding,
+        batch_encoding: Union[
+            BatchEncoding,
+            List[BatchEncoding],
+            pd.DataFrame,
+            pd.Series,
+        ],
         batch_annotations: BatchAnnotationList,
     ) -> Dict[str, List[int]]:
         """
@@ -278,10 +284,30 @@ class HuggingFaceTokenizer(Tokenizer):
         """
         # Initialize a dictionary to store lists of aligned labels for each label value
         batch_aligned_labels = []
-        batch_size = len(batch_encoding._encodings)
+        if isinstance(batch_encoding, BatchEncoding):
+            batch_size = len(batch_encoding._encodings)
+        elif isinstance(batch_encoding, (pd.DataFrame, pd.Series)):
+            batch_size = len(batch_encoding)
+        elif isinstance(batch_encoding, Sequence) and not isinstance(
+            batch_encoding, str
+        ):
+            batch_size = len(batch_encoding)
+        else:
+            raise TypeError(
+                f"unsupported type for 'batch_encoding': {type(batch_encoding)}"
+            )
         for batch_index in range(batch_size):
             annotations = batch_annotations[batch_index]
-            sequence_len = len(batch_encoding.tokens(batch_index=batch_index))
+            if isinstance(batch_encoding, BatchEncoding):
+                sample_index = batch_index
+                sample_encoding = batch_encoding
+            elif isinstance(batch_encoding, pd.DataFrame):
+                sample_index = 0
+                sample_encoding = batch_encoding.iloc[batch_index]
+            else:  # batch encoding is a list of batch encoding type
+                sample_index = 0
+                sample_encoding = batch_encoding[batch_index]
+            sequence_len = len(sample_encoding.tokens(batch_index=sample_index))
             aligned_labels = {}
             # Iterate through annotations and align labels to tokens
             for anno_idx, anno in enumerate(annotations):
@@ -300,7 +326,7 @@ class HuggingFaceTokenizer(Tokenizer):
                 span = anno.get("span", anno)
                 label = anno.get("label", None)
                 for char_ix in range(span["start"], span["end"]):
-                    token_ix = batch_encoding.char_to_token(batch_index, char_ix)
+                    token_ix = sample_encoding.char_to_token(sample_index, char_ix)
                     if token_ix is None:
                         continue
                     # Initialize a list for the label if it doesn't exist
