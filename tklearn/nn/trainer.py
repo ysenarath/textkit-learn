@@ -313,10 +313,12 @@ class Trainer(BaseTrainer):
 
     def criterion(self, *args, **kwargs):
         if not hasattr(self, "_criterion"):
-            if isinstance(self.loss, str) or self.loss is None:
+            if isinstance(self.loss, str):
+                criterion_cls = getattr(torch.nn, self.loss)
+                self._criterion = criterion_cls()
+            elif self.loss is None:
                 config = self.model_builder.config
                 self._criterion = AutoLoss(
-                    loss=self.loss,
                     problem_type=config.problem_type,
                     num_labels=config.num_labels,
                 )

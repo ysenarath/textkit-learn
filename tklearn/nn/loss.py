@@ -1,10 +1,10 @@
-from typing import Union, Callable
+from typing import Union
 from collections.abc import Mapping
 
-import torch
 from torch import Tensor
 from torch.nn import MSELoss, CrossEntropyLoss, BCEWithLogitsLoss
 from transformers.utils import ModelOutput
+from transformers import PreTrainedModel, PretrainedConfig
 
 
 __all__ = [
@@ -23,12 +23,10 @@ class LossFunction:
 class AutoLoss(LossFunction):
     def __init__(
         self,
-        loss: LossFunction,
         problem_type: str,
         num_labels: int,
     ) -> None:
         super(AutoLoss, self).__init__()
-        self.loss = loss
         self.problem_type = problem_type
         self.num_labels = num_labels
 
@@ -38,7 +36,7 @@ class AutoLoss(LossFunction):
         target: Tensor,
     ):
         if not hasattr(self, "_criterion"):
-            self._criterion = self.build_criterion()
+            self._criterion = self.default_criterion()
         criterion = self._criterion
         logits_based_criterion = True
         if (
@@ -69,18 +67,6 @@ class AutoLoss(LossFunction):
             loss = criterion(output, target)
         return loss
 
-    def build_criterion(self) -> Callable:
-        if isinstance(self.loss, str):
-            criterion_cls = getattr(torch.nn, self.loss)
-            criterion = criterion_cls()
-        elif callable(self.loss):
-            criterion = self.loss
-        elif self.loss is None:
-            criterion = self.default_criterion()
-        else:
-            raise ValueError(f"unsupported loss: {self.loss}")
-        return criterion
-
     def default_criterion(self):
         problem_type = self.problem_type
         if problem_type == "regression":
@@ -93,3 +79,15 @@ class AutoLoss(LossFunction):
             return BCEWithLogitsLoss()
         else:
             raise ValueError(f"invalid problem type: {problem_type}")
+
+    @classmethod
+    def from_pretrained(cls, model_or_config: Union[PreTrainedModel, PretrainedConfig]):
+        """Create loss from the pretrained huggingface model or config."""
+        if isinstance(model_or_config, PreTrainedModel):
+            config = model_or_config.config
+        else:
+            config = model_or_config
+        return cls(
+            problem_type=config.problem_type,
+            num_labels=config.num_labels,
+        )
