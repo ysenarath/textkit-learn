@@ -1,5 +1,6 @@
 from collections.abc import Mapping
-from typing import Union, List, Dict
+from collections import UserDict
+from typing import Union, List, Dict, Any
 from copy import deepcopy
 
 import numpy as np
@@ -83,3 +84,10 @@ def tolist(x: Union[List, np.ndarray, torch.Tensor]):
     elif hasattr(x, "numpy"):  # Checks for TF tensors without needing the import
         x = x.numpy()
     return x.tolist()
+
+
+class AttrDict(UserDict):
+    def __getitem__(self, key: Any) -> Any:
+        if key in self:
+            return self.get(key)
+        super(AttrDict, self).__getitem__(key)
