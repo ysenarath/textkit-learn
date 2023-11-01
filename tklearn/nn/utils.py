@@ -9,6 +9,7 @@ import numpy as np
 __all__ = [
     "to_tensor",
     "get_index",
+    "move_to_device",
 ]
 
 
@@ -37,7 +38,13 @@ def get_index(
         return data.iloc[idx].to_dict()
     if isinstance(data, Mapping):
         # get index for each value in mapping
-        return {key: get_index(value, idx) for key, value in data.items()}
+        out = {}
+        for key, value in data.items():
+            try:
+                out[key] = get_index(value, idx)
+            except IndexError as _:
+                raise IndexError(f"unable to extract index from {str(key)}")
+        return out
     return data[idx]
 
 
