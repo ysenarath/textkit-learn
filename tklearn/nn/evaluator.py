@@ -118,7 +118,7 @@ class Evaluator(object):
             if metric is not None:
                 metric.update_state(y_true_processed, y_score)
             if criterion:
-                val_loss_sum += criterion(output, y_true).item()
+                val_loss_sum += criterion(output, y_true).detach().cpu().item()
             batches += 1
         val_loss = (val_loss_sum / batches) if criterion else None
         result: dict = {} if metric is None else metric.result() or {}
