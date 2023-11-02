@@ -101,22 +101,22 @@ class Evaluator(object):
             except KeyError:
                 y_true: torch.Tensor = batch_data["x"]["labels"]
             if self.target_postprocessor is None:
-                y_true = y_true.detach().cpu()
+                y_true_processed = y_true.detach().cpu()
             else:
-                y_true = self.target_postprocessor(y_true)
+                y_true_processed = self.target_postprocessor(y_true)
             y_score = self.postprocess(output)
             if self.groups is not None:
                 batch_index: torch.Tensor = batch_data["index"]
                 batch_index = batch_index.detach().cpu()
                 group_metrics = self.update_group_states(
                     group_metrics,
-                    y_true,
+                    y_true_processed,
                     y_score,
                     batch_index,
                 )
             # logits, target = concat(logits, output), concat(target, y_true)
             if metric is not None:
-                metric.update_state(y_true, y_score)
+                metric.update_state(y_true_processed, y_score)
             if criterion:
                 val_loss_sum += criterion(output, y_true).item()
             batches += 1
