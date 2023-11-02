@@ -27,6 +27,7 @@ class Evaluator(object):
         metric: Optional[Metric] = None,
         postprocessor: Union[Callable, str, None] = None,
         threshold: float = 0.0,
+        target_postprocessor: Callable = None,
     ):
         self.metric: Optional[Metric] = metric
         self.dataset: TorchDataset = TorchDataset(x=x, y=y)
@@ -41,6 +42,7 @@ class Evaluator(object):
             groups = groups.reset_index(drop=True)
         self.groups: pd.DataFrame = groups
         self.threshold = threshold
+        self.target_postprocessor = target_postprocessor
 
     @property
     def group_names(self) -> Optional[List[str]]:
@@ -98,7 +100,10 @@ class Evaluator(object):
                 y_true: torch.Tensor = batch_data["y"]
             except KeyError:
                 y_true: torch.Tensor = batch_data["x"]["labels"]
-            y_true = y_true.detach().cpu()
+            if self.target_postprocessor is None:
+                y_true = y_true.detach().cpu()
+            else:
+                y_true = self.target_postprocessor(y_true)
             y_score = self.postprocess(output)
             if self.groups is not None:
                 batch_index: torch.Tensor = batch_data["index"]
