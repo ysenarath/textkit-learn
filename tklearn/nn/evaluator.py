@@ -8,7 +8,7 @@ import pandas as pd
 from transformers.utils import ModelOutput
 
 from tklearn.metrics.base import Metric, MetricOutputType
-from tklearn.nn.utils import TorchDataset
+from tklearn.nn.utils import TorchDataset, move_to_device
 from tklearn.nn.base import BaseTrainer
 
 __all__ = [
@@ -100,8 +100,13 @@ class Evaluator(object):
                 y_true: torch.Tensor = batch_data["y"]
             except KeyError:
                 y_true: torch.Tensor = batch_data["x"]["labels"]
+            y_true = move_to_device(
+                y_true,
+                device="cpu",
+                detach=True,
+            )
             if self.target_postprocessor is None:
-                y_true_processed = y_true.detach().cpu()
+                y_true_processed = y_true
             else:
                 y_true_processed = self.target_postprocessor(y_true)
             y_score = self.postprocess(output)
@@ -118,7 +123,7 @@ class Evaluator(object):
             if metric is not None:
                 metric.update_state(y_true_processed, y_score)
             if criterion:
-                val_loss_sum += criterion(output, y_true).detach().cpu().item()
+                val_loss_sum += criterion(output, y_true).item()
             batches += 1
         val_loss = (val_loss_sum / batches) if criterion else None
         result: dict = {} if metric is None else metric.result() or {}
