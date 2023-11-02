@@ -1,4 +1,4 @@
-from typing import List, Union, Optional, Dict
+from typing import Any, List, Union, Optional, Dict
 from collections.abc import Mapping, Sequence
 
 import numpy as np
@@ -19,15 +19,16 @@ __all__ = [
     "EmbeddingTokenizer",
 ]
 
-BatchAnnotationList = List[Union[AnnotationList, List[Annotation], List[dict]]]
+BatchAnnotationList = List[Union[AnnotationList, List[Annotation], List[Mapping]]]
+TokenizerOutputType = Union[Mapping, Sequence]
 
 
 class Tokenizer:
-    def tokenize(
-        self,
-        texts: Union[List[str], str],
-    ) -> Mapping:
+    def tokenize(self, *args: Any, **kwargs: Any) -> TokenizerOutputType:
         raise NotImplementedError
+
+    def __call__(self, *args: Any, **kwargs: Any) -> TokenizerOutputType:
+        return self.tokenize(*args, **kwargs)
 
 
 class EmbeddingTokenizer(Tokenizer):
