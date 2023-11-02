@@ -1,3 +1,5 @@
+from __future__ import annotations
+import functools
 from typing import Any, List, Union, Optional, Dict
 from collections.abc import Mapping, Sequence
 
@@ -20,7 +22,7 @@ __all__ = [
 ]
 
 BatchAnnotationList = List[Union[AnnotationList, List[Annotation], List[Mapping]]]
-TokenizerOutputType = Union[Mapping, Sequence]
+TokenizerOutputType = Union[Mapping, Sequence, BatchEncoding]
 
 
 class Tokenizer:
@@ -219,7 +221,7 @@ class HuggingFaceTokenizer(Tokenizer):
 
     Attributes
     ----------
-    _hf_tokenizer : Union[PreTrainedTokenizer, PreTrainedTokenizerFast]
+    _hf_tokenizer : functools.partial
         The wrapped Hugging Face tokenizer.
 
     Example
@@ -229,7 +231,12 @@ class HuggingFaceTokenizer(Tokenizer):
     >>> labels = hft.get_aligned_labels(encoding, annotations)
     """
 
-    def __init__(self, tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast]):
+    def __init__(
+        self,
+        tokenizer: Union[PreTrainedTokenizer, PreTrainedTokenizerFast],
+        *args,
+        **kwargs,
+    ):
         """
         Initialize the HuggingFaceTokenizer with a Hugging Face tokenizer.
 
@@ -238,7 +245,9 @@ class HuggingFaceTokenizer(Tokenizer):
         tokenizer : Union[PreTrainedTokenizer, PreTrainedTokenizerFast]
             The Hugging Face tokenizer to wrap.
         """
-        self._hf_tokenizer = tokenizer
+        self._hf_tokenizer: functools.partial = functools.partial(
+            tokenizer, *args, **kwargs
+        )
 
     def tokenize(self, *args, **kwargs) -> BatchEncoding:
         """
@@ -340,7 +349,9 @@ class HuggingFaceTokenizer(Tokenizer):
         return batch_aligned_labels
 
     @classmethod
-    def from_pretrained(cls, *args, **kwargs) -> "HuggingFaceTokenizer":
+    def from_pretrained(
+        cls, pretrained_model_or_path: str, *args, **kwargs
+    ) -> HuggingFaceTokenizer:
         """
         Create an instance of the HuggingFaceTokenizer class from a pretrained Hugging Face tokenizer.
 
@@ -356,5 +367,5 @@ class HuggingFaceTokenizer(Tokenizer):
         **kwargs
             Variable-length keyword arguments to pass to the `AutoTokenizer.from_pretrained` method.
         """
-        hft = AutoTokenizer.from_pretrained(*args, **kwargs)
-        return cls(hft)
+        hft = AutoTokenizer.from_pretrained(pretrained_model_or_path)
+        return cls(hft, *args, **kwargs)
