@@ -21,11 +21,17 @@ def to_tensor(data: typing.Any) -> typing.Any:
     if isinstance(data, Mapping):
         # convert mapping to numpy array (values only)
         return {key: to_tensor(value) for key, value in data.items()}
+    elif isinstance(data, torch.Tensor):
+        return data
+    elif isinstance(data, np.generic):
+        # numpy scalers
+        return torch.tensor(data.item())
+    elif isinstance(data, np.ndarray):
+        return torch.from_numpy(data)
     elif isinstance(data, Sequence) and not isinstance(data, str):
         return torch.tensor(data)
-    elif isinstance(data, np.generic):
-        return torch.tensor(data.item())
     else:
+        # other scalers
         return torch.tensor(data)
 
 
