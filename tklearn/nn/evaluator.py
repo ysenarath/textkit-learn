@@ -8,7 +8,7 @@ import pandas as pd
 from transformers.utils import ModelOutput
 
 from tklearn.metrics.base import Metric, MetricOutputType
-from tklearn.nn.dataset import TrainerDataset
+from tklearn.nn.utils import TorchDataset
 from tklearn.nn.base import BaseTrainer
 
 __all__ = [
@@ -29,7 +29,7 @@ class Evaluator(object):
         threshold: float = 0.0,
     ):
         self.metric: Optional[Metric] = metric
-        self.dataset: TrainerDataset = TrainerDataset(x=x, y=y)
+        self.dataset: TorchDataset = TorchDataset(x=x, y=y)
         self.postprocessor = postprocessor
         if groups is not None and not isinstance(groups, pd.DataFrame):
             if group_names is None:

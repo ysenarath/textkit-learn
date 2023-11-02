@@ -21,10 +21,9 @@ from transformers import get_scheduler
 from transformers.utils import ModelOutput
 
 from tklearn.nn.base import BaseTrainer
-from tklearn.nn.dataset import TrainerDataset
 from tklearn.nn.evaluator import Evaluator
 from tklearn.nn.loss import AutoLoss
-from tklearn.nn.utils import move_to_device
+from tklearn.nn.utils import TorchDataset, move_to_device
 from tklearn.exceptions import EarlyStoppingException
 from tklearn.utils import _utils, logging
 from tklearn.config import configurable
@@ -134,7 +133,7 @@ class Trainer(BaseTrainer):
         y=None,
         evaluator: Union[Evaluator, None] = None,
     ):
-        dataset = TrainerDataset(x=x, y=y)
+        dataset = TorchDataset(x=x, y=y)
         dataloader = DataLoader(
             dataset,
             batch_size=self.batch_size,
@@ -250,7 +249,7 @@ class Trainer(BaseTrainer):
 
     def _predict_batch_iter(self, x, postprocess: bool = False):
         # convert x to dataset if needed
-        dataset = x if isinstance(x, TrainerDataset) else TrainerDataset(x=x)
+        dataset = x if isinstance(x, TorchDataset) else TorchDataset(x=x)
         del x
         dataloader = DataLoader(dataset, batch_size=self.batch_size)
         if self.accelerator is None:
