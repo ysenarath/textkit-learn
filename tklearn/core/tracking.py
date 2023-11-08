@@ -138,6 +138,7 @@ class Run(object):
         self.parent_ids = parent_ids or tuple()
         if id is None:
             self.id = f"run-{uuid.uuid4().hex}"
+            name = "default" if name is None else name
             create_dir_if_not_exist(self.run_path)
             with self.experiment.lock():
                 with open(
@@ -178,6 +179,7 @@ class Run(object):
         key: str,
         value: Any,
         *,
+        timestamp: Optional[int] = None,
         step: Optional[int] = None,
     ) -> None:
         """Log a metric to MLFlow."""
@@ -187,9 +189,15 @@ class Run(object):
                 key=key,
                 value=value,
                 step=step,
+                timestamp=timestamp,
             )
 
-    def log_param(self, key: str, value: Any) -> None:
+    def log_param(
+        self,
+        key: str,
+        value: Any,
+        step: Optional[int] = None,
+    ) -> None:
         """Log a parameter to MLFlow."""
         for key, value in flatten({key: value}).items():
             self._log_data(
@@ -218,7 +226,11 @@ class Run(object):
         for key, value in metrics.items():
             self.log_metric(key, value, timestamp=timestamp, step=step)
 
-    def log_params(self, params: dict) -> None:
+    def log_params(
+        self,
+        params: dict,
+        step: Optional[int] = None,
+    ) -> None:
         """Log parameters to MLFlow."""
         for key, value in params.items():
             self.log_param(key, value)
@@ -254,7 +266,7 @@ class Experiment(object):
         version: Optional[str] = None,
     ) -> None:
         if name is None:
-            name = "Default"
+            name = "main"
         self.path = Path(path)
         self.experiment_id = hashlib.sha256(name.encode()).hexdigest()
         create_dir_if_not_exist(self.tracking_uri)
