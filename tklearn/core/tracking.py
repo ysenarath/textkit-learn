@@ -1,19 +1,25 @@
 from __future__ import annotations
+from ast import Tuple
+import enum
 from collections.abc import Mapping
-from typing import Any, Optional, Union, Dict, List, Generator
+import contextlib
+from datetime import datetime
+import errno
+import hashlib
+import json
+import math
+import os
+from typing import Any, Optional, Union, Dict
 from pathlib import Path
+import uuid
+import filelock
+import pyarrow as pa
 
 import numpy as np
 import pandas as pd
-import mlflow
 from matplotlib.figure import Figure
 from plotly import graph_objects as go
-from mlflow.store.tracking import SEARCH_MAX_RESULTS_DEFAULT
-from mlflow.entities import (
-    Experiment as MLflowExperiment,
-    Run as MLflowRun,
-    ViewType,
-)
+
 
 __all__ = [
     "Run",
@@ -22,7 +28,7 @@ __all__ = [
 ]
 
 
-def flatten(data: Dict[str, Any], parent_key="", separator="__"):
+def flatten(data: Dict[str, Any], parent_key="", separator="."):
     items = []
     for key, value in data.items():
         # escape dots
@@ -40,7 +46,47 @@ def flatten(data: Dict[str, Any], parent_key="", separator="__"):
     return dict(items)
 
 
-import enum
+def create_dir_if_not_exist(path):
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno == errno.EEXIST and os.path.isdir(path):
+            # File exists, and it's a directory,
+            # another process beat us to creating this dir, that's OK.
+            pass
+        else:
+            # Our target dir exists as a file, or different error,
+            # reraise the error!
+            raise
+
+
+def explore_recursively(
+    run_path: Path,
+    namespace: str = "",
+):
+    data = []
+    run_id = str(run_path).split("/")[-1]
+    subpath = run_path / "metadata.json"
+    with open(subpath, "r", encoding="utf-8") as fp:
+        metadata = json.load(fp)
+        run_name = metadata["name"]
+    namespace = namespace + "." + run_name if namespace else run_name
+    for file in os.listdir(run_path):
+        subpath = run_path / file
+        if file == "metadata.json":
+            continue
+        elif subpath.is_dir() and file.startswith("run-"):
+            data += explore_recursively(
+                subpath,
+                namespace=namespace,
+            )
+        elif file.endswith(".json"):
+            with open(subpath, "r", encoding="utf-8") as fp:
+                d = json.load(fp)
+                d["metadata.run.id"] = run_id
+                d["metadata.run.namespace"] = namespace
+                data.append(d)
+    return data
 
 
 class ArtifactType(enum.Enum):
@@ -81,40 +127,84 @@ class Artifact(object):
 
 
 class Run(object):
-    def __init__(self, experiment: Experiment, mlflow_run: MLflowRun) -> None:
+    def __init__(
+        self,
+        experiment: Experiment,
+        name: str = None,
+        parent_ids: Optional[Tuple[str]] = None,
+        id: str = None,
+    ) -> None:
         self.experiment = experiment
-        self._mlflow_run: MLflowRun = mlflow_run
+        self.parent_ids = parent_ids or tuple()
+        if id is None:
+            self.id = f"run-{uuid.uuid4().hex}"
+            create_dir_if_not_exist(self.run_path)
+            with self.experiment.lock():
+                with open(
+                    self.run_path / "metadata.json",
+                    "w",
+                    encoding="utf-8",
+                ) as fp:
+                    json.dump(
+                        {
+                            "name": name,
+                        },
+                        fp,
+                    )
+        else:
+            self.id = id
 
     @property
-    def id(self) -> str:
-        """Get the run ID."""
-        return self._mlflow_run.info.run_id
+    def run_path(self) -> Path:
+        path = self.experiment.tracking_uri
+        for parent_id in self.parent_ids:
+            path = path / parent_id
+        return path / self.id
 
-    @property
-    def name(self) -> Optional[str]:
-        """Get the run name."""
-        return self._mlflow_run.info.run_name
+    def _log_data(self, **kwargs):
+        if "timestamp" not in kwargs or kwargs["timestamp"] is None:
+            kwargs["timestamp"] = math.ceil(datetime.now().timestamp())
+        with self.experiment.lock():
+            path = self.run_path / f"{uuid.uuid4().hex}.json"
+            with open(path, "w", encoding="utf-8") as fp:
+                json.dump(kwargs, fp)
 
-    @property
-    def _mlflow_client(self) -> mlflow.tracking.MlflowClient:
-        return self.experiment._mlflow_client
-
-    @property
-    def _mlflow_experiment(self) -> MLflowExperiment:
-        return self.experiment._mlflow_experiment
+    def get_logs(self):
+        data = explore_recursively(self.run_path)
+        return pd.DataFrame(data)
 
     def log_metric(
         self,
         key: str,
         value: Any,
         *,
-        timestamp: Optional[int] = None,
         step: Optional[int] = None,
     ) -> None:
         """Log a metric to MLFlow."""
         for key, value in flatten({key: value}).items():
-            self._mlflow_client.log_metric(
-                self._mlflow_run.info.run_id, key, value, timestamp, step
+            self._log_data(
+                type="metric",
+                key=key,
+                value=value,
+                step=step,
+            )
+
+    def log_param(self, key: str, value: Any) -> None:
+        """Log a parameter to MLFlow."""
+        for key, value in flatten({key: value}).items():
+            self._log_data(
+                type="parameter",
+                key=key,
+                value=value,
+            )
+
+    def set_tag(self, key: str, value: Any) -> None:
+        """Set tags for the run."""
+        for key, value in flatten({key: value}).items():
+            self._log_data(
+                type="tag",
+                key=key,
+                value=value,
             )
 
     def log_metrics(
@@ -128,23 +218,10 @@ class Run(object):
         for key, value in metrics.items():
             self.log_metric(key, value, timestamp=timestamp, step=step)
 
-    def log_param(self, key: str, value: Any) -> None:
-        """Log a parameter to MLFlow."""
-        for key, value in flatten({key: value}).items():
-            self._mlflow_client.log_param(
-                self._mlflow_run.info.run_id,
-                key,
-                value,
-            )
-
     def log_params(self, params: dict) -> None:
         """Log parameters to MLFlow."""
         for key, value in params.items():
             self.log_param(key, value)
-
-    def set_tag(self, key: str, value: Any) -> None:
-        """Set tags for the run."""
-        self._mlflow_client.set_tag(self._mlflow_run.info.run_id, key, value)
 
     def set_tags(self, tags: dict) -> None:
         """Set tags for the run."""
@@ -157,56 +234,14 @@ class Run(object):
         artifact_path: Optional[str] = None,
         artifact_type: Optional[ArtifactType] = None,
     ):
-        if not isinstance(artifact, Artifact):
-            artifact = Artifact(artifact, type=artifact_type)
-        obj = artifact.obj
-        if artifact.type == ArtifactType.PATH:
-            self._mlflow_client.log_artifact(
-                self._mlflow_run.info.run_id, obj, artifact_path=artifact_path
-            )
-        elif artifact.type == ArtifactType.JSON:
-            self._mlflow_client.log_dict(
-                self._mlflow_run.info.run_id, obj, artifact_file=artifact_path
-            )
-        elif artifact.type == ArtifactType.TABLE:
-            self._mlflow_client.log_table(
-                self._mlflow_run.info.run_id, obj, artifact_file=artifact_path
-            )
-        elif artifact.type == ArtifactType.FIGURE:
-            self._mlflow_client.log_figure(
-                self._mlflow_run.info.run_id, obj, artifact_file=artifact_path
-            )
-        elif artifact.type == ArtifactType.IMAGE:
-            self._mlflow_client.log_image(
-                self._mlflow_run.info.run_id, obj, artifact_file=artifact_path
-            )
-        elif artifact.type == ArtifactType.HTML:
-            if isinstance(obj, pd.DataFrame):
-                obj = obj.to_html()
-            self._mlflow_client.log_text(
-                self._mlflow_run.info.run_id, obj, artifact_file=artifact_path
-            )
-        elif artifact.type == ArtifactType.TEXT:
-            if isinstance(obj, pd.DataFrame):
-                obj = obj.to_html()
-            self._mlflow_client.log_text(
-                self._mlflow_run.info.run_id, obj, artifact_file=artifact_path
-            )
-        else:
-            raise NotImplementedError(f"unsupported artifact type '{artifact.type}'")
-
-    def set_terminated(self) -> None:
-        """Close the run."""
-        self._mlflow_client.set_terminated(self._mlflow_run.info.run_id)
+        # if not isinstance(artifact, Artifact):
+        #     artifact = Artifact(artifact, type=artifact_type)
+        # obj = artifact.obj
+        raise NotImplementedError
 
     def start_run(self, run_name: Optional[str] = None):
         """Start a new run."""
-        mlflow_run = self._mlflow_client.create_run(
-            self._mlflow_experiment.experiment_id,
-            tags={"mlflow.parentRunId": self._mlflow_run.info.run_id},
-            run_name=run_name,
-        )
-        return Run(self.experiment, mlflow_run)
+        return Run(self.experiment, run_name, parent_ids=self.parent_ids + (self.id,))
 
 
 class Experiment(object):
@@ -214,93 +249,48 @@ class Experiment(object):
 
     def __init__(
         self,
+        path: Union[str, Path],
         name: Union[str, None] = None,
-        tracking_uri: Optional[str] = None,
-        registry_uri: Optional[str] = None,
-        artifact_location: Optional[str] = None,
+        version: Optional[str] = None,
     ) -> None:
-        self._mlflow_client = mlflow.tracking.MlflowClient(
-            tracking_uri=tracking_uri,
-            registry_uri=registry_uri,
-        )
-        # self._mlflow_client._get_registry_client()
-        self._mlflow_experiment: MLflowExperiment = (
-            self._mlflow_get_or_create_experiment(
-                name,
-                artifact_location=artifact_location,
-            )
-        )
+        if name is None:
+            name = "Default"
+        self.path = Path(path)
+        self.experiment_id = hashlib.sha256(name.encode()).hexdigest()
+        create_dir_if_not_exist(self.tracking_uri)
+        with self.lock():
+            with open(
+                self.tracking_uri / "metadata.json",
+                "w",
+                encoding="utf-8",
+            ) as fp:
+                json.dump(
+                    {
+                        "name": name,
+                        "version": version,
+                    },
+                    fp,
+                )
 
     @property
-    def name(self):
-        return self._mlflow_experiment.name
-
-    @property
-    def tracking_uri(self) -> str:
-        return self._mlflow_client.tracking_uri
-
-    @property
-    def registry_uri(self) -> str:
-        return self._mlflow_client._registry_uri
-
-    @property
-    def artifact_location(self):
-        return self._mlflow_experiment.artifact_location
-
-    def _mlflow_get_or_create_experiment(
-        self,
-        experiment_name: Optional[str] = None,
-        artifact_location: Optional[str] = None,
-    ) -> MLflowExperiment:
-        """Get or create an MLFlow experiment."""
-        if experiment_name is None:
-            experiment_name = "Default"
-        try:
-            experiment_id = self._mlflow_client.create_experiment(
-                experiment_name, artifact_location=artifact_location
-            )
-            experiment = self._mlflow_client.get_experiment(experiment_id)
-        except:
-            experiment = self._mlflow_client.get_experiment_by_name(experiment_name)
-        return experiment
-
-    @property
-    def experiment_id(self) -> str:
-        return self._mlflow_experiment.experiment_id
+    def tracking_uri(self) -> Path:
+        return self.path / f"expr-{self.experiment_id}"
 
     def start_run(self, run_name: Optional[str] = None):
         """Start a new run."""
-        mlflow_run = self._mlflow_client.create_run(
-            self._mlflow_experiment.experiment_id, run_name=run_name
-        )
-        return Run(self, mlflow_run)
+        return Run(self, run_name)
 
-    def search_runs(
-        self,
-        filter_string: str,
-        run_view_type: int = ViewType.ACTIVE_ONLY,
-        max_results: int = SEARCH_MAX_RESULTS_DEFAULT,
-        order_by: Union[List[str], None] = None,
-    ) -> Generator[Run, None, None]:
-        result = self._mlflow_client.search_runs(
-            experiment_ids=[self._mlflow_experiment.experiment_id],
-            filter_string=filter_string,
-            run_view_type=run_view_type,
-            max_results=max_results,
-            order_by=order_by,
-        )
-        total_results = 0
-        while result.token is not None:
-            for mlflow_run in result:
-                yield Run(self, mlflow_run)
-                total_results += 1
-            if total_results >= max_results:
-                break
-            result = self._mlflow_client.search_runs(
-                experiment_ids=[self._mlflow_experiment.experiment_id],
-                filter_string=filter_string,
-                run_view_type=run_view_type,
-                max_results=max_results,
-                order_by=order_by,
-                page_token=result.token,
-            )
+    @contextlib.contextmanager
+    def lock(self):
+        yield filelock.FileLock(self.tracking_uri / "experiment.lock")
+
+    def start_run(self, run_name: Optional[str] = None):
+        """Start a new run."""
+        return Run(self, run_name)
+
+    def list_runs(self):
+        return [
+            Run(self, id=run_id)
+            for run_id in os.listdir(self.tracking_uri)
+            if run_id.startswith("run-")
+        ]
