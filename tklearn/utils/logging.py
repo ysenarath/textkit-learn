@@ -3,7 +3,7 @@ import logging
 
 from tqdm import auto as tqdm
 
-from tklearn.config import configurable, config_scope
+from tklearn.config import configurable
 
 __all__ = [
     "get_logger",
