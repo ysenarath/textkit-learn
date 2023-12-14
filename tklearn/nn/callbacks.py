@@ -1,13 +1,14 @@
+from collections.abc import Mapping
 import copy
-from typing import Any, Optional, Union, TYPE_CHECKING
+from typing import Any, Dict, Optional, Union, TYPE_CHECKING
 from pathlib import Path
 
 import numpy as np
 import torch
 import transformers
+from octoflow.model import Run, Namespace, Value
 
 from tklearn.core.callbacks import Callback, CallbackList
-from tklearn.core.tracking import Run, Experiment
 from tklearn.exceptions import EarlyStoppingException
 from tklearn.utils.logging import Progbar
 
@@ -330,30 +331,54 @@ class ModelSelectionCallback(TrainerCallback):
         self.trial.report(intermediate_value, epoch)
 
 
-class TrackerCallback(TrainerCallback):
+class TrackingCallback(TrainerCallback):
     def __init__(
         self,
-        run_or_experiment: Union[Run, Experiment],
-        nested: bool = False,
+        run: Run,
+        namespace: Namespace,
+        step: Optional[Value] = None,
     ) -> None:
         super().__init__()
-        self.nested = nested
-        if isinstance(run_or_experiment, Experiment):
-            run_or_experiment = run_or_experiment.start_run()
-        self.run_or_experiment = run_or_experiment
         # the actual run used to track the trainer progress
-        self.run: Optional[Run] = None  # type: ignore
+        self.run = run  # type: ignore
+        self.step = step
+        self.namespace = namespace
+        self.namespaces = {
+            "epoch": Namespace(namespace).join("epoch"),
+        }
 
     def on_train_begin(self, logs=None):
         if self.run is not None:
             return
-        self.run = (
-            self.run_or_experiment.start_run()
-            if self.nested
-            else self.run_or_experiment
-        )
 
     def on_epoch_end(self, epoch: int, logs: Optional[dict] = None):
-        if self.run is None or logs is None:
-            return
-        self.run.log_metrics(logs, step=epoch)
+        epoch_val = self.run.log_param(
+            self.namespaces["epoch"],
+            epoch,
+            step=self.step,
+        )
+        for key, value in self.flatten(logs).items():
+            if key not in self.namespaces:
+                self.namespaces[key] = self.namespace.join(key)
+            namespace = self.namespaces[key]
+            self.run.log_metric(namespace, value, step=epoch_val)
+
+    @classmethod
+    def flatten(
+        cls, data: Dict[str, Any], parent_key="", separator="."
+    ) -> dict[str, Any]:
+        items = []
+        for key, value in data.items():
+            # escape dots
+            new_key = parent_key + separator + key if parent_key else key
+            if isinstance(value, Mapping):
+                items.extend(
+                    cls.flatten(
+                        value,
+                        parent_key=new_key,
+                        separator=separator,
+                    ).items()
+                )
+            else:
+                items.append((new_key, value))
+        return dict(items)
