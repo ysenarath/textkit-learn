@@ -1,12 +1,11 @@
-from collections.abc import Mapping
 import copy
-from typing import Any, Dict, Optional, Union, TYPE_CHECKING
+from typing import Any, Optional, Union, TYPE_CHECKING
 from pathlib import Path
 
 import numpy as np
 import torch
 import transformers
-from octoflow.model import Run, Namespace, Value
+from octoflow.model import Run, Value
 
 from tklearn.core.callbacks import Callback, CallbackList
 from tklearn.exceptions import EarlyStoppingException
@@ -335,50 +334,33 @@ class TrackingCallback(TrainerCallback):
     def __init__(
         self,
         run: Run,
-        namespace: Namespace,
         step: Optional[Value] = None,
+        prefix: Optional[str] = None,
     ) -> None:
         super().__init__()
         # the actual run used to track the trainer progress
-        self.run = run  # type: ignore
+        self.run = run
         self.step = step
-        self.namespace = namespace
-        self.namespaces = {
-            "epoch": Namespace(namespace).join("epoch"),
-        }
+        if prefix is None:
+            prefix = ""
+        self.prefix = str(prefix).strip()
+        self.epoch_key_fmt = "{prefix}{delemiter}epoch"
+        self.delemiter = "."
 
     def on_train_begin(self, logs=None):
-        if self.run is not None:
+        if self.run is None:
             return
 
     def on_epoch_end(self, epoch: int, logs: Optional[dict] = None):
+        if self.run is None:
+            return
+        epoch_key = self.epoch_key_fmt.format(
+            prefix=self.prefix,
+            delemiter=self.delemiter if len(self.prefix) > 0 else "",
+        )
         epoch_val = self.run.log_param(
-            self.namespaces["epoch"],
+            epoch_key,
             epoch,
             step=self.step,
         )
-        for key, value in self.flatten(logs).items():
-            if key not in self.namespaces:
-                self.namespaces[key] = self.namespace.join(key)
-            namespace = self.namespaces[key]
-            self.run.log_metric(namespace, value, step=epoch_val)
-
-    @classmethod
-    def flatten(
-        cls, data: Dict[str, Any], parent_key="", separator="."
-    ) -> dict[str, Any]:
-        items = []
-        for key, value in data.items():
-            # escape dots
-            new_key = parent_key + separator + key if parent_key else key
-            if isinstance(value, Mapping):
-                items.extend(
-                    cls.flatten(
-                        value,
-                        parent_key=new_key,
-                        separator=separator,
-                    ).items()
-                )
-            else:
-                items.append((new_key, value))
-        return dict(items)
+        self.run.log_metrics(logs, step=epoch_val, prefix=self.prefix)
