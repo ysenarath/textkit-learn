@@ -1,6 +1,6 @@
 from tklearn import config
 
-__version__ = "0.1.31"
+__version__ = "0.1.32"
 
 __all__ = []
 
