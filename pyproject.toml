@@ -21,7 +21,24 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = []
+dependencies = [
+    "pandas",
+    "polars",
+    "numpy",
+    "scikit-learn",
+    "torch",
+    "werkzeug",
+    "pyarrow",
+    "transformers",
+    "datasets",
+    "evaluate",
+    "accelerate",
+    "nltk",
+    "sortedcontainers",
+    "hnswlib",
+    "flashtext",
+    "octoflow>=0.0.8",
+]
 dynamic = ["version"]
 
 [project.urls]
@@ -36,9 +53,6 @@ exclude = []
 
 [tool.hatch.version]
 path = "tklearn/__init__.py"
-
-[dirs.env]
-virtual = ".hatch"
 
 [tool.hatch.envs.default]
 dependencies = ["pytest", "pytest-cov"]
