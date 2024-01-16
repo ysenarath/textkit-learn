@@ -9,13 +9,15 @@ from octoflow import Run, Value
 
 from tklearn.core.callbacks import Callback, CallbackList
 from tklearn.exceptions import EarlyStoppingException
-from tklearn.utils.logging import Progbar
 
+from tklearn.utils.logging import Progbar
 
 if TYPE_CHECKING:
     from optuna.trial import Trial
+    from tklearn.nn.base import BaseTrainer
 else:
     Trial = Any
+    BaseTrainer = Any
 
 __all__ = [
     "TrainerCallback",
@@ -29,7 +31,7 @@ __all__ = [
 class TrainerCallback(Callback):
     def __init__(self) -> None:
         super().__init__()
-        self.trainer: Any = None
+        self.trainer: BaseTrainer = None
 
     def set_trainer(self, trainer):
         self.trainer = trainer
@@ -301,7 +303,7 @@ class EarlyStopping(TrainerCallback):
             if self.restore_best_weights and self.best_weights is not None:
                 if self.verbose > 0:
                     pass
-                self.trainer.set_model(self.best_weights)
+                self.trainer.model = self.best_weights
             raise EarlyStoppingException
 
     def get_monitor_value(self, logs):
