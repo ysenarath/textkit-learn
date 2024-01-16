@@ -274,11 +274,14 @@ class Trainer(BaseTrainer):
                 output = model(**x_batch)
             if postprocess:
                 output = self.postprocess(output)
-            yield batch_data, move_to_device(
-                output,
-                device="cpu",
-                detach=True,
-                numpy=False,
+            yield (
+                batch_data,
+                move_to_device(
+                    output,
+                    device="cpu",
+                    detach=True,
+                    numpy=False,
+                ),
             )
             self.callbacks.on_predict_batch_end(batch, logs={})
         self.callbacks.on_predict_end(logs={})
