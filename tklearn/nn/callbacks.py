@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import transformers
-from octoflow.model import Run, Value
+from octoflow import Run, Value
 
 from tklearn.core.callbacks import Callback, CallbackList
 from tklearn.exceptions import EarlyStoppingException
