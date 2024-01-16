@@ -259,8 +259,11 @@ class EarlyStopping(TrainerCallback):
                 or self.monitor.endswith("auc")
             ):
                 self.monitor_op = np.greater
-            else:
+            elif self.monitor.endswith("loss") or self.monitor.endswith("error"):
                 self.monitor_op = np.less
+            else:
+                msg = f"could not infer the metric direction for {self.monitor}."
+                raise ValueError(msg)
         if self.monitor_op == np.greater:
             self.min_delta *= 1
         else:
