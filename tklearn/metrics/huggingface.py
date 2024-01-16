@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 import inspect
 from typing import Optional, Union
 
-from datasets import DownloadMode
+from datasets.download.download_manager import DownloadMode
 from evaluate.utils.file_utils import DownloadConfig
 from datasets.utils.version import Version
 import evaluate
