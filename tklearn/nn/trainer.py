@@ -160,10 +160,10 @@ class Trainer(BaseTrainer):
         }
         self.callbacks.set_params(callback_params)
         self.callbacks.on_train_begin()
-        for epoch in range(self.epochs):
+        for epoch_idx in range(self.epochs):
             try:
                 epoch_logs = {}
-                self.callbacks.on_epoch_begin(epoch + 1, logs=epoch_logs)
+                self.callbacks.on_epoch_begin(epoch_idx + 1, logs=epoch_logs)
                 running_loss = 0.0
                 for batch_idx, batch in enumerate(dataloader):
                     batch_log = {}
@@ -185,7 +185,7 @@ class Trainer(BaseTrainer):
                 if evaluator is not None:
                     eval_results = evaluator.evaluate(self)
                     epoch_logs.update(eval_results)
-                self.callbacks.on_epoch_end(epoch + 1, logs=epoch_logs)
+                self.callbacks.on_epoch_end(epoch_idx + 1, logs=epoch_logs)
             except EarlyStoppingException:
                 break
         final_logs = {}
