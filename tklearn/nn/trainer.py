@@ -89,7 +89,7 @@ class Trainer(BaseTrainer):
         epochs: int = 3,
         batch_size: int = 8,
         shuffle: bool = False,
-        accelerator: Union[bool, Accelerator] = True,
+        accelerator: Union[bool, Accelerator] = False,
         device: Union[torch.device, str, None] = None,
         callbacks=None,
         verbose=True,
@@ -175,6 +175,7 @@ class Trainer(BaseTrainer):
                         y_batch,
                         optimizer=optimizer,
                         lr_scheduler=lr_scheduler,
+                        device=self.device,
                     )
                     batch_loss = loss.item()
                     running_loss += batch_loss
