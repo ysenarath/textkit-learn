@@ -25,7 +25,7 @@ dependencies = [
     "pandas",
     "polars",
     "numpy",
-    "scikit-learn",
+    "scikit-learn>=1.4.0,!=1.3",
     "torch",
     "werkzeug",
     "pyarrow",
@@ -70,3 +70,96 @@ omit = ["tklearn/__about__.py"]
 
 [tool.coverage.report]
 exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
+
+
+[tool.ruff]
+extend-include = ["*.ipynb"]
+target-version = "py38"
+line-length = 79
+preview = true # preview features & checks, use with caution
+extend-select = [ # features in preview
+    "W292", # missing-newline-at-end-of-file
+]
+include = ["src/**/*.py", "src/**/*.pyi", "tests/**/*.py", "tests/**/*.pyi"]
+select = [
+    "A",
+    "B",
+    "C",
+    "DTZ",
+    "E",
+    "EM",
+    "F",
+    "FBT",    # Boolean trap
+    "I",
+    "ICN",
+    "ISC",
+    "N",
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+    "Q",
+    "RUF",
+    "S",
+    "SIM",
+    "T",
+    "TID",
+    "UP",
+    "W",
+    "YTT",
+    "RUF100", # Automatically remove unused # noqa directives
+]
+ignore = [
+    # Allow non-abstract empty methods in abstract base classes
+    "B027",
+    # Allow boolean positional values in function calls, like `dict.get(... True)`
+    "FBT003",
+    # Ignore checks for possible passwords
+    "S105",
+    "S106",
+    "S107",
+    # Ignore complexity
+    "C901",
+    "PLR0911",
+    "PLR0912",
+    "PLR0913",
+    "PLR0915",
+    "PLC1901", # empty string comparisons
+    "PLW2901", # `for` loop variable overwritten
+    "SIM114",  # Combine `if` branches using logical `or` operator
+    "E203",    # Whitespace before :, needed for black compatability and also `ruff format`
+    "ISC001",  # causes unexpected behaviour with formatter
+    "UP006",
+    "UP007",
+    "UP008",
+    "A001",
+    "A002",
+    "A003",
+    "FBT001",
+    "FBT002",
+    "PLR0917",
+]
+unfixable = [
+    # "F401",  # Don't touch unused imports
+]
+
+[tool.ruff.format]
+quote-style = "double" # be more like black
+
+[tool.ruff.isort]
+known-first-party = ["octoflow"]
+
+[tool.ruff.flake8-quotes]
+inline-quotes = "double"
+
+[tool.ruff.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.per-file-ignores]
+# Allow print/pprint
+"examples/*" = ["T201"]
+# Tests can use magic values, assertions, and relative imports
+"tests/**/*" = ["PLR2004", "S101", "TID252"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy" # Accepts: "google", "numpy", or "pep257".

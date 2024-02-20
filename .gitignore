@@ -133,3 +133,4 @@ dmypy.json
 notebooks/mlruns/
 notebooks/data/
 notebooks/logs/
+logs/dataset/
