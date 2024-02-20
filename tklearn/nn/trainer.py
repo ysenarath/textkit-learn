@@ -6,7 +6,7 @@ This trainer is designed to be compatible with HuggingFace
 datasets and torch style datasets.
 """
 from __future__ import annotations
-from typing import Union, Callable, Any
+from typing import Literal, Union, Callable, Any
 import functools
 import warnings
 
@@ -89,7 +89,7 @@ class Trainer(BaseTrainer):
         epochs: int = 3,
         batch_size: int = 8,
         shuffle: bool = False,
-        accelerator: Union[bool, Accelerator] = False,
+        accelerator: Union[Accelerator, Literal[True], None] = None,
         device: Union[torch.device, str, None] = None,
         callbacks=None,
         verbose=True,
@@ -103,7 +103,12 @@ class Trainer(BaseTrainer):
         self.batch_size = batch_size
         self.clip_grad_strategy = clip_grad_strategy
         self.clip_grad_value = clip_grad_value
-        self.accelerator = Accelerator() if accelerator is True else accelerator
+        if not accelerator:  # false or None
+            self.accelerator = None
+        elif accelerator is True:
+            self.accelerator = Accelerator()
+        else:
+            self.accelerator = accelerator
         self.epochs = epochs
         self.device = device
 
