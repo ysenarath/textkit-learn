@@ -2,7 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Mapping, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Self,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
@@ -36,7 +45,7 @@ def to_numpy(obj: object) -> RT:
     """
     if isinstance(obj, torch.Tensor):
         return obj.detach().cpu().numpy()
-    elif isinstance(obj, Mapping):
+    elif isinstance(obj, Dict):
         return {k: to_numpy(v) for k, v in obj.items()}
     elif isinstance(obj, Tuple):
         return tuple(to_numpy(v) for v in obj)
@@ -56,7 +65,7 @@ def to_torch(obj: object) -> RT:
     output : Any
         The object converted to a torch tensor.
     """
-    if isinstance(obj, Mapping):
+    if isinstance(obj, Dict):
         return {k: to_torch(v) for k, v in obj.items()}
     elif isinstance(obj, Tuple):
         return tuple(to_torch(v) for v in obj)
@@ -65,8 +74,62 @@ def to_torch(obj: object) -> RT:
     return torch.from_numpy(obj)
 
 
-def move_to_device(obj: T, device: Union[str, torch.device]) -> T:
+def detach(obj: T) -> T:
+    """Detach a torch tensor from its computation graph.
+
+    Parameters
+    ----------
+    obj : T
+        The object to detach from its computation graph.
+
+    Returns
+    -------
+    output : T
+        The object detached from its computation graph.
+    """
+    if isinstance(obj, torch.Tensor):
+        return obj.detach()
+    elif isinstance(obj, Dict):
+        return {k: detach(v) for k, v in obj.items()}
+    elif isinstance(obj, List):
+        return [detach(v) for v in obj]
+    elif isinstance(obj, Tuple):
+        return tuple(detach(v) for v in obj)
+    return obj
+
+
+class MovableToDeviceMixin:
+    """Mixin class for moving an object to a device."""
+
+    def to(
+        self,
+        device: Union[str, torch.device],
+        detach: bool = False,
+    ) -> Self:
+        """Move the object to a device.
+
+        Parameters
+        ----------
+        device : Union[str, torch.device]
+            The device to move the object to.
+
+        Returns
+        -------
+        output : MovableToDevice
+            The object moved to the device.
+        """
+        return move_to_device(self, device, detach=detach)
+
+
+def move_to_device(
+    obj: T,
+    device: Union[str, torch.device],
+) -> T:
     """Move an object to a device.
+
+    If the object is a torch tensor or module with the provided device, it is
+    returned as is. If the object is a mapping, list, or tuple, the function is
+    applied recursively to each element in the object.
 
     Parameters
     ----------
@@ -84,21 +147,22 @@ def move_to_device(obj: T, device: Union[str, torch.device]) -> T:
         return obj.to(device)
     elif isinstance(obj, torch.Tensor):
         return obj.to(device)
-    elif isinstance(obj, Mapping):
+    elif isinstance(obj, MovableToDeviceMixin):
+        return obj.to(device)
+    elif isinstance(obj, Dict):
         return {k: move_to_device(v, device) for k, v in obj.items()}
     elif isinstance(obj, List):
         return [move_to_device(v, device) for v in obj]
     elif isinstance(obj, Tuple):
         return tuple(move_to_device(v, device) for v in obj)
-    msg = f"cannot move object of type '{type(obj).__name__}' to device"
-    raise ValueError(msg)
+    return obj
 
 
 def concat(
-    objs: Union[List[RT], Mapping],
+    objs: Union[List[RT], Dict],
     /,
     axis: int = 0,
-) -> Union[RT, Mapping]:
+) -> Union[RT, Dict]:
     """Concatenate a list of objects along an axis.
 
     Parameters
@@ -110,14 +174,13 @@ def concat(
 
     Returns
     -------
-    output : RT | Mapping
+    output : RT | Dict
         The concatenated objects.
     """
-    # remove None objects
     objs = [o for o in objs if o is not None]
     if len(objs) == 1:
         return objs[0]
-    elif isinstance(objs[0], Mapping):
+    elif isinstance(objs[0], Dict):
         return {k: concat([o[k] for o in objs], axis=axis) for k in objs[0]}
     elif isinstance(objs[0], Tuple):
         return tuple(
@@ -132,12 +195,12 @@ def concat(
     raise ValueError(msg)
 
 
-def length_of_first_array_like_in_nested_dict(data: dict) -> int:
+def length_of_first_array_like_in_nested_dict(data: Dict) -> int:
     """Return the length of the first list in a nested dictionary.
 
     Parameters
     ----------
-    data : dict
+    data : Dict
         The nested dictionary to search for the first list.
 
     Returns
