@@ -234,5 +234,5 @@ def tokenizer(
         )(WrappedTokenizer)
     if issubclass(func, Tokenizer):
         return func
-    msg = f"expected TokenizerLike or Callable[[str], List[str]], but got {type(func).__name__}"
+    msg = f"expected tokenizer-like, but got {type(func).__name__}"
     raise TypeError(msg)
