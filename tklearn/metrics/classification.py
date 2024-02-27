@@ -1,4 +1,12 @@
-from typing import Annotated, Callable, Literal, Optional, Union, overload
+from typing import (
+    Annotated,
+    Callable,
+    Dict,
+    Literal,
+    Optional,
+    Union,
+    overload,
+)
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -9,8 +17,8 @@ from sklearn.utils.multiclass import unique_labels
 
 AverageType = Literal["macro", "micro", None]
 TargetType = Literal[
-    # "continuous",
-    # "continuous-multioutput",
+    "continuous",
+    "continuous-multioutput",
     "binary",
     "multiclass",
     "multiclass-multioutput",
@@ -19,10 +27,45 @@ TargetType = Literal[
 ]
 ConfusionMatrixType = Annotated[NDArray[np.int32], Literal["N", 2, 2]]
 
-
 check_targets: Callable[
     [ArrayLike, ArrayLike], tuple[str, ArrayLike, ArrayLike]
 ] = _check_targets
+
+NUM_ARGS = 2
+
+TARGET_TYPES: Dict[TargetType, int] = {
+    "binary": 0,
+    "multiclass": 1,
+    "multilabel-indicator": 2,
+    "multiclass-multioutput": 3,
+    "continuous": 4,
+    "continuous-multioutput": 5,
+    "unknown": 6,
+}
+
+
+def resolve_target_type(*ps: str) -> None:
+    if not ps:
+        msg = "at least one target type must be provided"
+        raise ValueError(msg)
+    if len(ps) == 1:
+        return ps[0]
+    if len(ps) > NUM_ARGS:
+        p = ps[0]
+        for i in range(1, len(ps)):
+            p = resolve_target_type(p, ps[i])
+        return p
+    # sort the types by index
+    p, q = sorted(ps, key=lambda x: TARGET_TYPES[x])
+    try:
+        return {
+            ("binary", "multilabel-indicator"): "unknown",
+            ("binary", "multiclass-multioutput"): "unknown",
+            ("multilabel-indicator", "continuous"): "continuous-multioutput",
+            ("multiclass-multioutput", "continuous"): "continuous-multioutput",
+        }[(p, q)]
+    except KeyError:
+        return q
 
 
 class ConfusionMatrix:
@@ -79,19 +122,14 @@ class ConfusionMatrix:
         self.num_samples = 0
         self.accuracy = 0
 
-    def update(self, y_true: ArrayLike, y_pred: ArrayLike) -> None:
+    def update(
+        self,
+        y_true: ArrayLike,
+        y_pred: ArrayLike,
+        sample_weight: Optional[ArrayLike] = None,
+    ) -> None:
         y_type, y_true, y_pred = check_targets(y_true, y_pred)
-        if self.target_type is None or any([
-            self.target_type == "binary" and y_type == "multiclass",
-            self.target_type == "multiclass" and y_type == "continuous",
-            self.target_type == "multilabel-indicator"
-            and y_type == "multiclass-multioutput",
-        ]):
-            self.target_type = y_type
-        elif self.target_type not in {y_type, "unknown"}:
-            self.target_type = "unknown"
-        if self.target_type == "multiclass-multioutput":
-            raise NotImplementedError
+        self.target_type = resolve_target_type(self.target_type, y_type)
         labels = unique_labels(y_true, y_pred)
         if self.labels is not None and not np.array_equal(self.labels, labels):
             labels = np.union1d(self.labels, labels)
@@ -105,7 +143,10 @@ class ConfusionMatrix:
         if self.conf_matrix is None:
             self.conf_matrix = np.zeros((len(labels), 2, 2), dtype=np.int32)
         self.conf_matrix += multilabel_confusion_matrix(
-            y_true, y_pred, labels=labels
+            y_true,
+            y_pred,
+            labels=labels,
+            sample_weight=sample_weight,
         )
         self.labels = labels
         self.accuracy += accuracy_score(y_true, y_pred, normalize=False)

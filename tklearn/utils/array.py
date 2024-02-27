@@ -5,12 +5,17 @@ from __future__ import annotations
 from typing import (
     Any,
     Dict,
+    Generator,
+    Iterable,
     List,
     Mapping,
+    NamedTuple,
     Self,
     Tuple,
     TypeVar,
     Union,
+    Unpack,
+    overload,
 )
 
 import numpy as np
@@ -218,3 +223,77 @@ def length_of_first_array_like_in_nested_dict(data: Dict) -> int:
         if isinstance(v, (List, pd.Series)):
             return len(v)
     return 0
+
+
+D = TypeVar("D", Dict, Tuple, NamedTuple)
+
+
+@overload
+def get_index(data: D, index: Union[int, slice]) -> D: ...
+@overload
+def get_index(data: List[T], index: int) -> T: ...
+@overload
+def get_index(data: List[T], index: slice) -> List[T]: ...
+@overload
+def get_index(data: pd.DataFrame, index: int) -> pd.Series: ...
+@overload
+def get_index(data: pd.DataFrame, index: slice) -> pd.DataFrame: ...
+@overload
+def get_index(data: pd.Series, index: int) -> Any: ...
+@overload
+def get_index(data: pd.Series, index: slice) -> pd.Series: ...
+
+
+def get_index(data: Any, index: Union[int, slice]) -> Any:
+    """Get the value at a specific index in a nested dictionary.
+
+    Parameters
+    ----------
+    data : Any
+        The nested dictionary to search for the value at the index.
+    index : int | slice
+        The index to search for in the nested dictionary.
+
+    Returns
+    -------
+    value : Any
+        The value at the index in the nested dictionary.
+    """
+    if isinstance(data, (torch.Tensor, np.ndarray)):
+        # will return dtyped value
+        return data[index]
+    if isinstance(data, (pd.DataFrame, pd.Series)):
+        # will return dtyped value
+        return data.iloc[index]
+    if isinstance(data, Dict):
+        return {k: get_index(v, index=index) for k, v in data.items()}
+    if isinstance(data, Tuple) and hasattr(data, "_fields"):
+        # namedtuple
+        dtype = type(data)
+        return dtype(*(get_index(item, index=index) for item in data))
+    if isinstance(data, Tuple):
+        return tuple(get_index(item, index=index) for item in data)
+    if isinstance(data, List):
+        # will return dtyped value
+        return data[index]
+    msg = f"cannot get index from object of type '{type(data).__name__}'"
+    raise ValueError(msg)
+
+
+def batched(data: T, batch_size: int) -> Generator[T, None, None]:
+    """Yield batches of data from a list or dictionary.
+
+    Parameters
+    ----------
+    data : Any
+        The data to yield batches from.
+    batch_size : int
+        The size of each batch.
+
+    Yields
+    ------
+    batch : Any
+        A batch of data from the input data.
+    """
+    for i in range(0, len(data), batch_size):
+        yield get_index(data, slice(i, i + batch_size))

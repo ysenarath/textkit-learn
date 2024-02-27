@@ -1,70 +1,19 @@
-from typing import TYPE_CHECKING, Generic, Type, TypeVar
+from typing import TYPE_CHECKING
 
-from tklearn.core.callback import BaseCallback, BaseCallbackList
+from tklearn.base.trainer import TrainerCallback, TrainerCallbackList
 
 __all__ = [
-    "TrainerCallback",
-    "TrainerCallbackList",
+    "TorchTrainerCallback",
+    "TorchTrainerCallbackList",
 ]
 
 if TYPE_CHECKING:
     from tklearn.nn.torch import TorchTrainer
+else:
+    TorchTrainer = "TorchTrainer"
 
 
-class TrainerCallback(BaseCallback):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._trainer = None
-        self._params = {}
-
-    def set_trainer(self, trainer: "TorchTrainer"):
-        """
-        Set the trainer associated with the callback.
-
-        Parameters
-        ----------
-        trainer : Trainer
-            The model to be set.
-        """
-        self._trainer = trainer
-
-    @property
-    def trainer(self) -> "TorchTrainer":
-        """
-        Get the trainer associated with the callback.
-
-        Returns
-        -------
-        Trainer
-            The trainer associated with the callback.
-        """
-        return self._trainer
-
-    def set_params(self, params):
-        """
-        Set the parameters of the callback.
-
-        Parameters
-        ----------
-        params : dict
-            The parameters to be set.
-        """
-        if params is None:
-            params = {}
-        self._params = params
-
-    @property
-    def params(self) -> dict:
-        """
-        Get the parameters of the callback.
-
-        Returns
-        -------
-        dict
-            The parameters of the callback.
-        """
-        return self._params
-
+class TorchTrainerCallback(TrainerCallback[TorchTrainer]):
     def on_epoch_begin(self, epoch, logs=None):
         """
         Called at the start of an epoch.
@@ -74,7 +23,8 @@ class TrainerCallback(BaseCallback):
         epoch : int
             Index of epoch.
         logs : dict, optional
-            Currently no data is passed to this argument for this method but that may change in the future.
+            Currently no data is passed to this argument for this method but
+            that may change in the future.
         """
         pass
 
@@ -90,9 +40,11 @@ class TrainerCallback(BaseCallback):
         epoch : int
             Index of epoch.
         logs : dict, optional
-            Metric results for this training epoch, and for the validation epoch if validation is performed.
+            Metric results for this training epoch, and for the validation
+            epoch if validation is performed.
             Validation result keys are prefixed with `val_`.
-            For the training epoch, the values of the `Model`'s metrics are returned.
+            For the training epoch, the values of the `Model`'s metrics are
+            returned.
             Example: `{'loss': 0.2, 'accuracy': 0.7}`.
         """
         pass
@@ -112,7 +64,8 @@ class TrainerCallback(BaseCallback):
         batch : int
             Index of batch within the current epoch.
         logs : dict, optional
-            Currently no data is passed to this argument for this method but that may change in the future.
+            Currently no data is passed to this argument for this method
+            but that may change in the future.
         """
         pass
 
@@ -153,7 +106,8 @@ class TrainerCallback(BaseCallback):
         batch : int
             Index of batch within the current epoch.
         logs : dict, optional
-            Currently no data is passed to this argument for this method but that may change in the future.
+            Currently no data is passed to this argument for this method
+            but that may change in the future.
         """
         pass
 
@@ -194,7 +148,8 @@ class TrainerCallback(BaseCallback):
         batch : int
             Index of batch within the current epoch.
         logs : dict, optional
-            Currently no data is passed to this argument for this method but that may change in the future.
+            Currently no data is passed to this argument for this method
+            but that may change in the future.
         """
         pass
 
@@ -226,7 +181,8 @@ class TrainerCallback(BaseCallback):
         Parameters
         ----------
         logs : dict, optional
-            Currently no data is passed to this argument for this method but that may change in the future.
+            Currently no data is passed to this argument for this method
+            but that may change in the future.
         """
         pass
 
@@ -239,8 +195,9 @@ class TrainerCallback(BaseCallback):
         Parameters
         ----------
         logs : dict, optional
-            Currently the output of the last call to `on_epoch_end()` is passed to this argument for this
-            method but that may change in the future.
+            Currently the output of the last call to `on_epoch_end()` is
+            passed to this argument for this method but that may change
+            in the future.
         """
         pass
 
@@ -253,7 +210,8 @@ class TrainerCallback(BaseCallback):
         Parameters
         ----------
         logs : dict, optional
-            Currently no data is passed to this argument for this method but that may change in the future.
+            Currently no data is passed to this argument for this method but
+            that may change in the future.
         """
         pass
 
@@ -266,8 +224,9 @@ class TrainerCallback(BaseCallback):
         Parameters
         ----------
         logs : dict, optional
-            Currently the output of the last call to `on_test_batch_end()` is passed to this argument for
-            this method but that may change in the future.
+            Currently the output of the last call to `on_test_batch_end()` is
+            passed to this argument for this method but that may change in the
+            future.
         """
         pass
 
@@ -280,7 +239,8 @@ class TrainerCallback(BaseCallback):
         Parameters
         ----------
         logs : dict, optional
-            Currently no data is passed to this argument for this method but that may change in the future.
+            Currently no data is passed to this argument for this method but
+            that may change in the future.
         """
         pass
 
@@ -293,12 +253,17 @@ class TrainerCallback(BaseCallback):
         Parameters
         ----------
         logs : dict, optional
-            Currently no data is passed to this argument for this method but that may change in the future.
+            Currently no data is passed to this argument for this method but
+            that may change in the future.
         """
         pass
 
 
-class TrainerCallbackList(TrainerCallback, BaseCallbackList):
-    @classmethod
-    def get_callback_type(cls) -> Type[BaseCallback]:
-        return TrainerCallback
+class TorchTrainerCallbackList(
+    TorchTrainerCallback,
+    TrainerCallbackList,
+    callback_functions=[
+        *TrainerCallbackList.callback_functions,
+        *[f for f in dir(TorchTrainerCallback) if f.startswith("on_")],
+    ],
+): ...
