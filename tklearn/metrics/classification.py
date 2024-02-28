@@ -105,8 +105,8 @@ class ConfusionMatrix:
             not all integers, and both dimensions are of size > 1.
             * 'binary': `y` contains <= 2 discrete values and is 1d or a column
             vector.
-            * 'multiclass': `y` contains more than two discrete values, is not a
-            sequence of sequences, and is 1d or a column vector.
+            * 'multiclass': `y` contains more than two discrete values, is not
+            a sequence of sequences, and is 1d or a column vector.
             * 'multiclass-multioutput': `y` is a 2d array that contains more
             than two discrete values, is not a sequence of sequences, and both
             dimensions are of size > 1.
