@@ -1,19 +1,19 @@
 from typing import TYPE_CHECKING
 
-from tklearn.base.trainer import TrainerCallback, TrainerCallbackList
+from tklearn.base.callback import ModelCallback, ModelCallbackList
 
 __all__ = [
-    "TorchTrainerCallback",
-    "TorchTrainerCallbackList",
+    "TorchModelCallback",
+    "TorchModelCallbackList",
 ]
 
 if TYPE_CHECKING:
-    from tklearn.nn.torch import TorchTrainer
+    from tklearn.nn.torch import Model
 else:
-    TorchTrainer = "TorchTrainer"
+    Model = "Model"
 
 
-class TorchTrainerCallback(TrainerCallback[TorchTrainer]):
+class TorchModelCallback(ModelCallback[Model]):
     def on_epoch_begin(self, epoch, logs=None):
         """
         Called at the start of an epoch.
@@ -259,11 +259,11 @@ class TorchTrainerCallback(TrainerCallback[TorchTrainer]):
         pass
 
 
-class TorchTrainerCallbackList(
-    TorchTrainerCallback,
-    TrainerCallbackList,
+class TorchModelCallbackList(
+    TorchModelCallback,
+    ModelCallbackList,
     callback_functions=[
-        *TrainerCallbackList.callback_functions,
-        *[f for f in dir(TorchTrainerCallback) if f.startswith("on_")],
+        *ModelCallbackList.callback_functions,
+        *[f for f in dir(TorchModelCallback) if f.startswith("on_")],
     ],
 ): ...

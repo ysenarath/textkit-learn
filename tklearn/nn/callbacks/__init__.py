@@ -1,11 +1,11 @@
-from tklearn.nn.callbacks.callback import (
-    TorchTrainerCallback,
-    TorchTrainerCallbackList,
+from tklearn.nn.callbacks.base import (
+    TorchModelCallback,
+    TorchModelCallbackList,
 )
 from tklearn.nn.callbacks.progbar_logger import ProgbarLogger
 
 __all__ = [
     "ProgbarLogger",
-    "TorchTrainerCallback",
-    "TorchTrainerCallbackList",
+    "TorchModelCallback",
+    "TorchModelCallbackList",
 ]

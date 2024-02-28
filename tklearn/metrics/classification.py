@@ -48,6 +48,7 @@ def resolve_target_type(*ps: str) -> None:
     if not ps:
         msg = "at least one target type must be provided"
         raise ValueError(msg)
+    ps = [p for p in ps if p is not None]
     if len(ps) == 1:
         return ps[0]
     if len(ps) > NUM_ARGS:

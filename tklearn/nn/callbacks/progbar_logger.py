@@ -1,7 +1,7 @@
 import math
 from typing import Optional
 
-from tklearn.nn.callbacks import TorchTrainerCallback
+from tklearn.nn.callbacks.base import TorchModelCallback
 from tklearn.utils.progbar import Progbar
 
 __all__ = [
@@ -9,7 +9,7 @@ __all__ = [
 ]
 
 
-class ProgbarLogger(TorchTrainerCallback):
+class ProgbarLogger(TorchModelCallback):
     def __init__(
         self,
         desc: Optional[
