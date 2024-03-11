@@ -20,6 +20,7 @@ from torch.utils.data import DataLoader
 from typing_extensions import ParamSpec, Self
 
 from tklearn.base.model import ModelBase
+from tklearn.metrics import Evaluator, Metric
 from tklearn.nn.callbacks import ModelCallback, ModelCallbackList
 from tklearn.nn.utils.data import RecordBatch, create_dataset
 from tklearn.utils.array import concat, detach, move_to_device
@@ -65,7 +66,9 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
         shuffle: bool = True,
         callbacks: Optional[Sequence[ModelCallback]] = None,
         validation_data: XY = None,
-        metrics: Optional[Sequence[Union[str, Callable]]] = None,
+        metrics: Union[
+            Evaluator, Sequence[Metric], Dict[str, Metric], None
+        ] = None,
     ) -> Self:
         if not isinstance(callbacks, ModelCallbackList):
             callbacks = ModelCallbackList(callbacks)
@@ -80,7 +83,7 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
             self.evaluate,
             validation_data,
             metrics=metrics,
-            prefix="val_",
+            prefix="valid_",
             callbacks=callbacks,
             batch_size=batch_size,
             return_dict=True,
@@ -143,23 +146,33 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
             output.append(batch_output)
         return concat(output)
 
+    def extract_eval_input(  # noqa: PLR6301
+        self, batch: RecordBatch, output: Z
+    ) -> Dict[str, Any]:
+        return {"y_true": batch.y, "y_pred": output}
+
     def evaluate(
         self,
         x: XY,
         y: Y = None,
         /,
-        metrics: Optional[Sequence[Union[str, Callable]]] = None,
+        metrics: Union[
+            Evaluator, Sequence[Metric], Dict[str, Metric], None
+        ] = None,
         batch_size: int = 32,
         callbacks: Optional[Sequence[ModelCallback]] = None,
+        include_loss: bool = True,
         return_dict: bool = False,
         prefix: str = "",
     ) -> Union[Dict[str, Any], Tuple[Any, ...]]:
         dataset = create_dataset(x, y)
         if dataset is None:
             return {} if return_dict else ()
-        state = {}
         n_batches = 0
         total_loss = 0.0
+        if not isinstance(metrics, Evaluator):
+            metrics = Evaluator(metrics)
+        metrics.reset()
         for _, batch, output, batch_loss in self.predict_on_batch_iter(
             dataset,
             callbacks=callbacks,
@@ -167,13 +180,17 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
         ):
             n_batches += 1
             total_loss += batch_loss
-            self.update_metrics(state, batch, output)
+            metrics.update_state(**self.extract_eval_input(batch, output))
         average_loss = total_loss / n_batches if n_batches > 0 else None
         if return_dict:
             return {
-                f"{prefix}loss": average_loss,
+                **({f"{prefix}loss": average_loss} if include_loss else {}),
+                **{
+                    f"{prefix}{name}": value
+                    for name, value in metrics.result(return_dict=True).items()
+                },
             }
-        return average_loss
+        return (*((average_loss,) if include_loss else ()), *metrics.result())
 
     def predict_on_batch_iter(
         self,
