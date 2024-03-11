@@ -8,7 +8,7 @@ from sklearn.metrics import (
     recall_score,
 )
 
-from tklearn.metrics.classification import ConfusionMatrix
+from tklearn.metrics.confusion_matrix import ConfusionMatrix
 
 
 class TestClassificationMetrics(unittest.TestCase):  # noqa: PLR0904
@@ -295,10 +295,6 @@ class TestClassificationMetrics(unittest.TestCase):  # noqa: PLR0904
         # Test recall_score
         recall = recall_score(y_true, y_pred)
         self.assertEqual(cm.recall_score(), recall)
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 if __name__ == "__main__":
