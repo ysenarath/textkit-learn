@@ -1,3 +1,4 @@
+import torch
 from datasets import load_dataset
 from torch.optim import AdamW
 from transformers import (
@@ -6,6 +7,7 @@ from transformers import (
 )
 from transformers.modeling_outputs import SequenceClassifierOutput
 
+from tklearn.metrics.classification import Accuracy, F1Score, Precision, Recall
 from tklearn.nn.callbacks import ProgbarLogger
 from tklearn.nn.torch import Model
 from tklearn.nn.utils.data import RecordBatch
@@ -36,7 +38,7 @@ tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
 tokenized_datasets.set_format("torch")
 
 
-class TaskModel(Model):
+class BinaryTextClassifier(Model):
     def __init__(self, pretrained_model_name_or_path: str):
         super().__init__()
         self.model = AutoModelForSequenceClassification.from_pretrained(
@@ -50,15 +52,37 @@ class TaskModel(Model):
     def compute_loss(  # noqa: PLR6301
         self,
         batch: RecordBatch,
-        batch_output: SequenceClassifierOutput,
+        output: SequenceClassifierOutput,
     ):
-        return batch_output.loss
+        return output.loss
 
     def configure_optimizers(self):
         return AdamW(self.parameters(), lr=5e-5)
 
+    def extract_eval_input(  # noqa: PLR6301
+        self,
+        batch: RecordBatch,
+        output: SequenceClassifierOutput,
+    ):
+        x, y_true = batch
+        if y_true is None:
+            y_true = x["labels"]
+        logits: torch.Tensor = output["logits"]
+        return {"y_true": y_true, "y_pred": logits.argmax(dim=1)}
 
-model = TaskModel(checkpoint)
+
+metrics = {
+    "accuracy": Accuracy(),
+    "f1": F1Score(),
+    "precision": Precision(),
+    "recall": Recall(),
+}
+
+callbacks = [
+    ProgbarLogger(),
+]
+
+model = BinaryTextClassifier(checkpoint)
 
 model = model.to("mps")
 
@@ -68,7 +92,6 @@ model.fit(
     epochs=3,
     shuffle=True,
     validation_data=tokenized_datasets["validation"],
-    callbacks=[
-        ProgbarLogger(),
-    ],
+    metrics=metrics,
+    callbacks=callbacks,
 )
