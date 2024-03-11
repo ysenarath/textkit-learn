@@ -2,27 +2,28 @@
 
 from __future__ import annotations
 
+import functools
+import operator
 from typing import (
     Any,
     Dict,
     Generator,
-    Iterable,
     List,
     Mapping,
     NamedTuple,
-    Self,
     Tuple,
     TypeVar,
     Union,
-    Unpack,
     overload,
 )
 
 import numpy as np
 import pandas as pd
 import torch
+from datasets import Dataset as HuggingFaceDataset
 from numpy import typing as nt
 from torch import Tensor
+from typing_extensions import Self
 
 __all__ = [
     "move_to_device",
@@ -52,6 +53,10 @@ def to_numpy(obj: object) -> RT:
         return obj.detach().cpu().numpy()
     elif isinstance(obj, Dict):
         return {k: to_numpy(v) for k, v in obj.items()}
+    elif isinstance(obj, Tuple) and hasattr(obj, "_fields"):
+        # namedtuple
+        dtype = type(obj)
+        return dtype(to_numpy(v) for v in obj)
     elif isinstance(obj, Tuple):
         return tuple(to_numpy(v) for v in obj)
     return np.array(obj)
@@ -72,6 +77,14 @@ def to_torch(obj: object) -> RT:
     """
     if isinstance(obj, Dict):
         return {k: to_torch(v) for k, v in obj.items()}
+    elif isinstance(obj, Tuple) and hasattr(obj, "_fields"):
+        # namedtuple
+        dtype = type(obj)
+        return dtype(to_torch(v) for v in obj)
+    elif isinstance(obj, Tuple) and hasattr(obj, "_fields"):
+        # namedtuple
+        dtype = type(obj)
+        return dtype(to_torch(v) for v in obj)
     elif isinstance(obj, Tuple):
         return tuple(to_torch(v) for v in obj)
     if not isinstance(obj, np.ndarray):
@@ -98,6 +111,10 @@ def detach(obj: T) -> T:
         return {k: detach(v) for k, v in obj.items()}
     elif isinstance(obj, List):
         return [detach(v) for v in obj]
+    elif isinstance(obj, Tuple) and hasattr(obj, "_fields"):
+        # namedtuple
+        dtype = type(obj)
+        return dtype(detach(v) for v in obj)
     elif isinstance(obj, Tuple):
         return tuple(detach(v) for v in obj)
     return obj
@@ -156,18 +173,18 @@ def move_to_device(
         return obj.to(device)
     elif isinstance(obj, Dict):
         return {k: move_to_device(v, device) for k, v in obj.items()}
-    elif isinstance(obj, List):
-        return [move_to_device(v, device) for v in obj]
+    elif isinstance(obj, Tuple) and hasattr(obj, "_fields"):
+        # namedtuple
+        dtype = type(obj)
+        return dtype(move_to_device(v, device) for v in obj)
     elif isinstance(obj, Tuple):
         return tuple(move_to_device(v, device) for v in obj)
+    elif isinstance(obj, List):
+        return [move_to_device(v, device) for v in obj]
     return obj
 
 
-def concat(
-    objs: Union[List[RT], Dict],
-    /,
-    axis: int = 0,
-) -> Union[RT, Dict]:
+def concat(objs: List[RT], /, axis: int = 0) -> RT:
     """Concatenate a list of objects along an axis.
 
     Parameters
@@ -179,24 +196,41 @@ def concat(
 
     Returns
     -------
-    output : RT | Dict
+    output : RT
         The concatenated objects.
     """
+    if len(objs) == 0:
+        msg = "cannot concatenate empty list of objects"
+        raise ValueError(msg)
+    # remove None objects from list
     objs = [o for o in objs if o is not None]
+    if len(objs) == 0:
+        # if all objects were None
+        return None
+    elem = objs[0]
     if len(objs) == 1:
-        return objs[0]
-    elif isinstance(objs[0], Dict):
-        return {k: concat([o[k] for o in objs], axis=axis) for k in objs[0]}
-    elif isinstance(objs[0], Tuple):
-        return tuple(
-            concat([o[i] for o in objs], axis=axis)
-            for i in range(len(objs[0]))
+        return elem
+    if isinstance(elem, Dict):
+        keys = set(elem.keys())
+        return {k: concat([o[k] for o in objs], axis=axis) for k in keys}
+    if isinstance(elem, Tuple) and hasattr(elem, "_fields"):  # namedtuple
+        dtype = type(elem)
+        size = len(elem)
+        return dtype(
+            concat([o[i] for o in objs], axis=axis) for i in range(size)
         )
-    elif isinstance(objs[0], np.ndarray):
+    if isinstance(elem, Tuple):
+        size = len(elem)
+        return tuple(
+            concat([o[i] for o in objs], axis=axis) for i in range(size)
+        )
+    if isinstance(elem, np.ndarray):
         return np.concatenate(objs, axis=axis)
-    elif isinstance(objs[0], torch.Tensor):
+    if isinstance(elem, torch.Tensor):
         return torch.cat(objs, dim=axis)
-    msg = f"cannot concatenate objects of type '{type(objs[0]).__name__}'"
+    if isinstance(elem, List):
+        return functools.reduce(operator.iadd, objs, [])
+    msg = f"cannot concatenate objects of type '{type(elem).__name__}'"
     raise ValueError(msg)
 
 
@@ -213,6 +247,8 @@ def length_of_first_array_like_in_nested_dict(data: Dict) -> int:
     length : int
         The length of the first list in the nested dictionary.
     """
+    if isinstance(data, HuggingFaceDataset):
+        return len(data)
     for v in data.values():
         if isinstance(v, Mapping):
             return length_of_first_array_like_in_nested_dict(v)
@@ -228,8 +264,6 @@ def length_of_first_array_like_in_nested_dict(data: Dict) -> int:
 D = TypeVar("D", Dict, Tuple, NamedTuple)
 
 
-@overload
-def get_index(data: D, index: Union[int, slice]) -> D: ...
 @overload
 def get_index(data: List[T], index: int) -> T: ...
 @overload
@@ -259,7 +293,7 @@ def get_index(data: Any, index: Union[int, slice]) -> Any:
     value : Any
         The value at the index in the nested dictionary.
     """
-    if isinstance(data, (torch.Tensor, np.ndarray)):
+    if isinstance(data, (torch.Tensor, np.ndarray, HuggingFaceDataset)):
         # will return dtyped value
         return data[index]
     if isinstance(data, (pd.DataFrame, pd.Series)):

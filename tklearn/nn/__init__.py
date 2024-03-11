@@ -1,5 +1,5 @@
-from tklearn.nn.torch import TorchTrainer
+from tklearn.nn.torch import Model
 
 __all__ = [
-    "TorchTrainer",
+    "Model",
 ]

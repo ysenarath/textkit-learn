@@ -11,26 +11,35 @@ from typing import (
     List,
     Mapping,
     Optional,
-    Self,
     TypeVar,
 )
 
-from typing_extensions import ParamSpec
+from typing_extensions import ParamSpec, Self
 
 __all__ = [
-    "BaseCallback",
-    "BaseCallbackList",
+    "CallbackBase",
+    "CallbackListBase",
 ]
 
 P = ParamSpec("P")
 T = TypeVar("T")
 
 
-class BaseCallback:
+class ListOutput(UserList):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._errors = {}
+
+    @property
+    def errors(self) -> Mapping[int, Exception]:
+        return self._errors
+
+
+class CallbackBase:
     """Base class used to build new callbacks."""
 
 
-class FunctionCallback(BaseCallback, Generic[P, T]):
+class FunctionCallback(CallbackBase, Generic[P, T]):
     def __init__(
         self,
         func: Callable[P, T],
@@ -48,7 +57,7 @@ class FunctionCallback(BaseCallback, Generic[P, T]):
         return getattr(self.func, __name)
 
 
-class BaseCallbackList(Sequence):
+class CallbackListBase(Sequence):
     callback_functions: List[str]
 
     def __init_subclass__(
@@ -60,14 +69,14 @@ class BaseCallbackList(Sequence):
         cls.callback_functions = callback_functions
         return cls
 
-    def __init__(self, callbacks: Optional[List[BaseCallback]] = None):
+    def __init__(self, callbacks: Optional[List[CallbackBase]] = None):
         super().__init__()
-        self._callbacks: List[BaseCallback] = []
+        self._callbacks: List[CallbackBase] = []
         self.extend(callbacks)
 
     def extend(
         self,
-        callbacks: Optional[List[BaseCallback]],
+        callbacks: Optional[List[CallbackBase]],
         /,
         inplace: bool = True,
     ) -> Self:
@@ -79,23 +88,23 @@ class BaseCallbackList(Sequence):
             self.append(callback)
         return self
 
-    def append(self, callback: BaseCallback) -> None:
-        if not isinstance(callback, BaseCallback):
+    def append(self, callback: CallbackBase) -> None:
+        if not isinstance(callback, CallbackBase):
             msg = (
                 "callback must be an instance of "
-                f"'{BaseCallback.__name__}', not "
+                f"'{CallbackBase.__name__}', not "
                 f"'{callback.__class__.__name__}'."
             )
             raise TypeError(msg)
         self._callbacks.append(callback)
 
-    def __getitem__(self, item) -> BaseCallback:
+    def __getitem__(self, item) -> CallbackBase:
         return self._callbacks[item]
 
     def __len__(self) -> int:
         return len(self._callbacks)
 
-    def __iter__(self) -> Iterator[BaseCallback]:
+    def __iter__(self) -> Iterator[CallbackBase]:
         return iter(self._callbacks)
 
     def __getattribute__(self, __name: str) -> Any:
@@ -123,26 +132,16 @@ class BaseCallbackList(Sequence):
         return type(self)(callbacks=self._callbacks)
 
 
-class ListOutput(UserList):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._errors = {}
-
-    @property
-    def errors(self) -> Mapping[int, Exception]:
-        return self._errors
-
-
-class ModelCallback(BaseCallback, Generic[T]):
+class ModelCallbackBase(CallbackBase, Generic[T]):
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
         self._model = None
         self._params = {}
+        super().__init__(*args, **kwargs)
 
     @property
     def model(self) -> T:
         """
-        Get the trainer associated with the callback.
+        Get the model associated with the callback.
 
         Returns
         -------
@@ -157,13 +156,17 @@ class ModelCallback(BaseCallback, Generic[T]):
 
         Parameters
         ----------
-        trainer : Trainer
+        model : Model
             The model to be set.
         """
-        if self._model is not None:
+        if (
+            model is not None
+            and self._model is not None
+            and model is not self._model
+        ):
             msg = (
-                f"the callback {self.__class__.__name__} is already "
-                f"associated with a trainer {self._model.__class__.__name__}"
+                f"the callback '{type(self).__name__}' is already "
+                f"associated with a model '{type(self._model).__name__}'"
             )
             raise ValueError(msg)
         self._model = model
@@ -193,31 +196,31 @@ class ModelCallback(BaseCallback, Generic[T]):
             params = {}
         self._params = params
 
-    def _set_model(self, trainer: T) -> None:
-        self.set_model(trainer)
+    def _set_model(self, model: T) -> None:
+        self.set_model(model)
 
     def _set_params(self, params: dict) -> None:
         self.set_params(params)
 
 
-class ModelCallbackList(
-    ModelCallback[T],
-    BaseCallbackList,
+class ModelCallbackListBase(
+    ModelCallbackBase[T],
+    CallbackListBase,
     Generic[T],
     callback_functions=[
         "_set_model",
         "_set_params",
     ],
 ):
-    def append(self, callback: ModelCallback[T]) -> None:
+    def append(self, callback: ModelCallbackBase[T]) -> None:
         callback.set_model(self.model)
         callback.set_params(self.params)
         super().append(callback)
 
-    def set_trainer(self, model: T) -> None:
-        ModelCallback.set_model(self, model)
+    def set_model(self, model: T) -> None:
+        ModelCallbackBase.set_model(self, model)
         self._set_model(self.model)
 
     def set_params(self, params: dict) -> None:
-        ModelCallback.set_params(self, params)
+        ModelCallbackBase.set_params(self, params)
         self._set_params(self.params)

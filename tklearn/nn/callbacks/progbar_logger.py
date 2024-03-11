@@ -1,7 +1,7 @@
 import math
 from typing import Optional
 
-from tklearn.nn.callbacks.base import TorchModelCallback
+from tklearn.nn.callbacks.base import ModelCallback
 from tklearn.utils.progbar import Progbar
 
 __all__ = [
@@ -9,7 +9,7 @@ __all__ = [
 ]
 
 
-class ProgbarLogger(TorchModelCallback):
+class ProgbarLogger(ModelCallback):
     def __init__(
         self,
         desc: Optional[
@@ -25,12 +25,17 @@ class ProgbarLogger(TorchModelCallback):
         self.pbar = None
 
     def on_train_begin(self, logs=None):
+        total = self.params["epochs"] * self.params["steps"]
         self.pbar = Progbar(
-            total=self.trainer.num_epochs,
+            total=total,
             desc=self.desc.format(epoch=0, loss=math.inf),
             postfix={},
             bar_format=self.bar_format,
         )
+
+    def on_train_batch_end(self, batch, logs=None):
+        self.pbar.update(1)
+        self.pbar.refresh()
 
     def on_epoch_end(self, epoch, logs=None):
         if logs is None:
@@ -43,7 +48,6 @@ class ProgbarLogger(TorchModelCallback):
             ),
             refresh=False,
         )
-        self.pbar.update(1)
 
     def on_train_end(self, logs=None):
         self.pbar.close()

@@ -1,242 +1,230 @@
+from __future__ import annotations
+
+import base64
+import contextlib
+import contextvars
+import copy
+import uuid
+from collections import OrderedDict
+from dataclasses import MISSING
 from typing import (
-    Annotated,
-    Callable,
+    Any,
     Dict,
-    Literal,
+    List,
+    Mapping,
+    MutableMapping,
     Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
     Union,
-    overload,
 )
 
-import numpy as np
-from numpy.typing import ArrayLike, NDArray
-from scipy.sparse import csr_matrix
-from sklearn.metrics import accuracy_score, multilabel_confusion_matrix
-from sklearn.metrics._classification import _check_targets  # noqa: PLC2701
-from sklearn.utils.multiclass import unique_labels
+import cloudpickle
+from typing_extensions import ParamSpec
 
-AverageType = Literal["macro", "micro", None]
-TargetType = Literal[
-    "continuous",
-    "continuous-multioutput",
-    "binary",
-    "multiclass",
-    "multiclass-multioutput",
-    "multilabel-indicator",
-    "unknown",
+__all__ = [
+    "Metric",
+    "MetricState",
 ]
-ConfusionMatrixType = Annotated[NDArray[np.int32], Literal["N", 2, 2]]
 
-check_targets: Callable[
-    [ArrayLike, ArrayLike], tuple[str, ArrayLike, ArrayLike]
-] = _check_targets
+P = ParamSpec("P")
+T = TypeVar("T")
 
-NUM_ARGS = 2
+MetricStateValue = MutableMapping[str, Any]
 
-TARGET_TYPES: Dict[TargetType, int] = {
-    "binary": 0,
-    "multiclass": 1,
-    "multilabel-indicator": 2,
-    "multiclass-multioutput": 3,
-    "continuous": 4,
-    "continuous-multioutput": 5,
-    "unknown": 6,
-}
+_current_state_cv = contextvars.ContextVar("value", default=MISSING)
 
 
-def resolve_target_type(*ps: str) -> None:
-    if not ps:
-        msg = "at least one target type must be provided"
+@contextlib.contextmanager
+def set_state_context(state: MetricState):
+    current_state = _current_state_cv.get()
+    if current_state is not MISSING:
+        msg = "trying to set context inside another context"
         raise ValueError(msg)
-    ps = [p for p in ps if p is not None]
-    if len(ps) == 1:
-        return ps[0]
-    if len(ps) > NUM_ARGS:
-        p = ps[0]
-        for i in range(1, len(ps)):
-            p = resolve_target_type(p, ps[i])
-        return p
-    # sort the types by index
-    p, q = sorted(ps, key=lambda x: TARGET_TYPES[x])
+    token = _current_state_cv.set(state)
     try:
-        return {
-            ("binary", "multilabel-indicator"): "unknown",
-            ("binary", "multiclass-multioutput"): "unknown",
-            ("multilabel-indicator", "continuous"): "continuous-multioutput",
-            ("multiclass-multioutput", "continuous"): "continuous-multioutput",
-        }[(p, q)]
-    except KeyError:
-        return q
+        yield state
+    finally:
+        _current_state_cv.reset(token)
 
 
-class ConfusionMatrix:
-    def __init__(
-        self,
-        labels: Optional[ArrayLike] = None,
-        target_names: Optional[ArrayLike] = None,
-        target_type: TargetType = None,
-    ):
-        """
-        Initialize a confusion matrix.
+def get_state(var: Union[Metric, str]) -> MetricStateValue:
+    current_state = _current_state_cv.get()
+    if current_state is MISSING:
+        msg = "trying to get state of a metric outside the context"
+        raise ValueError(msg)
+    if isinstance(var, Metric):
+        var = var.id
+    return current_state[var]
 
-        Note that this type is the most specific type that can be inferred.
-        For example:
 
-            * ``binary`` is more specific but compatible with ``multiclass``.
-            * ``multiclass`` of integers is more specific but compatible with
-            ``continuous``.
-            * ``multilabel-indicator`` is more specific but compatible with
-            ``multiclass-multioutput``.
+def set_state(var: Union[Metric, str], value: MetricStateValue) -> Any:
+    if isinstance(var, Metric):
+        var = var.id
+    current_state: MetricState = _current_state_cv.get()
+    if current_state is MISSING:
+        msg = "trying to set state of a metric outside the context"
+        raise ValueError(msg)
+    current_state[var] = value
+    _current_state_cv.set(current_state)
 
-        Parameters
-        ----------
-        labels : array-like of shape (n_classes,), default=None
-            List of labels to index the matrix. This may be used to reorder or
-            select a subset of labels. If ``None`` is given, those that appear
-            at least once in ``y_true`` or ``y_pred`` are used in sorted order.
-        target_names : array-like of shape (n_classes,), default=None
-            Optional display names matching the labels (same order).
-        target_type : str
-            One of:
 
-            * 'continuous': `y` is an array-like of floats that are not all
-            integers, and is 1d or a column vector.
-            * 'continuous-multioutput': `y` is a 2d array of floats that are
-            not all integers, and both dimensions are of size > 1.
-            * 'binary': `y` contains <= 2 discrete values and is 1d or a column
-            vector.
-            * 'multiclass': `y` contains more than two discrete values, is not
-            a sequence of sequences, and is 1d or a column vector.
-            * 'multiclass-multioutput': `y` is a 2d array that contains more
-            than two discrete values, is not a sequence of sequences, and both
-            dimensions are of size > 1.
-            * 'multilabel-indicator': `y` is a label indicator matrix, an array
-            of two dimensions with at least two columns, and at most 2 unique
-            values.
-            * 'unknown': `y` is array-like but none of the above, such as a 3d
-            array, sequence of sequences, or an array of non-sequence objects.
-        """
-        self.labels = labels
-        self.target_names = target_names
-        self.target_type = target_type
-        self.conf_matrix: Optional[ConfusionMatrixType] = None
-        self.num_samples = 0
-        self.accuracy = 0
+def urlsafe_b64encoded_uuid4() -> str:
+    return base64.urlsafe_b64encode(uuid.uuid4().bytes).decode().rstrip("=")
+
+
+class Metric:
+    def __init__(self) -> None:
+        self.id = urlsafe_b64encoded_uuid4()
+
+    @property
+    def state(self) -> Any:
+        return get_state(self)
+
+    @state.setter
+    def state(self, value: Any) -> None:
+        set_state(self, value)
+
+    def reset(self) -> None:
+        self.state = {}
+
+    def update(
+        self, y_true: Any = None, y_pred: Any = None, **kwargs: Any
+    ) -> None:
+        pass
+
+    def result(self) -> Any:
+        raise NotImplementedError
+
+    def copy(self, deep: bool = True) -> Metric:
+        if deep:
+            return cloudpickle.loads(cloudpickle.dumps(self))
+        return copy.copy(self)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(...)"
+
+
+class MetricState(MutableMapping[str, MetricStateValue]):
+    def __init__(self) -> None:
+        super().__init__()
+        self._vars_dict: MutableMapping[str, Metric] = OrderedDict()
+        self._vals_dict: MutableMapping[str, MetricStateValue] = {}
+
+    def __getitem__(self, key: Union[Metric, str]) -> MetricStateValue:
+        if isinstance(key, Metric):
+            key = key.id
+        return self._vals_dict[key]
+
+    def __setitem__(
+        self, key: Union[Metric, str], value: MetricStateValue
+    ) -> None:
+        if isinstance(key, Metric):
+            key = key.id
+        self._vals_dict[key] = value
+
+    def __delitem__(self, key: Union[Metric, str]) -> None:
+        if isinstance(key, Metric):
+            key = key.id
+        del self._vals_dict[key]
+
+    def __contains__(self, key: Union[Metric, str]) -> bool:
+        if isinstance(key, Metric):
+            key = key.id
+        return key in self._vals_dict
+
+    def __iter__(self) -> MutableMapping[str, Any]:
+        return iter(self._vals_dict)
+
+    def __len__(self) -> int:
+        return len(self._vals_dict)
+
+    def add_metric(self, metric: Metric) -> None:
+        if not isinstance(metric, Metric):
+            msg = (
+                "'metric' should be an instance of 'Metric', "
+                f"but got {metric.__class__.__name__}"
+            )
+            raise TypeError(msg)
+        cls = metric.__class__
+        for class_var in dir(cls):
+            class_var_val = getattr(cls, class_var)
+            if not isinstance(class_var_val, Metric):
+                continue
+            self.add_metric(class_var_val)
+        if metric.id not in self._vars_dict:
+            self._vars_dict[metric.id] = metric
+        self.reset()
 
     def update(
         self,
-        y_true: ArrayLike,
-        y_pred: ArrayLike,
-        sample_weight: Optional[ArrayLike] = None,
+        y_true: Any = None,
+        y_pred: Any = None,
+        **kwargs: Any,
     ) -> None:
-        y_type, y_true, y_pred = check_targets(y_true, y_pred)
-        self.target_type = resolve_target_type(self.target_type, y_type)
-        labels = unique_labels(y_true, y_pred)
-        if self.labels is not None and not np.array_equal(self.labels, labels):
-            labels = np.union1d(self.labels, labels)
-            if self.conf_matrix is not None:
-                cm = np.zeros((len(labels), 2, 2), dtype=np.int32)
-                for i, label in enumerate(labels):
-                    if label not in self.labels:
-                        continue
-                    cm[i] = self.conf_matrix[self.labels == label]
-                self.conf_matrix = cm
-        if self.conf_matrix is None:
-            self.conf_matrix = np.zeros((len(labels), 2, 2), dtype=np.int32)
-        self.conf_matrix += multilabel_confusion_matrix(
-            y_true,
-            y_pred,
-            labels=labels,
-            sample_weight=sample_weight,
-        )
-        self.labels = labels
-        self.accuracy += accuracy_score(y_true, y_pred, normalize=False)
-        self.num_samples += (
-            y_true.shape[0]
-            if isinstance(y_true, (csr_matrix, np.ndarray))
-            else len(y_true)
-        )
+        with self.ctx():
+            for var in self._vars_dict.values():
+                var.update(y_true, y_pred, **kwargs)
 
-    def hamming_score(self, normalize: Optional[bool] = True) -> float:
-        score = np.sum(np.diagonal(self.conf_matrix, axis1=1, axis2=2))
-        if normalize:
-            return score / (self.num_samples * self.conf_matrix.shape[1])
-        return score
+    def reset(self) -> None:
+        with self.ctx():
+            for var in self._vars_dict.values():
+                var.reset()
 
-    def accuracy_score(self, normalize: Optional[bool] = True) -> float:
-        if normalize:
-            return self.accuracy / self.num_samples
-        return self.accuracy
+    def result(self, metric: Metric) -> Any:
+        with self.ctx():
+            return metric.result()
 
-    @overload
-    def tp(self, average: Literal["macro"]) -> ArrayLike: ...
+    def ctx(self) -> contextlib.AbstractContextManager:
+        return set_state_context(self)
 
-    @overload
-    def tp(self, average: Literal["micro", None]) -> float: ...
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._vals_dict!r})"
 
-    def tp(self, average: AverageType = None) -> Union[float, ArrayLike, None]:
-        if average is None and self.target_type == "binary":
-            return self.conf_matrix[1, 1, 1]
-        elif average == "micro":
-            return np.sum(self.conf_matrix[:, 1, 1])
-        elif average == "macro":
-            return self.conf_matrix[:, 1, 1]
-        else:
-            return None
 
-    @overload
-    def fp(self, average: Literal["macro"]) -> ArrayLike: ...
+class Evaluator:
+    def __init__(
+        self,
+        metrics: Union[Sequence[Metric], Dict[str, Metric], None] = None,
+        metric_names: Optional[List[str]] = None,
+        state: Optional[MetricState] = None,
+    ) -> None:
+        if metrics is None:
+            metrics = []
+        elif isinstance(metrics, Metric):
+            metrics = [metrics]
+        elif isinstance(metrics, Mapping):
+            if metric_names is not None:
+                msg = "both 'metrics' and 'metric_names' are provided"
+                raise ValueError(msg)
+            metric_names = list(metrics.keys())
+            metrics = list(metrics.values())
+        self.metrics = metrics
+        self.metric_names = metric_names
+        if state is None:
+            state = MetricState()
+        self.state = state
+        for metric in self.metrics:
+            self.state.add_metric(metric)
 
-    @overload
-    def fp(self, average: Literal["micro", None]) -> float: ...
+    def reset(self):
+        self.state.reset()
 
-    def fp(self, average: AverageType = None) -> Union[float, ArrayLike, None]:
-        if average is None and self.target_type == "binary":
-            return self.conf_matrix[0, 1, 1]
-        elif average == "micro":
-            return np.sum(self.conf_matrix[:, 0, 1])
-        elif average == "macro":
-            return self.conf_matrix[:, 0, 1]
-        else:
-            return None
+    def update_state(self, y_true, y_pred, **kwargs):
+        self.state.update(y_true=y_true, y_pred=y_pred, **kwargs)
 
-    @overload
-    def fn(self, average: Literal["macro"]) -> ArrayLike: ...
-
-    @overload
-    def fn(self, average: Literal["micro", None]) -> float: ...
-
-    def fn(self, average: AverageType = None) -> Union[float, ArrayLike, None]:
-        if average is None and self.target_type == "binary":
-            return self.conf_matrix[1, 1, 0]
-        elif average == "micro":
-            return np.sum(self.conf_matrix[:, 1, 0])
-        elif average == "macro":
-            return self.conf_matrix[:, 1, 0]
-        else:
-            return None
-
-    def f1_score(self, average: AverageType = None) -> float:
-        # F1 = 2 * TP / (2 * TP + FN + FP)
-        f1 = (
-            2
-            * self.tp(average)
-            / (2 * self.tp(average) + self.fn(average) + self.fp(average))
-        )
-        if average == "macro":
-            f1 = np.mean(f1)
-        return f1
-
-    def precision_score(self, average: AverageType = None) -> float:
-        # precision = TP / (TP + FP)
-        precision = self.tp(average) / (self.tp(average) + self.fp(average))
-        if average == "macro":
-            precision = np.mean(precision)
-        return precision
-
-    def recall_score(self, average: AverageType = None) -> float:
-        # recall = TP / (TP + FN)
-        recall = self.tp(average) / (self.tp(average) + self.fn(average))
-        if average == "macro":
-            recall = np.mean(recall)
-        return recall
+    def result(
+        self, return_dict: bool = False
+    ) -> Union[Dict[str, Any], Tuple[Any, ...]]:
+        if return_dict:
+            if self.metric_names is None:
+                msg = (
+                    "'metric_names' should be provided to return a dictionary"
+                )
+                raise ValueError(msg)
+            return {
+                name: self.state.result(metric)
+                for name, metric in zip(self.metric_names, self.metrics)
+            }
+        return tuple(self.state.result(metric) for metric in self.metrics)
