@@ -218,6 +218,8 @@ class Evaluator:
         self, return_dict: bool = False
     ) -> Union[Dict[str, Any], Tuple[Any, ...]]:
         if return_dict:
+            if len(self.metrics) == 0:
+                return {}
             if self.metric_names is None:
                 msg = (
                     "'metric_names' should be provided to return a dictionary"
