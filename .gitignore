@@ -134,3 +134,4 @@ notebooks/mlruns/
 notebooks/data/
 notebooks/logs/
 logs/dataset/
+scripts/rsync.sh
