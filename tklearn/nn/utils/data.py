@@ -133,7 +133,7 @@ class Dataset(TorchDataset, Generic[XT, YT]):
     ) -> None:
         super().__init__()
         if isinstance(x, Tuple):
-            if len(x) != 2:
+            if len(x) != 2:  # noqa: PLR2004
                 msg = "x must be a tuple of length 2"
                 raise ValueError(msg)
             if y is not None:
