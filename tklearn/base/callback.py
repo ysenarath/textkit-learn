@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import warnings
 from collections import UserList
 from collections.abc import Sequence
 from typing import (
@@ -38,6 +39,11 @@ class ListOutput(UserList):
 class CallbackBase:
     """Base class used to build new callbacks."""
 
+    def __new__(cls, *args, **kwargs) -> Self:
+        self = super().__new__(cls)
+        cls.reset = functools.partial(cls.__init__, self, *args, **kwargs)
+        return self
+
 
 class FunctionCallback(CallbackBase, Generic[P, T]):
     def __init__(
@@ -66,6 +72,7 @@ class CallbackListBase(Sequence):
         super().__init_subclass__()
         if callback_functions is None:
             callback_functions = []
+        callback_functions.append("reset")
         cls.callback_functions = callback_functions
         return cls
 
@@ -123,6 +130,13 @@ class CallbackListBase(Sequence):
             except NotImplementedError:
                 pass
             except Exception as e:
+                warnings.warn(
+                    f"{e} in callback '{type(callback).__name__}' "
+                    f"when calling '{__name}'",
+                    RuntimeWarning,
+                    stacklevel=0,
+                    source=e,
+                )
                 outputs.errors[i] = e
             outputs.append(output)
         return outputs
