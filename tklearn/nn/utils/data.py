@@ -9,7 +9,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    TypedDict,
     TypeVar,
     Union,
     overload,
@@ -20,7 +19,7 @@ import torch
 from torch.utils.data import Dataset as TorchDataset
 from torch.utils.data import IterableDataset as IterableTorchDataset
 from torch.utils.data.dataloader import default_collate
-from typing_extensions import Self
+from typing_extensions import Self, TypedDict
 
 from tklearn.utils.array import (
     MovableToDeviceMixin,
