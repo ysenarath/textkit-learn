@@ -1,4 +1,4 @@
-from tklearn.metrics.base import Evaluator
+from tklearn.metrics import Evaluator
 from tklearn.metrics.classification import (
     Accuracy,
     F1Score,
