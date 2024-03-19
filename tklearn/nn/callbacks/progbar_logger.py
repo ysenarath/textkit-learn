@@ -21,7 +21,8 @@ class ProgbarLogger(ModelCallback):
         self.desc = desc
         self.prefix = prefix
         l_bar = "{desc}: {percentage:3.0f}% |"
-        self.bar_format = f"{l_bar}{{bar}}{{r_bar}}"
+        self.bar_format = f"{l_bar}{{bar}} |"
+        # {{r_bar}}
         self.pbar = None
 
     def on_train_begin(self, logs=None):
