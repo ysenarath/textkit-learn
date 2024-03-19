@@ -55,6 +55,16 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
     def device(self) -> torch.device:
         return next(self.parameters()).device
 
+    @property
+    def stop_training(self) -> bool:
+        if not hasattr(self, "_stop_training"):
+            self._stop_training = False
+        return self._stop_training
+
+    @stop_training.setter
+    def stop_training(self, value: bool) -> None:
+        self._stop_training = value
+
     def fit(  # noqa: PLR0914
         self,
         x: XY,
@@ -69,8 +79,6 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
             Evaluator, Sequence[Metric], Dict[str, Metric], None
         ] = None,
     ) -> Self:
-        if not isinstance(callbacks, ModelCallbackList):
-            callbacks = ModelCallbackList(callbacks)
         train_dataset = create_dataset(x, y)
         train_dataloader = DataLoader(
             train_dataset,
@@ -78,6 +86,8 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
             shuffle=shuffle,
             collate_fn=train_dataset.collate,
         )
+        if not isinstance(callbacks, ModelCallbackList):
+            callbacks = ModelCallbackList(callbacks)
         evaluate = functools.partial(
             self.evaluate,
             validation_data,
@@ -87,6 +97,7 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
             batch_size=batch_size,
             return_dict=True,
         )
+        self.stop_training = False
         device = self.device
         self.train()
         optimizer = self.configure_optimizers()
@@ -97,6 +108,7 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
             "steps": len(train_dataloader),
         }
         callbacks.set_params(params)
+        callbacks.set_model(self)
         callbacks.on_train_begin()
         epoch_logs = {}
         for epoch_idx in range(epochs):
@@ -124,6 +136,8 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
             eval_results = evaluate()
             epoch_logs.update(eval_results)
             callbacks.on_epoch_end(epoch_idx, logs=epoch_logs)
+            if self.stop_training:
+                break
         callbacks.on_train_end(epoch_logs)
         return self
 
