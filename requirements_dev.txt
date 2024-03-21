@@ -1,0 +1,6 @@
+pip
+maturin
+twine
+mypy
+ruff
+Sphinx
