@@ -1,18 +1,47 @@
+import shutil
+from pathlib import Path
+
 import torch
 from datasets import load_dataset
-from torch.optim import AdamW
+from tklearn.metrics.classification import Accuracy, F1Score, Precision, Recall
+from tklearn.nn.callbacks import (
+    EarlyStopping,
+    ModelCheckpoint,
+    ProgbarLogger,
+    TrackingCallback,
+)
+from tklearn.nn.torch import Model
+from tklearn.nn.utils.data import RecordBatch
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
 )
 from transformers.modeling_outputs import SequenceClassifierOutput
 
-from tklearn.metrics.classification import Accuracy, F1Score, Precision, Recall
-from tklearn.nn.callbacks import ProgbarLogger
-from tklearn.nn.torch import Model
-from tklearn.nn.utils.data import RecordBatch
+from octoflow.tracking import SQLAlchemyTrackingStore, TrackingClient
+
+run_path = Path("./examples/logs/experiment_1")
+
+if run_path.exists():
+    shutil.rmtree(run_path)
+
+run_path.mkdir(parents=True, exist_ok=True)
+
+dburi = f"sqlite:///{run_path / 'tracking.db'}"
+
+store = SQLAlchemyTrackingStore(dburi)
+
+client = TrackingClient(store)
+
+experiment = client.create_experiment(
+    name="example_hf_model_finetune",
+    description="Example of finetuning a Hugging Face model",
+)
+
+run = experiment.start_run("example_hf_model_finetune")
 
 raw_datasets = load_dataset("glue", "mrpc")
+
 checkpoint = "bert-base-uncased"
 
 tokenizer = AutoTokenizer.from_pretrained(checkpoint)
@@ -56,9 +85,6 @@ class BinaryTextClassifier(Model):
     ):
         return output.loss
 
-    def configure_optimizers(self):
-        return AdamW(self.parameters(), lr=5e-5)
-
     def extract_eval_input(  # noqa: PLR6301
         self,
         batch: RecordBatch,
@@ -78,18 +104,31 @@ metrics = {
     "recall": Recall(),
 }
 
+step_val = run.log_param("ll_step", 0)
+
 callbacks = [
     ProgbarLogger(),
+    ModelCheckpoint(run_path / "checkpoints"),
+    EarlyStopping(monitor="valid_loss", patience=3),
+    TrackingCallback(run, step=step_val),
 ]
 
-model = BinaryTextClassifier(checkpoint)
-
-model = model.to("mps")
+model = BinaryTextClassifier(checkpoint).to("mps")
 
 model.fit(
     tokenized_datasets["train"][:20],
+    optimizer={
+        "type": "AdamW",
+        "lr": 1e-5,
+        "weight_decay": 0.01,
+    },
+    lr_scheduler={
+        "type": "LinearLR",
+        "start_factor": 1 / 3,
+        "total_iters": 1,
+    },
     batch_size=8,
-    epochs=3,
+    epochs=10,
     shuffle=True,
     validation_data=tokenized_datasets["validation"],
     metrics=metrics,
