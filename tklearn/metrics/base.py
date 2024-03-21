@@ -4,6 +4,7 @@ import base64
 import contextlib
 import contextvars
 import copy
+import functools
 import uuid
 from collections import OrderedDict
 from dataclasses import MISSING
@@ -230,3 +231,20 @@ class Evaluator:
                 for name, metric in zip(self.metric_names, self.metrics)
             }
         return tuple(self.state.result(metric) for metric in self.metrics)
+
+
+@functools.wraps(
+    Evaluator,
+    updated=(),
+    assigned=(
+        "__annotations__",
+        "__doc__",
+    ),
+)
+def create_evaluator(
+    *args: Any,
+    **kwargs: Any,
+) -> Evaluator:
+    if len(args) == 1 and not kwargs and isinstance(args[0], Evaluator):
+        return args[0]
+    return Evaluator(*args, **kwargs)
