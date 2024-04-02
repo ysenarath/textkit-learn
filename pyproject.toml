@@ -113,8 +113,3 @@ docstring-code-format = false
 # This only has an effect when the `docstring-code-format` setting is
 # enabled.
 docstring-code-line-length = "dynamic"
-
-[tool.mypy]
-python_version = "3.8"
-# ignore stubs
-ignore_missing_imports = true
