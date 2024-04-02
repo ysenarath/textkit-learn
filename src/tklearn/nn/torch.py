@@ -22,7 +22,7 @@ from typing_extensions import ParamSpec, Self, Unpack
 
 from tklearn.base.model import ModelBase
 from tklearn.metrics import Evaluator, Metric, create_evaluator
-from tklearn.nn.callbacks import ModelCallback, ModelCallbackList
+from tklearn.nn.callbacks import TorchModelCallback, TorchModelCallbackList
 from tklearn.nn.utils.data import RecordBatch, create_dataset
 from tklearn.utils.array import concat, detach, move_to_device
 
@@ -66,13 +66,11 @@ class TrainingArgs(TypedDict):
     lr_scheduler_step: Optional[Dict[str, Any]]
     clip_grad_norm: Union[bool, float, Dict[str, Any], None]
     clip_grad_norm_args: Optional[Dict[str, Any]]
-    callbacks: Optional[ModelCallbackList]
+    callbacks: Optional[TorchModelCallbackList]
 
 
 class Model(torch.nn.Module, ModelBase[X, Y, Z]):
-    def to(
-        self, device: Union[str, torch.device, None] = None, **kwargs: Any
-    ) -> Model:
+    def to(self, device: Union[str, torch.device, None] = None, **kwargs: Any) -> Model:
         if device is None:
             device = get_available_device()
         return super().to(device, **kwargs)
@@ -110,8 +108,8 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
             collate_fn=train_dataset.collate,
         )
         callbacks = self.training_args.get("callbacks", None)
-        if not isinstance(callbacks, ModelCallbackList):
-            callbacks = ModelCallbackList(callbacks)
+        if not isinstance(callbacks, TorchModelCallbackList):
+            callbacks = TorchModelCallbackList(callbacks)
         validation_data = self.training_args.get("validation_data")
         validation_batch_size = self.training_args.get(
             "validation_batch_size", batch_size
@@ -176,7 +174,7 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
         device: Union[str, torch.device],
         optimizer: Optimizer,
         lr_scheduler: Union[LRScheduler, Any, None],
-        callbacks: Optional[ModelCallbackList] = None,
+        callbacks: Optional[TorchModelCallbackList] = None,
         batch_idx: Optional[int] = None,
     ) -> float:
         if callbacks:
@@ -204,9 +202,7 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
         clip_grad_norm = self.training_args.get("clip_grad_norm")
         if clip_grad_norm is False or clip_grad_norm is None:
             return
-        clip_grad_norm_args: dict = self.training_args.get(
-            "clip_grad_norm_args", {}
-        )
+        clip_grad_norm_args: dict = self.training_args.get("clip_grad_norm_args", {})
         if isinstance(clip_grad_norm, (int, float)):
             clip_grad_norm_args["max_norm"] = clip_grad_norm
         elif isinstance(clip_grad_norm, dict):
@@ -217,9 +213,7 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
                 f"float, or dict, but got {clip_grad_norm}"
             )
             raise ValueError(msg)
-        torch.nn.utils.clip_grad_norm_(
-            self.parameters(), **clip_grad_norm_args
-        )
+        torch.nn.utils.clip_grad_norm_(self.parameters(), **clip_grad_norm_args)
 
     def _fit_configure_optimizers(self) -> Optimizer:
         optimizer = self.training_args.get("optimizer")
@@ -253,9 +247,7 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
                 **lr_scheduler_args,
             )
         if isinstance(lr_scheduler, dict):
-            lr_scheduler_type = getattr(
-                torch.optim.lr_scheduler, lr_scheduler["$type"]
-            )
+            lr_scheduler_type = getattr(torch.optim.lr_scheduler, lr_scheduler["$type"])
             lr_scheduler_args = {
                 k: v for k, v in lr_scheduler.items() if not k.startswith("$")
             }
@@ -288,7 +280,7 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
         y: Y = None,
         /,
         batch_size: int = 32,
-        callbacks: Optional[Sequence[ModelCallback]] = None,
+        callbacks: Optional[Sequence[TorchModelCallback]] = None,
     ) -> Z:
         output = []
         for _, _, batch_output, _ in self.predict_iter(
@@ -306,11 +298,11 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
         y: Y = None,
         /,
         batch_size: int = 32,
-        callbacks: Optional[Sequence[ModelCallback]] = None,
+        callbacks: Optional[Sequence[TorchModelCallback]] = None,
     ) -> Generator[Tuple[int, RecordBatch, Z, float], None, None]:
         device = next(self.parameters()).device
-        if not isinstance(callbacks, ModelCallbackList):
-            callbacks = ModelCallbackList(callbacks)
+        if not isinstance(callbacks, TorchModelCallbackList):
+            callbacks = TorchModelCallbackList(callbacks)
         test_dataset = create_dataset(x, y)
         test_dataloader = DataLoader(
             test_dataset,
@@ -352,14 +344,12 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
         x: XY,
         y: Y = None,
         /,
-        metrics: Union[
-            Evaluator, Sequence[Metric], Dict[str, Metric], None
-        ] = None,
+        metrics: Union[Evaluator, Sequence[Metric], Dict[str, Metric], None] = None,
         batch_size: int = 32,
         include_loss: bool = True,
         return_dict: bool = False,
         prefix: str = "",
-        callbacks: Optional[Sequence[ModelCallback]] = None,
+        callbacks: Optional[Sequence[TorchModelCallback]] = None,
     ) -> Union[Dict[str, Any], Tuple[Any, ...]]:
         n_batches = 0
         total_loss = 0.0
@@ -381,9 +371,7 @@ class Model(torch.nn.Module, ModelBase[X, Y, Z]):
                 **({f"{prefix}loss": average_loss} if include_loss else {}),
                 **{
                     f"{prefix}{name}": value
-                    for name, value in evaluator.result(
-                        return_dict=True
-                    ).items()
+                    for name, value in evaluator.result(return_dict=True).items()
                 },
             }
         return (

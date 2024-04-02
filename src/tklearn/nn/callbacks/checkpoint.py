@@ -4,14 +4,14 @@ from typing import Union
 import torch
 from transformers import PreTrainedModel
 
-from tklearn.nn.callbacks.base import ModelCallback
+from tklearn.nn.callbacks.base import TorchModelCallback
 
 __all__ = [
     "ModelCheckpoint",
 ]
 
 
-class ModelCheckpoint(ModelCallback):
+class ModelCheckpoint(TorchModelCallback):
     def __init__(
         self,
         filepath: Union[str, Path],

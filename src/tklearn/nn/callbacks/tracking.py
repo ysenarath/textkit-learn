@@ -1,14 +1,14 @@
 from typing import Optional
 
 from octoflow import Run, Value
-from tklearn.nn.callbacks.base import ModelCallback
+from tklearn.nn.callbacks.base import TorchModelCallback
 
 __all__ = [
     "TrackingCallback",
 ]
 
 
-class TrackingCallback(ModelCallback):
+class TrackingCallback(TorchModelCallback):
     def __init__(
         self,
         run: Run,

@@ -1,6 +1,6 @@
 from tklearn.nn.callbacks.base import (
-    ModelCallback,
-    ModelCallbackList,
+    TorchModelCallback,
+    TorchModelCallbackList,
 )
 from tklearn.nn.callbacks.checkpoint import ModelCheckpoint
 from tklearn.nn.callbacks.early_stopping import EarlyStopping
@@ -9,8 +9,8 @@ from tklearn.nn.callbacks.tracking import TrackingCallback
 
 __all__ = [
     "EarlyStopping",
-    "ModelCallback",
-    "ModelCallbackList",
+    "TorchModelCallback",
+    "TorchModelCallbackList",
     "ModelCheckpoint",
     "ProgbarLogger",
     "TrackingCallback",

@@ -3,7 +3,7 @@ from typing import Optional
 
 import numpy as np
 
-from tklearn.nn.callbacks.base import ModelCallback
+from tklearn.nn.callbacks.base import TorchModelCallback
 from tklearn.utils.logging import get_logger
 
 __all__ = [
@@ -13,7 +13,7 @@ __all__ = [
 logger = get_logger(__name__)
 
 
-class EarlyStopping(ModelCallback):
+class EarlyStopping(TorchModelCallback):
     def __init__(
         self,
         monitor: str = "valid_loss",
@@ -48,10 +48,7 @@ class EarlyStopping(ModelCallback):
     @mode.setter
     def mode(self, mode):
         if mode not in {"auto", "min", "max"}:
-            msg = (
-                f"mode {mode} is unknown, "
-                'expected one of ("auto", "min", "max")'
-            )
+            msg = f"mode {mode} is unknown, " 'expected one of ("auto", "min", "max")'
             raise ValueError(msg)
         self._mode = mode
         if mode == "min":
@@ -104,9 +101,7 @@ class EarlyStopping(ModelCallback):
                 self.best_weights = copy.deepcopy(self.model.state_dict())
             # Only restart wait if we beat both the baseline and our previous
             # best.
-            if self.baseline is None or self._is_improvement(
-                current, self.baseline
-            ):
+            if self.baseline is None or self._is_improvement(current, self.baseline):
                 self.wait = 0
             return
         # Only check after the first epoch.

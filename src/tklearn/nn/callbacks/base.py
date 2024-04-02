@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING
 
-from tklearn.base.callback import ModelCallbackBase, ModelCallbackListBase
+from tklearn.base.model import ModelCallbackBase, ModelCallbackListBase
 
 __all__ = [
-    "ModelCallback",
-    "ModelCallbackList",
+    "TorchModelCallback",
+    "TorchModelCallbackList",
 ]
 
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ else:
     Model = "Model"
 
 
-class ModelCallback(ModelCallbackBase[Model]):
+class TorchModelCallback(ModelCallbackBase[Model]):
     def on_epoch_begin(self, epoch, logs=None):
         """
         Called at the start of an epoch.
@@ -259,11 +259,11 @@ class ModelCallback(ModelCallbackBase[Model]):
         pass
 
 
-class ModelCallbackList(
-    ModelCallback,
+class TorchModelCallbackList(
+    TorchModelCallback,
     ModelCallbackListBase,
     callback_functions=[
         *ModelCallbackListBase.callback_functions,
-        *[f for f in dir(ModelCallback) if f.startswith("on_")],
+        *[f for f in dir(TorchModelCallback) if f.startswith("on_")],
     ],
 ): ...
