@@ -4,20 +4,16 @@ import abc
 import functools
 from dataclasses import dataclass
 from os import PathLike
-from types import FunctionType
 from typing import (
     Any,
     Callable,
     Dict,
     Generic,
     List,
-    Protocol,
     Tuple,
     Type,
     TypeVar,
     Union,
-    overload,
-    runtime_checkable,
 )
 
 import nltk
@@ -28,13 +24,12 @@ from transformers import AutoTokenizer, PreTrainedTokenizer
 from typing_extensions import ParamSpec
 
 __all__ = [
-    "FunctionTokenizer",
-    "HuggingFaceTokenizer",
     "Tokenizer",
-    "TokenizerLike",
-    "TweetTokenizer",
+    "FunctionTokenizer",
     "WordTokenizer",
-    "tokenizer",
+    "TweetTokenizer",
+    "WhitespaceTokenizer",
+    "HuggingFaceTokenizer",
 ]
 
 P = ParamSpec("P")
@@ -48,11 +43,11 @@ class BatchTokenizeMethod(Generic[P, T]):
 
     def __call__(
         self,
-        inst: Tokenizer,
+        tokenizer: Tokenizer,
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> T:
-        func = functools.partial(self.func, inst)
+        func = functools.partial(self.func, tokenizer)
         text, args = args[0], args[1:]
         if self.batched:
             if isinstance(text, str):
@@ -94,32 +89,26 @@ class TokenizerMeta(abc.ABCMeta):
         return cls
 
 
-class Tokenizer(metaclass=TokenizerMeta):
+class Tokenizer(Generic[P, T], metaclass=TokenizerMeta):
     @abc.abstractmethod
-    def tokenize(
-        self,
-        text: Union[str, List[str], List[List[str]]],
-        *args: Any,
-        **kwargs: Any,
-    ) -> Any:
+    def tokenize(self, *args: P.args, **kwargs: P.kwargs) -> T:
         raise NotImplementedError
 
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
+        return self.tokenize(*args, **kwargs)
 
-# ---------- FUNCTION TOKENIZER ----------
 
-
-class FunctionTokenizer(Tokenizer, Generic[P, T]):
+class FunctionTokenizer(Tokenizer[P, T]):
     def __init__(self, func: Callable[P, T]):
         self._func = func
 
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
+    def tokenize(self, *args: P.args, **kwargs: P.kwargs) -> T:
         return self._func(*args, **kwargs)
 
-    def tokenize(self, *args: P.args, **kwargs: P.kwargs) -> T:
-        return self(*args, **kwargs)
 
-
-# ---------- NLTK WORD TOKENIZER ----------
+class WhitespaceTokenizer(Tokenizer):
+    def tokenize(self, text: str) -> List[str]:
+        return text.split()
 
 
 @dataclass
@@ -134,9 +123,6 @@ class WordTokenizer(Tokenizer):
 
     def tokenize(self, text: str) -> List[str]:
         return word_tokenize(text, language=self.language)
-
-
-# ---------- NLTK TWEET TOKENIZER ----------
 
 
 @dataclass
@@ -158,9 +144,6 @@ class TweetTokenizer(Tokenizer):
         return self._tweet_tokenizer.tokenize(text)
 
 
-# ---------- HUGGINGFACE TOKENIZER ----------
-
-
 class HuggingFaceTokenizer(Tokenizer, Generic[P, T], batched=True):
     def __init__(self, tokenizer: Callable[P, T]):
         self.hf_tokenizer = tokenizer
@@ -168,8 +151,10 @@ class HuggingFaceTokenizer(Tokenizer, Generic[P, T], batched=True):
     def tokenize(self, *args: P.args, **kwargs: P.kwargs) -> T:
         return self.hf_tokenizer(*args, **kwargs)
 
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
-        return self.tokenize(*args, **kwargs)
+    def __getattr__(self, name: str) -> Any:
+        if hasattr(self.hf_tokenizer, name):
+            return getattr(self.hf_tokenizer, name)
+        raise AttributeError
 
     @classmethod
     def from_pretrained(
@@ -182,57 +167,3 @@ class HuggingFaceTokenizer(Tokenizer, Generic[P, T], batched=True):
             pretrained_model_name_or_path, *inputs, **kwargs
         )
         return HuggingFaceTokenizer(tokenizer)
-
-    def __getattr__(self, name: str) -> Any:
-        if hasattr(self.hf_tokenizer, name):
-            return getattr(self.hf_tokenizer, name)
-        raise AttributeError
-
-
-# ---------- TYPE CHECKING PROTOCOLS ----------
-
-
-@runtime_checkable
-class TokenizerLike(Protocol):
-    def tokenize(
-        self, text: Union[str, List[str], pd.Series]
-    ) -> Union[List[List[str]], pd.Series]: ...
-
-
-# ---------- ADDITIONAL DECORATORS ----------
-
-
-@overload
-def tokenizer(cls: Type[TokenizerLike]) -> Type[Tokenizer]: ...
-
-
-@overload
-def tokenizer(cls: Callable[[str], List[str]]) -> Tokenizer: ...
-
-
-def tokenizer(
-    func: Union[Callable[[str], List[str]], Type[TokenizerLike]],
-) -> Union[Type[Tokenizer], Tokenizer]:
-    if isinstance(func, FunctionType):
-        return functools.wraps(
-            func,
-            assigned=("__module__", "__name__", "__qualname__", "__doc__"),
-            updated=(),
-        )(FunctionTokenizer(func))
-    elif not issubclass(func, Tokenizer) and isinstance(func, TokenizerLike):
-
-        class WrappedTokenizer(func, Tokenizer):
-            def tokenize(
-                self, text: Union[str, List[str], pd.Series]
-            ) -> Union[List[List[str]], pd.Series]:
-                return super().tokenize(text)
-
-        return functools.wraps(
-            func,
-            assigned=("__module__", "__name__", "__qualname__", "__doc__"),
-            updated=(),
-        )(WrappedTokenizer)
-    if issubclass(func, Tokenizer):
-        return func
-    msg = f"expected tokenizer-like, but got {type(func).__name__}"
-    raise TypeError(msg)
