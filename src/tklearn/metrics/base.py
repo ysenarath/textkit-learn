@@ -90,9 +90,7 @@ class Metric:
     def reset(self) -> None:
         self.state = {}
 
-    def update(
-        self, y_true: Any = None, y_pred: Any = None, **kwargs: Any
-    ) -> None:
+    def update(self, y_true: Any = None, y_pred: Any = None, **kwargs: Any) -> None:
         pass
 
     def result(self) -> Any:
@@ -118,9 +116,7 @@ class MetricState(MutableMapping[str, MetricStateValue]):
             key = key.id
         return self._vals_dict[key]
 
-    def __setitem__(
-        self, key: Union[Metric, str], value: MetricStateValue
-    ) -> None:
+    def __setitem__(self, key: Union[Metric, str], value: MetricStateValue) -> None:
         if isinstance(key, Metric):
             key = key.id
         self._vals_dict[key] = value
@@ -222,9 +218,7 @@ class Evaluator:
             if len(self.metrics) == 0:
                 return {}
             if self.metric_names is None:
-                msg = (
-                    "'metric_names' should be provided to return a dictionary"
-                )
+                msg = "'metric_names' should be provided to return a dictionary"
                 raise ValueError(msg)
             return {
                 name: self.state.result(metric)

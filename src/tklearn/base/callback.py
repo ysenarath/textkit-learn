@@ -66,9 +66,7 @@ class FunctionCallback(CallbackBase, Generic[P, T]):
 class CallbackListBase(Sequence):
     callback_functions: List[str]
 
-    def __init_subclass__(
-        cls, callback_functions: Optional[List[str]] = None
-    ) -> None:
+    def __init_subclass__(cls, callback_functions: Optional[List[str]] = None) -> None:
         super().__init_subclass__()
         if callback_functions is None:
             callback_functions = []
@@ -144,97 +142,3 @@ class CallbackListBase(Sequence):
     def copy(self) -> Self:
         """Return a shallow copy of the list."""
         return type(self)(callbacks=self._callbacks)
-
-
-class ModelCallbackBase(CallbackBase, Generic[T]):
-    def __init__(self, *args, **kwargs) -> None:
-        self._model = None
-        self._params = {}
-        super().__init__(*args, **kwargs)
-
-    @property
-    def model(self) -> T:
-        """
-        Get the model associated with the callback.
-
-        Returns
-        -------
-        Model
-            The model associated with the callback.
-        """
-        return self._model
-
-    def set_model(self, model: T):
-        """
-        Set the model associated with the callback.
-
-        Parameters
-        ----------
-        model : Model
-            The model to be set.
-        """
-        if (
-            model is not None
-            and self._model is not None
-            and model is not self._model
-        ):
-            msg = (
-                f"the callback '{type(self).__name__}' is already "
-                f"associated with a model '{type(self._model).__name__}'"
-            )
-            raise ValueError(msg)
-        self._model = model
-
-    @property
-    def params(self) -> dict:
-        """
-        Get the parameters of the callback.
-
-        Returns
-        -------
-        dict
-            The parameters of the callback.
-        """
-        return self._params
-
-    def set_params(self, params):
-        """
-        Set the parameters of the callback.
-
-        Parameters
-        ----------
-        params : dict
-            The parameters to be set.
-        """
-        if params is None:
-            params = {}
-        self._params = params
-
-    def _set_model(self, model: T) -> None:
-        self.set_model(model)
-
-    def _set_params(self, params: dict) -> None:
-        self.set_params(params)
-
-
-class ModelCallbackListBase(
-    ModelCallbackBase[T],
-    CallbackListBase,
-    Generic[T],
-    callback_functions=[
-        "_set_model",
-        "_set_params",
-    ],
-):
-    def append(self, callback: ModelCallbackBase[T]) -> None:
-        callback.set_model(self.model)
-        callback.set_params(self.params)
-        super().append(callback)
-
-    def set_model(self, model: T) -> None:
-        ModelCallbackBase.set_model(self, model)
-        self._set_model(self.model)
-
-    def set_params(self, params: dict) -> None:
-        ModelCallbackBase.set_params(self, params)
-        self._set_params(self.params)

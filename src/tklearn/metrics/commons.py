@@ -31,9 +31,7 @@ class AccumMetric(Metric):
 
     def __init__(
         self,
-        field: Literal[
-            "y_true", "y_pred", "sample_weight", "y_score"
-        ] = "y_true",
+        field: Literal["y_true", "y_pred", "sample_weight", "y_score"] = "y_true",
         axis: int = 0,
     ) -> None:
         super().__init__()

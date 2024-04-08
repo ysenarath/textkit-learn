@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import (
     Any,
+    Dict,
     Literal,
     Optional,
     Union,
@@ -22,7 +23,7 @@ from sklearn.metrics import (
 )
 
 from tklearn.metrics.base import Metric
-from tklearn.metrics.common import (
+from tklearn.metrics.commons import (
     SAMPLE_WEIGHT,
     Y_PRED,
     Y_SCORE,
@@ -75,9 +76,7 @@ class RocAuc(Metric):
 
     def __init__(
         self,
-        average: Optional[
-            Literal["micro", "macro", "samples", "weighted"]
-        ] = "macro",
+        average: Optional[Literal["micro", "macro", "samples", "weighted"]] = "macro",
         max_fpr: Optional[float] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "raise",
         labels: Optional[ArrayLike] = None,
@@ -261,7 +260,7 @@ class OptimalPRThreshold(Metric):
         self.drop_intermediate = drop_intermediate
         self.zero_division = zero_division
 
-    def result(self) -> float:
+    def result(self) -> Dict[str, float]:
         y_true = self.y_true.result()
         y_score = self.y_score.result()
         sample_weight = self.sample_weight.result()
@@ -272,9 +271,7 @@ class OptimalPRThreshold(Metric):
             sample_weight=sample_weight,
             drop_intermediate=self.drop_intermediate,
         )
-        optimal_idx = np.argmax(
-            2 * precision * recall / (precision + recall + 1e-12)
-        )
+        optimal_idx = np.argmax(2 * precision * recall / (precision + recall + 1e-12))
         return [
             {
                 "precision": p,
