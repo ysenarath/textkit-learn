@@ -3,3 +3,6 @@ maturin
 twine
 ruff
 Sphinx
+jupyter
+jupyterlab
+ipykernel
