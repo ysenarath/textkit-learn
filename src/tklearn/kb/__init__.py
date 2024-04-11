@@ -1,6 +1,6 @@
-from tklearn.kb import conceptnet, nrc
+from tklearn.kb import conceptnet
 
 __all__ = [
     "conceptnet",
-    "nrc",
+    "emolex",
 ]
