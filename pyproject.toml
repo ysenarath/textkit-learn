@@ -64,10 +64,10 @@ dependencies = [
 dynamic = ["version"]
 
 [project.urls]
-homepage = "https://github.com/ysenarath/textkit-learn"
-repository = "https://github.com/ysenarath/textkit-learn"
-issues = "https://github.com/ysenarath/textkit-learn/issues"
-changelog = "https://github.com/ysenarath/textkit-learn/blob/master/CHANGELOG.md"
+Homepage = "https://github.com/ysenarath/textkit-learn"
+Repository = "https://github.com/ysenarath/textkit-learn"
+Issues = "https://github.com/ysenarath/textkit-learn/issues"
+Changelog = "https://github.com/ysenarath/textkit-learn/blob/master/CHANGELOG.md"
 
 [tool.ruff]
 extend-include = ["*.ipynb"]
