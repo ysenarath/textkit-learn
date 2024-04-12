@@ -23,7 +23,7 @@ from typing_extensions import ParamSpec, Self, Unpack
 from tklearn.base.model import ModelBase
 from tklearn.metrics import Evaluator, Metric, create_evaluator
 from tklearn.nn.callbacks import TorchModelCallback, TorchModelCallbackList
-from tklearn.nn.utils.data import RecordBatch, create_dataset
+from tklearn.nn.data import RecordBatch, create_dataset
 from tklearn.utils.array import concat, detach, move_to_device
 
 P = ParamSpec("P")
