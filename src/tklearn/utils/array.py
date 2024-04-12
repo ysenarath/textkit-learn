@@ -25,6 +25,8 @@ from numpy import typing as nt
 from torch import Tensor
 from typing_extensions import Self
 
+from octoflow.data import Dataset as OctoFlowDataset
+
 __all__ = [
     "move_to_device",
     "to_numpy",
@@ -216,14 +218,10 @@ def concat(objs: List[RT], /, axis: int = 0) -> RT:
     if isinstance(elem, Tuple) and hasattr(elem, "_fields"):  # namedtuple
         dtype = type(elem)
         size = len(elem)
-        return dtype(
-            concat([o[i] for o in objs], axis=axis) for i in range(size)
-        )
+        return dtype(concat([o[i] for o in objs], axis=axis) for i in range(size))
     if isinstance(elem, Tuple):
         size = len(elem)
-        return tuple(
-            concat([o[i] for o in objs], axis=axis) for i in range(size)
-        )
+        return tuple(concat([o[i] for o in objs], axis=axis) for i in range(size))
     if isinstance(elem, np.ndarray):
         return np.concatenate(objs, axis=axis)
     if isinstance(elem, torch.Tensor):
@@ -247,7 +245,7 @@ def length_of_first_array_like_in_nested_dict(data: Dict) -> int:
     length : int
         The length of the first list in the nested dictionary.
     """
-    if isinstance(data, HuggingFaceDataset):
+    if isinstance(data, (HuggingFaceDataset, OctoFlowDataset)):
         return len(data)
     for v in data.values():
         if isinstance(v, Mapping):
@@ -293,7 +291,9 @@ def get_index(data: Any, index: Union[int, slice]) -> Any:
     value : Any
         The value at the index in the nested dictionary.
     """
-    if isinstance(data, (torch.Tensor, np.ndarray, HuggingFaceDataset)):
+    if isinstance(
+        data, (torch.Tensor, np.ndarray, HuggingFaceDataset, OctoFlowDataset)
+    ):
         # will return dtyped value
         return data[index]
     if isinstance(data, (pd.DataFrame, pd.Series)):
