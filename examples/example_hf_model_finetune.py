@@ -10,8 +10,8 @@ from tklearn.nn.callbacks import (
     ProgbarLogger,
     TrackingCallback,
 )
+from tklearn.nn.data import RecordBatch
 from tklearn.nn.torch import Model
-from tklearn.nn.utils.data import RecordBatch
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
