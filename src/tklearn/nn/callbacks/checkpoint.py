@@ -4,14 +4,14 @@ from typing import Union
 import torch
 from transformers import PreTrainedModel
 
-from tklearn.nn.callbacks.base import TorchModelCallback
+from tklearn.nn.callbacks.base import Callback
 
 __all__ = [
     "ModelCheckpoint",
 ]
 
 
-class ModelCheckpoint(TorchModelCallback):
+class ModelCheckpoint(Callback):
     def __init__(
         self,
         filepath: Union[str, Path],
@@ -40,7 +40,7 @@ class ModelCheckpoint(TorchModelCallback):
         if self.save_freq == "epoch":
             self.save_model()
 
-    def on_batch_end(self, batch: int, logs=None):
+    def on_train_batch_end(self, batch, logs=None):
         self.step += 1
         if self.save_freq == "batch":
             self.save_model()

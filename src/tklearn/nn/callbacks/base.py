@@ -1,19 +1,91 @@
-from typing import TYPE_CHECKING
+import functools
+import warnings
+from collections import UserList
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    TypeVar,
+)
 
-from tklearn.base.model import ModelCallbackBase, ModelCallbackListBase
+from typing_extensions import Self
 
 __all__ = [
-    "TorchModelCallback",
-    "TorchModelCallbackList",
+    "Callback",
+    "CallbackList",
 ]
 
+
 if TYPE_CHECKING:
-    from tklearn.nn.torch import Model
+    from tklearn.nn.module import Module
 else:
-    Model = "Model"
+    Module = TypeVar("Module")
 
 
-class TorchModelCallback(ModelCallbackBase[Model]):
+class Callback:
+    def __init__(self, *args, **kwargs) -> None:
+        self._model = None
+        self._params = {}
+        super().__init__(*args, **kwargs)
+
+    @property
+    def model(self) -> Module:
+        """
+        Get the model associated with the callback.
+
+        Returns
+        -------
+        Model
+            The model associated with the callback.
+        """
+        return self._model
+
+    def set_model(self, model: Module):
+        """
+        Set the model associated with the callback.
+
+        Parameters
+        ----------
+        model : Model
+            The model to be set.
+        """
+        if model is not None and self._model is not None and model is not self._model:
+            msg = (
+                f"the callback '{type(self).__name__}' is already "
+                f"associated with a model '{type(self._model).__name__}'"
+            )
+            raise ValueError(msg)
+        self._model = model
+
+    @property
+    def params(self) -> dict:
+        """
+        Get the parameters of the callback.
+
+        Returns
+        -------
+        dict
+            The parameters of the callback.
+        """
+        return self._params
+
+    def set_params(self, params):
+        """
+        Set the parameters of the callback.
+
+        Parameters
+        ----------
+        params : dict
+            The parameters to be set.
+        """
+        if params is None:
+            params = {}
+        self._params = params
+
     def on_epoch_begin(self, epoch, logs=None):
         """
         Called at the start of an epoch.
@@ -259,11 +331,87 @@ class TorchModelCallback(ModelCallbackBase[Model]):
         pass
 
 
-class TorchModelCallbackList(
-    TorchModelCallback,
-    ModelCallbackListBase,
-    callback_functions=[
-        *ModelCallbackListBase.callback_functions,
-        *[f for f in dir(TorchModelCallback) if f.startswith("on_")],
-    ],
-): ...
+def callbackgetter(name: str) -> Callable:
+    if name.startswith("on_"):
+        return getattr(Callback, name)
+    elif name.startswith("set_"):
+        return getattr(Callback, name)
+    msg = f"'{Callback.__name__}' object has no attribute '{name}'"
+    raise AttributeError(msg)
+
+
+class CallbackList(Callback, Sequence[Callback]):
+    def __init__(self, callbacks: Optional[List[Callback]] = None):
+        super().__init__()
+        self._callbacks: List[Callback] = []
+        self.extend(callbacks)
+
+    def extend(
+        self,
+        callbacks: Optional[List[Callback]],
+        /,
+        inplace: bool = True,
+    ) -> Self:
+        inst = self if inplace else self.copy()
+        if callbacks is None:
+            return
+        for callback in callbacks:
+            inst.append(callback)
+        return inst
+
+    def append(self, callback: Callback) -> None:
+        callback.set_model(self.model)
+        callback.set_params(self.params)
+        if not isinstance(callback, Callback):
+            msg = (
+                "callback must be an instance of "
+                f"'{Callback.__name__}', not "
+                f"'{callback.__class__.__name__}'."
+            )
+            raise TypeError(msg)
+        self._callbacks.append(callback)
+
+    def __getitem__(self, item) -> Callback:
+        return self._callbacks[item]
+
+    def __len__(self) -> int:
+        return len(self._callbacks)
+
+    def __iter__(self) -> Iterator[Callback]:
+        return iter(self._callbacks)
+
+    def __getattribute__(self, __name: str) -> Any:
+        try:
+            func = callbackgetter(__name)
+            return functools.partial(self.apply, func)
+        except AttributeError:
+            return super().__getattribute__(__name)
+
+    def apply(self, func: Callable, /, *args, **kwargs) -> UserList:
+        # call on self
+        func(self, *args, **kwargs)
+        # call on each callback
+        outputs = UserList()
+        outputs.errors = []
+        for i, callback in enumerate(self):
+            output = None
+            outputs.errors.append(None)
+            try:
+                output = func(callback, *args, **kwargs)
+            except NotImplementedError:
+                pass
+            except Exception as e:
+                warnings.warn(
+                    f"{e} in callback '{type(callback).__name__}' "
+                    f"when calling '{func.__name__}'",
+                    RuntimeWarning,
+                    stacklevel=0,
+                    source=e,
+                )
+                outputs.errors[i] = e
+            outputs.append(output)
+        return outputs
+
+    def copy(self) -> Self:
+        """Return a shallow copy of the list."""
+        return self.__class__(self._callbacks.copy())

@@ -5,7 +5,6 @@ from typing import (
     Any,
     Generator,
     Generic,
-    List,
     Optional,
     Sequence,
     Tuple,
@@ -18,10 +17,9 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset as TorchDataset
 from torch.utils.data import IterableDataset as IterableTorchDataset
-from torch.utils.data.dataloader import default_collate
 from typing_extensions import Self, TypedDict
 
-from tklearn.utils.array import (
+from tklearn.nn.utils.array import (
     MovableToDeviceMixin,
     get_index,
     length_of_first_array_like_in_nested_dict,
@@ -34,7 +32,6 @@ __all__ = [
     "IterableDataset",
     "Record",
     "RecordBatch",
-    "create_dataset",
 ]
 
 XT, YT = TypeVar("XT"), TypeVar("YT")
@@ -162,12 +159,6 @@ class Dataset(TorchDataset, Generic[XT, YT]):
             self._length = length_of_first_array_like_in_nested_dict(self.x)
         return self._length
 
-    def collate(self, batch: List[Record[XT, YT]]) -> RecordBatch:  # noqa: PLR6301
-        batch = default_collate(batch)
-        index = batch.pop("index")
-        batch = batch["x"], batch.get("y", None)
-        return RecordBatch(*batch, index=index)
-
     def __repr__(self) -> str:
         return repr(self._data)
 
@@ -175,17 +166,3 @@ class Dataset(TorchDataset, Generic[XT, YT]):
 class IterableDataset(Dataset, IterableTorchDataset):
     def __iter__(self) -> Generator[Record, None, None]:
         yield from (self[i] for i in range(len(self)))
-
-
-def create_dataset(
-    x: Sequence[XT],
-    y: Optional[Sequence[YT]] = None,
-    /,
-    iterable: bool = False,
-) -> Dataset[XT, YT]:
-    if isinstance(x, Dataset):
-        if y is not None:
-            msg = "y must be None if x is a Dataset"
-            raise ValueError(msg)
-        return x
-    return Dataset(x, y, iterable=iterable)

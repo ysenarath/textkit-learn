@@ -3,8 +3,8 @@ from typing import Optional
 
 import numpy as np
 
-from tklearn.nn.callbacks.base import TorchModelCallback
-from tklearn.utils.logging import get_logger
+from tklearn.nn.callbacks.base import Callback
+from tklearn.nn.utils.logging import get_logger
 
 __all__ = [
     "EarlyStopping",
@@ -13,7 +13,7 @@ __all__ = [
 logger = get_logger(__name__)
 
 
-class EarlyStopping(TorchModelCallback):
+class EarlyStopping(Callback):
     def __init__(
         self,
         monitor: str = "valid_loss",
@@ -57,8 +57,8 @@ class EarlyStopping(TorchModelCallback):
             self.monitor_op = np.greater
         elif (
             self.monitor.endswith("acc")
-            or self.monitor.endswith("accuracy")
             or self.monitor.endswith("auc")
+            or self.monitor.endswith("_score")
         ):
             self.monitor_op = np.greater
         elif self.monitor.endswith("loss") or self.monitor.endswith("error"):

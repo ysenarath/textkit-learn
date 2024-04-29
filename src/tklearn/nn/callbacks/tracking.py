@@ -1,18 +1,20 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from octoflow import Run, Value
-from tklearn.nn.callbacks.base import TorchModelCallback
+from tklearn.nn.callbacks.base import Callback
 
 __all__ = [
     "TrackingCallback",
 ]
 
+if TYPE_CHECKING:
+    from octoflow import Run, Value
 
-class TrackingCallback(TorchModelCallback):
+
+class TrackingCallback(Callback):
     def __init__(
         self,
-        run: Run,
-        step: Optional[Value] = None,
+        run: "Run",
+        step: Optional["Value"] = None,
         prefix: Optional[str] = None,
     ):
         super().__init__()
