@@ -1,4 +1,7 @@
 from tklearn.preprocessing.annotator import KeywordAnnotator
+from tklearn.preprocessing.preprocessor import (
+    TextPreprocessor,
+)
 from tklearn.preprocessing.tokenization import (
     FunctionTokenizer,
     HuggingFaceTokenizer,
@@ -16,4 +19,5 @@ __all__ = [
     "TweetTokenizer",
     "WhitespaceTokenizer",
     "HuggingFaceTokenizer",
+    "TextPreprocessor",
 ]

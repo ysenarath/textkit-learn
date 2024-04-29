@@ -23,6 +23,8 @@ from typing import Dict, List, Optional, Union
 import numpy as np
 import torch
 from flashtext import KeywordProcessor
+from nltk.stem import SnowballStemmer, WordNetLemmatizer
+from nltk.tokenize import word_tokenize
 from tokenizers import Encoding
 from tqdm import auto as tqdm
 from transformers.tokenization_utils_base import BatchEncoding
@@ -112,7 +114,7 @@ class KeywordAnnotator:
         io: ResourceIO,
         keyword_field: str,
         label_field: Union[str, List[str]],
-        labels: Optional[List] = None,  # noqa
+        labels: Union[List, bool, None] = None,
     ):
         io.download(exist_ok=True, unzip=True)
         namespace = ".".join([io.__module__, io.__class__.__name__])
@@ -120,10 +122,8 @@ class KeywordAnnotator:
         self.label_fields = (
             [label_field] if isinstance(label_field, str) else label_field
         )
-        self.emolex_processor = KeywordProcessor()
         collected_labels = set() if labels is True else None
-        for i, doc in enumerate(tqdm.tqdm(self.resource)):
-            self.emolex_processor.add_keyword(doc[keyword_field], i)
+        for doc in tqdm.tqdm(self.resource):
             if collected_labels is None:
                 continue
             for label_field in self.label_fields:
@@ -133,6 +133,65 @@ class KeywordAnnotator:
             labels if collected_labels is None else sorted(list(collected_labels))
         )
         self.namespace = namespace
+        self.keyword_field = keyword_field
+
+    def get_keyword_processor(self, language: str = "english") -> KeywordProcessor:
+        if not hasattr(self, "emolex_processors"):
+            self.emolex_processors = {}
+        if language not in self.emolex_processors:
+            emolex_processor = KeywordProcessor()
+            pbar = tqdm.tqdm(self.resource, desc="Indexing")
+            for i, doc in enumerate(pbar):
+                doc_lang = doc["language"].lower()
+                if doc_lang != language:
+                    continue
+                emolex_processor.add_keyword(doc[self.keyword_field], i)
+                # only perform lemmatization for supported languages
+                # supported languages are:
+                #   - English
+                lemmatizer = None
+                stemmer = None
+                if doc_lang == "english":
+                    lemmatizer = WordNetLemmatizer()
+                    stemmer = SnowballStemmer("english")
+                if lemmatizer is not None:
+                    emolex_processor.add_keyword(
+                        lemmatizer.lemmatize(doc[self.keyword_field]), i
+                    )
+                if stemmer is not None:
+                    emolex_processor.add_keyword(
+                        stemmer.stem(doc[self.keyword_field]), i
+                    )
+            pbar.close()
+            self.emolex_processors[language] = emolex_processor
+        return self.emolex_processors[language]
+
+    def augment_with_lemmatizer(self, text: str, *, language: str = "english"):
+        # just in case
+        language = language.lower()
+        emolex_processor = self.get_keyword_processor(language)
+        if language != "english":
+            return
+        lemmatizer = WordNetLemmatizer()
+        for token in word_tokenize(text):
+            exists = emolex_processor.get_keyword(token)
+            if exists is not None:
+                continue
+            lemma = lemmatizer.lemmatize(token)
+            i = emolex_processor.get_keyword(lemma)
+            if i is None:
+                continue
+            emolex_processor.add_keyword(token, int(i))
+        stemmer = SnowballStemmer("english")
+        for token in word_tokenize(text):
+            exists = emolex_processor.get_keyword(token)
+            if exists is not None:
+                continue
+            stem = stemmer.stem(token)
+            i = emolex_processor.get_keyword(stem)
+            if i is None:
+                continue
+            emolex_processor.add_keyword(token, int(i))
 
     def annotate(
         self,
@@ -140,11 +199,13 @@ class KeywordAnnotator:
         tokens: Union[Encoding, BatchEncoding] = None,
         return_tensors: Optional[str] = None,
         verbose: bool = False,
+        language: str = "english",
     ) -> Union[List[dict], List[List[dict]], List[List[List[dict]]]]:
+        language = language.lower()  # just in case, language must not be None
         if not isinstance(text, str):
             if verbose:
                 text = tqdm.tqdm(text, desc="Annotating")
-            annotations = [self.annotate(t) for t in text]
+            annotations = [self.annotate(t, language=language) for t in text]
             if tokens is None:
                 # List[List[dict]]
                 return annotations
@@ -153,10 +214,17 @@ class KeywordAnnotator:
                 return batch_align(tokens, annotations, self.labels, return_tensors)
             msg = f"unsupported tokens type: {tokens.__class__.__name__}"
             raise ValueError(msg)
+        # augment the emolex processor with stemming
+        self.augment_with_lemmatizer(text, language=language)
+        kp = self.get_keyword_processor(language)
         annotations = []
-        for ki, ks, ke in self.emolex_processor.extract_keywords(text, span_info=True):
+        for ki, ks, ke in kp.extract_keywords(text, span_info=True):
+            re_doc = self.resource[ki]
+            if re_doc["language"].lower() != language:
+                # check language
+                continue
             for label_col in self.label_fields:
-                for label, score in self.resource[ki][label_col].items():
+                for label, score in re_doc[label_col].items():
                     annotations.append({
                         "start": ks,
                         "end": ke,
