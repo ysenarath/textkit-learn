@@ -214,7 +214,13 @@ def concat(objs: List[RT], /, axis: int = 0) -> RT:
         return elem
     if isinstance(elem, Dict):
         keys = set(elem.keys())
-        return {k: concat([o[k] for o in objs], axis=axis) for k in keys}
+        output = {k: concat([o[k] for o in objs], axis=axis) for k in keys}
+        try:
+            # try to convert to original type assuming dict style constructor
+            return type(elem)(**output)
+        except TypeError:
+            # if not possible, return as a dictionary
+            return output
     if isinstance(elem, Tuple) and hasattr(elem, "_fields"):  # namedtuple
         dtype = type(elem)
         size = len(elem)
@@ -247,6 +253,21 @@ def length_of_first_array_like_in_nested_dict(data: Dict) -> int:
     """
     if isinstance(data, (HuggingFaceDataset, OctoFlowDataset)):
         return len(data)
+    if isinstance(data, (np.ndarray, pd.DataFrame)):
+        return data.shape[0]
+    if isinstance(data, torch.Tensor):
+        return data.size(0)
+    if isinstance(data, (List, pd.Series)):
+        return len(data)
+    if isinstance(data, Tuple) and hasattr(data, "_fields"):
+        # namedtuple
+        for v in data:
+            return length_of_first_array_like_in_nested_dict(v)
+        return 0
+    if not isinstance(data, Dict):
+        raise TypeError(
+            f"expected data type array-like or dict, got {type(data).__name__}"
+        )
     for v in data.values():
         if isinstance(v, Mapping):
             return length_of_first_array_like_in_nested_dict(v)
