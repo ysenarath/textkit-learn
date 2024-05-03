@@ -4,7 +4,6 @@ from collections import UserList
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Iterator,
     List,
     Optional,
