@@ -331,13 +331,8 @@ class Callback:
         pass
 
 
-def callbackgetter(name: str) -> Callable:
-    if name.startswith("on_"):
-        return getattr(Callback, name)
-    elif name.startswith("set_"):
-        return getattr(Callback, name)
-    msg = f"'{Callback.__name__}' object has no attribute '{name}'"
-    raise AttributeError(msg)
+def is_callback(name: str) -> bool:
+    return name.startswith("set_") or name.startswith("on_")
 
 
 class CallbackList(Callback, Sequence[Callback]):
@@ -381,34 +376,34 @@ class CallbackList(Callback, Sequence[Callback]):
         return iter(self._callbacks)
 
     def __getattribute__(self, __name: str) -> Any:
-        try:
-            func = callbackgetter(__name)
-            return functools.partial(self.apply, func)
-        except AttributeError:
+        if is_callback(__name):
+            return functools.partial(self.apply, __name)
+        else:
             return super().__getattribute__(__name)
 
-    def apply(self, func: Callable, /, *args, **kwargs) -> UserList:
+    def apply(self, __name: str, /, *args, **kwargs) -> UserList:
         # call on self
-        func(self, *args, **kwargs)
+        super().__getattribute__(__name)(*args, **kwargs)
         # call on each callback
         outputs = UserList()
         outputs.errors = []
-        for i, callback in enumerate(self):
+        for callback in self:
             output = None
             outputs.errors.append(None)
             try:
-                output = func(callback, *args, **kwargs)
+                # print(callback, func, args, kwargs)
+                output = getattr(callback, __name)(*args, **kwargs)
             except NotImplementedError:
                 pass
             except Exception as e:
                 warnings.warn(
                     f"{e} in callback '{type(callback).__name__}' "
-                    f"when calling '{func.__name__}'",
+                    f"when calling '{__name}'",
                     RuntimeWarning,
                     stacklevel=0,
                     source=e,
                 )
-                outputs.errors[i] = e
+                outputs.errors[-1] = e
             outputs.append(output)
         return outputs
 
