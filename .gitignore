@@ -135,4 +135,4 @@ notebooks/data/
 notebooks/logs/
 scripts/rsync.sh
 logs/
-targetHyPymo/
+scripts/sync.sh

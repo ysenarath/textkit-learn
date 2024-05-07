@@ -14,3 +14,6 @@ clean:
 
 publish:
 	twine upload dist/*
+
+sync:
+	bash scripts/sync.sh
