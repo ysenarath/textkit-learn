@@ -100,12 +100,6 @@ class Metric:
     def state(self, value: Any) -> None:
         set_state(self, value)
 
-    def __getattr__(self, __name: str) -> Any:
-        return get_state(self)[__name]
-
-    def __setattr__(self, __name: str, __value: Any) -> None:
-        update_state(self, **{__name: __value})
-
     def reset(self) -> None:
         self.state = {}
 
