@@ -16,6 +16,7 @@ class TrackingCallback(Callback):
         run: "Run",
         step: Optional["Value"] = None,
         prefix: Optional[str] = None,
+        exclude: Optional[str] = None,
     ):
         super().__init__()
         # the actual run used to track the trainer progress
@@ -26,6 +27,19 @@ class TrackingCallback(Callback):
         self.prefix = str(prefix).strip()
         self.epoch_key_fmt = "{prefix}{delemiter}epoch"
         self.delemiter = "."
+        self.exclude = exclude
+
+    @property
+    def exclude(self) -> set:
+        return self._exclude
+
+    @exclude.setter
+    def exclude(self, values):
+        if values is None:
+            values = []
+        elif isinstance(values, str):
+            values = [values]
+        self._exclude = set(values)
 
     def on_train_begin(
         self,
@@ -50,4 +64,6 @@ class TrackingCallback(Callback):
             epoch,
             step=self.step,
         )
+        logs = {k: v for k, v in logs.items() if k not in self.exclude}
+        # and isinstance(v, (int, float, str))
         self.run.log_metrics(logs, step=epoch_val, prefix=self.prefix)
