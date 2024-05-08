@@ -338,7 +338,8 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             if self.training:
                 self.eval()
             batch = move_to_device(batch, device)
-            batch_output = self.predict_on_batch(batch)
+            with torch.no_grad():
+                batch_output = self.predict_on_batch(batch)
             loss = self.compute_loss(batch, batch_output)
             batch_output = move_to_device(detach(batch_output), "cpu")
             batch_loss = loss.item()
