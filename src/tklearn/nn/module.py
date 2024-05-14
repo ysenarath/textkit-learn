@@ -69,6 +69,7 @@ class TrainingArgs(TypedDict):
     clip_grad_norm: Union[bool, float, Dict[str, Any], None]
     clip_grad_norm_args: Optional[Dict[str, Any]]
     callbacks: Optional[CallbackList]
+    loss_args: Optional[Dict[str, Any]]
 
 
 class Module(torch.nn.Module, Generic[X, Y, Z]):
@@ -93,6 +94,12 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
     def stop_training(self, value: bool) -> None:
         self._stop_training = value
 
+    @property
+    def training_args(self) -> Dict[str, Any]:
+        if not hasattr(self, "_training_args"):
+            self._training_args = {}
+        return self._training_args
+
     def fit(  # noqa: PLR0914
         self,
         x: XY,
@@ -103,6 +110,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         self.training_args.clear()
         self.training_args.update(kwargs)
         batch_size = self.training_args.get("batch_size", 32)
+        loss_args = self.training_args.get("loss_args", {})
         if isinstance(x, Dataset) and y is not None:
             msg = "y should be None when x is a Dataset"
             raise ValueError(msg)
@@ -162,8 +170,8 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
                     device=device,
                     optimizer=optimizer,
                     lr_scheduler=lr_scheduler,
+                    loss_args=loss_args,
                 )
-                # empty_cache()
             self._fit_lr_scheduler_step(lr_scheduler, "epoch")
             n_batches = batch_idx + 1
             epoch_logs = {
@@ -188,14 +196,17 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         lr_scheduler: Union[LRScheduler, Any, None],
         callbacks: Optional[CallbackList] = None,
         batch_idx: Optional[int] = None,
+        loss_args: Optional[Dict[str, Any]] = None,
     ) -> float:
+        if loss_args is None:
+            loss_args = {}
         if callbacks:
             callbacks.on_train_batch_begin(batch_idx)
         if not self.training:
             self.train()
         batch = move_to_device(batch, device)
         batch_output = self.predict_on_batch(batch)
-        loss = self.compute_loss(batch, batch_output)
+        loss = self.compute_loss(batch, batch_output, **loss_args)
         optimizer.zero_grad()
         loss.backward()
         self._fit_clip_grad_norm()
@@ -294,15 +305,21 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         batch_size: int = 32,
         callbacks: Optional[Sequence[Callback]] = None,
     ) -> Z:
-        output = []
+        logits = None
         for _, _, batch_output, _ in self.predict_iter(
             x,
             y,
             batch_size=batch_size,
             callbacks=callbacks,
         ):
-            output.append(batch_output)
-        return concat(output)
+            logits = concat((logits, batch_output["logits"]))
+        if logits is None:
+            msg = (
+                f"no predictions found for the given input data of "
+                f"type '{type(x).__name__}' and size {len(x)}"
+            )
+            raise ValueError(msg)
+        return logits
 
     def predict_iter(
         self,
@@ -311,6 +328,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         /,
         batch_size: int = 32,
         callbacks: Optional[Sequence[Callback]] = None,
+        loss_args: Optional[Dict[str, Any]] = None,
     ) -> Generator[Tuple[int, RecordBatch, Z, float], None, None]:
         device = next(self.parameters()).device
         if not isinstance(callbacks, CallbackList):
@@ -340,7 +358,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             batch = move_to_device(batch, device)
             with torch.no_grad():
                 batch_output = self.predict_on_batch(batch)
-            loss = self.compute_loss(batch, batch_output)
+            loss = self.compute_loss(batch, batch_output, **(loss_args or {}))
             batch_output = move_to_device(detach(batch_output), "cpu")
             batch_loss = loss.item()
             total_loss += batch_loss
@@ -405,14 +423,10 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
     ) -> Dict[str, Any]:
         return {"y_true": batch.y, "y_pred": output, "y_score": output}
 
-    def compute_loss(self, batch: RecordBatch, output: Z) -> torch.Tensor:
+    def compute_loss(
+        self, batch: RecordBatch, output: Z, **kwargs: Any
+    ) -> torch.Tensor:
         raise NotImplementedError
-
-    @property
-    def training_args(self) -> Dict[str, Any]:
-        if not hasattr(self, "_training_args"):
-            self._training_args = {}
-        return self._training_args
 
     def collate_fn(self, batch: Sequence[Record[XY, Y]]) -> RecordBatch:  # noqa: PLR6301
         batch = default_collate(batch)
