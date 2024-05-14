@@ -11,6 +11,7 @@ from typing import (
     List,
     Mapping,
     NamedTuple,
+    Sequence,
     Tuple,
     TypeVar,
     Union,
@@ -176,7 +177,7 @@ def move_to_device(
         return obj.to(device)
     elif isinstance(obj, MovableToDeviceMixin):
         return obj.to(device)
-    elif isinstance(obj, Dict):
+    elif isinstance(obj, Mapping):
         return {k: move_to_device(v, device) for k, v in obj.items()}
     elif isinstance(obj, Tuple) and hasattr(obj, "_fields"):
         # namedtuple
@@ -215,7 +216,7 @@ def concat(objs: List[RT], /, axis: int = 0) -> RT:
     elem = objs[0]
     if len(objs) == 1:
         return elem
-    if isinstance(elem, Dict):
+    if isinstance(elem, Mapping):
         keys = set(elem.keys())
         output = {k: concat([o[k] for o in objs], axis=axis) for k in keys}
         try:
@@ -267,7 +268,7 @@ def length_of_first_array_like_in_nested_dict(data: Dict) -> int:
         for v in data:
             return length_of_first_array_like_in_nested_dict(v)
         return 0
-    if not isinstance(data, Dict):
+    if not isinstance(data, Mapping):
         msg = f"expected data type array-like or dict, got {type(data).__name__}"
         raise TypeError(msg)
     for v in data.values():
@@ -283,6 +284,18 @@ def length_of_first_array_like_in_nested_dict(data: Dict) -> int:
 
 
 D = TypeVar("D", Dict, Tuple, NamedTuple)
+
+Indexable = Union[
+    List,
+    pd.DataFrame,
+    pd.Series,
+    np.ndarray,
+    torch.Tensor,
+    HuggingFaceDataset,
+    OctoFlowDataset,
+    Dict,
+    Tuple,
+]
 
 
 @overload
@@ -322,7 +335,7 @@ def get_index(data: Any, index: Union[int, slice]) -> Any:
     if isinstance(data, (pd.DataFrame, pd.Series)):
         # will return dtyped value
         return data.iloc[index]
-    if isinstance(data, Dict):
+    if isinstance(data, Mapping):
         return {k: get_index(v, index=index) for k, v in data.items()}
     if isinstance(data, Tuple) and hasattr(data, "_fields"):
         # namedtuple
@@ -330,7 +343,7 @@ def get_index(data: Any, index: Union[int, slice]) -> Any:
         return dtype(*(get_index(item, index=index) for item in data))
     if isinstance(data, Tuple):
         return tuple(get_index(item, index=index) for item in data)
-    if isinstance(data, List):
+    if isinstance(data, Sequence) and not isinstance(data, str):
         # will return dtyped value
         return data[index]
     msg = f"cannot get index from object of type '{type(data).__name__}'"
