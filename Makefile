@@ -1,8 +1,5 @@
 build:
-	maturin sdist
-	maturin build --release
-	cp -r rust/target/wheels/ dist/
-	rm -rf rust/target/
+	python -m build
 
 dev:
 	rm -rf src/rslib.abi3.so

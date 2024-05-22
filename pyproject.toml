@@ -1,21 +1,6 @@
 [build-system]
-build-backend = "maturin"
-requires = ["maturin>=1,<2"]
-
-[tool.maturin]
-# "extension-module" tells pyo3 we want to build an extension module 
-#   (skips linking against libpython.so)
-features = ["pyo3/extension-module"]
-# Python source directory
-python-source = "src"
-module-name = "tklearn.rslib"
-# Python packages to include
-python-packages = ["tklearn"]
-# Strip the library for minimum file size
-strip = true
-include = [{ format = "sdist", path = "rust/Cargo.lock" }]
-# Source distribution generator, supports cargo (default) and git.
-sdist-generator = "cargo"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "textkit-learn"
@@ -68,6 +53,9 @@ Homepage = "https://github.com/ysenarath/textkit-learn"
 Repository = "https://github.com/ysenarath/textkit-learn"
 Issues = "https://github.com/ysenarath/textkit-learn/issues"
 Changelog = "https://github.com/ysenarath/textkit-learn/blob/master/CHANGELOG.md"
+
+[tool.hatch.version]
+path = "src/tklearn/__init__.py"
 
 [tool.ruff]
 extend-include = ["*.ipynb"]
