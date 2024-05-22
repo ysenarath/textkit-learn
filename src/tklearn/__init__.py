@@ -1,7 +1,6 @@
-from tklearn import rslib
 from tklearn.config import config
 
-__version__ = rslib.__version__
+__version__ = "0.2.1"
 
 __all__ = [
     "__version__",
