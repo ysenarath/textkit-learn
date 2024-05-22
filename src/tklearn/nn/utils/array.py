@@ -23,7 +23,6 @@ import pandas as pd
 import torch
 from datasets import Dataset as HuggingFaceDataset
 from numpy import typing as nt
-from torch import Tensor
 from typing_extensions import Self
 
 __all__ = [
@@ -228,6 +227,7 @@ def concat(objs: List[RT], /, axis: int = 0) -> RT:
     if isinstance(elem, Tuple) and hasattr(elem, "_fields"):  # namedtuple
         dtype = type(elem)
         size = len(elem)
+        # difference with normal tuple is that we return the same type as the input
         return dtype(concat([o[i] for o in objs], axis=axis) for i in range(size))
     if isinstance(elem, Tuple):
         size = len(elem)
@@ -261,26 +261,22 @@ def length_of_first_array_like_in_nested_dict(data: Dict) -> int:
         return data.shape[0]
     if isinstance(data, torch.Tensor):
         return data.size(0)
-    if isinstance(data, (List, pd.Series)):
-        return len(data)
-    if isinstance(data, Tuple) and hasattr(data, "_fields"):
-        # namedtuple
+    if isinstance(data, Tuple):
+        # namedtuple check => hasattr(data, "_fields")
+        # tuple or namedtuple
         for v in data:
             return length_of_first_array_like_in_nested_dict(v)
         return 0
-    if not isinstance(data, Mapping):
-        msg = f"expected data type array-like or dict, got {type(data).__name__}"
-        raise TypeError(msg)
-    for v in data.values():
-        if isinstance(v, Mapping):
+    if isinstance(data, (Sequence, pd.Series)) and not isinstance(data, str):
+        # any other sequence
+        return len(data)
+    if isinstance(data, Mapping):
+        for v in data.values():
             return length_of_first_array_like_in_nested_dict(v)
-        elif isinstance(v, Tensor):
-            return v.size(0)
-        elif isinstance(v, (np.ndarray, pd.DataFrame)):
-            return v.shape[0]
-        if isinstance(v, (List, pd.Series)):
-            return len(v)
-    return 0
+        return 0
+    # otherwise, it should be a dict
+    msg = f"expected data type array-like or dict, got {type(data).__name__}"
+    raise TypeError(msg)
 
 
 D = TypeVar("D", Dict, Tuple, NamedTuple)
