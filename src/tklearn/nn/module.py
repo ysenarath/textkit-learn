@@ -23,6 +23,7 @@ from torch.utils.data.dataloader import default_collate
 from typing_extensions import ParamSpec, Self, Unpack
 
 from tklearn.nn.callbacks import Callback, CallbackList
+from tklearn.nn.loss import LossDict
 from tklearn.nn.metrics import Evaluator, Metric
 from tklearn.nn.utils.array import concat, detach, move_to_device
 from tklearn.nn.utils.data import Dataset, Record, RecordBatch
@@ -161,22 +162,26 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         epoch_logs = {}
         for epoch_idx in range(epochs):
             callbacks.on_epoch_begin(epoch_idx)
-            batch_idx, total_loss = 0, 0.0
+            batch_idx, total_loss_dict = 0, None
             for batch_idx, batch in enumerate(train_dataloader):
-                total_loss += self._fit_on_batch(
-                    batch=batch,
-                    batch_idx=batch_idx,
-                    callbacks=callbacks,
-                    device=device,
-                    optimizer=optimizer,
-                    lr_scheduler=lr_scheduler,
-                    loss_args=loss_args,
+                total_loss_dict = (
+                    self._fit_on_batch(
+                        batch=batch,
+                        batch_idx=batch_idx,
+                        callbacks=callbacks,
+                        device=device,
+                        optimizer=optimizer,
+                        lr_scheduler=lr_scheduler,
+                        loss_args=loss_args,
+                    )
+                    + total_loss_dict
                 )
             self._fit_lr_scheduler_step(lr_scheduler, "epoch")
             n_batches = batch_idx + 1
-            epoch_logs = {
-                "loss": (total_loss / n_batches) if n_batches > 0 else None,
-            }
+            if n_batches > 0 and total_loss_dict is not None:
+                epoch_logs = (total_loss_dict / n_batches).to_dict()
+            else:
+                epoch_logs = {}
             if evaluate is not None:
                 eval_results = evaluate()
                 epoch_logs.update(eval_results)
@@ -197,7 +202,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         callbacks: Optional[CallbackList] = None,
         batch_idx: Optional[int] = None,
         loss_args: Optional[Dict[str, Any]] = None,
-    ) -> float:
+    ) -> LossDict[float]:
         if loss_args is None:
             loss_args = {}
         if callbacks:
@@ -207,19 +212,19 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         batch = move_to_device(batch, device)
         batch_output = self.predict_on_batch(batch)
         loss = self.compute_loss(batch, batch_output, **loss_args)
+        loss_dict = LossDict.from_loss(loss)
         optimizer.zero_grad()
-        loss.backward()
+        loss_dict.loss.backward()
         self._fit_clip_grad_norm()
         optimizer.step()
         self._fit_lr_scheduler_step(lr_scheduler, "batch")
-        loss_value = loss.item()
         batch_logs = {}
         if callbacks:
             callbacks.on_train_batch_end(
                 batch_idx,
                 logs=batch_logs,
             )
-        return loss_value
+        return loss_dict.item()
 
     def _fit_clip_grad_norm(self) -> None:
         clip_grad_norm = self.training_args.get("clip_grad_norm")
@@ -329,7 +334,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         batch_size: int = 32,
         callbacks: Optional[Sequence[Callback]] = None,
         loss_args: Optional[Dict[str, Any]] = None,
-    ) -> Generator[Tuple[int, RecordBatch, Z, float], None, None]:
+    ) -> Generator[Tuple[int, RecordBatch, Z, LossDict[float]], None, None]:
         device = next(self.parameters()).device
         if not isinstance(callbacks, CallbackList):
             callbacks = CallbackList(callbacks)
@@ -350,7 +355,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         callbacks.set_params(callback_params)
         self.eval()
         callbacks.on_predict_begin()
-        batch_idx, total_loss = 0, 0.0
+        batch_idx, total_loss_dict = 0, None
         for batch_idx, batch in enumerate(test_dataloader):
             callbacks.on_predict_batch_begin(batch_idx)
             if self.training:
@@ -360,19 +365,18 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
                 batch_output = self.predict_on_batch(batch)
             loss = self.compute_loss(batch, batch_output, **(loss_args or {}))
             batch_output = move_to_device(detach(batch_output), "cpu")
-            batch_loss = loss.item()
-            total_loss += batch_loss
+            batch_loss_dict = LossDict.from_loss(loss).item()
+            total_loss_dict = batch_loss_dict + total_loss_dict
             batch_logs = {}
             callbacks.on_predict_batch_end(batch_idx, logs=batch_logs)
-            yield batch_idx, batch, batch_output, batch_loss
+            yield batch_idx, batch, batch_output, batch_loss_dict
             # clear memory cache
-            del batch, batch_output, loss, batch_loss
-            # empty_cache()
+            del batch, batch_output, loss, batch_loss_dict
         n_batches = batch_idx + 1
-        average_loss = total_loss / n_batches if n_batches > 0 else None
-        logs = {
-            "loss": average_loss,
-        }
+        logs = {}
+        if n_batches > 0 and total_loss_dict is not None:
+            average_loss_dict = (total_loss_dict / n_batches).to_dict()
+            logs.update(average_loss_dict)
         callbacks.on_predict_end(logs)
 
     def predict_on_batch(self, batch: RecordBatch) -> Z:
@@ -389,32 +393,40 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         return_dict: bool = False,
         prefix: str = "",
         callbacks: Optional[Sequence[Callback]] = None,
+        loss_args: Optional[Dict[str, Any]] = None,
     ) -> Union[Dict[str, Any], Tuple[Any, ...]]:
-        n_batches = 0
-        total_loss = 0.0
         evaluator = metrics if isinstance(metrics, Evaluator) else Evaluator(metrics)
         evaluator.reset()
-        for _, batch, output, batch_loss in self.predict_iter(
+        n_batches, total_loss_dict = 0, None
+        for _, batch, output, batch_loss_dict in self.predict_iter(
             x,
             y,
             callbacks=callbacks,
             batch_size=batch_size,
+            loss_args=loss_args,
         ):
             n_batches += 1
-            total_loss += batch_loss
+            total_loss_dict = batch_loss_dict + total_loss_dict
             eval_input = self.extract_eval_input(batch, output)
             evaluator.update_state(**eval_input)
-        average_loss = (total_loss / n_batches) if n_batches > 0 else None
+        average_loss_dict = {}
+        if include_loss:
+            if n_batches > 0 and total_loss_dict is not None:
+                average_loss_dict = (total_loss_dict / n_batches).to_dict()
+            # add prefix to loss keys
+            average_loss_dict = {
+                f"{prefix}{key}": value for key, value in average_loss_dict.items()
+            }
         if return_dict:
             return {
-                **({f"{prefix}loss": average_loss} if include_loss else {}),
+                **average_loss_dict,
                 **{
                     f"{prefix}{name}": value
                     for name, value in evaluator.result(return_dict=True).items()
                 },
             }
         return (
-            *((average_loss,) if include_loss else ()),
+            *(v for _, v in sorted(average_loss_dict.items())),
             *evaluator.result(),
         )
 
