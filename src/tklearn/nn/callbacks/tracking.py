@@ -7,14 +7,14 @@ __all__ = [
 ]
 
 if TYPE_CHECKING:
-    from octoflow import Run, Value
+    from octoflow.tracking.models import Run
 
 
 class TrackingCallback(Callback):
     def __init__(
         self,
         run: "Run",
-        step: Optional["Value"] = None,
+        step: Optional[int] = None,
         prefix: Optional[str] = None,
         exclude: Optional[str] = None,
     ):
@@ -25,8 +25,7 @@ class TrackingCallback(Callback):
         if prefix is None:
             prefix = ""
         self.prefix = str(prefix).strip()
-        self.epoch_key_fmt = "{prefix}{delemiter}epoch"
-        self.delemiter = "."
+        self.delemiter = "_"
         self.exclude = exclude
 
     @property
@@ -41,29 +40,17 @@ class TrackingCallback(Callback):
             values = [values]
         self._exclude = set(values)
 
-    def on_train_begin(
-        self,
-        logs: Optional[dict] = None,
-    ):
+    def on_train_begin(self, logs: Optional[dict] = None):
         if self.run is None:
             return
 
-    def on_epoch_end(
-        self,
-        epoch: int,
-        logs: Optional[dict] = None,
-    ):
+    def on_epoch_end(self, epoch: int, logs: Optional[dict] = None):
         if self.run is None:
             return
-        epoch_key = self.epoch_key_fmt.format(
-            prefix=self.prefix,
-            delemiter=self.delemiter if len(self.prefix) > 0 else "",
-        )
-        epoch_val = self.run.log_param(
-            epoch_key,
-            epoch,
-            step=self.step,
-        )
-        logs = {k: v for k, v in logs.items() if k not in self.exclude}
+        prefix = ""
+        if len(self.prefix) > 0:
+            prefix = f"{self.prefix}{self.delemiter}"
+        epoch_log_ix = self.run.log_param(f"{prefix}epoch", epoch, step=self.step)
+        logs = {f"{prefix}{k}": v for k, v in logs.items() if k not in self.exclude}
         # and isinstance(v, (int, float, str))
-        self.run.log_metrics(logs, step=epoch_val, prefix=self.prefix)
+        self.run.log_metrics(logs, step=epoch_log_ix)
