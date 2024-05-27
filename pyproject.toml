@@ -44,7 +44,7 @@ dependencies = [
     "sortedcontainers",
     "hnswlib",
     "flashtext",
-    "octoflow>=0.0.8",
+    "octoflow~=0.1.0",
 ]
 dynamic = ["version"]
 
@@ -56,6 +56,9 @@ Changelog = "https://github.com/ysenarath/textkit-learn/blob/master/CHANGELOG.md
 
 [tool.hatch.version]
 path = "src/tklearn/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tklearn"]
 
 [tool.ruff]
 extend-include = ["*.ipynb"]
