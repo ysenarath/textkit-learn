@@ -1,12 +1,7 @@
 build:
-	python -m build
-
-dev:
-	rm -rf src/rslib.abi3.so
-	maturin develop
-
+	hatch build
+	
 clean:
-	rm -rf src/rslib.abi3.so
 	rm -rf dist/
 
 publish:
