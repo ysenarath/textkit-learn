@@ -19,3 +19,4 @@ rdflib
 orjson
 omegaconf
 wget
+langdetect
