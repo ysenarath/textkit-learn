@@ -45,6 +45,7 @@ dependencies = [
     "hnswlib",
     "flashtext",
     "octoflow~=0.1.0",
+    "langdetect",
 ]
 dynamic = ["version"]
 
