@@ -193,13 +193,10 @@ class MetricState(MutableMapping[str, MetricStateValue]):
         return f"{self.__class__.__name__}({self._vals_dict!r})"
 
 
-EvaluatorMetricsInput = Union[Metric, Sequence[Metric], Dict[str, Metric], None]
-
-
 class Evaluator:
     def __init__(
         self,
-        metrics: EvaluatorMetricsInput = None,
+        metrics: Union[Metric, Sequence[Metric], Dict[str, Metric], None] = None,
         metric_names: Optional[List[str]] = None,
         state: Optional[MetricState] = None,
     ) -> None:
