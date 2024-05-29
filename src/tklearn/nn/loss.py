@@ -33,20 +33,20 @@ class LossDict(Mapping[str, T], Generic[T]):
                 self.loss = value
 
     def __add__(self, other: Any) -> Self:
-        if other is None:
-            new_components = dict(self.components)
-        elif isinstance(other, Mapping):
-            new_components = {}
+        if isinstance(other, Mapping):
+            components = {}
             for key in set(self.components.keys()).union(other.keys()):
                 if key in self.components and key in other:
-                    new_components[key] = self.components[key] + other[key]
+                    components[key] = self.components[key] + other[key]
                 elif key in self.components:
-                    new_components[key] = self.components[key]
+                    components[key] = self.components[key]
                 else:
-                    new_components[key] = other[key]
+                    components[key] = other[key]
+        elif other is None:
+            components = self.components
         else:
             raise NotImplementedError
-        return self.__class__(new_components)
+        return self.__class__(components)
 
     def __truediv__(self, other: Any) -> Self:
         new_components = {}
@@ -86,17 +86,24 @@ class LossDict(Mapping[str, T], Generic[T]):
             c[key] = value
         return LossDict(c)
 
-    def to(self, device: torch.device, non_blocking: bool = False) -> LossDict[T]:
+    def to(
+        self, device: Union[torch.device, str], non_blocking: bool = False
+    ) -> LossDict[T]:
         """Move all tensors to device."""
         c = {}
         for key, value in self.items():
             if isinstance(value, torch.Tensor):
-                value.to(device, non_blocking=non_blocking)
+                value = value.to(device, non_blocking=non_blocking)
+            c[key] = value
         return LossDict(c)
+
+    def cuda(self, non_blocking: bool = False) -> LossDict[T]:
+        """Move all tensors to cuda."""
+        return self.to("cuda", non_blocking=non_blocking)
 
     def cpu(self) -> LossDict[T]:
         """Move all tensors to cpu."""
-        return self.to(torch.device("cpu"))
+        return self.to("cpu")
 
     def item(self) -> LossDict[float]:
         """Convert all tensors to float."""
