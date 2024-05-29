@@ -109,7 +109,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             ctx = TrainingContext(args=kwargs)
             token = _training_ctx_var.set(ctx)
             try:
-                return self._fit_with_context(self, x, y)
+                return self._fit_with_context(x, y)
             finally:
                 _training_ctx_var.reset(token)
 
