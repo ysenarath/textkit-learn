@@ -7,6 +7,10 @@ from typing_extensions import Self
 
 from tklearn.utils import logging
 
+__all__ = [
+    "LossDict",
+]
+
 T = TypeVar("T", torch.Tensor, float)
 
 logger = logging.get_logger(__name__)
@@ -68,10 +72,30 @@ class LossDict(Mapping[str, T], Generic[T]):
         return f"{self.__class__.__name__}({self.components})"
 
     @classmethod
-    def from_loss(cls, loss: Union[dict, T]) -> LossDict[T]:
-        return cls(loss if isinstance(loss, dict) else {"loss": loss})
+    def from_loss(cls, loss: Union[Mapping[str, T], T]) -> LossDict[T]:
+        if not isinstance(loss, Mapping):
+            dloss = {"loss": loss}
+        return cls(dloss)
+
+    def detach(self) -> LossDict[T]:
+        """Detach all tensors."""
+        c = {}
+        for key, value in self.items():
+            if isinstance(value, torch.Tensor):
+                value = value.detach()
+            c[key] = value
+        return LossDict(c)
+
+    def to(self, device: torch.device) -> LossDict[T]:
+        """Move all tensors to device."""
+        c = {}
+        for key, value in self.items():
+            if isinstance(value, torch.Tensor):
+                value.to(device)
+        return LossDict(c)
 
     def item(self) -> LossDict[float]:
+        """Convert all tensors to float."""
         c = {}
         for key, value in self.items():
             if isinstance(value, torch.Tensor):
