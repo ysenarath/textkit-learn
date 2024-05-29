@@ -8,6 +8,7 @@ from typing import (
 
 import numpy as np
 import torch
+from numpy.typing import NDArray
 
 from tklearn.nn.metrics.base import Metric
 
@@ -75,7 +76,7 @@ class AccumMetric(Metric):
             curr_value = np.concatenate([curr_value, value], axis=self.axis)
         self.state["value"] = curr_value
 
-    def result(self) -> torch.Tensor:
+    def result(self) -> NDArray:
         return self.state["value"]
 
 
