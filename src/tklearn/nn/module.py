@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import functools
 import gc
+from collections.abc import Mapping
+from contextvars import ContextVar, copy_context
+from dataclasses import dataclass
 from typing import (
     Any,
     Dict,
@@ -21,22 +24,22 @@ from torch.optim.lr_scheduler import _LRScheduler as LRScheduler
 from torch.utils.data import DataLoader
 from torch.utils.data.dataloader import default_collate
 from typing_extensions import ParamSpec, Self, Unpack
+from werkzeug.local import LocalProxy
 
 from tklearn.nn.callbacks import Callback, CallbackList
 from tklearn.nn.loss import LossDict
 from tklearn.nn.metrics import Evaluator, Metric
-from tklearn.nn.utils.array import concat, detach, move_to_device
+from tklearn.nn.utils.array import concat, move_to_device
 from tklearn.nn.utils.data import Dataset, Record, RecordBatch
 
 P = ParamSpec("P")
 
 X, Y, Z = TypeVar("X"), TypeVar("Y"), TypeVar("Z")
 
-XY = Union[
-    X,
-    Tuple[X, Y],
-    None,
-]
+XY = Union[X, Tuple[X, Y], None]
+
+_training_ctx_var = ContextVar("training_ctx", default=None)
+training_ctx: TrainingContext = LocalProxy(_training_ctx_var)
 
 
 def empty_cache():
@@ -55,7 +58,7 @@ def get_available_device() -> str:
     return "cpu"
 
 
-class TrainingArgs(TypedDict):
+class TrainingArgsDict(TypedDict):
     batch_size: int
     epochs: int
     shuffle: bool
@@ -70,7 +73,13 @@ class TrainingArgs(TypedDict):
     clip_grad_norm: Union[bool, float, Dict[str, Any], None]
     clip_grad_norm_args: Optional[Dict[str, Any]]
     callbacks: Optional[CallbackList]
-    loss_args: Optional[Dict[str, Any]]
+
+
+@dataclass
+class TrainingContext:
+    args: Mapping[str, Any]
+    optimizer: Optimizer = None
+    lr_scheduler: Optional[LRScheduler] = None
 
 
 class Module(torch.nn.Module, Generic[X, Y, Z]):
@@ -95,42 +104,35 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
     def stop_training(self, value: bool) -> None:
         self._stop_training = value
 
-    @property
-    def training_args(self) -> Dict[str, Any]:
-        if not hasattr(self, "_training_args"):
-            self._training_args = {}
-        return self._training_args
+    def fit(self, x: XY, y: Y = None, /, **kwargs: Unpack[TrainingArgsDict]) -> Self:
+        def run():
+            ctx = TrainingContext(args=kwargs)
+            token = _training_ctx_var.set(ctx)
+            try:
+                return self._fit_with_context(self, x, y)
+            finally:
+                _training_ctx_var.reset(token)
 
-    def fit(  # noqa: PLR0914
-        self,
-        x: XY,
-        y: Y = None,
-        /,
-        **kwargs: Unpack[TrainingArgs],
-    ) -> Self:
-        self.training_args.clear()
-        self.training_args.update(kwargs)
-        batch_size = self.training_args.get("batch_size", 32)
-        loss_args = self.training_args.get("loss_args", {})
-        if isinstance(x, Dataset) and y is not None:
-            msg = "y should be None when x is a Dataset"
-            raise ValueError(msg)
-        train_dataset = x if isinstance(x, Dataset) else Dataset(x, y)
-        shuffle = self.training_args.get("shuffle", True)
+        return copy_context().run(run)
+
+    def _fit_with_context(self, x: XY, y: Y = None) -> Self:
+        training_args = training_ctx.args
+        batch_size = training_args.get("batch_size", 32)
+        train_dataset = Dataset(x, y)
+        shuffle = training_args.get("shuffle", True)
         train_dataloader = DataLoader(
             train_dataset,
             batch_size=batch_size,
             shuffle=shuffle,
             collate_fn=self.collate_fn,
+            pin_memory=True,
         )
-        callbacks = self.training_args.get("callbacks", None)
+        callbacks = training_args.get("callbacks", None)
         if not isinstance(callbacks, CallbackList):
             callbacks = CallbackList(callbacks)
-        validation_data = self.training_args.get("validation_data")
-        validation_batch_size = self.training_args.get(
-            "validation_batch_size", batch_size
-        )
-        metrics = self.training_args.get("metrics")
+        validation_data = training_args.get("validation_data")
+        validation_batch_size = training_args.get("validation_batch_size", batch_size)
+        metrics = training_args.get("metrics")
         evaluate = (
             functools.partial(
                 self.evaluate,
@@ -147,15 +149,11 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         self.stop_training = False
         device = self.device
         self.train()
-        optimizer = self._fit_configure_optimizers()
+        self._fit_configure_optimizers()
         steps = len(train_dataloader)
-        lr_scheduler = self._fit_configure_lr_scheduler(optimizer)
-        epochs = self.training_args.get("epochs", 1)
-        params = {
-            "batch_size": batch_size,
-            "epochs": epochs,
-            "steps": steps,
-        }
+        self._fit_configure_lr_scheduler()
+        epochs = training_args.get("epochs", 1)
+        params = {"batch_size": batch_size, "epochs": epochs, "steps": steps}
         callbacks.set_params(params)
         callbacks.set_model(self)
         callbacks.on_train_begin()
@@ -164,22 +162,18 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             callbacks.on_epoch_begin(epoch_idx)
             batch_idx, total_loss_dict = 0, None
             for batch_idx, batch in enumerate(train_dataloader):
-                total_loss_dict = (
-                    self._fit_on_batch(
-                        batch=batch,
-                        batch_idx=batch_idx,
-                        callbacks=callbacks,
-                        device=device,
-                        optimizer=optimizer,
-                        lr_scheduler=lr_scheduler,
-                        loss_args=loss_args,
-                    )
-                    + total_loss_dict
+                batch_loss_dict = self._fit_on_batch(
+                    batch=batch,
+                    batch_idx=batch_idx,
+                    callbacks=callbacks,
+                    device=device,
                 )
-            self._fit_lr_scheduler_step(lr_scheduler, "epoch")
+                total_loss_dict = batch_loss_dict + total_loss_dict
+            self._fit_lr_scheduler_step("train")
             n_batches = batch_idx + 1
             if n_batches > 0 and total_loss_dict is not None:
-                epoch_logs = (total_loss_dict / n_batches).to_dict()
+                epoch_logs = total_loss_dict / n_batches
+                epoch_logs = epoch_logs.cpu().item().to_dict()
             else:
                 epoch_logs = {}
             if evaluate is not None:
@@ -189,7 +183,6 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             if self.stop_training:
                 break
         callbacks.on_train_end(epoch_logs)
-        self.training_args.clear()
         return self
 
     def _fit_on_batch(
@@ -197,134 +190,94 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         batch: RecordBatch,
         *,
         device: Union[str, torch.device],
-        optimizer: Optimizer,
-        lr_scheduler: Union[LRScheduler, Any, None],
         callbacks: Optional[CallbackList] = None,
         batch_idx: Optional[int] = None,
-        loss_args: Optional[Dict[str, Any]] = None,
-    ) -> LossDict[float]:
-        if loss_args is None:
-            loss_args = {}
+    ) -> LossDict[torch.Tensor]:
+        batch = move_to_device(batch, device, non_blocking=True)
         if callbacks:
             callbacks.on_train_batch_begin(batch_idx)
         if not self.training:
             self.train()
-        batch = move_to_device(batch, device)
         batch_output = self.predict_on_batch(batch)
-        loss = self.compute_loss(batch, batch_output, **loss_args)
+        loss = self.compute_loss(batch, batch_output)
         loss_dict = LossDict.from_loss(loss)
-        optimizer.zero_grad()
+        training_ctx.optimizer.zero_grad()
         loss_dict.loss.backward()
         self._fit_clip_grad_norm()
-        optimizer.step()
-        self._fit_lr_scheduler_step(lr_scheduler, "batch")
+        training_ctx.optimizer.step()
+        self._fit_lr_scheduler_step("batch")
         batch_logs = {}
         if callbacks:
             callbacks.on_train_batch_end(
                 batch_idx,
                 logs=batch_logs,
             )
-        return loss_dict.item()
+        return loss_dict.detach()
 
     def _fit_clip_grad_norm(self) -> None:
-        clip_grad_norm = self.training_args.get("clip_grad_norm")
+        clip_grad_norm = training_ctx.args.get("clip_grad_norm")
         if clip_grad_norm is False or clip_grad_norm is None:
+            # do not clip gradients
             return
-        clip_grad_norm_args: dict = self.training_args.get("clip_grad_norm_args", {})
-        if isinstance(clip_grad_norm, (int, float)):
-            clip_grad_norm_args["max_norm"] = clip_grad_norm
+        clip_grad_norm_args = training_ctx.args.get("clip_grad_norm_args", {})
+        if isinstance(clip_grad_norm, (int, float, bool)):
+            clip_grad_norm_args["max_norm"] = float(clip_grad_norm)
         elif isinstance(clip_grad_norm, dict):
             clip_grad_norm_args.update(clip_grad_norm)
         else:
             msg = (
-                "clip_grad_norm should be a boolean, int, "
-                f"float, or dict, but got {clip_grad_norm}"
+                "clip_grad_norm should be a boolean, int, float, or dict, but got "
+                f"'{clip_grad_norm.__class__.__name__}'"
             )
             raise ValueError(msg)
-        torch.nn.utils.clip_grad_norm_(self.parameters(), **clip_grad_norm_args)
+        torch.nn.utils.clip_grad_norm_(
+            self.parameters(),
+            **clip_grad_norm_args,
+        )
 
-    def _fit_configure_optimizers(self) -> Optimizer:
-        optimizer = self.training_args.get("optimizer")
+    def _fit_configure_optimizers(self):
+        optimizer = training_ctx.args.get("optimizer")
         if isinstance(optimizer, str):
             optimizer_type = getattr(torch.optim, optimizer)
-            optimizer_args = self.training_args.get("optimizer_args", {})
-            return optimizer_type(
-                self.parameters(),
-                **optimizer_args,
-            )
+            optimizer_args = training_ctx.args.get("optimizer_args", {})
+            optimizer = optimizer_type(self.parameters(), **optimizer_args)
         if isinstance(optimizer, dict):
-            optimizer_type = getattr(torch.optim, optimizer["$type"])
+            optimizer_type = getattr(torch.optim, optimizer["@type"])
             optimizer_args = {
-                k: v for k, v in optimizer.items() if not k.startswith("$")
+                k: v for k, v in optimizer.items() if not k.startswith("@")
             }
-            return optimizer_type(
-                self.parameters(),
-                **optimizer_args,
-            )
-        return optimizer
+            optimizer = optimizer_type(self.parameters(), **optimizer_args)
+        training_ctx.optimizer = optimizer
 
-    def _fit_configure_lr_scheduler(
-        self, optimizer: Optimizer
-    ) -> Union[LRScheduler, Any, None]:
-        lr_scheduler = self.training_args.get("lr_scheduler")
+    def _fit_configure_lr_scheduler(self):
+        lr_scheduler = training_ctx.args.get("lr_scheduler")
         if isinstance(lr_scheduler, str):
             lr_scheduler_type = getattr(torch.optim.lr_scheduler, lr_scheduler)
-            lr_scheduler_args = self.training_args.get("lr_schedule_args", {})
-            return lr_scheduler_type(
-                optimizer,
-                **lr_scheduler_args,
+            lr_scheduler_args = training_ctx.args.get("lr_schedule_args", {})
+            lr_scheduler = lr_scheduler_type(
+                training_ctx.optimizer, **lr_scheduler_args
             )
         if isinstance(lr_scheduler, dict):
-            lr_scheduler_type = getattr(torch.optim.lr_scheduler, lr_scheduler["$type"])
+            lr_scheduler_type = getattr(torch.optim.lr_scheduler, lr_scheduler["@type"])
             lr_scheduler_args = {
-                k: v for k, v in lr_scheduler.items() if not k.startswith("$")
+                k: v for k, v in lr_scheduler.items() if not k.startswith("@")
             }
-            return lr_scheduler_type(
-                optimizer,
-                **lr_scheduler_args,
+            lr_scheduler = lr_scheduler_type(
+                training_ctx.optimizer, **lr_scheduler_args
             )
-        return lr_scheduler
+        training_ctx.lr_scheduler = lr_scheduler
 
-    def _fit_lr_scheduler_step(
-        self,
-        scheduler: Union[LRScheduler, Any, None],
-        iter_type: str,
-    ) -> None:
+    def _fit_lr_scheduler_step(self, iter_type: str) -> None:
+        scheduler = training_ctx.lr_scheduler
         if scheduler is None:
             return
-        lr_scheduler_step: Optional[dict] = self.training_args.get(
-            "lr_scheduler_step",
-        )
+        lr_scheduler_step = training_ctx.args.get("lr_scheduler_step")
         if lr_scheduler_step is None:
             scheduler.step()
             return
         if lr_scheduler_step.pop("on", "epoch") != iter_type:
             return
         scheduler.step(**lr_scheduler_step)
-
-    def predict(
-        self,
-        x: XY,
-        y: Y = None,
-        /,
-        batch_size: int = 32,
-        callbacks: Optional[Sequence[Callback]] = None,
-    ) -> Z:
-        logits = None
-        for _, _, batch_output, _ in self.predict_iter(
-            x,
-            y,
-            batch_size=batch_size,
-            callbacks=callbacks,
-        ):
-            logits = concat((logits, batch_output["logits"]))
-        if logits is None:
-            msg = (
-                f"no predictions found for the given input data of "
-                f"type '{type(x).__name__}' and size {len(x)}"
-            )
-            raise ValueError(msg)
-        return logits
 
     def predict_iter(
         self,
@@ -333,20 +286,17 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         /,
         batch_size: int = 32,
         callbacks: Optional[Sequence[Callback]] = None,
-        loss_args: Optional[Dict[str, Any]] = None,
-    ) -> Generator[Tuple[int, RecordBatch, Z, LossDict[float]], None, None]:
+    ) -> Generator[Tuple[int, RecordBatch, Z, LossDict[torch.Tensor]], None, None]:
         device = next(self.parameters()).device
         if not isinstance(callbacks, CallbackList):
             callbacks = CallbackList(callbacks)
-        if isinstance(x, Dataset) and y is not None:
-            msg = "y should be None when x is a Dataset"
-            raise ValueError(msg)
-        test_dataset = x if isinstance(x, Dataset) else Dataset(x, y)
+        test_dataset = Dataset(x, y)
         test_dataloader = DataLoader(
             test_dataset,
             shuffle=False,
             batch_size=batch_size,
             collate_fn=self.collate_fn,
+            pin_memory=True,
         )
         callback_params = {}
         if callbacks.params is not None:
@@ -363,9 +313,10 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             batch = move_to_device(batch, device)
             with torch.no_grad():
                 batch_output = self.predict_on_batch(batch)
-            loss = self.compute_loss(batch, batch_output, **(loss_args or {}))
-            batch_output = move_to_device(detach(batch_output), "cpu")
-            batch_loss_dict = LossDict.from_loss(loss).item()
+                loss = self.compute_loss(batch, batch_output)
+            # batch_output = move_to_device(detach(batch_output), "cpu")
+            # batch_loss_dict = LossDict.from_loss(loss).detach()
+            batch_loss_dict = LossDict.from_loss(loss)
             total_loss_dict = batch_loss_dict + total_loss_dict
             batch_logs = {}
             callbacks.on_predict_batch_end(batch_idx, logs=batch_logs)
@@ -375,12 +326,30 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         n_batches = batch_idx + 1
         logs = {}
         if n_batches > 0 and total_loss_dict is not None:
-            average_loss_dict = (total_loss_dict / n_batches).to_dict()
-            logs.update(average_loss_dict)
+            average_loss_dict = total_loss_dict / n_batches
+            logs.update(average_loss_dict.cpu().item().to_dict())
         callbacks.on_predict_end(logs)
 
-    def predict_on_batch(self, batch: RecordBatch) -> Z:
-        raise NotImplementedError
+    def predict(
+        self,
+        x: XY,
+        y: Y = None,
+        /,
+        batch_size: int = 32,
+        callbacks: Optional[Sequence[Callback]] = None,
+    ) -> Z:
+        logits = None
+        for _, _, batch_output, _ in self.predict_iter(
+            x, y, batch_size=batch_size, callbacks=callbacks
+        ):
+            logits = concat((logits, batch_output["logits"]))
+        if logits is None:
+            msg = (
+                f"no predictions found for the given input data of "
+                f"type '{type(x).__name__}' and size {len(x)}"
+            )
+            raise ValueError(msg)
+        return logits
 
     def evaluate(
         self,
@@ -393,26 +362,26 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         return_dict: bool = False,
         prefix: str = "",
         callbacks: Optional[Sequence[Callback]] = None,
-        loss_args: Optional[Dict[str, Any]] = None,
     ) -> Union[Dict[str, Any], Tuple[Any, ...]]:
-        evaluator = metrics if isinstance(metrics, Evaluator) else Evaluator(metrics)
-        evaluator.reset()
+        if not isinstance(metrics, Evaluator):
+            metrics = Evaluator(metrics)
+        metrics.reset()
         n_batches, total_loss_dict = 0, None
         for _, batch, output, batch_loss_dict in self.predict_iter(
             x,
             y,
             callbacks=callbacks,
             batch_size=batch_size,
-            loss_args=loss_args,
         ):
             n_batches += 1
             total_loss_dict = batch_loss_dict + total_loss_dict
             eval_input = self.extract_eval_input(batch, output)
-            evaluator.update_state(**eval_input)
+            metrics.update_state(**eval_input)
         average_loss_dict = {}
         if include_loss:
             if n_batches > 0 and total_loss_dict is not None:
-                average_loss_dict = (total_loss_dict / n_batches).to_dict()
+                average_loss_dict = total_loss_dict / n_batches
+                average_loss_dict = average_loss_dict.cpu().to_dict()
             # add prefix to loss keys
             average_loss_dict = {
                 f"{prefix}{key}": value for key, value in average_loss_dict.items()
@@ -422,26 +391,25 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
                 **average_loss_dict,
                 **{
                     f"{prefix}{name}": value
-                    for name, value in evaluator.result(return_dict=True).items()
+                    for name, value in metrics.result(return_dict=True).items()
                 },
             }
         return (
             *(v for _, v in sorted(average_loss_dict.items())),
-            *evaluator.result(),
+            *metrics.result(),
         )
-
-    def extract_eval_input(  # noqa: PLR6301
-        self, batch: RecordBatch, output: Z
-    ) -> Dict[str, Any]:
-        return {"y_true": batch.y, "y_pred": output, "y_score": output}
-
-    def compute_loss(
-        self, batch: RecordBatch, output: Z, **kwargs: Any
-    ) -> torch.Tensor:
-        raise NotImplementedError
 
     def collate_fn(self, batch: Sequence[Record[XY, Y]]) -> RecordBatch:  # noqa: PLR6301
         batch = default_collate(batch)
         index = batch.pop("index")
         batch = batch["x"], batch.get("y", None)
         return RecordBatch(*batch, index=index)
+
+    def compute_loss(self, batch: RecordBatch, output: Z) -> torch.Tensor:
+        raise NotImplementedError
+
+    def predict_on_batch(self, batch: RecordBatch) -> Z:
+        raise NotImplementedError
+
+    def extract_eval_input(self, batch: RecordBatch, output: Z) -> Dict[str, Any]:
+        return {"y_true": batch.y, "y_pred": output, "y_score": output}
