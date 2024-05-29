@@ -340,12 +340,7 @@ class CallbackList(Callback, Sequence[Callback]):
         self._callbacks: List[Callback] = []
         self.extend(callbacks)
 
-    def extend(
-        self,
-        callbacks: Optional[List[Callback]],
-        /,
-        inplace: bool = True,
-    ) -> Self:
+    def extend(self, callbacks: List[Callback], /, inplace: bool = True) -> Self:
         inst = self if inplace else self.copy()
         if callbacks is None:
             return
