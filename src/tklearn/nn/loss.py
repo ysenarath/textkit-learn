@@ -86,13 +86,17 @@ class LossDict(Mapping[str, T], Generic[T]):
             c[key] = value
         return LossDict(c)
 
-    def to(self, device: torch.device) -> LossDict[T]:
+    def to(self, device: torch.device, non_blocking: bool = False) -> LossDict[T]:
         """Move all tensors to device."""
         c = {}
         for key, value in self.items():
             if isinstance(value, torch.Tensor):
-                value.to(device)
+                value.to(device, non_blocking=non_blocking)
         return LossDict(c)
+
+    def cpu(self) -> LossDict[T]:
+        """Move all tensors to cpu."""
+        return self.to(torch.device("cpu"))
 
     def item(self) -> LossDict[float]:
         """Convert all tensors to float."""
