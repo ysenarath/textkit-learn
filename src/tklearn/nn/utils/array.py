@@ -131,7 +131,7 @@ class MovableToDeviceMixin:
     def to(
         self,
         device: Union[str, torch.device],
-        detach: bool = False,
+        non_blocking: bool = False,
     ) -> Self:
         """Move the object to a device.
 
@@ -139,18 +139,19 @@ class MovableToDeviceMixin:
         ----------
         device : Union[str, torch.device]
             The device to move the object to.
+        non_blocking : bool, optional
+            Whether to move the object asynchronously, by default False.
 
         Returns
         -------
         output : MovableToDevice
             The object moved to the device.
         """
-        return move_to_device(self, device, detach=detach)
+        raise NotImplementedError
 
 
 def move_to_device(
-    obj: T,
-    device: Union[str, torch.device],
+    obj: T, device: Union[str, torch.device], non_blocking: bool = False
 ) -> T:
     """Move an object to a device.
 
@@ -171,21 +172,24 @@ def move_to_device(
         The object moved to the device.
     """
     if isinstance(obj, torch.nn.Module):
-        return obj.to(device)
+        return obj.to(device, non_blocking=non_blocking)
     elif isinstance(obj, torch.Tensor):
-        return obj.to(device)
+        return obj.to(device, non_blocking=non_blocking)
     elif isinstance(obj, MovableToDeviceMixin):
-        return obj.to(device)
+        return obj.to(device, non_blocking=non_blocking)
     elif isinstance(obj, Mapping):
-        return {k: move_to_device(v, device) for k, v in obj.items()}
+        return {
+            k: move_to_device(v, device, non_blocking=non_blocking)
+            for k, v in obj.items()
+        }
     elif isinstance(obj, Tuple) and hasattr(obj, "_fields"):
         # namedtuple
         dtype = type(obj)
-        return dtype(move_to_device(v, device) for v in obj)
+        return dtype(move_to_device(v, device, non_blocking=non_blocking) for v in obj)
     elif isinstance(obj, Tuple):
-        return tuple(move_to_device(v, device) for v in obj)
+        return tuple(move_to_device(v, device, non_blocking=non_blocking) for v in obj)
     elif isinstance(obj, List):
-        return [move_to_device(v, device) for v in obj]
+        return [move_to_device(v, device, non_blocking=non_blocking) for v in obj]
     return obj
 
 

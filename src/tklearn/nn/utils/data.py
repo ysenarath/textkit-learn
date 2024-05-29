@@ -82,11 +82,15 @@ class RecordBatch(tuple, MovableToDeviceMixin, Generic[XT, YT]):
     def index(self) -> np.ndarray[int]:
         return self._index
 
-    def to(self, device: Union[str, torch.device]) -> Self:
-        x = move_to_device(self.x, device)
+    def to(
+        self,
+        device: Union[str, torch.device],
+        non_blocking: bool = False,
+    ) -> Self:
+        x = move_to_device(self.x, device, non_blocking=non_blocking)
         if self.y is None:
             return RecordBatch(x, index=self.index)
-        y = move_to_device(self.y, device)
+        y = move_to_device(self.y, device, non_blocking=non_blocking)
         return RecordBatch(x, y, index=self.index)
 
     def _iloc_int(self, index: int) -> Record[XT, YT]:
@@ -116,6 +120,11 @@ class Dataset(TorchDataset, Generic[XT, YT]):
         /,
         iterable: bool = False,
     ) -> Self:
+        if isinstance(x, Dataset):
+            if y is not None:
+                msg = "y should be None when x is a Dataset"
+                raise ValueError(msg)
+            return x
         if iterable:
             return IterableDataset(x, y)
         return super().__new__(cls)
