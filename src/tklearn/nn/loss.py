@@ -74,8 +74,8 @@ class LossDict(Mapping[str, T], Generic[T]):
     @classmethod
     def from_loss(cls, loss: Union[Mapping[str, T], T]) -> LossDict[T]:
         if not isinstance(loss, Mapping):
-            dloss = {"loss": loss}
-        return cls(dloss)
+            loss = {"loss": loss}
+        return cls(loss)
 
     def detach(self) -> LossDict[T]:
         """Detach all tensors."""
