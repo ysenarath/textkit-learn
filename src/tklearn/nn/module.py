@@ -23,6 +23,7 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler as LRScheduler
 from torch.utils.data import DataLoader
 from torch.utils.data.dataloader import default_collate
+from torch.utils.data.sampler import Sampler
 from typing_extensions import ParamSpec, Self, Unpack
 from werkzeug.local import LocalProxy
 
@@ -73,6 +74,8 @@ class TrainingArgsDict(TypedDict):
     clip_grad_norm: Union[bool, float, Dict[str, Any], None]
     clip_grad_norm_args: Optional[Dict[str, Any]]
     callbacks: Optional[CallbackList]
+    sampler: Optional[Sampler]
+    batch_sampler: Optional[Sampler]
 
 
 @dataclass
@@ -126,6 +129,8 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             shuffle=shuffle,
             collate_fn=self.collate_fn,
             pin_memory=True,
+            sampler=training_args.get("sampler", None),
+            batch_sampler=training_args.get("batch_sampler", None),
         )
         callbacks = training_args.get("callbacks", None)
         if not isinstance(callbacks, CallbackList):
@@ -173,7 +178,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             n_batches = batch_idx + 1
             if n_batches > 0 and total_loss_dict is not None:
                 epoch_logs = total_loss_dict / n_batches
-                epoch_logs = epoch_logs.cpu().item().to_dict()
+                epoch_logs = epoch_logs.item().to_dict()
             else:
                 epoch_logs = {}
             if evaluate is not None:
@@ -327,7 +332,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         logs = {}
         if n_batches > 0 and total_loss_dict is not None:
             average_loss_dict = total_loss_dict / n_batches
-            logs.update(average_loss_dict.cpu().item().to_dict())
+            logs.update(average_loss_dict.item().to_dict())
         callbacks.on_predict_end(logs)
 
     def predict(
@@ -381,7 +386,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         if include_loss:
             if n_batches > 0 and total_loss_dict is not None:
                 average_loss_dict = total_loss_dict / n_batches
-                average_loss_dict = average_loss_dict.cpu().to_dict()
+                average_loss_dict = average_loss_dict.item().to_dict()
             # add prefix to loss keys
             average_loss_dict = {
                 f"{prefix}{key}": value for key, value in average_loss_dict.items()
