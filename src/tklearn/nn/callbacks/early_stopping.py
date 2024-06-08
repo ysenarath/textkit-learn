@@ -57,6 +57,7 @@ class EarlyStopping(Callback):
             self.monitor_op = np.greater
         elif (
             self.monitor.endswith("acc")
+            or self.monitor.endswith("accuracy")
             or self.monitor.endswith("auc")
             or self.monitor.endswith("_score")
         ):
