@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import functools
 import gc
 from collections.abc import Mapping
 from contextvars import ContextVar, copy_context
 from dataclasses import dataclass
 from typing import (
     Any,
+    Callable,
     Dict,
     Generator,
     Generic,
@@ -22,22 +22,25 @@ import torch
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler as LRScheduler
 from torch.utils.data import DataLoader
-from torch.utils.data.dataloader import default_collate
 from torch.utils.data.sampler import Sampler
 from typing_extensions import ParamSpec, Self, Unpack
 from werkzeug.local import LocalProxy
 
+from octoflow.utils import func
+from octoflow.utils.objects import Mapped
 from tklearn.nn.callbacks import Callback, CallbackList
 from tklearn.nn.loss import LossAccumulator
 from tklearn.nn.metrics import Evaluator, Metric
-from tklearn.nn.utils.array import concat, move_to_device
-from tklearn.nn.utils.data import Dataset, Record, RecordBatch
+from tklearn.nn.utils.array import concat, detach, move_to_device
+from tklearn.nn.utils.data import Dataset, Record, RecordBatch, default_collate
 
 P = ParamSpec("P")
 
 X, Y, Z = TypeVar("X"), TypeVar("Y"), TypeVar("Z")
 
 XY = Union[X, Tuple[X, Y], None]
+
+CollateFunctionType = Callable[[Sequence[Record[XY, Y]]], RecordBatch]
 
 _training_ctx_var = ContextVar("training_ctx", default=None)
 training_ctx: TrainingContext = LocalProxy(_training_ctx_var)
@@ -66,18 +69,16 @@ class TrainingArgsDict(TypedDict):
     validation_data: XY
     validation_batch_size: Optional[int]
     metrics: Union[Evaluator, Sequence[Metric], Dict[str, Metric], None]
-    optimizer: Union[str, Dict[str, Any], Optimizer]
-    optimizer_args: Optional[Dict[str, Any]]
-    lr_scheduler: Union[str, Dict[str, Any], LRScheduler, None]
-    lr_scheduler_args: Optional[Dict[str, Any]]
+    optimizer: Mapped[Optimizer]
+    lr_scheduler: Optional[Mapped[LRScheduler]]
     lr_scheduler_step: Optional[Dict[str, Any]]
-    clip_grad_norm: Union[bool, float, Dict[str, Any], None]
-    clip_grad_norm_args: Optional[Dict[str, Any]]
+    clip_grad_norm: Union[int, float, bool, Dict[str, Any], None]
     callbacks: Optional[CallbackList]
     sampler: Optional[Sampler]
     batch_sampler: Optional[Sampler]
     validation_sampler: Optional[Sampler]
     validation_batch_sampler: Optional[Sampler]
+    collate_fn: Optional[CollateFunctionType]
 
 
 @dataclass
@@ -135,6 +136,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         elif sampler is not None:
             batch_size = 1
             shuffle = None
+        collate_fn = training_args.get("collate_fn", default_collate)
         # batch_sampler option is mutually exclusive with batch_size, shuffle, sampler, and drop_last
         train_dataloader = DataLoader(
             train_dataset,
@@ -142,7 +144,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             shuffle=shuffle,
             sampler=sampler,
             batch_sampler=batch_sampler,
-            collate_fn=self.collate_fn,
+            collate_fn=collate_fn,
             pin_memory=True,
         )
         callbacks = training_args.get("callbacks", None)
@@ -153,8 +155,9 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         validation_sampler = training_args.get("validation_sampler", None)
         validation_batch_sampler = training_args.get("validation_batch_sampler", None)
         metrics = training_args.get("metrics")
-        evaluate = (
-            functools.partial(
+        evaluate = None
+        if validation_data is not None and metrics is not None:
+            evaluate = func.bind(
                 self.evaluate,
                 validation_data,
                 metrics=metrics,
@@ -164,10 +167,8 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
                 return_dict=True,
                 sampler=validation_sampler,
                 batch_sampler=validation_batch_sampler,
+                collate_fn=collate_fn,
             )
-            if validation_data is not None and metrics is not None
-            else None
-        )
         self.stop_training = False
         device = self.device
         self.train()
@@ -241,12 +242,11 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         if clip_grad_norm is False or clip_grad_norm is None:
             # do not clip gradients
             return
-        clip_grad_norm_args = training_ctx.args.get("clip_grad_norm_args", {})
         if isinstance(clip_grad_norm, (int, float, bool)):
-            clip_grad_norm_args["max_norm"] = float(clip_grad_norm)
-        elif isinstance(clip_grad_norm, dict):
-            clip_grad_norm_args.update(clip_grad_norm)
-        else:
+            clip_grad_norm = {
+                "max_norm": float(clip_grad_norm),
+            }
+        elif not isinstance(clip_grad_norm, dict):
             msg = (
                 "clip_grad_norm should be a boolean, int, float, or dict, but got "
                 f"'{clip_grad_norm.__class__.__name__}'"
@@ -254,15 +254,14 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             raise ValueError(msg)
         torch.nn.utils.clip_grad_norm_(
             self.parameters(),
-            **clip_grad_norm_args,
+            **clip_grad_norm,
         )
 
     def _fit_configure_optimizers(self):
         optimizer = training_ctx.args.get("optimizer")
         if isinstance(optimizer, str):
             optimizer_type = getattr(torch.optim, optimizer)
-            optimizer_args = training_ctx.args.get("optimizer_args", {})
-            optimizer = optimizer_type(self.parameters(), **optimizer_args)
+            optimizer = optimizer_type(self.parameters())
         if isinstance(optimizer, dict):
             optimizer_type = getattr(torch.optim, optimizer["@type"])
             optimizer_args = {
@@ -275,10 +274,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         lr_scheduler = training_ctx.args.get("lr_scheduler")
         if isinstance(lr_scheduler, str):
             lr_scheduler_type = getattr(torch.optim.lr_scheduler, lr_scheduler)
-            lr_scheduler_args = training_ctx.args.get("lr_schedule_args", {})
-            lr_scheduler = lr_scheduler_type(
-                training_ctx.optimizer, **lr_scheduler_args
-            )
+            lr_scheduler = lr_scheduler_type(training_ctx.optimizer)
         if isinstance(lr_scheduler, dict):
             lr_scheduler_type = getattr(torch.optim.lr_scheduler, lr_scheduler["@type"])
             lr_scheduler_args = {
@@ -295,9 +291,8 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             return
         lr_scheduler_step = training_ctx.args.get("lr_scheduler_step")
         if lr_scheduler_step is None:
-            scheduler.step()
-            return
-        if lr_scheduler_step.pop("on", "epoch") != iter_type:
+            lr_scheduler_step = "epoch"
+        if lr_scheduler_step != iter_type:
             return
         scheduler.step(**lr_scheduler_step)
 
@@ -310,9 +305,12 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         callbacks: Optional[Sequence[Callback]] = None,
         sampler: Optional[Sampler] = None,
         batch_sampler: Optional[Sampler] = None,
+        collate_fn: Optional[CollateFunctionType] = None,
     ) -> Generator[
         Tuple[int, RecordBatch, Z, LossAccumulator[torch.Tensor]], None, None
     ]:
+        if collate_fn is None:
+            collate_fn = default_collate
         device = next(self.parameters()).device
         if not isinstance(callbacks, CallbackList):
             callbacks = CallbackList(callbacks)
@@ -329,7 +327,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             batch_size=batch_size,
             sampler=sampler,
             batch_sampler=batch_sampler,
-            collate_fn=self.collate_fn,
+            collate_fn=collate_fn,
             pin_memory=True,
         )
         callback_params = {}
@@ -348,8 +346,8 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             with torch.no_grad():
                 batch_output = self.predict_on_batch(batch)
                 loss = self.compute_loss(batch, batch_output)
-            # batch_output = move_to_device(detach(batch_output), "cpu")
-            # batch_loss_dict = LossDict.from_loss(loss).detach()
+            batch_output = detach(batch_output)
+            batch_output = move_to_device(batch_output, "cpu")
             batch_loss_dict = LossAccumulator.from_loss(loss)
             total_loss_dict = batch_loss_dict + total_loss_dict
             batch_logs = {}
@@ -373,6 +371,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         callbacks: Optional[Sequence[Callback]] = None,
         sampler: Optional[Sampler] = None,
         batch_sampler: Optional[Sampler] = None,
+        collate_fn: Optional[CollateFunctionType] = None,
     ) -> Z:
         logits = None
         for _, _, batch_output, _ in self.predict_iter(
@@ -382,6 +381,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             callbacks=callbacks,
             sampler=sampler,
             batch_sampler=batch_sampler,
+            collate_fn=collate_fn,
         ):
             logits = concat((logits, batch_output["logits"]))
         if logits is None:
@@ -405,6 +405,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         callbacks: Optional[Sequence[Callback]] = None,
         sampler: Optional[Sampler] = None,
         batch_sampler: Optional[Sampler] = None,
+        collate_fn: Optional[CollateFunctionType] = None,
     ) -> Union[Dict[str, Any], Tuple[Any, ...]]:
         if not isinstance(metrics, Evaluator):
             metrics = Evaluator(metrics)
@@ -417,6 +418,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             batch_size=batch_size,
             sampler=sampler,
             batch_sampler=batch_sampler,
+            collate_fn=collate_fn,
         ):
             n_batches += 1
             total_loss_dict = batch_loss_dict + total_loss_dict
@@ -443,12 +445,6 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             *(v for _, v in sorted(average_loss_dict.items())),
             *metrics.result(),
         )
-
-    def collate_fn(self, batch: Sequence[Record[XY, Y]]) -> RecordBatch:  # noqa: PLR6301
-        batch = default_collate(batch)
-        index = batch.pop("index")
-        batch = batch["x"], batch.get("y", None)
-        return RecordBatch(*batch, index=index)
 
     def compute_loss(self, batch: RecordBatch, output: Z) -> torch.Tensor:
         raise NotImplementedError
