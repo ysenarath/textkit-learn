@@ -17,9 +17,9 @@ TargetType = Literal[
     "unknown",
 ]
 
-check_targets: Callable[
-    [ArrayLike, ArrayLike], tuple[str, ArrayLike, ArrayLike]
-] = _check_targets
+check_targets: Callable[[ArrayLike, ArrayLike], tuple[str, ArrayLike, ArrayLike]] = (
+    _check_targets
+)
 
 NUM_ARGS = 2
 
