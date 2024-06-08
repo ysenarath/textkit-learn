@@ -5,7 +5,7 @@ from typing import Any, Generic, Mapping, TypeVar, Union
 import torch
 from typing_extensions import Self
 
-from tklearn.utils import logging
+from octoflow import logging
 
 __all__ = [
     "LossAccumulator",
