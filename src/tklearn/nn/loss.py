@@ -8,7 +8,7 @@ from typing_extensions import Self
 from tklearn.utils import logging
 
 __all__ = [
-    "LossDict",
+    "LossAccumulator",
 ]
 
 T = TypeVar("T", torch.Tensor, float)
@@ -16,106 +16,102 @@ T = TypeVar("T", torch.Tensor, float)
 logger = logging.get_logger(__name__)
 
 
-class LossDict(Mapping[str, T], Generic[T]):
+class LossAccumulator(Mapping[str, T], Generic[T]):
     def __init__(self, *args, **kwargs):
         super().__init__()
-        self.components = {}
-        self.loss: T
+        losses: Mapping[str, T] = {}
         for key, value in dict(*args, **kwargs).items():
             if value is None:
                 msg = f"loss for '{key}' is None"
                 logger.warn(msg)
                 continue
-            self.components[key] = value
-            if getattr(self, "loss", None) is not None:
-                self.loss += value
-            else:
-                self.loss = value
+            losses[key] = value
+        self.losses = losses
+
+    def backward(self) -> None:
+        sum(self.losses.values()).backward()
 
     def __add__(self, other: Any) -> Self:
         if isinstance(other, Mapping):
-            components = {}
-            for key in set(self.components.keys()).union(other.keys()):
-                if key in self.components and key in other:
-                    components[key] = self.components[key] + other[key]
-                elif key in self.components:
-                    components[key] = self.components[key]
+            losses = {}
+            for key in set(self.keys()).union(other.keys()):
+                if key in self.losses and key in other:
+                    losses[key] = self.losses[key] + other[key]
+                elif key in self.losses:
+                    losses[key] = self.losses[key]
                 else:
-                    components[key] = other[key]
+                    losses[key] = other[key]
         elif other is None:
-            components = self.components
+            losses = self.losses
         else:
             raise NotImplementedError
-        return self.__class__(components)
+        return self.__class__(losses)
 
     def __truediv__(self, other: Any) -> Self:
-        new_components = {}
+        losses = {}
         if isinstance(other, Mapping):
             raise NotImplementedError
-        for key, value in self.components.items():
-            new_components[key] = value / other
-        return self.__class__(new_components)
+        for key, value in self.losses.items():
+            losses[key] = value / other
+        return self.__class__(losses)
 
     def __getitem__(self, __key: str) -> torch.Tensor:
-        return self.components[__key]
+        return self.losses[__key]
 
     def __iter__(self):
-        return iter(self.components)
+        return iter(self.losses)
 
     def __len__(self):
-        return len(self.components)
+        return len(self.losses)
 
     def __contains__(self, __key: str) -> bool:
-        return __key in self.components
+        return __key in self.losses
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.components})"
+        return f"{self.__class__.__name__}({self.losses})"
 
     @classmethod
-    def from_loss(cls, loss: Union[Mapping[str, T], T]) -> LossDict[T]:
+    def from_loss(cls, loss: Union[Mapping[str, T], T]) -> LossAccumulator[T]:
         if not isinstance(loss, Mapping):
             loss = {"loss": loss}
         return cls(loss)
 
-    def detach(self) -> LossDict[T]:
+    def detach(self) -> LossAccumulator[T]:
         """Detach all tensors."""
         c = {}
         for key, value in self.items():
             if isinstance(value, torch.Tensor):
                 value = value.detach()
             c[key] = value
-        return LossDict(c)
+        return LossAccumulator(c)
 
     def to(
         self, device: Union[torch.device, str], non_blocking: bool = False
-    ) -> LossDict[T]:
+    ) -> LossAccumulator[T]:
         """Move all tensors to device."""
         c = {}
         for key, value in self.items():
             if isinstance(value, torch.Tensor):
                 value = value.to(device, non_blocking=non_blocking)
             c[key] = value
-        return LossDict(c)
+        return LossAccumulator(c)
 
-    def cuda(self, non_blocking: bool = False) -> LossDict[T]:
+    def cuda(self, non_blocking: bool = False) -> LossAccumulator[T]:
         """Move all tensors to cuda."""
         return self.to("cuda", non_blocking=non_blocking)
 
-    def cpu(self) -> LossDict[T]:
+    def cpu(self) -> LossAccumulator[T]:
         """Move all tensors to cpu."""
         return self.to("cpu")
 
-    def item(self) -> LossDict[float]:
+    def item(self) -> LossAccumulator[float]:
         """Convert all tensors to float."""
         c = {}
         for key, value in self.items():
             if isinstance(value, torch.Tensor):
                 value = value.item()
             c[key] = value
-        return LossDict(c)
+        return LossAccumulator(c)
 
     def to_dict(self) -> dict:
-        c = {"loss": self.loss}
-        for key, value in self.items():
-            c[f"loss_{key}"] = value
-        return c
+        return dict(self)
