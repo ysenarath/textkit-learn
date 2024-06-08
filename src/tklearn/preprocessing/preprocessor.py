@@ -8,7 +8,7 @@ from typing import Any, List, Literal, Tuple, Union
 
 from nltk.corpus import stopwords
 
-from tklearn import lang, utils
+from tklearn import lang
 
 OptionLabel = Literal["remove", "normalize", "ignore"]
 
@@ -192,6 +192,3 @@ class TextPreprocessor:
             action = OPTION_LABEL_ACTIONS[option_label]
             x = action(pattern, replacement, x)
         return x.strip()
-
-    def _repr_html_(self) -> str:
-        return utils.html.repr_html(self)
