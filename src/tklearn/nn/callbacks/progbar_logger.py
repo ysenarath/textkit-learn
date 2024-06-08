@@ -1,8 +1,8 @@
 import math
 from typing import Optional
 
+from octoflow.utils.progbar import ProgressBar
 from tklearn.nn.callbacks.base import Callback
-from tklearn.nn.utils.progbar import ProgressBar
 
 __all__ = [
     "ProgbarLogger",
