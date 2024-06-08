@@ -17,6 +17,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset as TorchDataset
 from torch.utils.data import IterableDataset as IterableTorchDataset
+from torch.utils.data import default_collate as default_collate_base
 from typing_extensions import Self, TypedDict
 
 from tklearn.nn.utils.array import (
@@ -41,6 +42,13 @@ class Record(TypedDict, Generic[XT, YT]):
     x: XT
     y: YT
     index: int
+
+
+def default_collate(batch: Sequence[Record[XT, YT]]) -> RecordBatch:
+    batch = default_collate_base(batch)
+    index = batch.pop("index")
+    batch = batch["x"], batch.get("y", None)
+    return RecordBatch(*batch, index=index)
 
 
 class ILocRecordBatch:
