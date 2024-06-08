@@ -44,7 +44,7 @@ dependencies = [
     "sortedcontainers",
     "hnswlib",
     "flashtext",
-    "octoflow~=0.1.0",
+    "octoflow~=0.1.8",
     "langdetect",
 ]
 dynamic = ["version"]
