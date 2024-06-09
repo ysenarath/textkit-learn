@@ -10,6 +10,7 @@ from typing import (
     Dict,
     Generator,
     Generic,
+    List,
     Optional,
     Sequence,
     Tuple,
@@ -27,10 +28,15 @@ from typing_extensions import ParamSpec, Self, Unpack
 from werkzeug.local import LocalProxy
 
 from octoflow.utils import func
-from octoflow.utils.objects import Mapped
 from tklearn.nn.callbacks import Callback, CallbackList
 from tklearn.nn.loss import LossAccumulator
 from tklearn.nn.metrics import Evaluator, Metric
+from tklearn.nn.optim import (
+    MultipleLRSchedulers,
+    MultipleOptimizers,
+    configure_lr_schedulers,
+    configure_optimizers,
+)
 from tklearn.nn.utils.array import concat, detach, move_to_device
 from tklearn.nn.utils.data import Dataset, Record, RecordBatch, default_collate
 
@@ -69,9 +75,9 @@ class TrainingArgsDict(TypedDict):
     validation_data: XY
     validation_batch_size: Optional[int]
     metrics: Union[Evaluator, Sequence[Metric], Dict[str, Metric], None]
-    optimizer: Mapped[Optimizer]
-    lr_scheduler: Optional[Mapped[LRScheduler]]
-    lr_scheduler_step: Optional[Dict[str, Any]]
+    optimizer: Union[Optimizer, Dict[str, Any], str]
+    lr_scheduler: Union[LRScheduler, Dict[str, Any], str, None]
+    lr_scheduler_step: Optional[str]
     clip_grad_norm: Union[int, float, bool, Dict[str, Any], None]
     callbacks: Optional[CallbackList]
     sampler: Optional[Sampler]
@@ -86,6 +92,9 @@ class TrainingContext:
     args: Mapping[str, Any]
     optimizer: Optimizer = None
     lr_scheduler: Optional[LRScheduler] = None
+    batch_size: Optional[int] = None
+    epochs: Optional[int] = None
+    steps: Optional[int] = None
 
 
 class Module(torch.nn.Module, Generic[X, Y, Z]):
@@ -120,6 +129,10 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
                 _training_ctx_var.reset(token)
 
         return copy_context().run(run)
+
+    @property
+    def training_ctx(self) -> TrainingContext:
+        return training_ctx
 
     def _fit_with_context(self, x: XY, y: Y = None) -> Self:
         training_args = training_ctx.args
@@ -171,12 +184,15 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             )
         self.stop_training = False
         device = self.device
+        steps = len(train_dataloader)
+        epochs = training_args.get("epochs", 1)
+        training_ctx.batch_size = batch_size
+        training_ctx.epochs = epochs
+        training_ctx.steps = steps
+        params = {"batch_size": batch_size, "epochs": epochs, "steps": steps}
         self.train()
         self._fit_configure_optimizers()
-        steps = len(train_dataloader)
-        self._fit_configure_lr_scheduler()
-        epochs = training_args.get("epochs", 1)
-        params = {"batch_size": batch_size, "epochs": epochs, "steps": steps}
+        self._fit_configure_lr_schedulers()
         callbacks.set_params(params)
         callbacks.set_model(self)
         callbacks.on_train_begin()
@@ -192,7 +208,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
                     device=device,
                 )
                 total_loss_dict = batch_loss_dict + total_loss_dict
-            self._fit_lr_scheduler_step("train")
+            self._fit_lr_scheduler_step("epoch")
             n_batches = batch_idx + 1
             if n_batches > 0 and total_loss_dict is not None:
                 epoch_logs = total_loss_dict / n_batches
@@ -258,32 +274,16 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         )
 
     def _fit_configure_optimizers(self):
-        optimizer = training_ctx.args.get("optimizer")
-        if isinstance(optimizer, str):
-            optimizer_type = getattr(torch.optim, optimizer)
-            optimizer = optimizer_type(self.parameters())
-        if isinstance(optimizer, dict):
-            optimizer_type = getattr(torch.optim, optimizer["@type"])
-            optimizer_args = {
-                k: v for k, v in optimizer.items() if not k.startswith("@")
-            }
-            optimizer = optimizer_type(self.parameters(), **optimizer_args)
-        training_ctx.optimizer = optimizer
+        optimizers = self.configure_optimizers()
+        if isinstance(optimizers, (List, Tuple)):
+            optimizers = MultipleOptimizers(*optimizers)
+        training_ctx.optimizer = optimizers
 
-    def _fit_configure_lr_scheduler(self):
-        lr_scheduler = training_ctx.args.get("lr_scheduler")
-        if isinstance(lr_scheduler, str):
-            lr_scheduler_type = getattr(torch.optim.lr_scheduler, lr_scheduler)
-            lr_scheduler = lr_scheduler_type(training_ctx.optimizer)
-        if isinstance(lr_scheduler, dict):
-            lr_scheduler_type = getattr(torch.optim.lr_scheduler, lr_scheduler["@type"])
-            lr_scheduler_args = {
-                k: v for k, v in lr_scheduler.items() if not k.startswith("@")
-            }
-            lr_scheduler = lr_scheduler_type(
-                training_ctx.optimizer, **lr_scheduler_args
-            )
-        training_ctx.lr_scheduler = lr_scheduler
+    def _fit_configure_lr_schedulers(self):
+        lr_schedulers = self.configure_lr_schedulers()
+        if isinstance(lr_schedulers, (List, Tuple)):
+            lr_schedulers = MultipleLRSchedulers(*lr_schedulers)
+        training_ctx.lr_scheduler = lr_schedulers
 
     def _fit_lr_scheduler_step(self, iter_type: str) -> None:
         scheduler = training_ctx.lr_scheduler
@@ -294,7 +294,8 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             lr_scheduler_step = "epoch"
         if lr_scheduler_step != iter_type:
             return
-        scheduler.step(**lr_scheduler_step)
+        lr_scheduler_step_args = {}
+        scheduler.step(**lr_scheduler_step_args)
 
     def predict_iter(
         self,
@@ -454,3 +455,11 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
 
     def extract_eval_input(self, batch: RecordBatch, output: Z) -> Dict[str, Any]:
         return {"y_true": batch.y, "y_pred": output, "y_score": output}
+
+    def configure_optimizers(self) -> Union[Optimizer, Tuple[Optimizer]]:
+        config = training_ctx.args.get("optimizer")
+        return configure_optimizers(self, config)
+
+    def configure_lr_schedulers(self) -> Union[LRScheduler, Tuple[LRScheduler], None]:
+        config = training_ctx.args.get("lr_scheduler")
+        return configure_lr_schedulers(self, config)
