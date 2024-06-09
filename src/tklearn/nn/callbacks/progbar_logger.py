@@ -102,15 +102,7 @@ class ProgbarLogger(Callback):
         """
         if logs is None:
             logs = {}
-        essential_logs = {
-            key: value
-            for key, value in logs.items()
-            if "loss" in key
-            or "acc" in key
-            or "f1" in key
-            or "precision" in key
-            or "recall" in key
-        }
+        essential_logs = {key: value for key, value in logs.items()}
         self.pbar.set_postfix(essential_logs, refresh=False)
         self.pbar.set_description_str(
             self.desc.format(
