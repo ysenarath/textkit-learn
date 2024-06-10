@@ -102,8 +102,6 @@ class ProgbarLogger(Callback):
         """
         if logs is None:
             logs = {}
-        essential_logs = {key: value for key, value in logs.items()}
-        self.pbar.set_postfix(essential_logs, refresh=False)
         self.pbar.set_description_str(
             self.desc.format(
                 epoch=epoch + 1,
@@ -111,6 +109,7 @@ class ProgbarLogger(Callback):
             ),
             refresh=False,
         )
+        self.pbar.table.add_row(logs)
 
     def on_train_end(self, logs=None):
         """
