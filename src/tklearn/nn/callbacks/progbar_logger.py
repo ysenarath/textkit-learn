@@ -49,6 +49,7 @@ class ProgbarLogger(Callback):
             str
         ] = "Training | Epoch: {epoch:4d} | Loss: {loss:0.4f} | Progress",
         prefix: Optional[str] = "Training",
+        exclude: Optional[list] = None,
     ):
         super().__init__()
         self.desc = desc
@@ -57,6 +58,7 @@ class ProgbarLogger(Callback):
         self.bar_format = f"{l_bar}{{bar}}{{r_bar}}"
         self.pbar = None
         self.pred_pbar = None
+        self.exclude = exclude
 
     def on_train_begin(self, logs=None):
         """
@@ -109,6 +111,11 @@ class ProgbarLogger(Callback):
             ),
             refresh=False,
         )
+        logs = {
+            k: f"{v:0.4f}" if isinstance(v, float) else v
+            for k, v in logs.items()
+            if k not in self.exclude
+        }
         self.pbar.table.add_row(logs)
 
     def on_train_end(self, logs=None):
