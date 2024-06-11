@@ -60,7 +60,7 @@ class OptimizerBuilder:
             return self.config
         if isinstance(params, torch.nn.Module):
             params = params.parameters()
-        optimizer_type = getattr(torch.optim, self["@type"])
+        optimizer_type = getattr(torch.optim, self.config["@type"])
         optimizer_args = {k: v for k, v in self.config.items() if not k.startswith("@")}
         return optimizer_type(params, **optimizer_args)
 
