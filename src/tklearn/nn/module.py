@@ -25,7 +25,6 @@ from torch.optim.lr_scheduler import _LRScheduler as LRScheduler
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import Sampler
 from typing_extensions import ParamSpec, Self, Unpack
-from werkzeug.local import LocalProxy
 
 from octoflow.utils import func
 from tklearn.nn.callbacks import Callback, CallbackList
@@ -47,9 +46,6 @@ X, Y, Z = TypeVar("X"), TypeVar("Y"), TypeVar("Z")
 XY = Union[X, Tuple[X, Y], None]
 
 CollateFunctionType = Callable[[Sequence[Record[XY, Y]]], RecordBatch]
-
-_training_ctx_var = ContextVar("training_ctx", default=None)
-training_ctx: TrainingContext = LocalProxy(_training_ctx_var)
 
 
 def empty_cache():
@@ -92,9 +88,23 @@ class TrainingContext:
     args: Mapping[str, Any]
     optimizer: Optimizer = None
     lr_scheduler: Optional[LRScheduler] = None
-    batch_size: Optional[int] = None
     epochs: Optional[int] = None
     steps: Optional[int] = None
+
+
+@dataclass
+class PredictionContext:
+    args: Mapping[str, Any]
+    steps: Optional[int] = None
+
+
+@dataclass
+class ModuleContext:
+    training: Optional[TrainingContext] = None
+    prediction: Optional[PredictionContext] = None
+
+
+_global_cv = ContextVar("global_cv", default=ModuleContext())
 
 
 class Module(torch.nn.Module, Generic[X, Y, Z]):
@@ -119,23 +129,25 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
     def stop_training(self, value: bool) -> None:
         self._stop_training = value
 
+    @property
+    def context(self) -> ModuleContext:
+        return _global_cv.get()
+
     def fit(self, x: XY, y: Y = None, /, **kwargs: Unpack[TrainingArgsDict]) -> Self:
         def run():
-            ctx = TrainingContext(args=kwargs)
-            token = _training_ctx_var.set(ctx)
+            ctx = ModuleContext(
+                training=TrainingContext(args=kwargs),
+            )
+            token = _global_cv.set(ctx)
             try:
                 return self._fit_with_context(x, y)
             finally:
-                _training_ctx_var.reset(token)
+                _global_cv.reset(token)
 
         return copy_context().run(run)
 
-    @property
-    def training_ctx(self) -> TrainingContext:
-        return training_ctx
-
     def _fit_with_context(self, x: XY, y: Y = None) -> Self:
-        training_args = training_ctx.args
+        training_args = self.context.training.args
         batch_size = training_args.get("batch_size", 32)
         train_dataset = Dataset(x, y)
         shuffle = training_args.get("shuffle", True)
@@ -149,7 +161,9 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         elif sampler is not None:
             batch_size = 1
             shuffle = None
-        collate_fn = training_args.get("collate_fn", default_collate)
+        collate_fn = training_args.get("collate_fn", None)
+        if collate_fn is None:
+            collate_fn = default_collate
         # batch_sampler option is mutually exclusive with batch_size, shuffle, sampler, and drop_last
         train_dataloader = DataLoader(
             train_dataset,
@@ -186,9 +200,8 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         device = self.device
         steps = len(train_dataloader)
         epochs = training_args.get("epochs", 1)
-        training_ctx.batch_size = batch_size
-        training_ctx.epochs = epochs
-        training_ctx.steps = steps
+        self.context.training.epochs = epochs
+        self.context.training.steps = steps
         params = {"batch_size": batch_size, "epochs": epochs, "steps": steps}
         self.train()
         self._fit_configure_optimizers()
@@ -240,10 +253,10 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         batch_output = self.predict_on_batch(batch)
         loss = self.compute_loss(batch, batch_output)
         batch_loss_dict = LossAccumulator.from_loss(loss)
-        training_ctx.optimizer.zero_grad()
+        self.context.training.optimizer.zero_grad()
         batch_loss_dict.backward()
         self._fit_clip_grad_norm()
-        training_ctx.optimizer.step()
+        self.context.training.optimizer.step()
         self._fit_lr_scheduler_step("batch")
         batch_logs = {}
         if callbacks:
@@ -254,7 +267,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         return batch_loss_dict.detach()
 
     def _fit_clip_grad_norm(self) -> None:
-        clip_grad_norm = training_ctx.args.get("clip_grad_norm")
+        clip_grad_norm = self.context.training.args.get("clip_grad_norm")
         if clip_grad_norm is False or clip_grad_norm is None:
             # do not clip gradients
             return
@@ -268,28 +281,25 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
                 f"'{clip_grad_norm.__class__.__name__}'"
             )
             raise ValueError(msg)
-        torch.nn.utils.clip_grad_norm_(
-            self.parameters(),
-            **clip_grad_norm,
-        )
+        torch.nn.utils.clip_grad_norm_(self.parameters(), **clip_grad_norm)
 
     def _fit_configure_optimizers(self):
         optimizers = self.configure_optimizers()
         if isinstance(optimizers, (List, Tuple)):
             optimizers = MultipleOptimizers(*optimizers)
-        training_ctx.optimizer = optimizers
+        self.context.training.optimizer = optimizers
 
     def _fit_configure_lr_schedulers(self):
         lr_schedulers = self.configure_lr_schedulers()
         if isinstance(lr_schedulers, (List, Tuple)):
             lr_schedulers = MultipleLRSchedulers(*lr_schedulers)
-        training_ctx.lr_scheduler = lr_schedulers
+        self.context.training.lr_scheduler = lr_schedulers
 
     def _fit_lr_scheduler_step(self, iter_type: str) -> None:
-        scheduler = training_ctx.lr_scheduler
+        scheduler = self.context.training.lr_scheduler
         if scheduler is None:
             return
-        lr_scheduler_step = training_ctx.args.get("lr_scheduler_step")
+        lr_scheduler_step = self.context.training.args.get("lr_scheduler_step")
         if lr_scheduler_step is None:
             lr_scheduler_step = "epoch"
         if lr_scheduler_step != iter_type:
@@ -310,18 +320,45 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
     ) -> Generator[
         Tuple[int, RecordBatch, Z, LossAccumulator[torch.Tensor]], None, None
     ]:
-        if collate_fn is None:
-            collate_fn = default_collate
-        device = next(self.parameters()).device
-        if not isinstance(callbacks, CallbackList):
-            callbacks = CallbackList(callbacks)
+        def run():
+            ctx = ModuleContext(
+                # keep existing training context
+                training=self.context.training,
+                # update prediction context
+                prediction=PredictionContext(
+                    args={
+                        "batch_size": batch_size,
+                        "callbacks": callbacks,
+                        "sampler": sampler,
+                        "batch_sampler": batch_sampler,
+                        "collate_fn": collate_fn,
+                    }
+                ),
+            )
+            token = _global_cv.set(ctx)
+            try:
+                yield from self._predict_iter_with_context(x, y)
+            finally:
+                # reset global context
+                _global_cv.reset(token)
+
+        return copy_context().run(run)
+
+    def _predict_iter_with_context(self, x: XY, y: Y = None) -> Generator:
+        device = self.device
         test_dataset = Dataset(x, y)
         # batch_sampler option is mutually exclusive with batch_size, shuffle, sampler, and drop_last
+        batch_size = self.context.prediction.args["batch_size"]
+        batch_sampler = self.context.prediction.args.get("batch_sampler", None)
+        sampler = self.context.prediction.args.get("sampler", None)
         if batch_sampler is not None:
             batch_size = 1
             sampler = None
         elif sampler is not None:
             batch_size = 1
+        collate_fn = self.context.prediction.args.get("collate_fn")
+        if collate_fn is None:
+            collate_fn = default_collate
         test_dataloader = DataLoader(
             test_dataset,
             shuffle=False,
@@ -332,9 +369,13 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             pin_memory=True,
         )
         callback_params = {}
+        callbacks = self.context.prediction.args.get("callbacks", None)
+        if not isinstance(callbacks, CallbackList):
+            callbacks = CallbackList(callbacks)
         if callbacks.params is not None:
             callback_params.update(callbacks.params)
-        callback_params.update({"pred_steps": len(test_dataloader)})
+        self.context.prediction.steps = len(test_dataloader)
+        callback_params.update({"pred_steps": self.context.prediction.steps})
         callbacks.set_params(callback_params)
         self.eval()
         callbacks.on_predict_begin()
@@ -457,9 +498,9 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         return {"y_true": batch.y, "y_pred": output, "y_score": output}
 
     def configure_optimizers(self) -> Union[Optimizer, Tuple[Optimizer]]:
-        config = training_ctx.args.get("optimizer")
+        config = self.context.training.args.get("optimizer")
         return configure_optimizers(self, config)
 
     def configure_lr_schedulers(self) -> Union[LRScheduler, Tuple[LRScheduler], None]:
-        config = training_ctx.args.get("lr_scheduler")
+        config = self.context.training.args.get("lr_scheduler")
         return configure_lr_schedulers(self, config)
