@@ -25,9 +25,12 @@ def deepcopy(x: T, device: Union[str, torch.device, None] = None) -> T:
     elif isinstance(device, str):
         device = torch.device(device)
     if device != current_device:
-        move_to_device(x, device)
+        # if x is a module it will be inplace
+        #   then it should be moved back to the
+        #   original device
+        x = move_to_device(x, device)
         model_copy = copy.deepcopy(x)
-        move_to_device(x, current_device)
+        x = move_to_device(x, current_device)
     else:
         model_copy = copy.deepcopy(x)
     return model_copy
