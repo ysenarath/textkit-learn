@@ -96,7 +96,9 @@ class ModelCheckpoint(Callback):
         save_best_only: bool = False,
         save_weights_only: bool = False,
         mode: Literal["auto", "min", "max"] = "auto",
-        save_freq: Literal["epoch", "batch"] = "epoch",  # "epoch" or "batch" or integer
+        save_freq: Union[
+            Literal["epoch", "batch"], int
+        ] = "epoch",  # "epoch" or "batch" or integer
         initial_value_threshold: Union[float, int, None] = None,
     ):
         super().__init__()
