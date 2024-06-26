@@ -90,7 +90,7 @@ def _validate_save_weights_only(save_weights_only: bool, filepath: Union[Path, s
 class ModelCheckpoint(Callback):
     def __init__(
         self,
-        filepath: Union[str, Path],
+        filepath: str,
         monitor: str = "val_loss",
         verbose: int = 0,
         save_best_only: bool = False,
