@@ -108,7 +108,7 @@ class ModelCheckpoint(Callback):
         self.verbose = verbose
         self.save_best_only = save_best_only
         self.save_weights_only = _validate_save_weights_only(
-            save_weights_only, filepath
+            save_weights_only, self.filepath
         )
         self.mode = mode
         self.save_freq = _validate_save_freq(cls, save_freq)
