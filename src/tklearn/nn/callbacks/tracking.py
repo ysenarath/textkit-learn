@@ -7,7 +7,7 @@ __all__ = [
 ]
 
 if TYPE_CHECKING:
-    from octoflow.tracking.models import Run
+    from octoflow.tracking import Run
 
 
 class TrackingCallback(Callback):
