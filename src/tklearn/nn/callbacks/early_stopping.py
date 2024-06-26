@@ -1,10 +1,10 @@
-import copy
-from typing import Optional
+from typing import Literal, Optional
 
 import numpy as np
 
 from octoflow import logging
 from tklearn.nn.callbacks.base import Callback
+from tklearn.nn.utils import copy
 
 __all__ = [
     "EarlyStopping",
@@ -20,7 +20,7 @@ class EarlyStopping(Callback):
         min_delta: float = 0,
         patience: int = 0,
         verbose: int = 0,
-        mode: str = "auto",
+        mode: Literal["auto", "min", "max"] = "auto",
         baseline: Optional[float] = None,
         restore_best_weights: bool = True,
         start_from_epoch: int = 0,
@@ -30,11 +30,10 @@ class EarlyStopping(Callback):
         self.min_delta = min_delta
         self.patience = patience
         self.verbose = verbose
-        self.mode = mode
+        self.mode = mode  # options: auto, min, max
         self.baseline = baseline
         self.restore_best_weights = restore_best_weights
         self.start_from_epoch = start_from_epoch
-        # {min, max, auto}
         self.wait = 0
         self.stopped_epoch = 0
         self.best = np.Inf if self.monitor_op == np.less else -np.Inf
@@ -86,7 +85,7 @@ class EarlyStopping(Callback):
             return
         if self.restore_best_weights and self.best_weights is None:
             # Restore the weights after first epoch if no progress is ever made.
-            self.best_weights = copy.deepcopy(self.model.state_dict())
+            self.best_weights = copy.deepcopy(self.model.state_dict(), device="cpu")
         self.wait += 1
         if self._is_improvement(current, self.best):
             if self.verbose > 0:
@@ -99,7 +98,7 @@ class EarlyStopping(Callback):
             self.best = current
             self.best_epoch = epoch
             if self.restore_best_weights:
-                self.best_weights = copy.deepcopy(self.model.state_dict())
+                self.best_weights = copy.deepcopy(self.model.state_dict(), device="cpu")
             # Only restart wait if we beat both the baseline and our previous
             # best.
             if self.baseline is None or self._is_improvement(current, self.baseline):
@@ -111,7 +110,7 @@ class EarlyStopping(Callback):
             if self.restore_best_weights and self.best_weights is not None:
                 if self.verbose > 0:
                     pass
-                self.model.load_state_dict(self.best_weights)
+                self.model.load_state_dict(self.best_weights, strict=True)
             self.model.stop_training = True
 
     def get_monitor_value(self, logs):
