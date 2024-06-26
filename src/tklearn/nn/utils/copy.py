@@ -13,7 +13,7 @@ def _get_device(model: Any) -> torch.device:
     if isinstance(model, nn.Module):
         return model.device
     elif isinstance(model, Mapping):
-        return next(iter(model.values())).device
+        return _get_device(next(iter(model.values())))
     msg = (
         "model must be either a nn.Module or a Mapping,"
         f" got {model.__class__.__name__}"
