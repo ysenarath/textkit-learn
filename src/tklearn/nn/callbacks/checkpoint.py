@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Union
 
 import torch
-from transformers import PreTrainedModel
 
 from tklearn.nn.callbacks.base import Callback
 
@@ -30,34 +29,34 @@ class ModelCheckpoint(Callback):
         self.verbose = verbose
         self.save_freq = save_freq
         self.step = 0
+        self.epoch = 0
 
     def on_train_begin(self, logs=None):
         # reset the value of step
         self.filepath.mkdir(parents=True, exist_ok=True)
         self.step = 0
 
-    def on_epoch_end(self, epoch: int, logs=None):
-        if self.save_freq == "epoch":
-            self.save_model()
-
     def on_train_batch_end(self, batch, logs=None):
         self.step += 1
         if self.save_freq == "batch":
-            self.save_model()
+            self._save_model()
 
-    def save_model(self):
-        model = self.model
-        if model is None:
+    def on_epoch_end(self, epoch: int, logs=None):
+        self.epoch = epoch
+        if self.save_freq == "epoch":
+            self._save_model()
+
+    def _save_model(self):
+        if self.model is None:
             msg = "model not found"
             raise ValueError(msg)
-        if isinstance(model, PreTrainedModel):
-            model_path = self.filepath / f"checkpoint-{self.step:0004d}"
-            model.save_pretrained(model_path)
-        elif isinstance(model, torch.nn.Module):
-            torch.save(
-                model.state_dict(),
-                self.filepath / f"checkpoint-{self.step:0004d}.pt",
+        filename = f"checkpoints-epoch-{self.epoch}-step-{self.step}.pt"
+        filepath = self.filepath / filename
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        if not isinstance(self.model, torch.nn.Module):
+            msg = (
+                "model should be an instance of torch.nn.Module,"
+                f" got {self.model.__class__.__name__}"
             )
-        else:
-            msg = f"unsupported model: {type(model).__name__}"
             raise TypeError(msg)
+        torch.save(self.model.state_dict(), filepath)
