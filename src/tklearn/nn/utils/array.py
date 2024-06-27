@@ -41,7 +41,7 @@ T = TypeVar("T")
 RT = Union[Mapping[Any, "RT"], Tuple["RT", ...], nt.NDArray[Any], torch.Tensor]
 
 
-def to_numpy(obj: object) -> RT:
+def to_numpy(obj: object, *args) -> RT:
     """Convert an object to a numpy array.
 
     Parameters
@@ -54,6 +54,8 @@ def to_numpy(obj: object) -> RT:
     output : Any
         The object converted to a numpy array.
     """
+    if len(args) > 0:
+        return (to_numpy(obj), *map(to_numpy, args))
     if isinstance(obj, torch.Tensor):
         return obj.detach().cpu().numpy()
     elif isinstance(obj, Dict):
