@@ -36,8 +36,8 @@ from tklearn.nn.optim import (
     configure_lr_schedulers,
     configure_optimizers,
 )
-from tklearn.nn.utils.array import concat, detach, move_to_device
 from tklearn.nn.utils.data import Dataset, Record, RecordBatch, default_collate
+from tklearn.utils.array import concat, detach, move_to_device
 
 P = ParamSpec("P")
 

@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import stats
 
-from tklearn.nn.utils.array import to_numpy
+from tklearn.utils.array import to_numpy
 
 __all__ = [
     "mcnemar",

@@ -3,7 +3,11 @@ from typing import Any, Mapping, TypeVar, Union
 
 import torch
 
-from tklearn.nn.utils.array import move_to_device
+from tklearn.utils.array import move_to_device
+
+__all__ = [
+    "deepcopy",
+]
 
 T = TypeVar("T", bound=Any)
 
@@ -19,7 +23,10 @@ def _get_device(x: Any) -> torch.device:
 
 def deepcopy(x: T, device: Union[str, torch.device, None] = None) -> T:
     """Deep copy a model."""
-    current_device = _get_device(x)
+    try:
+        current_device = _get_device(x)
+    except TypeError:
+        return copy.deepcopy(x)
     if device is None:
         device = current_device
     elif isinstance(device, str):

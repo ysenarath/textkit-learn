@@ -20,7 +20,7 @@ from torch.utils.data import IterableDataset as IterableTorchDataset
 from torch.utils.data import default_collate as default_collate_base
 from typing_extensions import Self, TypedDict
 
-from tklearn.nn.utils.array import (
+from tklearn.utils.array import (
     MovableToDeviceMixin,
     get_index,
     length_of_first_array_like_in_nested_dict,

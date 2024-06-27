@@ -4,7 +4,7 @@ import numpy as np
 
 from octoflow import logging
 from tklearn.nn.callbacks.base import Callback
-from tklearn.nn.utils import copy
+from tklearn.utils import copy
 
 __all__ = [
     "EarlyStopping",

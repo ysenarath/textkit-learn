@@ -3,7 +3,7 @@ from typing import Dict
 import numpy as np
 from sklearn.metrics import roc_auc_score
 
-from tklearn.nn.utils.array import to_numpy
+from tklearn.utils.array import to_numpy
 
 __all__ = [
     "nuanced_bias_report",
