@@ -10,7 +10,7 @@ import numpy as np
 import torch
 from numpy.typing import NDArray
 
-from tklearn.nn.metrics.base import Metric
+from tklearn.metrics.base import Metric
 
 
 class StepsCounter(Metric):

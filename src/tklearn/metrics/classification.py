@@ -23,8 +23,8 @@ from sklearn.metrics import (
     roc_curve,
 )
 
-from tklearn.nn.metrics.base import Metric
-from tklearn.nn.metrics.common import (
+from tklearn.metrics.base import Metric
+from tklearn.metrics.common import (
     AccumMetric,
     sample_weight_getter,
     y_pred_getter,

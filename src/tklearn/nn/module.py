@@ -27,9 +27,9 @@ from torch.utils.data.sampler import Sampler
 from typing_extensions import ParamSpec, Self, Unpack
 
 from octoflow.utils import func
+from tklearn.metrics import Evaluator, Metric
 from tklearn.nn.callbacks import Callback, CallbackList
 from tklearn.nn.loss import LossAccumulator
-from tklearn.nn.metrics import Evaluator, Metric
 from tklearn.nn.optim import (
     MultipleLRSchedulers,
     MultipleOptimizers,
