@@ -44,13 +44,6 @@ class Record(TypedDict, Generic[XT, YT]):
     index: int
 
 
-def default_collate(batch: Sequence[Record[XT, YT]]) -> RecordBatch:
-    batch = default_collate_base(batch)
-    index = batch.pop("index")
-    batch = batch["x"], batch.get("y", None)
-    return RecordBatch(*batch, index=index)
-
-
 class ILocRecordBatch:
     def __init__(self, ref: RecordBatch) -> None:
         self.ref: RecordBatch = ref
@@ -183,3 +176,23 @@ class Dataset(TorchDataset, Generic[XT, YT]):
 class IterableDataset(Dataset, IterableTorchDataset):
     def __iter__(self) -> Generator[Record, None, None]:
         yield from (self[i] for i in range(len(self)))
+
+
+def default_collate(batch: Sequence[Record[XT, YT]]) -> RecordBatch[XT, YT]:
+    batch = default_collate_base(batch)
+    """        
+    * :class:`torch.Tensor` -> :class:`torch.Tensor` (with an added outer dimension batch size)
+    * NumPy Arrays -> :class:`torch.Tensor`
+    * `float` -> :class:`torch.Tensor`
+    * `int` -> :class:`torch.Tensor`
+    * `str` -> `str` (unchanged)
+    * `bytes` -> `bytes` (unchanged)
+    * `Mapping[K, V_i]` -> `Mapping[K, default_collate([V_1, V_2, ...])]`
+    * `NamedTuple[V1_i, V2_i, ...]` -> `NamedTuple[default_collate([V1_1, V1_2, ...]),
+        default_collate([V2_1, V2_2, ...]), ...]`
+    * `Sequence[V1_i, V2_i, ...]` -> `Sequence[default_collate([V1_1, V1_2, ...]),
+        default_collate([V2_1, V2_2, ...]), ...]`
+    """
+    index = batch.pop("index")
+    batch = batch["x"], batch.get("y", None)
+    return RecordBatch(*batch, index=index)
