@@ -179,7 +179,7 @@ class IterableDataset(Dataset, IterableTorchDataset):
 
 
 def default_collate(batch: Sequence[Record[XT, YT]]) -> RecordBatch[XT, YT]:
-    batch = default_collate_base(batch)
+    batch: Record[XT, YT] = default_collate_base(batch)
     """        
     * :class:`torch.Tensor` -> :class:`torch.Tensor` (with an added outer dimension batch size)
     * NumPy Arrays -> :class:`torch.Tensor`
@@ -194,5 +194,5 @@ def default_collate(batch: Sequence[Record[XT, YT]]) -> RecordBatch[XT, YT]:
         default_collate([V2_1, V2_2, ...]), ...]`
     """
     index = batch.pop("index")
-    batch = batch["x"], batch.get("y", None)
+    batch = batch["x"], batch["y"] if "y" in batch else None
     return RecordBatch(*batch, index=index)
