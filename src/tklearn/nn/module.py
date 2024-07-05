@@ -161,9 +161,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         elif sampler is not None:
             batch_size = 1
             shuffle = None
-        collate_fn = training_args.get("collate_fn", None)
-        if collate_fn is None:
-            collate_fn = default_collate
+        collate_fn = self.configure_collate_fn()
         # batch_sampler option is mutually exclusive with batch_size, shuffle, sampler, and drop_last
         train_dataloader = DataLoader(
             train_dataset,
@@ -356,9 +354,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             sampler = None
         elif sampler is not None:
             batch_size = 1
-        collate_fn = self.context.prediction.args.get("collate_fn")
-        if collate_fn is None:
-            collate_fn = default_collate
+        collate_fn = self.configure_collate_fn()
         test_dataloader = DataLoader(
             test_dataset,
             shuffle=False,
@@ -429,7 +425,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         if logits is None:
             msg = (
                 f"no predictions found for the given input data of "
-                f"type '{type(x).__name__}' and size {len(x)}"
+                f"type '{x.__class__.__name__}' and size {len(x)}"
             )
             raise ValueError(msg)
         return logits
@@ -504,3 +500,14 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
     def configure_lr_schedulers(self) -> Union[LRScheduler, Tuple[LRScheduler], None]:
         config = self.context.training.args.get("lr_scheduler")
         return configure_lr_schedulers(self, config)
+
+    def configure_collate_fn(self) -> CollateFunctionType:
+        if self.context.prediction is None:
+            collate_fn = self.context.training.args.get("collate_fn")
+            if collate_fn is None:
+                collate_fn = default_collate
+        else:
+            collate_fn = self.context.prediction.args.get("collate_fn")
+            if collate_fn is None:
+                collate_fn = default_collate
+        return collate_fn

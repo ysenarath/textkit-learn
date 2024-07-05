@@ -117,7 +117,7 @@ class Metric:
     def __call__(self, **kwargs: Any) -> Any:
         evaluator = Evaluator(self)
         evaluator.update_state(**kwargs)
-        return evaluator.result()[0]
+        return evaluator.result(return_dict=False)[0]
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(...)"

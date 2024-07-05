@@ -77,7 +77,7 @@ class RocAuc(Metric):
 
     def __init__(
         self,
-        average: Optional[Literal["micro", "macro", "samples", "weighted"]] = "macro",
+        average: Optional[Literal["micro", "macro", "samples", "weighted"]] = "binary",
         max_fpr: Optional[float] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "raise",
         labels: Optional[ArrayLike] = None,
@@ -112,7 +112,7 @@ class Precision(Metric):
         self,
         average: Optional[
             Literal["binary", "micro", "macro", "samples", "weighted"]
-        ] = "macro",
+        ] = "binary",
         pos_label: Union[int, str] = 1,
         labels: Optional[ArrayLike] = None,
         zero_division: Any = 0.0,
@@ -147,7 +147,7 @@ class Recall(Metric):
         self,
         average: Optional[
             Literal["binary", "micro", "macro", "samples", "weighted"]
-        ] = "macro",
+        ] = "binary",
         pos_label: Union[int, str] = 1,
         labels: Optional[ArrayLike] = None,
         zero_division: Any = 0.0,
@@ -182,7 +182,7 @@ class F1Score(Metric):
         self,
         average: Optional[
             Literal["binary", "micro", "macro", "samples", "weighted"]
-        ] = "macro",
+        ] = "binary",
         labels: Optional[ArrayLike] = None,
         pos_label: Union[int, str] = 1,
         zero_division: Any = 0.0,
