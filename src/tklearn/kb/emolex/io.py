@@ -44,7 +44,7 @@ class EmoLexIO(ResourceIO):
         if path is None:
             path = config.cache_dir / "resources" / "nrc" / "NRC-Emotion-Lexicon.zip"
         self.path = path
-        self.data_path = (
+        data_path = (
             config.cache_dir
             / "resources"
             / "nrc"
@@ -52,6 +52,7 @@ class EmoLexIO(ResourceIO):
             / "NRC-Emotion-Lexicon"
             / "NRC-Emotion-Lexicon-ForVariousLanguages.txt"
         )
+        self.data_path = data_path
 
     def download(
         self,
@@ -82,10 +83,8 @@ class EmoLexIO(ResourceIO):
 
     def load(self, verbose: bool = False) -> Generator[dict, None, None]:
         """Load NRC Emotion Lexicon from file"""
-        df = pd.read_csv(
-            self.data_path,
-            delimiter="\t",
-        ).rename({"English Word": "English"}, axis=1)
+        df = pd.read_csv(self.data_path, delimiter="\t")
+        df = df.rename({"English Word": "English"}, axis=1)
         columns = []
         for col_idx, col_name in enumerate(df.columns):
             if col_idx < 11 and col_idx > 0:
@@ -98,9 +97,11 @@ class EmoLexIO(ResourceIO):
             col = (col_type, col_name)
             columns.append(col)
         df.columns = pd.MultiIndex.from_tuples(columns, names=["type", "name"])
-        progess_bar = None
-        if verbose:
-            progess_bar = tqdm.tqdm(total=len(df), desc="Loading EmoLex")
+        progess_bar = tqdm.tqdm(
+            total=len(df),
+            desc="Loading EmoLex",
+            disable=not verbose,
+        )
         for _, row in df.iterrows():
             data = {}
             labels = set()
@@ -115,7 +116,5 @@ class EmoLexIO(ResourceIO):
                     "language": str(lang),
                     **data,
                 }
-            if progess_bar:
-                progess_bar.update(1)
-        if progess_bar:
-            progess_bar.close()
+            progess_bar.update(1)
+        progess_bar.close()
