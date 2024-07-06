@@ -77,7 +77,7 @@ class RocAuc(Metric):
 
     def __init__(
         self,
-        average: Optional[Literal["micro", "macro", "samples", "weighted"]] = "binary",
+        average: Optional[Literal["micro", "macro", "samples", "weighted"]] = "macro",
         max_fpr: Optional[float] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "raise",
         labels: Optional[ArrayLike] = None,
