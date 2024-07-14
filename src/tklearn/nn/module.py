@@ -29,14 +29,14 @@ from typing_extensions import ParamSpec, Self, Unpack
 from octoflow.utils import func
 from tklearn.metrics import Evaluator, Metric
 from tklearn.nn.callbacks import Callback, CallbackList
-from tklearn.nn.loss import LossAccumulator
+from tklearn.nn.loss import MultiLoss
 from tklearn.nn.optim import (
     MultipleLRSchedulers,
     MultipleOptimizers,
     configure_lr_schedulers,
     configure_optimizers,
 )
-from tklearn.nn.utils.data import Dataset, Record, RecordBatch, default_collate
+from tklearn.nn.utils.data import Record, RecordBatch, TorchDataset, default_collate
 from tklearn.utils.array import concat, detach, move_to_device
 
 P = ParamSpec("P")
@@ -149,7 +149,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
     def _fit_with_context(self, x: XY, y: Y = None) -> Self:
         training_args = self.context.training.args
         batch_size = training_args.get("batch_size", 32)
-        train_dataset = Dataset(x, y)
+        train_dataset = TorchDataset(x, y)
         shuffle = training_args.get("shuffle", True)
         # batch_sampler option is mutually exclusive with batch_size, shuffle, sampler, and drop_last
         sampler = training_args.get("sampler", None)
@@ -242,7 +242,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         device: Union[str, torch.device],
         callbacks: Optional[CallbackList] = None,
         batch_idx: Optional[int] = None,
-    ) -> LossAccumulator[torch.Tensor]:
+    ) -> MultiLoss[torch.Tensor]:
         batch = move_to_device(batch, device, non_blocking=True)
         if callbacks:
             callbacks.on_train_batch_begin(batch_idx)
@@ -250,7 +250,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             self.train()
         batch_output = self.predict_on_batch(batch)
         loss = self.compute_loss(batch, batch_output)
-        batch_loss_dict = LossAccumulator.from_loss(loss)
+        batch_loss_dict = MultiLoss.from_dict(loss)
         self.context.training.optimizer.zero_grad()
         batch_loss_dict.backward()
         self._fit_clip_grad_norm()
@@ -315,9 +315,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         sampler: Optional[Sampler] = None,
         batch_sampler: Optional[Sampler] = None,
         collate_fn: Optional[CollateFunctionType] = None,
-    ) -> Generator[
-        Tuple[int, RecordBatch, Z, LossAccumulator[torch.Tensor]], None, None
-    ]:
+    ) -> Generator[Tuple[int, RecordBatch, Z, MultiLoss[torch.Tensor]], None, None]:
         def run():
             ctx = ModuleContext(
                 # keep existing training context
@@ -344,7 +342,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
 
     def _predict_iter_with_context(self, x: XY, y: Y = None) -> Generator:
         device = self.device
-        test_dataset = Dataset(x, y)
+        test_dataset = TorchDataset(x, y)
         # batch_sampler option is mutually exclusive with batch_size, shuffle, sampler, and drop_last
         batch_size = self.context.prediction.args["batch_size"]
         batch_sampler = self.context.prediction.args.get("batch_sampler", None)
@@ -386,7 +384,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
                 loss = self.compute_loss(batch, batch_output)
             batch_output = detach(batch_output)
             batch_output = move_to_device(batch_output, "cpu")
-            batch_loss_dict = LossAccumulator.from_loss(loss)
+            batch_loss_dict = MultiLoss.from_dict(loss)
             total_loss_dict = batch_loss_dict + total_loss_dict
             batch_logs = {}
             callbacks.on_predict_batch_end(batch_idx, logs=batch_logs)
@@ -491,7 +489,8 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         raise NotImplementedError
 
     def extract_eval_input(self, batch: RecordBatch, output: Z) -> Dict[str, Any]:
-        return {"y_true": batch.y, "y_pred": output, "y_score": output}
+        # return {"y_true": batch.y, "y_pred": output, "y_score": output}
+        raise NotImplementedError
 
     def configure_optimizers(self) -> Union[Optimizer, Tuple[Optimizer]]:
         config = self.context.training.args.get("optimizer")

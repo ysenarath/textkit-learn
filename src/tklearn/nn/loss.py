@@ -3,12 +3,14 @@ from __future__ import annotations
 from typing import Any, Generic, Mapping, TypeVar, Union
 
 import torch
+from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, Module, MSELoss
 from typing_extensions import Self
 
 from octoflow import logging
+from tklearn.utils.targets import TargetType, type_of_target
 
 __all__ = [
-    "LossAccumulator",
+    "MultiLoss",
 ]
 
 T = TypeVar("T", torch.Tensor, float)
@@ -16,7 +18,7 @@ T = TypeVar("T", torch.Tensor, float)
 logger = logging.get_logger(__name__)
 
 
-class LossAccumulator(Mapping[str, T], Generic[T]):
+class MultiLoss(Mapping[str, T], Generic[T]):
     def __init__(self, *args, **kwargs):
         super().__init__()
         losses: Mapping[str, T] = {}
@@ -71,47 +73,97 @@ class LossAccumulator(Mapping[str, T], Generic[T]):
         return f"{self.__class__.__name__}({self.losses})"
 
     @classmethod
-    def from_loss(cls, loss: Union[Mapping[str, T], T]) -> LossAccumulator[T]:
+    def from_dict(cls, loss: Union[Mapping[str, T], T]) -> MultiLoss[T]:
         if not isinstance(loss, Mapping):
             loss = {"loss": loss}
         return cls(loss)
 
-    def detach(self) -> LossAccumulator[T]:
+    def detach(self) -> MultiLoss[T]:
         """Detach all tensors."""
         c = {}
         for key, value in self.items():
             if isinstance(value, torch.Tensor):
                 value = value.detach()
             c[key] = value
-        return LossAccumulator(c)
+        return MultiLoss(c)
 
     def to(
         self, device: Union[torch.device, str], non_blocking: bool = False
-    ) -> LossAccumulator[T]:
+    ) -> MultiLoss[T]:
         """Move all tensors to device."""
         c = {}
         for key, value in self.items():
             if isinstance(value, torch.Tensor):
                 value = value.to(device, non_blocking=non_blocking)
             c[key] = value
-        return LossAccumulator(c)
+        return MultiLoss(c)
 
-    def cuda(self, non_blocking: bool = False) -> LossAccumulator[T]:
+    def cuda(self, non_blocking: bool = False) -> MultiLoss[T]:
         """Move all tensors to cuda."""
         return self.to("cuda", non_blocking=non_blocking)
 
-    def cpu(self) -> LossAccumulator[T]:
+    def cpu(self) -> MultiLoss[T]:
         """Move all tensors to cpu."""
         return self.to("cpu")
 
-    def item(self) -> LossAccumulator[float]:
+    def item(self) -> MultiLoss[float]:
         """Convert all tensors to float."""
         c = {}
         for key, value in self.items():
             if isinstance(value, torch.Tensor):
                 value = value.item()
             c[key] = value
-        return LossAccumulator(c)
+        return MultiLoss(c)
 
     def to_dict(self) -> dict:
         return dict(self)
+
+
+class TargetLossFunction(Module):
+    def __init__(self, num_labels: int, target_type: Union[str, TargetType]):
+        super().__init__()
+        self.num_labels = num_labels
+        if isinstance(target_type, str):
+            target_type = type_of_target(target_type)
+        self.target_type = target_type
+        self._loss_func = None
+
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        if self.target_type is None:
+            if self.num_labels == 1:
+                target_type = "continuous"
+            elif self.num_labels > 1 and (
+                target.dtype == torch.long or target.dtype == torch.int
+            ):
+                target_type = "multiclass"
+            else:
+                target_type = "multilabel-indicator"
+            self.target_type = target_type
+        if self._loss_func is None:
+            if self.target_type.label == "continuous":
+                loss_fct = MSELoss()
+            elif self.target_type.label == "multiclass":
+                # LogSoftmax on an input, followed by NLLLoss
+                # - input must be a Tensor of size either (minibatch, C) or
+                #   (minibatch, C, d1, d2, ..., dK)
+                # - target must be a class index in [0, C-1] (long)
+                loss_fct = CrossEntropyLoss()
+            elif self.target_type.label in ["binary", "multilabel-indicator"]:
+                # Sigmoid layer and the BCELoss
+                # - input and target must have same shape
+                loss_fct = BCEWithLogitsLoss()
+            else:
+                raise ValueError(
+                    f"loss function for '{self.target_type.label}' not found"
+                )
+            self._loss_func = loss_fct
+        if isinstance(self._loss_func, MSELoss):
+            if self.num_labels == 1:
+                loss = self._loss_func(input.squeeze(), target.squeeze())
+            else:
+                loss = self._loss_func(input, target)
+        elif isinstance(self._loss_func, CrossEntropyLoss):
+            loss = self._loss_func(input.view(-1, self.num_labels), target.view(-1))
+        else:
+            loss = self._loss_func(input, target)
+        return loss

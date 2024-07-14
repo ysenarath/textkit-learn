@@ -15,9 +15,9 @@ from typing import (
 
 import numpy as np
 import torch
-from torch.utils.data import Dataset as TorchDataset
-from torch.utils.data import IterableDataset as IterableTorchDataset
-from torch.utils.data import default_collate as default_collate_base
+from torch.utils.data import Dataset as BaseDataset
+from torch.utils.data import IterableDataset as IterableBaseDataset
+from torch.utils.data import default_collate as _default_collate
 from typing_extensions import Self, TypedDict
 
 from tklearn.utils.array import (
@@ -29,8 +29,8 @@ from tklearn.utils.array import (
 )
 
 __all__ = [
-    "Dataset",
-    "IterableDataset",
+    "TorchDataset",
+    "IterableTorchDataset",
     "Record",
     "RecordBatch",
 ]
@@ -83,16 +83,9 @@ class RecordBatch(tuple, MovableToDeviceMixin, Generic[XT, YT]):
     def index(self) -> np.ndarray[int]:
         return self._index
 
-    def to(
-        self,
-        device: Union[str, torch.device],
-        non_blocking: bool = False,
-    ) -> Self:
-        x = move_to_device(self.x, device, non_blocking=non_blocking)
-        if self.y is None:
-            return RecordBatch(x, index=self.index)
-        y = move_to_device(self.y, device, non_blocking=non_blocking)
-        return RecordBatch(x, y, index=self.index)
+    @property
+    def iloc(self) -> ILocRecordBatch:
+        return ILocRecordBatch(self)
 
     def _iloc_int(self, index: int) -> Record[XT, YT]:
         return {
@@ -108,12 +101,15 @@ class RecordBatch(tuple, MovableToDeviceMixin, Generic[XT, YT]):
             index=self.index[index],
         )
 
-    @property
-    def iloc(self) -> ILocRecordBatch:
-        return ILocRecordBatch(self)
+    def to(self, device: Union[str, torch.device], non_blocking: bool = False) -> Self:
+        x = move_to_device(self.x, device, non_blocking=non_blocking)
+        if self.y is None:
+            return RecordBatch(x, index=self.index)
+        y = move_to_device(self.y, device, non_blocking=non_blocking)
+        return RecordBatch(x, y, index=self.index)
 
 
-class Dataset(TorchDataset, Generic[XT, YT]):
+class TorchDataset(BaseDataset, Generic[XT, YT]):
     def __new__(
         cls,
         x: Sequence[XT],
@@ -121,13 +117,13 @@ class Dataset(TorchDataset, Generic[XT, YT]):
         /,
         iterable: bool = False,
     ) -> Self:
-        if isinstance(x, Dataset):
+        if isinstance(x, TorchDataset):
             if y is not None:
                 msg = "y should be None when x is a Dataset"
                 raise ValueError(msg)
             return x
         if iterable:
-            return IterableDataset(x, y)
+            return IterableTorchDataset(x, y)
         return super().__new__(cls)
 
     def __init__(
@@ -173,14 +169,13 @@ class Dataset(TorchDataset, Generic[XT, YT]):
         return repr(self._data)
 
 
-class IterableDataset(Dataset, IterableTorchDataset):
+class IterableTorchDataset(TorchDataset, IterableBaseDataset):
     def __iter__(self) -> Generator[Record, None, None]:
         yield from (self[i] for i in range(len(self)))
 
 
 def default_collate(batch: Sequence[Record[XT, YT]]) -> RecordBatch[XT, YT]:
-    batch: Record[XT, YT] = default_collate_base(batch)
-    """        
+    """
     * :class:`torch.Tensor` -> :class:`torch.Tensor` (with an added outer dimension batch size)
     * NumPy Arrays -> :class:`torch.Tensor`
     * `float` -> :class:`torch.Tensor`
@@ -193,6 +188,7 @@ def default_collate(batch: Sequence[Record[XT, YT]]) -> RecordBatch[XT, YT]:
     * `Sequence[V1_i, V2_i, ...]` -> `Sequence[default_collate([V1_1, V1_2, ...]),
         default_collate([V2_1, V2_2, ...]), ...]`
     """
+    batch: Record[XT, YT] = _default_collate(batch)
     index = batch.pop("index")
     batch = batch["x"], batch["y"] if "y" in batch else None
     return RecordBatch(*batch, index=index)
