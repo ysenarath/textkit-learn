@@ -93,11 +93,10 @@ class TransformerForSequenceClassification(Module):
             dropout=self.config.output_dropout,
         )
         self._loss_func = TargetLossFunction(
-            num_labels=num_labels, target_type=self.config.target_type
+            self.config.target_type, num_labels=num_labels
         )
 
     def forward(self, **kwargs):
-        print(kwargs)
         outputs = self.base_model(**kwargs)
         # pooler output is the representation of the [CLS]
         # token in BERT-like models
@@ -137,11 +136,13 @@ class TransformerForSequenceClassification(Module):
         return self(**kwargs)
 
     def compute_loss(self, batch: RecordBatch, output: OutputType):
+        logits = output["logits"]
         input = batch.y or batch.x["labels"]
         y_true = preprocess_input(
-            self.config.target_type, input, num_labels=self.config.num_labels
+            self.config.target_type,
+            input,
+            num_labels=self.config.num_labels,
         )
-        logits = output["logits"]
         return self._loss_func(logits, y_true)
 
     def extract_eval_input(self, batch: RecordBatch, output: OutputType):
@@ -150,5 +151,6 @@ class TransformerForSequenceClassification(Module):
             self.config.target_type, input, num_labels=self.config.num_labels
         )
         logits = output["logits"]
+        print(self.config.target_type)
         y_pred, y_score = preprocess_target(self.config.target_type, logits)
         return {"y_true": y_true, "y_pred": y_pred, "y_score": y_score}
