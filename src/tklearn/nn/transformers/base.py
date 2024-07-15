@@ -45,7 +45,6 @@ class TransformerConfig:
             else:
                 msg = f"target type '{target_type}' not supported"
                 raise ValueError(msg)
-            del kwargs["target_type"]
         if isinstance(self._hf_config, (BertConfig, RobertaConfig)):
             if "output_dropout" in kwargs:
                 kwargs["classifier_dropout"] = kwargs.pop("output_dropout")
@@ -84,6 +83,8 @@ class TransformerConfig:
 
     @property
     def target_type(self) -> TargetType:
+        if hasattr(self._hf_config, "target_type"):
+            return type_of_target(self._hf_config.target_type)
         problem_type = None
         if isinstance(self._hf_config, PretrainedConfig):
             problem_type: str = self._hf_config.problem_type
