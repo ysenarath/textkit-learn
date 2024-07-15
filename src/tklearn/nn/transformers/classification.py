@@ -138,19 +138,14 @@ class TransformerForSequenceClassification(Module):
     def compute_loss(self, batch: RecordBatch, output: OutputType):
         logits = output["logits"]
         input = batch.y or batch.x["labels"]
-        y_true = preprocess_input(
-            self.config.target_type,
-            input,
-            num_labels=self.config.num_labels,
-        )
+        target_type, num_labels = self.config.target_type, self.config.num_labels
+        y_true = preprocess_input(target_type, input, num_labels=num_labels)
         return self._loss_func(logits, y_true)
 
     def extract_eval_input(self, batch: RecordBatch, output: OutputType):
         input = batch.y or batch.x["labels"]
-        y_true = preprocess_input(
-            self.config.target_type, input, num_labels=self.config.num_labels
-        )
+        target_type, num_labels = self.config.target_type, self.config.num_labels
+        y_true = preprocess_input(target_type, input, num_labels=num_labels)
         logits = output["logits"]
-        print(self.config.target_type)
-        y_pred, y_score = preprocess_target(self.config.target_type, logits)
+        y_pred, y_score = preprocess_target(target_type, logits)
         return {"y_true": y_true, "y_pred": y_pred, "y_score": y_score}
