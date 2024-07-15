@@ -180,6 +180,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         validation_sampler = training_args.get("validation_sampler", None)
         validation_batch_sampler = training_args.get("validation_batch_sampler", None)
         metrics = training_args.get("metrics")
+        validate = validation_data is not None and metrics is not None
         self.stop_training = False
         device = self.device
         steps = len(train_dataloader)
@@ -212,7 +213,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
                 epoch_logs = epoch_logs.item().to_dict()
             else:
                 epoch_logs = {}
-            if validation_data is not None and metrics is not None:
+            if validate:
                 eval_results = self.evaluate(
                     validation_data,
                     metrics=metrics,
@@ -432,7 +433,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         metrics: Union[Evaluator, Sequence[Metric], Dict[str, Metric], None] = None,
         batch_size: int = 32,
         include_loss: bool = True,
-        return_dict: bool = False,
+        return_dict: bool = True,
         prefix: str = "",
         callbacks: Optional[Sequence[Callback]] = None,
         sampler: Optional[Sampler] = None,
@@ -473,10 +474,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
                     for name, value in metrics.result(return_dict=True).items()
                 },
             }
-        return (
-            *(v for _, v in sorted(average_loss_dict.items())),
-            *metrics.result(),
-        )
+        raise NotImplementedError
 
     def compute_loss(self, batch: RecordBatch, output: Z) -> torch.Tensor:
         raise NotImplementedError
