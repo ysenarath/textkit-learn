@@ -149,3 +149,17 @@ class TransformerForSequenceClassification(Module):
         logits = output["logits"]
         y_pred, y_score = preprocess_target(target_type, logits)
         return {"y_true": y_true, "y_pred": y_pred, "y_score": y_score}
+
+
+def freeze(
+    module: nn.Module,
+    freeze_embeddings: bool = False,
+    num_lower_encoder_layers: int = -1,
+):
+    for name, param in module.named_parameters():
+        if name.startswith("embeddings.") and freeze_embeddings:
+            param.requires_grad = False
+        if name.startswith("encoder.layer."):
+            encoder_layer_id = int(name.split(".")[2])
+            if encoder_layer_id <= num_lower_encoder_layers:
+                param.requires_grad = False
