@@ -111,12 +111,20 @@ class ProgbarLogger(Callback):
             ),
             refresh=False,
         )
-        logs = {
-            k: f"{v:0.4f}" if isinstance(v, float) else v
-            for k, v in logs.items()
-            if k not in self.exclude
-        }
-        self.pbar.table.add_row(logs)
+        row = {}
+        for k, v in logs.items():
+            if self.exclude is not None and k in self.exclude:
+                continue
+            if isinstance(v, float):
+                v = f"{v:0.4f}"
+            elif isinstance(v, int):
+                v = f"{v:d}"
+            elif isinstance(v, str):
+                v = (v[:10] + "...") if len(v) > 10 else v
+            else:
+                continue
+            row[k] = v
+        self.pbar.table.add_row(row)
 
     def on_train_end(self, logs=None):
         """
