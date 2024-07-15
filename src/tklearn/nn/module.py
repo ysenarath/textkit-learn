@@ -29,7 +29,7 @@ from typing_extensions import ParamSpec, Self, Unpack
 from octoflow.utils import func
 from tklearn.metrics import Evaluator, Metric
 from tklearn.nn.callbacks import Callback, CallbackList
-from tklearn.nn.loss import MultiLoss
+from tklearn.nn.loss import LossDict
 from tklearn.nn.optim import (
     MultipleLRSchedulers,
     MultipleOptimizers,
@@ -180,20 +180,6 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         validation_sampler = training_args.get("validation_sampler", None)
         validation_batch_sampler = training_args.get("validation_batch_sampler", None)
         metrics = training_args.get("metrics")
-        evaluate = None
-        if validation_data is not None and metrics is not None:
-            evaluate = func.bind(
-                self.evaluate,
-                validation_data,
-                metrics=metrics,
-                prefix="valid_",
-                callbacks=callbacks,
-                batch_size=validation_batch_size,
-                return_dict=True,
-                sampler=validation_sampler,
-                batch_sampler=validation_batch_sampler,
-                collate_fn=collate_fn,
-            )
         self.stop_training = False
         device = self.device
         steps = len(train_dataloader)
@@ -226,8 +212,18 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
                 epoch_logs = epoch_logs.item().to_dict()
             else:
                 epoch_logs = {}
-            if evaluate is not None:
-                eval_results = evaluate()
+            if validation_data is not None and metrics is not None:
+                eval_results = self.evaluate(
+                    validation_data,
+                    metrics=metrics,
+                    prefix="valid_",
+                    callbacks=callbacks,
+                    batch_size=validation_batch_size,
+                    return_dict=True,
+                    sampler=validation_sampler,
+                    batch_sampler=validation_batch_sampler,
+                    collate_fn=collate_fn,
+                )
                 epoch_logs.update(eval_results)
             callbacks.on_epoch_end(epoch_idx, logs=epoch_logs)
             if self.stop_training:
@@ -242,7 +238,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         device: Union[str, torch.device],
         callbacks: Optional[CallbackList] = None,
         batch_idx: Optional[int] = None,
-    ) -> MultiLoss[torch.Tensor]:
+    ) -> LossDict[torch.Tensor]:
         batch = move_to_device(batch, device, non_blocking=True)
         if callbacks:
             callbacks.on_train_batch_begin(batch_idx)
@@ -250,7 +246,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             self.train()
         batch_output = self.predict_on_batch(batch)
         loss = self.compute_loss(batch, batch_output)
-        batch_loss_dict = MultiLoss.from_dict(loss)
+        batch_loss_dict = LossDict.from_dict(loss)
         self.context.training.optimizer.zero_grad()
         batch_loss_dict.backward()
         self._fit_clip_grad_norm()
@@ -315,7 +311,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         sampler: Optional[Sampler] = None,
         batch_sampler: Optional[Sampler] = None,
         collate_fn: Optional[CollateFunctionType] = None,
-    ) -> Generator[Tuple[int, RecordBatch, Z, MultiLoss[torch.Tensor]], None, None]:
+    ) -> Generator[Tuple[int, RecordBatch, Z, LossDict[torch.Tensor]], None, None]:
         def run():
             ctx = ModuleContext(
                 # keep existing training context
@@ -384,7 +380,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
                 loss = self.compute_loss(batch, batch_output)
             batch_output = detach(batch_output)
             batch_output = move_to_device(batch_output, "cpu")
-            batch_loss_dict = MultiLoss.from_dict(loss)
+            batch_loss_dict = LossDict.from_dict(loss)
             total_loss_dict = batch_loss_dict + total_loss_dict
             batch_logs = {}
             callbacks.on_predict_batch_end(batch_idx, logs=batch_logs)

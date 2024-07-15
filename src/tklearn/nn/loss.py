@@ -3,14 +3,14 @@ from __future__ import annotations
 from typing import Any, Generic, Mapping, TypeVar, Union
 
 import torch
-from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, Module, MSELoss
+from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 from typing_extensions import Self
 
 from octoflow import logging
 from tklearn.utils.targets import TargetType, type_of_target
 
 __all__ = [
-    "MultiLoss",
+    "LossDict",
 ]
 
 T = TypeVar("T", torch.Tensor, float)
@@ -18,7 +18,7 @@ T = TypeVar("T", torch.Tensor, float)
 logger = logging.get_logger(__name__)
 
 
-class MultiLoss(Mapping[str, T], Generic[T]):
+class LossDict(Mapping[str, T], Generic[T]):
     def __init__(self, *args, **kwargs):
         super().__init__()
         losses: Mapping[str, T] = {}
@@ -73,54 +73,54 @@ class MultiLoss(Mapping[str, T], Generic[T]):
         return f"{self.__class__.__name__}({self.losses})"
 
     @classmethod
-    def from_dict(cls, loss: Union[Mapping[str, T], T]) -> MultiLoss[T]:
+    def from_dict(cls, loss: Union[Mapping[str, T], T]) -> LossDict[T]:
         if not isinstance(loss, Mapping):
             loss = {"loss": loss}
         return cls(loss)
 
-    def detach(self) -> MultiLoss[T]:
+    def detach(self) -> LossDict[T]:
         """Detach all tensors."""
         c = {}
         for key, value in self.items():
             if isinstance(value, torch.Tensor):
                 value = value.detach()
             c[key] = value
-        return MultiLoss(c)
+        return LossDict(c)
 
     def to(
         self, device: Union[torch.device, str], non_blocking: bool = False
-    ) -> MultiLoss[T]:
+    ) -> LossDict[T]:
         """Move all tensors to device."""
         c = {}
         for key, value in self.items():
             if isinstance(value, torch.Tensor):
                 value = value.to(device, non_blocking=non_blocking)
             c[key] = value
-        return MultiLoss(c)
+        return LossDict(c)
 
-    def cuda(self, non_blocking: bool = False) -> MultiLoss[T]:
+    def cuda(self, non_blocking: bool = False) -> LossDict[T]:
         """Move all tensors to cuda."""
         return self.to("cuda", non_blocking=non_blocking)
 
-    def cpu(self) -> MultiLoss[T]:
+    def cpu(self) -> LossDict[T]:
         """Move all tensors to cpu."""
         return self.to("cpu")
 
-    def item(self) -> MultiLoss[float]:
+    def item(self) -> LossDict[float]:
         """Convert all tensors to float."""
         c = {}
         for key, value in self.items():
             if isinstance(value, torch.Tensor):
                 value = value.item()
             c[key] = value
-        return MultiLoss(c)
+        return LossDict(c)
 
     def to_dict(self) -> dict:
         return dict(self)
 
 
-class TargetLossFunction(Module):
-    def __init__(self, num_labels: int, target_type: Union[str, TargetType]):
+class TargetLossFunction(torch.nn.Module):
+    def __init__(self, target_type: Union[str, TargetType], num_labels: int):
         super().__init__()
         self.num_labels = num_labels
         if isinstance(target_type, str):
@@ -159,11 +159,39 @@ class TargetLossFunction(Module):
             self._loss_func = loss_fct
         if isinstance(self._loss_func, MSELoss):
             if self.num_labels == 1:
-                loss = self._loss_func(input.squeeze(), target.squeeze())
+                loss = self._loss_func(
+                    input.squeeze(),
+                    target.squeeze(),
+                )
             else:
                 loss = self._loss_func(input, target)
         elif isinstance(self._loss_func, CrossEntropyLoss):
-            loss = self._loss_func(input.view(-1, self.num_labels), target.view(-1))
-        else:
+            # >>> # Example of target with class indices
+            # >>> loss = nn.CrossEntropyLoss()
+            # >>> input = torch.randn(3, 5, requires_grad=True)
+            # >>> target = torch.empty(3, dtype=torch.long).random_(5)
+            # >>> output = loss(input, target)
+            # >>> output.backward()
+            # >>>
+            # >>> # Example of target with class probabilities
+            # >>> input = torch.randn(3, 5, requires_grad=True)
+            # >>> target = torch.randn(3, 5).softmax(dim=1)
+            # >>> output = loss(input, target)
+            # >>> output.backward()
+            loss = self._loss_func(
+                input.view(-1, self.num_labels),
+                target.view(-1),
+            )
+        else:  # BCEWithLogitsLoss
+            # >>> loss = nn.BCEWithLogitsLoss()
+            # >>> input = torch.randn(3, requires_grad=True)
+            # >>> target = torch.empty(3).random_(2)
+            # >>> output = loss(input, target)
+            # >>> output.backward()
+            # shape of input and target must be the same
+            if len(target.shape) == 1:  # binary case
+                # 1 is the number of classes
+                target = target.view(-1, 1)
+            target = target.to(dtype=input.dtype)
             loss = self._loss_func(input, target)
         return loss
