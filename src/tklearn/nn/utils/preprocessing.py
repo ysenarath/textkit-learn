@@ -180,7 +180,7 @@ def _(
         else:
             msg = f"y_score shape {y_score.shape} not supported"
             raise ValueError(msg)
-    elif len(y_score.shape) != 1:
+    if len(y_score.shape) != 1:
         msg = f"expected 1D or 2D tensor, got {len(y_score.shape)}D tensor"
         raise ValueError(msg)
     y_pred = (y_score > threshold).long()
