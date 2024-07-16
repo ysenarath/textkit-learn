@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gc
+import re
 from collections.abc import Mapping
 from contextvars import ContextVar, copy_context
 from dataclasses import dataclass
@@ -26,7 +27,6 @@ from torch.utils.data import DataLoader
 from torch.utils.data.sampler import Sampler
 from typing_extensions import ParamSpec, Self, Unpack
 
-from octoflow.utils import func
 from tklearn.metrics import Evaluator, Metric
 from tklearn.nn.callbacks import Callback, CallbackList
 from tklearn.nn.loss import LossDict
@@ -504,3 +504,59 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             if collate_fn is None:
                 collate_fn = default_collate
         return collate_fn
+
+    def freeze_layers(
+        self, layers: Optional[List[str]] = None, prefix: str = ""
+    ) -> int:
+        """
+        Freeze layers in the model that match the given patterns.
+
+        Parameters
+        ----------
+        layers : list of str, optional
+            A list of layer names or patterns to freeze. Supports wildcards (*)
+            and dot notation for nested layers. If None, no layers will be frozen.
+        prefix : str, default=""
+            An optional prefix to apply to all layer patterns.
+
+        Returns
+        -------
+        int
+            The number of parameters frozen.
+
+        Raises
+        ------
+        ValueError
+            If an invalid regex pattern is provided.
+
+        Examples
+        --------
+        >>> model.freeze_layers(['encoder.*', 'encoder.layer.[0-8].*'])
+        >>> model.freeze_layers(['layer_[1-3]'], prefix='transformer')
+
+        Notes
+        -----
+        This method uses regular expressions to match layer names. Dots in layer
+        names are treated as literal dots, while asterisks are treated as wildcards.
+        """
+        if not layers:
+            return 0  # no layers to freeze
+        # escape dots and convert asterisks to regex wildcards
+        layers = [p.replace(".", r"\.").replace("*", ".*") for p in layers]
+        pattern_regex = "|".join(layers)
+        if prefix:
+            pattern_regex = f"{prefix}\.({pattern_regex})"
+        # compile regex pattern
+        try:
+            pattern = re.compile(f"^{pattern_regex}$")
+        except re.error as e:
+            raise ValueError(str(e))
+        # freeze parameters that match the pattern
+        frozen_params = 0
+        for name, param in self.named_parameters():
+            if not pattern.match(name):
+                continue
+            param.requires_grad = False
+            frozen_params += param.numel()
+        # return number of frozen parameters
+        return frozen_params
