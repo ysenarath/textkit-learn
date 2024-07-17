@@ -366,7 +366,9 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         if callbacks.params is not None:
             callback_params.update(callbacks.params)
         self.context.prediction.steps = len(test_dataloader)
-        callback_params.update({"pred_steps": self.context.prediction.steps})
+        callback_params.update({
+            "pred_steps": self.context.prediction.steps,
+        })
         callbacks.set_params(callback_params)
         self.eval()
         callbacks.on_predict_begin()
@@ -385,6 +387,7 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
             total_loss_dict = batch_loss_dict + total_loss_dict
             batch_logs = {}
             callbacks.on_predict_batch_end(batch_idx, logs=batch_logs)
+            # print(batch, batch_output)
             yield batch_idx, batch, batch_output, batch_loss_dict
             # clear memory cache
             del batch, batch_output, loss, batch_loss_dict
@@ -483,7 +486,6 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
         raise NotImplementedError
 
     def extract_eval_input(self, batch: RecordBatch, output: Z) -> Dict[str, Any]:
-        # return {"y_true": batch.y, "y_pred": output, "y_score": output}
         raise NotImplementedError
 
     def configure_optimizers(self) -> Union[Optimizer, Tuple[Optimizer]]:
