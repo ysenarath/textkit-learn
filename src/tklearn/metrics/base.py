@@ -1,111 +1,50 @@
 from __future__ import annotations
 
-import base64
-import contextlib
-import contextvars
+import abc
 import copy
-import uuid
-from collections import OrderedDict
+from contextvars import ContextVar
 from dataclasses import MISSING
-from typing import (
-    Any,
-    Dict,
-    List,
-    Literal,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-    overload,
-)
+from functools import wraps
+from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union
+from weakref import WeakKeyDictionary
 
 import cloudpickle
-from typing_extensions import ParamSpec
 
 __all__ = [
-    "Evaluator",
     "Metric",
     "MetricState",
 ]
 
-P = ParamSpec("P")
 T = TypeVar("T")
 
-MetricStateValue = MutableMapping[str, Any]
-
-_current_state_cv = contextvars.ContextVar("value", default=MISSING)
+_metric_state_cv: ContextVar[MetricState] = ContextVar("metric_state", default=MISSING)
 
 
-@contextlib.contextmanager
-def set_state_context(state: MetricState):
-    current_state = _current_state_cv.get()
-    if current_state is not MISSING:
-        msg = "trying to set context inside another context"
-        raise ValueError(msg)
-    token = _current_state_cv.set(state)
-    try:
-        yield state
-    finally:
-        _current_state_cv.reset(token)
-
-
-def get_state(var: Union[Metric, str]) -> MetricStateValue:
-    current_state = _current_state_cv.get()
-    if current_state is MISSING:
-        msg = "trying to get state of a metric outside the context"
-        raise ValueError(msg)
-    if isinstance(var, Metric):
-        var = var.id
-    return current_state[var]
-
-
-def set_state(var: Union[Metric, str], value: MetricStateValue) -> Any:
-    if isinstance(var, Metric):
-        var = var.id
-    current_state: MetricState = _current_state_cv.get()
-    if current_state is MISSING:
-        msg = "trying to set state of a metric outside the context"
-        raise ValueError(msg)
-    current_state[var] = value
-    _current_state_cv.set(current_state)
-
-
-def update_state(__var: Union[Metric, str], **kwargs: Any) -> Any:
-    if isinstance(__var, Metric):
-        __var = __var.id
-    current_state: MetricState = _current_state_cv.get()
-    if current_state is MISSING:
-        msg = "trying to set state of a metric outside the context"
-        raise ValueError(msg)
-    current_state[__var].update(**kwargs)
-    _current_state_cv.set(current_state)
-
-
-def urlsafe_b64encoded_uuid4() -> str:
-    return base64.urlsafe_b64encode(uuid.uuid4().bytes).decode().rstrip("=")
-
-
-class Metric:
-    def __init__(self) -> None:
-        self.id = urlsafe_b64encoded_uuid4()
-
+class Metric(abc.ABC):
     @property
-    def state(self) -> Any:
-        return get_state(self)
+    def state(self) -> Dict[str, Any]:
+        metric_state = _metric_state_cv.get()
+        if metric_state is MISSING:
+            msg = "trying to get state of a metric outside the context"
+            raise ValueError(msg)
+        return metric_state.states[self]
 
     @state.setter
-    def state(self, value: Any) -> None:
-        set_state(self, value)
+    def state(self, value: Dict[str, Any]) -> None:
+        metric_state = _metric_state_cv.get()
+        if metric_state is MISSING:
+            msg = "trying to set state of a metric outside the context"
+            raise ValueError(msg)
+        if not isinstance(value, dict):
+            msg = "state should be a dictionary"
+            raise TypeError(msg)
+        metric_state.states[self] = value
 
-    def reset(self) -> None:
-        self.state = {}
+    def reset(self) -> None: ...
 
-    def update(self, **kwargs: Any) -> None:
-        pass
+    def update(self, **kwargs: Any) -> None: ...
 
+    @abc.abstractmethod
     def result(self) -> Any:
         raise NotImplementedError
 
@@ -115,45 +54,56 @@ class Metric:
         return copy.copy(self)
 
     def __call__(self, **kwargs: Any) -> Any:
-        evaluator = Evaluator(self)
-        evaluator.update_state(**kwargs)
-        return evaluator.result(return_dict=False)[0]
+        state = MetricState(self)
+        state.update(**kwargs)
+        return state.result()[0]
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(...)"
 
 
-class MetricState(MutableMapping[str, MetricStateValue]):
-    def __init__(self) -> None:
+def with_metric_context(func: T) -> T:
+    @wraps(func)
+    def decorator(self, *args: Any, **kwargs: Any) -> Any:
+        token = _metric_state_cv.set(self)
+        try:
+            return func(self, *args, **kwargs)
+        finally:
+            _metric_state_cv.reset(token)
+
+    return decorator
+
+
+class MetricState(Metric):
+    def __init__(
+        self,
+        metrics: Union[Dict[dict, Metric], List[Metric], Metric],
+        metric_names: Optional[List[str]] = None,
+    ) -> None:
         super().__init__()
-        self._vars_dict: MutableMapping[str, Metric] = OrderedDict()
-        self._vals_dict: MutableMapping[str, MetricStateValue] = {}
-
-    def __getitem__(self, key: Union[Metric, str]) -> MetricStateValue:
-        if isinstance(key, Metric):
-            key = key.id
-        return self._vals_dict[key]
-
-    def __setitem__(self, key: Union[Metric, str], value: MetricStateValue) -> None:
-        if isinstance(key, Metric):
-            key = key.id
-        self._vals_dict[key] = value
-
-    def __delitem__(self, key: Union[Metric, str]) -> None:
-        if isinstance(key, Metric):
-            key = key.id
-        del self._vals_dict[key]
-
-    def __contains__(self, key: Union[Metric, str]) -> bool:
-        if isinstance(key, Metric):
-            key = key.id
-        return key in self._vals_dict
-
-    def __iter__(self) -> MutableMapping[str, Any]:
-        return iter(self._vals_dict)
-
-    def __len__(self) -> int:
-        return len(self._vals_dict)
+        # metrics
+        if metrics is None:
+            metrics = []
+        elif isinstance(metrics, Metric):
+            metrics = [metrics]
+        elif isinstance(metrics, Mapping):
+            if metric_names is not None:
+                msg = "both 'metrics' and 'metric_names' are provided"
+                raise ValueError(msg)
+            metric_names = list(metrics.keys())
+            metrics = list(metrics.values())
+        self.metrics: List[Metric] = metrics
+        # metric names
+        if metric_names is not None:
+            if len(metric_names) != len(metrics):
+                msg = "length of 'metric_names' should be equal to 'metrics'"
+                raise ValueError(msg)
+        self.metric_names: Optional[List[str]] = metric_names
+        # update states
+        self.states: Dict[Metric, Dict[str, Any]] = WeakKeyDictionary()
+        for metric in self.metrics:
+            self.add_metric(metric)
+        self.reset()
 
     def add_metric(self, metric: Metric) -> None:
         if not isinstance(metric, Metric):
@@ -168,80 +118,25 @@ class MetricState(MutableMapping[str, MetricStateValue]):
             if not isinstance(class_var_val, Metric):
                 continue
             self.add_metric(class_var_val)
-        if metric.id not in self._vars_dict:
-            self._vars_dict[metric.id] = metric
-        self.reset()
+        if metric in self.states:
+            return
+        self.states[metric] = None
 
-    def update(self, **kwargs: Any) -> None:
-        with self.ctx():
-            for var in self._vars_dict.values():
-                var.update(**kwargs)
-
+    @with_metric_context
     def reset(self) -> None:
-        with self.ctx():
-            for var in self._vars_dict.values():
-                var.reset()
+        for metric in self.states:
+            metric.reset()
 
-    def result(self, metric: Metric) -> Any:
-        with self.ctx():
-            return metric.result()
+    @with_metric_context
+    def update(self, **kwargs: Any) -> None:
+        for metric in self.states:
+            metric.update(**kwargs)
 
-    def ctx(self) -> contextlib.AbstractContextManager:
-        return set_state_context(self)
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._vals_dict!r})"
-
-
-class Evaluator:
-    def __init__(
-        self,
-        metrics: Union[Metric, Sequence[Metric], Dict[str, Metric], None] = None,
-        metric_names: Optional[List[str]] = None,
-        state: Optional[MetricState] = None,
-    ) -> None:
-        if metrics is None:
-            metrics = []
-        elif isinstance(metrics, Metric):
-            metrics = [metrics]
-        elif isinstance(metrics, Mapping):
-            if metric_names is not None:
-                msg = "both 'metrics' and 'metric_names' are provided"
-                raise ValueError(msg)
-            metric_names = list(metrics.keys())
-            metrics = list(metrics.values())
-        self.metrics = metrics
-        self.metric_names = metric_names
-        if state is None:
-            state = MetricState()
-        self.state = state
-        for metric in self.metrics:
-            self.state.add_metric(metric)
-
-    def reset(self):
-        self.state.reset()
-
-    def update_state(self, **kwargs):
-        self.state.update(**kwargs)
-
-    @overload
-    def result(self, return_dict: Literal[False]) -> Tuple: ...
-
-    @overload
-    def result(self, return_dict: Literal[True]) -> Dict[str, Any]: ...
-
-    def result(self, return_dict: bool = True) -> Any:
-        if return_dict:
-            return self._result_return_dict()
-        return tuple(self.state.result(metric) for metric in self.metrics)
-
-    def _result_return_dict(self) -> Dict[str, Any]:
-        if len(self.metrics) == 0:
-            return {}
+    @with_metric_context
+    def result(self) -> Union[Tuple[Any], Dict[str, Any]]:
         if self.metric_names is None:
-            msg = "'metric_names' should be provided to return a dictionary"
-            raise ValueError(msg)
+            return tuple(metric.result() for metric in self.metrics)
         return {
-            name: self.state.result(metric)
+            name: metric.result()
             for name, metric in zip(self.metric_names, self.metrics)
         }
