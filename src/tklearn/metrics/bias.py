@@ -118,17 +118,3 @@ def nuanced_bias_report(
             "Negative AEG": neg_aeg,
         }
     return results
-
-
-def _test_nuanced_bias_report():
-    # Example usage:
-    np.random.seed(42)
-    y_true = np.random.randint(0, 2, 1000)
-    y_pred = np.random.rand(1000)
-    group = np.random.randint(0, 3, 1000)
-    results = nuanced_bias_report(y_true, y_pred, group)
-    for group, metrics in results.items():
-        print(f"Metrics for group {group}:")
-        for metric, value in metrics.items():
-            print(f"  {metric}: {value:.4f}")
-        print()
