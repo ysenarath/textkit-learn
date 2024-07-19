@@ -34,14 +34,3 @@ def mcnemar(y_true, y_pred_a, y_pred_b=None):
     # Calculate p-value
     p_value = stats.chi2.sf(statistic, df=1)
     return statistic, p_value
-
-
-def _test_mcnemar_():
-    y_true = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1]
-    y_pred_a = [0, 0, 0, 0, 0, 0, 1, 1, 1, 1]
-    # correct predictions = [1, 1, 0, 0, 0, 0, 1, 1, 1, 1]
-    y_pred_b = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    # correct predictions = [1, 1, 0, 0, 0, 0, 0, 0, 0, 0]
-    statistic, p_value = mcnemar(y_true, y_pred_a, y_pred_b)
-    # Expected: 4, 0.04550026
-    assert (statistic, int(p_value * 1000)) == (4, int(0.04550026 * 1000))
