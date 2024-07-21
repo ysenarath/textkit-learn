@@ -11,7 +11,7 @@ from weakref import WeakKeyDictionary
 import cloudpickle
 
 __all__ = [
-    "Metric",
+    "MetricBase",
     "MetricState",
 ]
 
@@ -20,7 +20,7 @@ T = TypeVar("T")
 _metric_state_cv: ContextVar[MetricState] = ContextVar("metric_state", default=MISSING)
 
 
-class Metric(abc.ABC):
+class MetricBase(abc.ABC):
     @property
     def state(self) -> Dict[str, Any]:
         metric_state = _metric_state_cv.get()
@@ -48,7 +48,7 @@ class Metric(abc.ABC):
     def result(self) -> Any:
         raise NotImplementedError
 
-    def copy(self, deep: bool = True) -> Metric:
+    def copy(self, deep: bool = True) -> MetricBase:
         if deep:
             return cloudpickle.loads(cloudpickle.dumps(self))
         return copy.copy(self)
@@ -74,17 +74,19 @@ def with_metric_context(func: T) -> T:
     return decorator
 
 
-class MetricState(Metric):
+class MetricState(MetricBase):
     def __init__(
         self,
-        metrics: Union[Dict[dict, Metric], List[Metric], Metric],
+        metrics: Union[
+            Dict[dict, MetricBase], List[MetricBase], MetricBase, None
+        ] = None,
         metric_names: Optional[List[str]] = None,
     ) -> None:
         super().__init__()
         # metrics
         if metrics is None:
-            metrics = []
-        elif isinstance(metrics, Metric):
+            metrics = {}
+        elif isinstance(metrics, MetricBase):
             metrics = [metrics]
         elif isinstance(metrics, Mapping):
             if metric_names is not None:
@@ -92,21 +94,21 @@ class MetricState(Metric):
                 raise ValueError(msg)
             metric_names = list(metrics.keys())
             metrics = list(metrics.values())
-        self.metrics: List[Metric] = metrics
         # metric names
         if metric_names is not None:
             if len(metric_names) != len(metrics):
                 msg = "length of 'metric_names' should be equal to 'metrics'"
                 raise ValueError(msg)
         self.metric_names: Optional[List[str]] = metric_names
+        self.metrics: List[MetricBase] = metrics
         # update states
-        self.states: Dict[Metric, Dict[str, Any]] = WeakKeyDictionary()
+        self.states: Dict[MetricBase, Dict[str, Any]] = WeakKeyDictionary()
         for metric in self.metrics:
             self.add_metric(metric)
         self.reset()
 
-    def add_metric(self, metric: Metric) -> None:
-        if not isinstance(metric, Metric):
+    def add_metric(self, metric: MetricBase) -> None:
+        if not isinstance(metric, MetricBase):
             msg = (
                 "'metric' should be an instance of 'Metric', "
                 f"but got {metric.__class__.__name__}"
@@ -115,7 +117,7 @@ class MetricState(Metric):
         cls = metric.__class__
         for class_var in dir(cls):
             class_var_val = getattr(cls, class_var)
-            if not isinstance(class_var_val, Metric):
+            if not isinstance(class_var_val, MetricBase):
                 continue
             self.add_metric(class_var_val)
         if metric in self.states:

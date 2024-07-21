@@ -10,10 +10,10 @@ import numpy as np
 import torch
 from numpy.typing import NDArray
 
-from tklearn.metrics.base import Metric
+from tklearn.metrics.base import MetricBase
 
 
-class StepsCounter(Metric):
+class StepsCounter(MetricBase):
     def reset(self) -> None:
         self.state = {"value": 0}
 
@@ -27,7 +27,7 @@ class StepsCounter(Metric):
 count_steps = StepsCounter()
 
 
-class AccumMetric(Metric):
+class AccumMetric(MetricBase):
     steps_counter: StepsCounter = count_steps
 
     def __init__(
