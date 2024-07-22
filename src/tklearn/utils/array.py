@@ -244,7 +244,7 @@ def concat(objs: List[RT], /, axis: int = 0) -> RT:
         return torch.cat(objs, dim=axis)
     if isinstance(elem, List):
         return functools.reduce(operator.iadd, objs, [])
-    msg = f"cannot concatenate objects of type '{type(elem).__name__}'"
+    msg = f"cannot concatenate objects of type '{elem.__class__.__name__}'"
     raise ValueError(msg)
 
 
