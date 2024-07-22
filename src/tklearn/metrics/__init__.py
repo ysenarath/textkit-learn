@@ -1,4 +1,4 @@
-from tklearn.metrics.base import Metric
+from tklearn.metrics.base import MetricBase, MetricState
 from tklearn.metrics.bias import nuanced_bias_report
 from tklearn.metrics.classification import (
     Accuracy,
@@ -7,13 +7,15 @@ from tklearn.metrics.classification import (
     Recall,
 )
 from tklearn.metrics.common import (
-    y_pred_getter,
-    y_score_getter,
+    y_pred_accum,
+    y_score_accum,
+    y_true_accum,
 )
 from tklearn.metrics.statistical_tests import mcnemar
 
 __all__ = [
-    "Metric",
+    "MetricState",
+    "MetricBase",
     "mcnemar",
     "nuanced_bias_report",
     # Metrics
@@ -21,6 +23,7 @@ __all__ = [
     "Precision",
     "Recall",
     "F1Score",
-    "y_pred_getter",
-    "y_score_getter",
+    "y_pred_accum",
+    "y_score_accum",
+    "y_true_accum",
 ]

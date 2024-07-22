@@ -25,18 +25,18 @@ from sklearn.metrics import (
 
 from tklearn.metrics.base import MetricBase
 from tklearn.metrics.common import (
-    AccumMetric,
-    sample_weight_getter,
-    y_pred_getter,
-    y_score_getter,
-    y_true_getter,
+    ArrayAccumulator,
+    sample_weight_accum,
+    y_pred_accum,
+    y_score_accum,
+    y_true_accum,
 )
 
 
 class Accuracy(MetricBase):
-    y_true: AccumMetric = y_true_getter
-    y_pred: AccumMetric = y_pred_getter
-    sample_weight: AccumMetric = sample_weight_getter
+    y_true: ArrayAccumulator = y_true_accum
+    y_pred: ArrayAccumulator = y_pred_accum
+    sample_weight: ArrayAccumulator = sample_weight_accum
 
     def __init__(
         self,
@@ -71,9 +71,9 @@ class Accuracy(MetricBase):
 
 
 class RocAuc(MetricBase):
-    y_true: AccumMetric = y_true_getter
-    y_score: AccumMetric = y_score_getter
-    sample_weight: AccumMetric = sample_weight_getter
+    y_true: ArrayAccumulator = y_true_accum
+    y_score: ArrayAccumulator = y_score_accum
+    sample_weight: ArrayAccumulator = sample_weight_accum
 
     def __init__(
         self,
@@ -104,9 +104,9 @@ class RocAuc(MetricBase):
 
 
 class Precision(MetricBase):
-    y_true: AccumMetric = y_true_getter
-    y_pred: AccumMetric = y_pred_getter
-    sample_weight: AccumMetric = sample_weight_getter
+    y_true: ArrayAccumulator = y_true_accum
+    y_pred: ArrayAccumulator = y_pred_accum
+    sample_weight: ArrayAccumulator = sample_weight_accum
 
     def __init__(
         self,
@@ -139,9 +139,9 @@ class Precision(MetricBase):
 
 
 class Recall(MetricBase):
-    y_true: AccumMetric = y_true_getter
-    y_pred: AccumMetric = y_pred_getter
-    sample_weight: AccumMetric = sample_weight_getter
+    y_true: ArrayAccumulator = y_true_accum
+    y_pred: ArrayAccumulator = y_pred_accum
+    sample_weight: ArrayAccumulator = sample_weight_accum
 
     def __init__(
         self,
@@ -174,9 +174,9 @@ class Recall(MetricBase):
 
 
 class F1Score(MetricBase):
-    y_true: AccumMetric = y_true_getter
-    y_pred: AccumMetric = y_pred_getter
-    sample_weight: AccumMetric = sample_weight_getter
+    y_true: ArrayAccumulator = y_true_accum
+    y_pred: ArrayAccumulator = y_pred_accum
+    sample_weight: ArrayAccumulator = sample_weight_accum
 
     def __init__(
         self,
@@ -209,9 +209,9 @@ class F1Score(MetricBase):
 
 
 class OptimalRocAucThreshold(MetricBase):
-    y_true: AccumMetric = y_true_getter
-    y_score: AccumMetric = y_score_getter
-    sample_weight: AccumMetric = sample_weight_getter
+    y_true: ArrayAccumulator = y_true_accum
+    y_score: ArrayAccumulator = y_score_accum
+    sample_weight: ArrayAccumulator = sample_weight_accum
 
     def __init__(
         self,
@@ -246,9 +246,9 @@ class OptimalRocAucThreshold(MetricBase):
 
 
 class OptimalPRThreshold(MetricBase):
-    y_true: AccumMetric = y_true_getter
-    y_score: AccumMetric = y_score_getter
-    sample_weight: AccumMetric = sample_weight_getter
+    y_true: ArrayAccumulator = y_true_accum
+    y_score: ArrayAccumulator = y_score_accum
+    sample_weight: ArrayAccumulator = sample_weight_accum
 
     def __init__(
         self,

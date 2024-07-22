@@ -2,37 +2,47 @@ from __future__ import annotations
 
 from typing import (
     Any,
+    List,
     Literal,
     Optional,
+    Union,
 )
 
 import numpy as np
 import torch
 from numpy.typing import NDArray
 
-from tklearn.metrics.base import MetricBase
+from tklearn.metrics.base import MetricBase, MetricField
+
+__all__ = ["StepsCounter"]
 
 
 class StepsCounter(MetricBase):
-    def reset(self) -> None:
-        self.state = {"value": 0}
+    count = MetricField[int]()
 
-    def update(self, *args, **kwargs: Any) -> None:
-        self.state["value"] += 1
+    def reset(self) -> None:
+        self.count = 0
+
+    def update(self, **kwargs: Any) -> None:
+        self.count += 1
 
     def result(self) -> int:
-        return self.state["value"]
+        return self.count
+
+    def __repr__(self) -> str:
+        return f"StepsCounter(count={self.count})"
 
 
 count_steps = StepsCounter()
 
 
-class AccumMetric(MetricBase):
+class ArrayAccumulator(MetricBase):
     steps_counter: StepsCounter = count_steps
+    arrays: MetricField[Optional[List[np.ndarray]]] = MetricField()
 
     def __init__(
         self,
-        field: Literal["y_true", "y_pred", "sample_weight", "y_score"] = "y_true",
+        field: Union[Literal["y_true", "y_pred", "sample_weight", "y_score"], str],
         axis: int = 0,
     ) -> None:
         super().__init__()
@@ -40,9 +50,7 @@ class AccumMetric(MetricBase):
         self.axis = axis
 
     def reset(self) -> None:
-        self.state = {
-            "value": None,
-        }
+        self.arrays = None
 
     def update(
         self,
@@ -50,10 +58,8 @@ class AccumMetric(MetricBase):
         y_pred: Optional[torch.Tensor] = None,
         **kwargs: Any,
     ) -> None:
-        kwargs["y_true"] = y_true
-        kwargs["y_pred"] = y_pred
-        num_steps = self.steps_counter.result()
-        curr_value = self.state["value"]
+        # update kwargs with y_true and y_pred
+        kwargs.update({"y_true": y_true, "y_pred": y_pred})
         value = kwargs.get(self.field, None)
         if value is not None and isinstance(value, list):
             value = np.array(value)
@@ -65,25 +71,26 @@ class AccumMetric(MetricBase):
                 f"but got {value.__class__.__name__}"
             )
             raise TypeError(msg)
-        if (num_steps > 1 and curr_value is None and value is not None) or (
-            value is None and curr_value is not None
+        num_steps = self.steps_counter.result()
+        if (num_steps > 1 and self.arrays is None and value is not None) or (
+            self.arrays is not None and value is None
         ):
-            msg = f"'{self.field}' is not provided"
+            msg = f"no field named '{self.field}'"
             raise ValueError(msg)
-        if curr_value is None:
-            curr_value = value
-        else:
-            curr_value = np.concatenate([curr_value, value], axis=self.axis)
-        self.state["value"] = curr_value
+        if self.arrays is None:
+            self.arrays = []
+        self.arrays.append(value)
 
     def result(self) -> NDArray:
-        return self.state["value"]
+        if self.arrays is None:
+            return None
+        return np.concatenate(self.arrays, axis=self.axis)
 
 
-y_true_getter = AccumMetric("y_true", axis=0)
+y_true_accum = ArrayAccumulator("y_true", axis=0)
 
-y_pred_getter = AccumMetric("y_pred", axis=0)
+y_pred_accum = ArrayAccumulator("y_pred", axis=0)
 
-y_score_getter = AccumMetric("y_score", axis=0)
+y_score_accum = ArrayAccumulator("y_score", axis=0)
 
-sample_weight_getter = AccumMetric("sample_weight", axis=0)
+sample_weight_accum = ArrayAccumulator("sample_weight", axis=0)
