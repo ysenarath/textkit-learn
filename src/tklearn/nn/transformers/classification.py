@@ -13,7 +13,7 @@ from transformers import (
 from transformers.modeling_outputs import BaseModelOutput
 from typing_extensions import Self
 
-from tklearn.nn.loss import TargetLossFunction
+from tklearn.nn.loss import TargetBasedLoss
 from tklearn.nn.module import Module
 from tklearn.nn.transformers.base import TransformerConfig
 from tklearn.nn.transformers.outputs import SequenceClassifierOutput
@@ -92,7 +92,7 @@ class TransformerForSequenceClassification(Module):
             hidden_size=self.config.hidden_size,
             dropout=self.config.output_dropout,
         )
-        self._loss_func = TargetLossFunction(
+        self._loss_func = TargetBasedLoss(
             self.config.target_type, num_labels=num_labels
         )
 
@@ -135,14 +135,14 @@ class TransformerForSequenceClassification(Module):
             kwargs[k] = v
         return self(**kwargs)
 
-    def compute_loss(self, batch: RecordBatch, output: OutputType):
+    def compute_loss(self, batch: RecordBatch, output: OutputType, **kwargs):
         logits = output["logits"]
         input = batch.y or batch.x["labels"]
         target_type, num_labels = self.config.target_type, self.config.num_labels
         y_true = preprocess_input(target_type, input, num_labels=num_labels)
         return self._loss_func(logits, y_true)
 
-    def extract_eval_input(self, batch: RecordBatch, output: OutputType):
+    def prepare_metric_inputs(self, batch: RecordBatch, output: OutputType):
         input = batch.y or batch.x["labels"]
         target_type, num_labels = self.config.target_type, self.config.num_labels
         y_true = preprocess_input(target_type, input, num_labels=num_labels)
