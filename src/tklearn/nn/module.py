@@ -26,7 +26,7 @@ from typing_extensions import TypeVar
 from tklearn.metrics import MetricBase, MetricState
 from tklearn.nn.callbacks import Callback, CallbackList
 from tklearn.nn.utils.collections import TensorDict
-from tklearn.nn.utils.data import Record, RecordBatch, TorchDataset
+from tklearn.nn.utils.data import Record, RecordBatch, TorchDataset, default_collate
 from tklearn.utils.array import concat, detach, move_to_device
 
 X, Y, Z = TypeVar("X"), TypeVar("Y"), TypeVar("Z")
@@ -155,6 +155,8 @@ class Module(nn.Module):
             sampler = None
         elif sampler is not None:
             batch_size = 1
+        if collate_fn is None:
+            collate_fn = default_collate
         test_dataloader = DataLoader(
             test_dataset,
             shuffle=False,
@@ -357,6 +359,8 @@ class Module(nn.Module):
             batch_size = 1
             shuffle = None
         # create train dataloader
+        if collate_fn is None:
+            collate_fn = default_collate
         train_dataloader = DataLoader(
             train_dataset,
             batch_size=batch_size,
