@@ -1,9 +1,9 @@
 """NRC Word-Emotion Association Lexicon.
 
-The NRC Word-Emotion Association Lexicon is a list of words and their 
-associations with eight basic emotions (anger, anticipation, disgust, 
-fear, joy, sadness, surprise, trust) and two sentiments (negative and 
-positive). The lexicon has been used in a variety of research applications, 
+The NRC Word-Emotion Association Lexicon is a list of words and their
+associations with eight basic emotions (anger, anticipation, disgust,
+fear, joy, sadness, surprise, trust) and two sentiments (negative and
+positive). The lexicon has been used in a variety of research applications,
 including sentiment analysis, emotion recognition, and opinion mining.
 
 Notes
@@ -12,8 +12,8 @@ The lexicon is available in two formats: (1) a list of words and their
 
 References
 --------
-.. [1] “NRC Emotion Lexicon.” Available: 
-   https://saifmohammad.com/WebPages/NRC-Emotion-Lexicon.htm. 
+.. [1] “NRC Emotion Lexicon.” Available:
+   https://saifmohammad.com/WebPages/NRC-Emotion-Lexicon.htm.
    [Accessed: Apr. 11, 2024]
 
 Examples
