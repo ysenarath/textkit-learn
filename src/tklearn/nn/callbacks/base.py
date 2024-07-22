@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 import warnings
 from collections import UserList
@@ -8,7 +10,6 @@ from typing import (
     List,
     Optional,
     Sequence,
-    TypeVar,
 )
 
 from typing_extensions import Self
@@ -21,8 +22,6 @@ __all__ = [
 
 if TYPE_CHECKING:
     from tklearn.nn.module import Module
-else:
-    Module = TypeVar("Module")
 
 
 class Callback:
