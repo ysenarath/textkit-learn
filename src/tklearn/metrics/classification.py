@@ -28,12 +28,12 @@ from tklearn.metrics.base import MetricBase
 
 __all__ = [
     "Accuracy",
-    "F1Score",
-    "OptimalPRThreshold",
     "AUC",
     "Precision",
     "Recall",
-    "RocAuc",
+    "F1",
+    "OptimalAUCThreshold",
+    "OptimalPRThreshold",
 ]
 
 
@@ -74,7 +74,7 @@ class Accuracy(MetricBase):
         )
 
 
-class RocAuc(MetricBase):
+class AUC(MetricBase):
     y_true = ArrayAccumulator("y_true")
     y_score = ArrayAccumulator("y_score")
     sample_weight = ArrayAccumulator("sample_weight")
@@ -177,7 +177,7 @@ class Recall(MetricBase):
         )
 
 
-class F1Score(MetricBase):
+class F1(MetricBase):
     y_true = ArrayAccumulator("y_true")
     y_pred = ArrayAccumulator("y_pred")
     sample_weight = ArrayAccumulator("sample_weight")
@@ -212,7 +212,7 @@ class F1Score(MetricBase):
         )
 
 
-class AUC(MetricBase):
+class OptimalAUCThreshold(MetricBase):
     y_true = ArrayAccumulator("y_true")
     y_score = ArrayAccumulator("y_score")
     sample_weight = ArrayAccumulator("sample_weight")
