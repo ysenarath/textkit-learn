@@ -201,10 +201,10 @@ class DefaultCollator(BaseCollator):
         * `Sequence[V1_i, V2_i, ...]` -> `Sequence[default_collate([V1_1, V1_2, ...]),
             default_collate([V2_1, V2_2, ...]), ...]`
         """
-        batch: dict = _default_collate(batch)
-        index = batch.pop("index")
-        batch = batch["x"], batch["y"] if "y" in batch else None
-        return RecordBatch(*batch, index=index)
+        batch: dict = self.collate_fn(batch)
+        return RecordBatch(
+            batch["x"], batch["y"] if "y" in batch else None, index=batch.get("index")
+        )
 
 
 default_collate = DefaultCollator()
@@ -214,15 +214,15 @@ class AugmentedCollator(DefaultCollator):
     def __init__(self, collate_fn: Optional[Callable] = None) -> None:
         super().__init__(collate_fn)
 
-    def generate(self, batch: RecordBatch[XT, YT]) -> RecordBatch[XT, YT]:
-        raise NotImplementedError
-
     def __call__(self, batch: Sequence[Record[XT, YT]]) -> RecordBatch[XT, YT]:
         batch = super().__call__(batch)
         return self.generate(batch)
 
+    def generate(self, batch: RecordBatch[XT, YT]) -> RecordBatch[XT, YT]:
+        raise NotImplementedError
 
-class PromptAugmentedTrainingCollator(AugmentedCollator):
+
+class PromptAugmentedCollator(AugmentedCollator):
     def __init__(self, tokenizer, id2label, sep_token=None, k=None):
         super().__init__()
         if sep_token is None:
@@ -261,7 +261,3 @@ class PromptAugmentedTrainingCollator(AugmentedCollator):
         if batch.y:
             return RecordBatch(dict(tokens), labels, index=indexes)
         return RecordBatch({**tokens, "labels": labels}, index=indexes)
-
-    # def collect(self, batch: RecordBatch, batch_output) -> RecordBatch:
-    #     batch.index
-    #     return batch
