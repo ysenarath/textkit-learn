@@ -18,7 +18,7 @@ from tklearn.nn.module import Module
 from tklearn.nn.transformers.base import TransformerConfig
 from tklearn.nn.transformers.outputs import SequenceClassifierOutput
 from tklearn.nn.utils.data import RecordBatch
-from tklearn.nn.utils.preprocessing import preprocess_input, preprocess_target
+from tklearn.nn.utils.preprocessing import preprocess_target, preprocess_input
 from tklearn.utils.targets import TargetType
 
 __all__ = [
@@ -139,13 +139,13 @@ class TransformerForSequenceClassification(Module):
         logits = output["logits"]
         input = batch.y or batch.x["labels"]
         target_type, num_labels = self.config.target_type, self.config.num_labels
-        y_true = preprocess_input(target_type, input, num_labels=num_labels)
+        y_true = preprocess_target(target_type, input, num_labels=num_labels)
         return self._loss_func(logits, y_true)
 
     def prepare_metric_inputs(self, batch: RecordBatch, output: OutputType):
         input = batch.y or batch.x["labels"]
         target_type, num_labels = self.config.target_type, self.config.num_labels
-        y_true = preprocess_input(target_type, input, num_labels=num_labels)
+        y_true = preprocess_target(target_type, input, num_labels=num_labels)
         logits = output["logits"]
-        y_pred, y_score = preprocess_target(target_type, logits)
+        y_pred, y_score = preprocess_input(target_type, logits)
         return {"y_true": y_true, "y_pred": y_pred, "y_score": y_score}

@@ -21,8 +21,8 @@ from tklearn.utils.targets import (
 CT = Union[BertConfig, DistilBertConfig, RobertaConfig]
 
 __all__ = [
-    "preprocess_input",
     "preprocess_target",
+    "preprocess_input",
 ]
 
 
@@ -36,17 +36,17 @@ def is_one_hot(arr):
 
 
 @singledispatch
-def preprocess_input(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
+def preprocess_target(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
     msg = f"unsupported target type: {arg.__class__.__name__}"
     raise NotImplementedError(msg)
 
 
-@preprocess_input.register(str)
+@preprocess_target.register(str)
 def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
-    return preprocess_input(type_of_target(arg), input, num_labels)
+    return preprocess_target(type_of_target(arg), input, num_labels)
 
 
-@preprocess_input.register(ContinuousTargetType)
+@preprocess_target.register(ContinuousTargetType)
 def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
     # torch.float32, [min, max], 1D
     if len(input.shape) != 1:
@@ -55,7 +55,7 @@ def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
     return input
 
 
-@preprocess_input.register(ContinuousMultioutputTargetType)
+@preprocess_target.register(ContinuousMultioutputTargetType)
 def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
     # torch.float32, [min, max], 2D
     if len(input.shape) != 2:
@@ -64,7 +64,7 @@ def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
     return input
 
 
-@preprocess_input.register(BinaryTargetType)
+@preprocess_target.register(BinaryTargetType)
 def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
     # torch.float32, {0, 1}, 1D
     if not is_one_hot(input):
@@ -82,7 +82,7 @@ def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
     return input[:, 1]  # type: torch.LongTensor
 
 
-@preprocess_input.register(MulticlassTargetType)
+@preprocess_target.register(MulticlassTargetType)
 def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
     # torch.long, {0, 1, ..., C-1}, 1D
     if len(input.shape) == 1:
@@ -100,7 +100,7 @@ def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
     return torch.argmax(input, dim=-1)  # type: torch.LongTensor
 
 
-@preprocess_input.register(MulticlassMultioutputTargetType)
+@preprocess_target.register(MulticlassMultioutputTargetType)
 def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
     # torch.long, {0, 1, ..., C-1}, 2D
     if len(input.shape) != 2:
@@ -109,7 +109,7 @@ def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
     return input
 
 
-@preprocess_input.register(MultilabelIndicatorTargetType)
+@preprocess_target.register(MultilabelIndicatorTargetType)
 def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
     # torch.float32, {0, 1}, 2D
     if len(input.shape) != 2:
@@ -126,21 +126,21 @@ def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
 
 
 @singledispatch
-def preprocess_target(
+def preprocess_input(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     msg = f"unsupported target type: {arg.__class__.__name__}"
     raise NotImplementedError(msg)
 
 
-@preprocess_target.register(str)
+@preprocess_input.register(str)
 def _(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    return preprocess_target(type_of_target(arg), logits, threshold)
+    return preprocess_input(type_of_target(arg), logits, threshold)
 
 
-@preprocess_target.register(ContinuousTargetType)
+@preprocess_input.register(ContinuousTargetType)
 def _(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -152,7 +152,7 @@ def _(
     return y_pred, y_pred
 
 
-@preprocess_target.register(ContinuousMultioutputTargetType)
+@preprocess_input.register(ContinuousMultioutputTargetType)
 def _(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -163,7 +163,7 @@ def _(
     return logits, logits
 
 
-@preprocess_target.register(BinaryTargetType)
+@preprocess_input.register(BinaryTargetType)
 def _(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -187,7 +187,7 @@ def _(
     return y_pred, y_score
 
 
-@preprocess_target.register(MulticlassTargetType)
+@preprocess_input.register(MulticlassTargetType)
 def _(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -200,7 +200,7 @@ def _(
     return y_pred, y_score
 
 
-@preprocess_target.register(MultilabelIndicatorTargetType)
+@preprocess_input.register(MultilabelIndicatorTargetType)
 def _(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -213,7 +213,7 @@ def _(
     return y_pred, y_score
 
 
-@preprocess_target.register(MulticlassMultioutputTargetType)
+@preprocess_input.register(MulticlassMultioutputTargetType)
 def _(
     arg, logits: Tuple[torch.Tensor, ...], threshold: float = 0.5
 ) -> Tuple[Tuple[torch.Tensor, ...], Tuple[torch.Tensor, ...]]:
