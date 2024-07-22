@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import operator
+import random
 from typing import (
     Any,
+    Callable,
     Generator,
     Generic,
     Optional,
@@ -174,21 +176,92 @@ class IterableTorchDataset(TorchDataset, IterableBaseDataset):
         yield from (self[i] for i in range(len(self)))
 
 
-def default_collate(batch: Sequence[Record[XT, YT]]) -> RecordBatch[XT, YT]:
-    """
-    * :class:`torch.Tensor` -> :class:`torch.Tensor` (with an added outer dimension batch size)
-    * NumPy Arrays -> :class:`torch.Tensor`
-    * `float` -> :class:`torch.Tensor`
-    * `int` -> :class:`torch.Tensor`
-    * `str` -> `str` (unchanged)
-    * `bytes` -> `bytes` (unchanged)
-    * `Mapping[K, V_i]` -> `Mapping[K, default_collate([V_1, V_2, ...])]`
-    * `NamedTuple[V1_i, V2_i, ...]` -> `NamedTuple[default_collate([V1_1, V1_2, ...]),
-        default_collate([V2_1, V2_2, ...]), ...]`
-    * `Sequence[V1_i, V2_i, ...]` -> `Sequence[default_collate([V1_1, V1_2, ...]),
-        default_collate([V2_1, V2_2, ...]), ...]`
-    """
-    batch: Record[XT, YT] = _default_collate(batch)
-    index = batch.pop("index")
-    batch = batch["x"], batch["y"] if "y" in batch else None
-    return RecordBatch(*batch, index=index)
+class BaseCollator:
+    def __call__(self, batch: Sequence[Record[XT, YT]]) -> RecordBatch[XT, YT]:
+        raise NotImplementedError
+
+
+class DefaultCollator(BaseCollator):
+    def __init__(self, collate_fn: Optional[Callable] = None) -> None:
+        if collate_fn is None:
+            collate_fn = _default_collate
+        self.collate_fn = collate_fn
+
+    def __call__(self, batch: Sequence[Record[XT, YT]]) -> RecordBatch[XT, YT]:
+        """
+        * :class:`torch.Tensor` -> :class:`torch.Tensor` (with an added outer dimension batch size)
+        * NumPy Arrays -> :class:`torch.Tensor`
+        * `float` -> :class:`torch.Tensor`
+        * `int` -> :class:`torch.Tensor`
+        * `str` -> `str` (unchanged)
+        * `bytes` -> `bytes` (unchanged)
+        * `Mapping[K, V_i]` -> `Mapping[K, default_collate([V_1, V_2, ...])]`
+        * `NamedTuple[V1_i, V2_i, ...]` -> `NamedTuple[default_collate([V1_1, V1_2, ...]),
+            default_collate([V2_1, V2_2, ...]), ...]`
+        * `Sequence[V1_i, V2_i, ...]` -> `Sequence[default_collate([V1_1, V1_2, ...]),
+            default_collate([V2_1, V2_2, ...]), ...]`
+        """
+        batch: dict = _default_collate(batch)
+        index = batch.pop("index")
+        batch = batch["x"], batch["y"] if "y" in batch else None
+        return RecordBatch(*batch, index=index)
+
+
+default_collate = DefaultCollator()
+
+
+class AugmentedCollator(DefaultCollator):
+    def __init__(self, collate_fn: Optional[Callable] = None) -> None:
+        super().__init__(collate_fn)
+
+    def generate(self, batch: RecordBatch[XT, YT]) -> RecordBatch[XT, YT]:
+        raise NotImplementedError
+
+    def __call__(self, batch: Sequence[Record[XT, YT]]) -> RecordBatch[XT, YT]:
+        batch = super().__call__(batch)
+        return self.generate(batch)
+
+
+class PromptAugmentedTrainingCollator(AugmentedCollator):
+    def __init__(self, tokenizer, id2label, sep_token=None, k=None):
+        super().__init__()
+        if sep_token is None:
+            if hasattr(tokenizer, "sep_token"):
+                sep_token = tokenizer.sep_token
+            else:
+                sep_token = "[SEP]"
+        self.tokenizer = tokenizer
+        self.sep_token = sep_token
+        self.id2label = id2label
+        self.ids = {cls: list(set(id2label) - {cls}) for cls in id2label}
+        self.k = k
+
+    def generate(self, batch: RecordBatch) -> RecordBatch:
+        prompts = []
+        labels = []
+        indexes = []
+        args = batch.x.pop("text"), batch.x.pop("labels", batch.y), batch.index
+        for txt, true_lbl, idx in zip(*args):
+            if isinstance(true_lbl, torch.Tensor):
+                true_lbl = true_lbl.item()
+            other_labels = self.ids[true_lbl]
+            if self.k is not None:
+                other_labels = random.choices(self.ids[true_lbl], k=self.k)
+            aug_lbls = [true_lbl] + other_labels
+            for lbl in aug_lbls:
+                cls = self.id2label[true_lbl]
+                prompt = f"{txt} {self.sep_token} {cls}"
+                prompts.append(prompt)
+                labels.append(true_lbl == lbl)
+                indexes.append(idx)
+        tokens = self.tokenizer(
+            prompts, return_tensors="pt", padding="max_length", truncation=True
+        )
+        labels = torch.tensor(labels, dtype=torch.long)
+        if batch.y:
+            return RecordBatch(dict(tokens), labels, index=indexes)
+        return RecordBatch({**tokens, "labels": labels}, index=indexes)
+
+    # def collect(self, batch: RecordBatch, batch_output) -> RecordBatch:
+    #     batch.index
+    #     return batch
