@@ -70,7 +70,7 @@ class Module(nn.Module):
         raise NotImplementedError
 
     def compute_loss(
-        self, batch: RecordBatch, output: Any, **kwargs
+        self, batch: RecordBatch, output: Any, **kwargs: Any
     ) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
         return None
 
@@ -145,7 +145,7 @@ class Module(nn.Module):
         sampler: Optional[Sampler] = None,
         batch_sampler: Optional[Sampler] = None,
         callbacks: Optional[CallbackList] = None,
-        loss: Optional[Callable] = None,
+        loss_args: Optional[Dict[str, Any]] = None,
     ) -> Generator[Tuple[int, RecordBatch, Any, TensorDict[torch.Tensor]], None, None]:
         device = self.device
         test_dataset = TorchDataset(x, y)
@@ -176,6 +176,8 @@ class Module(nn.Module):
         callbacks.set_params(callback_params)
         self.eval()
         callbacks.on_predict_begin()
+        if loss_args is None:
+            loss_args = {}
         batch_idx, total_loss_dict = 0, None
         for batch_idx, batch in enumerate(test_dataloader):
             callbacks.on_predict_batch_begin(batch_idx)
@@ -184,7 +186,7 @@ class Module(nn.Module):
             batch = move_to_device(batch, device)
             with torch.no_grad():
                 batch_output = self.predict_on_batch(batch)
-                batch_loss = self.compute_loss(batch, batch_output, loss_func=loss)
+                batch_loss = self.compute_loss(batch, batch_output, **loss_args)
             batch_output = detach(batch_output)
             batch_output = move_to_device(batch_output, "cpu")
             if batch_loss:
@@ -211,6 +213,7 @@ class Module(nn.Module):
         y: Y = None,
         *,
         batch_size: int = 32,
+        loss_args: Optional[Dict[str, Any]] = None,
         collate_fn: Optional[CollateFunctionType] = None,
         sampler: Optional[Sampler] = None,
         batch_sampler: Optional[Sampler] = None,
@@ -218,6 +221,8 @@ class Module(nn.Module):
     ) -> Z:
         if not isinstance(callbacks, CallbackList):
             callbacks = CallbackList(callbacks)
+        if loss_args is None:
+            loss_args = {}
         logits = None
         for _, _, batch_output, _ in self.predict_iter(
             x,
@@ -227,6 +232,7 @@ class Module(nn.Module):
             sampler=sampler,
             batch_sampler=batch_sampler,
             collate_fn=collate_fn,
+            loss_args=loss_args,
         ):
             logits = concat((logits, batch_output["logits"]))
         if logits is None:
@@ -246,8 +252,8 @@ class Module(nn.Module):
             Dict[dict, MetricBase], List[MetricBase], MetricBase, None
         ] = None,
         batch_size: int = 32,
+        loss_args: Optional[Dict[str, Any]] = None,
         include_loss: bool = True,
-        return_dict: bool = True,
         prefix: str = "",
         callbacks: Optional[Sequence[Callback]] = None,
         sampler: Optional[Sampler] = None,
@@ -257,6 +263,8 @@ class Module(nn.Module):
         if not isinstance(metrics, MetricState):
             metrics = MetricState(metrics)
         metrics.reset()
+        if loss_args is None:
+            loss_args = {}
         n_batches, total_loss_dict = 0, None
         for _, batch, output, batch_loss_dict in self.predict_iter(
             x,
@@ -266,6 +274,7 @@ class Module(nn.Module):
             sampler=sampler,
             batch_sampler=batch_sampler,
             collate_fn=collate_fn,
+            loss_args=loss_args,
         ):
             n_batches += 1
             total_loss_dict = batch_loss_dict + total_loss_dict
@@ -291,7 +300,7 @@ class Module(nn.Module):
         batch: RecordBatch,
         *,
         optimizer: Optimizer,
-        loss: Optional[Callable] = None,
+        loss_args: Optional[Dict[str, Any]] = None,
         clip_grad_norm: _clip_grad_norm_type = None,
         lr_scheduler: Optional[LRScheduler] = None,
         device: Union[str, torch.device, None] = None,
@@ -302,12 +311,14 @@ class Module(nn.Module):
             device = self.device
         if not isinstance(callbacks, CallbackList):
             callbacks = CallbackList(callbacks)
+        if loss_args is None:
+            loss_args = {}
         batch = move_to_device(batch, device, non_blocking=True)
         callbacks.on_train_batch_begin(batch_idx)
         if not self.training:
             self.train()
         batch_output = self.predict_on_batch(batch)
-        batch_loss = self.compute_loss(batch, batch_output, loss_func=loss)
+        batch_loss = self.compute_loss(batch, batch_output, **loss_args)
         batch_loss = TensorDict(batch_loss)
         optimizer.zero_grad()
         batch_loss.backward()
@@ -331,10 +342,11 @@ class Module(nn.Module):
         self,
         x: XY,
         y: Y = None,
+        *,
         batch_size: int = 32,
         epochs: int = 1,
         shuffle: bool = True,
-        loss: Optional[Callable] = None,
+        loss_args: Optional[Dict[str, Any]] = None,
         optimizer: Union[Optimizer, None] = None,
         lr_scheduler: Union[LRScheduler, None] = None,
         lr_scheduler_step: Optional[str] = None,
@@ -386,6 +398,8 @@ class Module(nn.Module):
         batch_lr_scheduler = None
         if lr_scheduler_step == "batch":
             batch_lr_scheduler = lr_scheduler
+        if loss_args is None:
+            loss_args = {}
         for epoch_idx in range(epochs):
             callbacks.on_epoch_begin(epoch_idx)
             total_loss_dict, batch_idx = None, 0
@@ -393,7 +407,7 @@ class Module(nn.Module):
                 batch_loss_dict = self.fit_on_batch(
                     batch=batch,
                     optimizer=optimizer,
-                    loss=loss,
+                    loss_args=loss_args,
                     clip_grad_norm=clip_grad_norm,
                     lr_scheduler=batch_lr_scheduler,
                     device=device,
@@ -414,12 +428,13 @@ class Module(nn.Module):
                     validation_data,
                     metrics=metrics,
                     prefix="valid_",
-                    callbacks=callbacks,
                     batch_size=validation_batch_size,
-                    return_dict=True,
+                    loss_args=loss_args,
+                    include_loss=False,
                     sampler=validation_sampler,
                     batch_sampler=validation_batch_sampler,
                     collate_fn=collate_fn,
+                    callbacks=callbacks,
                 )
                 epoch_logs.update(eval_results)
             callbacks.on_epoch_end(epoch_idx, logs=epoch_logs)
