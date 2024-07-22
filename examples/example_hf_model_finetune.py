@@ -3,22 +3,20 @@ from pathlib import Path
 
 import torch
 from datasets import load_dataset
-from tklearn.metrics.classification import Accuracy, F1Score, Precision, Recall
+from tklearn.metrics.classification import F1, Accuracy, Precision, Recall
+from tklearn.nn import Module
 from tklearn.nn.callbacks import (
     EarlyStopping,
     ModelCheckpoint,
     ProgbarLogger,
     TrackingCallback,
 )
-from tklearn.nn.data import RecordBatch
-from tklearn.nn.torch import Model
+from tklearn.nn.utils.data import RecordBatch
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
 )
 from transformers.modeling_outputs import SequenceClassifierOutput
-
-from octoflow.tracking import SQLAlchemyTrackingStore, TrackingClient
 
 run_path = Path("./examples/logs/experiment_1")
 
@@ -99,7 +97,7 @@ class BinaryTextClassifier(Model):
 
 metrics = {
     "accuracy": Accuracy(),
-    "f1": F1Score(),
+    "f1": F1(),
     "precision": Precision(),
     "recall": Recall(),
 }
