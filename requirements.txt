@@ -13,7 +13,7 @@ nltk
 sortedcontainers
 hnswlib
 flashtext
-octoflow~=0.1.0
+octoflow
 wordfreq
 rdflib
 orjson
