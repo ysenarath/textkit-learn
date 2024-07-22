@@ -25,7 +25,7 @@ import cloudpickle
 __all__ = [
     "MetricBase",
     "MetricState",
-    "MetricField",
+    "MetricVariable",
 ]
 
 T = TypeVar("T")
@@ -33,7 +33,7 @@ T = TypeVar("T")
 _metric_states_cv: ContextVar[MetricState] = ContextVar("metric_state", default=MISSING)
 
 
-class MetricField(Generic[T]):
+class MetricVariable(Generic[T]):
     def __set_name__(self, owner: MetricBase, name: str) -> None:
         self.name = name
 
@@ -122,6 +122,7 @@ class MetricState(MetricBase, Mapping[MetricBase, Dict[str, Any]]):
         self.metrics: List[MetricBase] = metrics
         self.metric_names: Optional[List[str]] = metric_names
         # update states
+        # this should be a ordered dictionary
         self._metric_states = WeakKeyDictionary()
         for metric in self.metrics:
             self.add_metric(metric)
