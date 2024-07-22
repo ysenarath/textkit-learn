@@ -1,4 +1,4 @@
-pandas 
+pandas
 polars
 numpy
 scikit-learn
