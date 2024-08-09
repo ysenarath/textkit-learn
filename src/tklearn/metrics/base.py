@@ -146,14 +146,11 @@ class MetricState(MetricBase, Mapping[MetricBase, Dict[str, Any]]):
 
     def add_metric(self, metric: MetricBase) -> None:
         if not isinstance(metric, MetricBase):
-            msg = (
-                "'metric' should be an instance of 'Metric', "
-                f"but got {metric.__class__.__name__}"
-            )
+            msg = f"expected an instance of 'MetricBase', but got '{metric.__class__.__name__}'"
             raise TypeError(msg)
-        cls = metric.__class__
-        for class_var in dir(cls):
-            class_var_val = getattr(cls, class_var)
+        class_ = metric.__class__
+        for class_var in dir(class_):
+            class_var_val = getattr(class_, class_var)
             if not isinstance(class_var_val, MetricBase):
                 continue
             self.add_metric(class_var_val)
@@ -172,7 +169,7 @@ class MetricState(MetricBase, Mapping[MetricBase, Dict[str, Any]]):
             metric.update(**kwargs)
 
     @with_metric_context
-    def result(self) -> Union[Tuple[Any], Dict[str, Any]]:
+    def result(self) -> Union[Tuple[Any], Mapping[str, Any]]:
         if self.metric_names is None:
             return tuple(metric.result() for metric in self.metrics)
         return {
