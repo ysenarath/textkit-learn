@@ -178,9 +178,9 @@ class Module(nn.Module):
             collate_fn=collate_fn,
             pin_memory=True,
         )
-        callback_params = {}
         if not isinstance(callbacks, CallbackList):
             callbacks = CallbackList(callbacks)
+        callback_params = {}
         if callbacks.params is not None:
             callback_params.update(callbacks.params)
         pred_steps = len(test_dataloader)
