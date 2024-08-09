@@ -31,10 +31,8 @@ __all__ = [
     "to_torch",
 ]
 
-try:
-    from octoflow.data import Dataset as OctoFlowDataset
-except ImportError:
-    OctoFlowDataset = list
+
+ListLike = list
 
 T = TypeVar("T")
 
@@ -173,26 +171,25 @@ def move_to_device(
     output : object
         The object moved to the device.
     """
-    if isinstance(obj, torch.nn.Module):
-        return obj.to(device, non_blocking=non_blocking)
-    elif isinstance(obj, torch.Tensor):
-        return obj.to(device, non_blocking=non_blocking)
-    elif isinstance(obj, MovableToDeviceMixin):
+    if isinstance(obj, (torch.nn.Module, torch.Tensor, MovableToDeviceMixin)):
         return obj.to(device, non_blocking=non_blocking)
     elif isinstance(obj, Mapping):
-        return {
-            k: move_to_device(v, device, non_blocking=non_blocking)
-            for k, v in obj.items()
-        }
+        data = {}
+        for k, v in obj.items():
+            v = move_to_device(v, device, non_blocking=non_blocking)
+            data[k] = v
+        return data
     elif isinstance(obj, Tuple) and hasattr(obj, "_fields"):
-        # namedtuple
+        # namedtuple, e.g., RecordBatch
         dtype = type(obj)
         return dtype(move_to_device(v, device, non_blocking=non_blocking) for v in obj)
     elif isinstance(obj, Tuple):
         return tuple(move_to_device(v, device, non_blocking=non_blocking) for v in obj)
     elif isinstance(obj, List):
         return [move_to_device(v, device, non_blocking=non_blocking) for v in obj]
-    return obj
+    elif isinstance(obj, str):
+        return obj
+    raise ValueError(f"cannot move object of type '{obj.__class__.__name__}' to device")
 
 
 def concat(objs: List[RT], /, axis: int = 0) -> RT:
@@ -261,7 +258,7 @@ def length_of_first_array_like_in_nested_dict(data: Dict) -> int:
     length : int
         The length of the first list in the nested dictionary.
     """
-    if isinstance(data, (HuggingFaceDataset, OctoFlowDataset)):
+    if isinstance(data, (HuggingFaceDataset, ListLike)):
         return len(data)
     if isinstance(data, (np.ndarray, pd.DataFrame)):
         return data.shape[0]
@@ -294,7 +291,7 @@ Indexable = Union[
     np.ndarray,
     torch.Tensor,
     HuggingFaceDataset,
-    OctoFlowDataset,
+    ListLike,
     Dict,
     Tuple,
 ]
@@ -329,9 +326,7 @@ def get_index(data: Any, index: Union[int, slice]) -> Any:
     value : Any
         The value at the index in the nested dictionary.
     """
-    if isinstance(
-        data, (torch.Tensor, np.ndarray, HuggingFaceDataset, OctoFlowDataset)
-    ):
+    if isinstance(data, (torch.Tensor, np.ndarray, HuggingFaceDataset, ListLike)):
         # will return dtyped value
         return data[index]
     if isinstance(data, (pd.DataFrame, pd.Series)):
