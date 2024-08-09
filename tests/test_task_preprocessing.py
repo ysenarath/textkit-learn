@@ -1,7 +1,7 @@
 import unittest
 
 import torch
-from tklearn.nn.utils.preprocessing import preprocess_target, preprocess_input
+from tklearn.nn.utils.preprocessing import preprocess_input, preprocess_target
 
 
 class TestPreprocessInput(unittest.TestCase):
