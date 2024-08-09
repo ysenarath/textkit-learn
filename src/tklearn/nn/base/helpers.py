@@ -43,6 +43,8 @@ class CallbacksPropertyMixin:
 
     @callbacks.setter
     def callbacks(self, value: Union[CallbackList, Iterable[Callback], None]) -> None:
+        if isinstance(value, Callback):
+            value = [value]
         self._callbacks = CallbackList(value)
 
 
@@ -65,8 +67,15 @@ class Predictor(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
     ) -> Generator[Tuple[int, ModelInput, ModelOutput, LossDict], None, None]:
         if self.model.training:
             self.model.eval()
-        dataloader_idx = None
+        # set the callback params
+        callback_params = {}
+        if self.callbacks.params is not None:
+            callback_params.update(self.callbacks.params)
+        callback_params.update({"pred_steps": len(self.dataloader)})
+        self.callbacks.set_params(callback_params)
+        # start the prediction
         self.callbacks.on_predict_begin()
+        dataloader_idx = None
         for batch_idx, batch in enumerate(self.dataloader):
             batch = move_to_device(batch, self.model.device, non_blocking=True)
             self.callbacks.on_predict_batch_begin(batch_idx)
@@ -84,6 +93,7 @@ class Predictor(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
             batch_logs = {}
             self.callbacks.on_predict_batch_end(batch_idx, logs=batch_logs)
             yield batch_idx, batch, output, batch_loss
+        self.callbacks.on_predict_end()
 
     def predict(self) -> torch.Tensor:
         # change to eval mode
@@ -119,7 +129,7 @@ class Evaluator(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         self.prefix = prefix
         self.callbacks = callbacks
 
-    def _create_metrics(self) -> MetricState:
+    def _create_metric_state(self) -> MetricState:
         metrics = MetricState(self.metrics)
         metrics.reset()
         return metrics
@@ -161,6 +171,7 @@ class Evaluator(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
                 batch_logs.update(output)
             self.callbacks.on_predict_batch_end(batch_idx, logs=batch_logs)
             outputs.append(output)
+        self.callbacks.on_predict_end()
         return outputs
 
     def validate(self) -> List[Dict[str, Any]]:
@@ -174,7 +185,7 @@ class Evaluator(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
             return self.validate()
         elif self.metrics == "test":
             return self.test()
-        metrics = self._create_metrics()
+        metric_state = self._create_metric_state()
         predictor: Predictor[ModelInput, ModelOutput] = Predictor(
             model=self.model,
             dataloader=self.dataloader,
@@ -189,7 +200,7 @@ class Evaluator(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
                 metric_inputs = self.model.compute_metric_inputs(batch, output)
             else:
                 metric_inputs = self.postprocessor(batch, output)
-            self.metrics.update(**metric_inputs)
+            metric_state.update(**metric_inputs)
         average_loss = {}
         if self.include_loss:
             if total_loss is not None:
@@ -198,7 +209,7 @@ class Evaluator(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
             average_loss = {
                 f"{self.prefix}{key}": value for key, value in average_loss.items()
             }
-        results = metrics.result()
+        results = metric_state.result()
         if not isinstance(results, Mapping) and isinstance(results, Iterable):
             results = {
                 f"{self.prefix}metric[{i}]": results[i] for i in range(len(results))
