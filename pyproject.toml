@@ -44,7 +44,6 @@ dependencies = [
     "sortedcontainers",
     "hnswlib",
     "flashtext",
-    "octoflow~=0.2.0",
     "langdetect",
 ]
 dynamic = ["version"]
@@ -82,7 +81,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["octoflow"]
+known-first-party = []
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.
