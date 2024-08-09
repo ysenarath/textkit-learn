@@ -1,11 +1,10 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Generic, Mapping, TypeVar, Union
 
 import torch
 from typing_extensions import Self
-
-from octoflow import logging
 
 __all__ = [
     "TensorDict",
@@ -13,7 +12,7 @@ __all__ = [
 
 T = TypeVar("T", torch.Tensor, float)
 
-logger = logging.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class TensorDict(Mapping[str, T], Generic[T]):

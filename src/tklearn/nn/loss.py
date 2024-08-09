@@ -1,13 +1,21 @@
 from __future__ import annotations
 
-from typing import Union
+from typing import Any, Union
 
 import torch
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
+from tklearn.nn.utils.collections import TensorDict
 from tklearn.utils.targets import TargetType, type_of_target
 
 __all__ = []
+
+
+class LossDict(TensorDict):
+    def __init__(self, *args: Any, **kwargs: Any):
+        if len(args) == 1 and not isinstance(args[0], dict):
+            args = ({"loss": args[0]},)
+        super().__init__(*args, **kwargs)
 
 
 class TargetBasedLoss(torch.nn.Module):

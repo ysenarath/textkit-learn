@@ -4,6 +4,7 @@ from transformers import (
     AutoConfig,
     BertConfig,
     DistilBertConfig,
+    GPT2Config,
     PretrainedConfig,
     RobertaConfig,
 )
@@ -15,7 +16,7 @@ __all__ = [
     "TransformerConfig",
 ]
 
-CT = TypeVar("CT", BertConfig, DistilBertConfig, RobertaConfig)
+CT = TypeVar("CT", BertConfig, DistilBertConfig, RobertaConfig, GPT2Config)
 
 
 class TransformerConfig:
@@ -45,7 +46,17 @@ class TransformerConfig:
             else:
                 msg = f"target type '{target_type}' not supported"
                 raise ValueError(msg)
-        if isinstance(self._hf_config, (BertConfig, RobertaConfig)):
+        if isinstance(self._hf_config, GPT2Config):
+            cfg = {}
+            for k, v in kwargs.items():
+                if k == "hidden_size":
+                    cfg["n_embd"] = v
+                elif k == "output_dropout":
+                    cfg["seq_classif_dropout"] = v
+                else:
+                    cfg[k] = v
+            self._hf_config.update(cfg)
+        elif isinstance(self._hf_config, (BertConfig, RobertaConfig)):
             if "output_dropout" in kwargs:
                 kwargs["classifier_dropout"] = kwargs.pop("output_dropout")
             self._hf_config.update(kwargs)
@@ -65,7 +76,9 @@ class TransformerConfig:
 
     @property
     def hidden_size(self) -> int:
-        if isinstance(self._hf_config, (BertConfig, RobertaConfig)):  # BertConfig
+        if isinstance(self._hf_config, GPT2Config):
+            return self._hf_config.n_embd
+        elif isinstance(self._hf_config, (BertConfig, RobertaConfig)):  # BertConfig
             return self._hf_config.hidden_size
         elif isinstance(self._hf_config, DistilBertConfig):
             return self._hf_config.dim
@@ -74,7 +87,9 @@ class TransformerConfig:
 
     @property
     def output_dropout(self) -> float:
-        if isinstance(self._hf_config, (BertConfig, RobertaConfig)):  # BertConfig
+        if isinstance(self._hf_config, GPT2Config):
+            return self._hf_config.seq_classif_dropout
+        elif isinstance(self._hf_config, (BertConfig, RobertaConfig)):  # BertConfig
             return self._hf_config.classifier_dropout
         elif isinstance(self._hf_config, DistilBertConfig):
             return self._hf_config.seq_classif_dropout
@@ -115,5 +130,19 @@ class TransformerConfig:
     def output_hidden_states(self) -> bool:
         if isinstance(self._hf_config, PretrainedConfig):
             return self._hf_config.output_hidden_states
+        msg = f"config type '{self._hf_config.__class__.__name__}' not supported"
+        raise ValueError(msg)
+
+    @property
+    def pooling_method(self) -> str:
+        pooling_method = getattr(self._hf_config, "pooling_method", None)
+        if pooling_method is not None:
+            return pooling_method
+        if isinstance(self._hf_config, GPT2Config):
+            # last token in the sequence (by default this is "cls_index")
+            return "last"
+        elif isinstance(self._hf_config, (BertConfig, RobertaConfig, DistilBertConfig)):
+            # [CLS] token
+            return "first"
         msg = f"config type '{self._hf_config.__class__.__name__}' not supported"
         raise ValueError(msg)

@@ -24,9 +24,14 @@ from torch.utils.data.dataloader import DataLoader
 from typing_extensions import TypeVar
 
 from tklearn.metrics import MetricBase, MetricState
+from tklearn.nn._deprecated.data import (
+    Record,
+    RecordBatch,
+    TorchDataset,
+    default_collate,
+)
 from tklearn.nn.callbacks import Callback, CallbackList
-from tklearn.nn.utils.collections import TensorDict
-from tklearn.nn.utils.data import Record, RecordBatch, TorchDataset, default_collate
+from tklearn.nn.utils.collections import TensorDict as _TensorDict
 from tklearn.utils.array import concat, detach, move_to_device
 
 X, Y, Z = TypeVar("X"), TypeVar("Y"), TypeVar("Z")
@@ -40,6 +45,13 @@ _tensor_or_tensors_type = Union[torch.Tensor, Iterable[torch.Tensor]]
 _clip_grad_norm_type = Union[
     int, float, bool, Dict[str, Any], Callable[[_tensor_or_tensors_type], None]
 ]
+
+
+class TensorDict(_TensorDict):
+    def __init__(self, *args: Any, **kwargs: Any):
+        if len(args) == 1 and not isinstance(args[0], dict):
+            args = ({"loss": args[0]},)
+        super().__init__(*args, **kwargs)
 
 
 class Module(nn.Module):
@@ -430,7 +442,7 @@ class Module(nn.Module):
                     prefix="valid_",
                     batch_size=validation_batch_size,
                     loss_args=loss_args,
-                    include_loss=False,
+                    include_loss=True,
                     sampler=validation_sampler,
                     batch_sampler=validation_batch_sampler,
                     collate_fn=collate_fn,

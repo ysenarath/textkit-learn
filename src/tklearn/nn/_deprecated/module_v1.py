@@ -28,15 +28,20 @@ from torch.utils.data.sampler import Sampler
 from typing_extensions import ParamSpec, Self, Unpack
 
 from tklearn.metrics import MetricBase, MetricState
-from tklearn.nn.callbacks import Callback, CallbackList
-from tklearn.nn.optim import (
-    MultipleLRSchedulers,
-    MultipleOptimizers,
+from tklearn.nn._deprecated.data import (
+    Record,
+    RecordBatch,
+    TorchDataset,
+    default_collate,
+)
+from tklearn.nn._deprecated.optim_v1 import (
+    LRSchedulerList,
+    OptimizerList,
     configure_lr_schedulers,
     configure_optimizers,
 )
+from tklearn.nn.callbacks import Callback, CallbackList
 from tklearn.nn.utils.collections import TensorDict
-from tklearn.nn.utils.data import Record, RecordBatch, TorchDataset, default_collate
 from tklearn.utils.array import concat, detach, move_to_device
 
 P = ParamSpec("P")
@@ -281,13 +286,13 @@ class Module(torch.nn.Module, Generic[X, Y, Z]):
     def _fit_configure_optimizers(self):
         optimizers = self.configure_optimizers()
         if isinstance(optimizers, (List, Tuple)):
-            optimizers = MultipleOptimizers(*optimizers)
+            optimizers = OptimizerList(*optimizers)
         self.context.training.optimizer = optimizers
 
     def _fit_configure_lr_schedulers(self):
         lr_schedulers = self.configure_lr_schedulers()
         if isinstance(lr_schedulers, (List, Tuple)):
-            lr_schedulers = MultipleLRSchedulers(*lr_schedulers)
+            lr_schedulers = LRSchedulerList(*lr_schedulers)
         self.context.training.lr_scheduler = lr_schedulers
 
     def _fit_lr_scheduler_step(self, iter_type: str) -> None:

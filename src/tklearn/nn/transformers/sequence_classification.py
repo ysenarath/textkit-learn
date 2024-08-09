@@ -1,5 +1,5 @@
 from os import PathLike
-from typing import Dict, TypeVar, Union
+from typing import Any, Dict, TypeVar, Union
 
 import torch
 from torch import nn
@@ -13,12 +13,11 @@ from transformers import (
 from transformers.modeling_outputs import BaseModelOutput
 from typing_extensions import Self
 
+from tklearn.nn import Module
 from tklearn.nn.loss import TargetBasedLoss
-from tklearn.nn.module import Module
-from tklearn.nn.transformers.base import TransformerConfig
+from tklearn.nn.transformers.config import TransformerConfig
 from tklearn.nn.transformers.outputs import SequenceClassifierOutput
-from tklearn.nn.utils.data import RecordBatch
-from tklearn.nn.utils.preprocessing import preprocess_target, preprocess_input
+from tklearn.nn.utils.preprocessing import preprocess_input, preprocess_target
 from tklearn.utils.targets import TargetType
 
 __all__ = [
@@ -44,13 +43,13 @@ TRANSFORMERS_INPUTS = {
 }
 
 
-class OutputLayer(nn.Module):
+class ClassifierLayer(nn.Module):
     """Head for sentence-level classification/regression tasks."""
 
     def __init__(self, num_labels: int, hidden_size: int, dropout: float = 0.2):
         super().__init__()
         # pre-classifier dense layer
-        self.dense = nn.Linear(hidden_size, hidden_size)
+        # self.dense = nn.Linear(hidden_size, hidden_size)
         # dropout layer
         self.dropout = nn.Dropout(dropout) if dropout else nn.Identity()
         # classifier layer
@@ -59,10 +58,11 @@ class OutputLayer(nn.Module):
     def forward(self, pooler_output, **kwargs):
         # last_hidden_state shape: (batch_size, seq_len, hidden_size)
         # x = last_hidden_state[:, 0, :]  # take [CLS] or <s> token
-        x = torch.tanh(self.dense(pooler_output))
-        x = self.dropout(x)
+        # x = self.dense(pooler_output)
+        # x = torch.tanh(x)
+        x = self.dropout(pooler_output)
         x = self.output(x)
-        return x
+        return x, pooler_output
 
 
 class TransformerForSequenceClassification(Module):
@@ -87,7 +87,7 @@ class TransformerForSequenceClassification(Module):
             target_type=target_type,
         )
         self.base_model: PreTrainedModel = AutoModel.from_config(self.config._hf_config)
-        self.output_layer = OutputLayer(
+        self.classifier = ClassifierLayer(
             num_labels=num_labels,
             hidden_size=self.config.hidden_size,
             dropout=self.config.output_dropout,
@@ -98,18 +98,72 @@ class TransformerForSequenceClassification(Module):
 
     def forward(self, **kwargs):
         outputs = self.base_model(**kwargs)
-        # pooler output is the representation of the [CLS]
-        # token in BERT-like models
+        # pooler output is the representation of
+        # the [CLS] or it could be the average of
+        # all tokens token in BERT-like models
         if hasattr(outputs, "pooler_output"):
             pooler_output = outputs.pooler_output
-        elif hasattr(outputs, "last_hidden_state"):
-            pooler_output = outputs.last_hidden_state[:, 0, :]
         else:
-            pooler_output = outputs.hidden_states[-1][:, 0, :]
-        logits = self.output_layer(pooler_output)
+            last_hidden_state: torch.Tensor
+            if hasattr(outputs, "last_hidden_state"):
+                last_hidden_state = outputs.last_hidden_state
+            else:
+                last_hidden_state = outputs.hidden_states[-1]
+            attention_mask: torch.Tensor = kwargs.get("attention_mask")
+            if self.config.pooling_method == "mean":
+                if attention_mask is None:
+                    pooler_output = last_hidden_state.mean(dim=1)
+                else:
+                    # Create a mask for the non-padded tokens
+                    mask_expanded = attention_mask.unsqueeze(-1).expand(
+                        last_hidden_state.size()
+                    )
+                    # sum the hidden states of non-padded tokens
+                    sum_hidden_state = torch.sum(
+                        last_hidden_state * mask_expanded,
+                        dim=1,  # sum over the sequence length
+                    )
+                    # sum the attention mask (sum over the sequence length)
+                    sum_attention_mask = torch.clamp(mask_expanded.sum(dim=1), min=1e-9)
+                    # calculate the mean of the hidden states
+                    pooler_output = sum_hidden_state / sum_attention_mask
+            if self.config.pooling_method == "last":
+                if attention_mask is None:
+                    pooler_output = last_hidden_state[:, -1, :]
+                else:
+                    batch_size, seq_length, _ = last_hidden_state.shape
+                    range_tensor = (
+                        torch.arange(seq_length, device=attention_mask.device)
+                        .unsqueeze(0)
+                        .expand(batch_size, -1)
+                    )
+                    token_idxs = range_tensor * attention_mask
+                    # Create a mask for the last token positions
+                    last_token_idx = token_idxs.max(axis=1).values
+                    pooler_output = last_hidden_state[
+                        torch.arange(
+                            last_hidden_state.size(0), device=last_hidden_state.device
+                        ),
+                        last_token_idx,
+                    ]
+            elif self.config.pooling_method == "first":
+                if attention_mask is None:
+                    pooler_output = last_hidden_state[:, 0, :]
+                else:
+                    # Create a mask for the first token positions
+                    first_token_idx = attention_mask.max(axis=1).indices
+                    pooler_output = last_hidden_state[
+                        torch.arange(
+                            last_hidden_state.size(0), device=last_hidden_state.device
+                        ),
+                        first_token_idx,
+                    ]
+        logits, pooler_output = self.classifier(pooler_output)
         # results.logits /= self.temperature
         return SequenceClassifierOutput.from_output(
-            outputs, logits=logits, pooler_output=pooler_output
+            outputs,
+            logits=logits,
+            pooler_output=pooler_output,
         )
 
     @classmethod
@@ -127,25 +181,23 @@ class TransformerForSequenceClassification(Module):
             target_type=config.target_type,
         )
 
-    def predict_on_batch(self, batch: RecordBatch) -> OutputType:
+    def compute_loss(self, batch: Any, output: OutputType, **kwargs):
+        targets, logits = batch["labels"], output["logits"]
+        target_type, num_labels = self.config.target_type, self.config.num_labels
+        y_true = preprocess_target(target_type, targets, num_labels=num_labels)
+        return self._loss_func(logits, y_true)
+
+    def compute_metric_inputs(self, batch: Any, output: OutputType):
+        targets, logits = batch["labels"], output["logits"]
+        target_type, num_labels = self.config.target_type, self.config.num_labels
+        y_true = preprocess_target(target_type, targets, num_labels=num_labels)
+        y_pred, y_score = preprocess_input(target_type, logits)
+        return {"y_true": y_true, "y_pred": y_pred, "y_score": y_score}
+
+    def predict_step(self, batch: Any, **kwargs) -> OutputType:
         kwargs = {}
-        for k, v in batch.x.items():
+        for k, v in batch.items():
             if k not in TRANSFORMERS_INPUTS:
                 continue
             kwargs[k] = v
         return self(**kwargs)
-
-    def compute_loss(self, batch: RecordBatch, output: OutputType, **kwargs):
-        logits = output["logits"]
-        input = batch.y or batch.x["labels"]
-        target_type, num_labels = self.config.target_type, self.config.num_labels
-        y_true = preprocess_target(target_type, input, num_labels=num_labels)
-        return self._loss_func(logits, y_true)
-
-    def prepare_metric_inputs(self, batch: RecordBatch, output: OutputType):
-        input = batch.y or batch.x["labels"]
-        target_type, num_labels = self.config.target_type, self.config.num_labels
-        y_true = preprocess_target(target_type, input, num_labels=num_labels)
-        logits = output["logits"]
-        y_pred, y_score = preprocess_input(target_type, logits)
-        return {"y_true": y_true, "y_pred": y_pred, "y_score": y_score}

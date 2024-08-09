@@ -21,7 +21,7 @@ __all__ = [
 
 
 if TYPE_CHECKING:
-    from tklearn.nn.module import Module
+    from tklearn.nn.base.module import Module
 
 
 class Callback:
@@ -384,14 +384,13 @@ class CallbackList(Callback, Sequence[Callback]):
             output = None
             outputs.errors.append(None)
             try:
-                # print(callback, func, args, kwargs)
                 output = getattr(callback, __name)(*args, **kwargs)
             except NotImplementedError:
                 pass
             except Exception as e:
                 warnings.warn(
-                    f"{e} in callback '{type(callback).__name__}' "
-                    f"when calling '{__name}'",
+                    f"An exception occurred while applying callback '{__name}' on "
+                    f"callback '{callback.__class__.__name__} with message: {str(e)}",
                     RuntimeWarning,
                     stacklevel=0,
                     source=e,

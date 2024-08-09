@@ -1,3 +1,4 @@
+import logging
 import warnings
 from pathlib import Path
 from typing import Literal, Union
@@ -6,14 +7,13 @@ import numpy as np
 import torch
 from safetensors.torch import save_model
 
-from octoflow import logging
 from tklearn.nn.callbacks.base import Callback
 
 __all__ = [
     "ModelCheckpoint",
 ]
 
-logger = logging.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _get_monitor_attrs(cls: type, monitor: str, mode: str, best: float = None):

@@ -1,8 +1,8 @@
+import logging
 from typing import Literal, Optional
 
 import numpy as np
 
-from octoflow import logging
 from tklearn.nn.callbacks.base import Callback
 from tklearn.utils import copy
 
@@ -10,7 +10,7 @@ __all__ = [
     "EarlyStopping",
 ]
 
-logger = logging.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class EarlyStopping(Callback):
