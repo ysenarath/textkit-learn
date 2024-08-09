@@ -78,3 +78,6 @@ class ArrayAccumulator(MetricBase):
         if self.arrays is None:
             return None
         return np.concatenate(self.arrays, axis=self.axis)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(name='{self.name}', axis={self.axis})"
