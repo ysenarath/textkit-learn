@@ -87,6 +87,8 @@ def with_metric_context(func: T) -> T:
         token = _metric_states_cv.set(self)
         try:
             return func(self, *args, **kwargs)
+        except Exception as e:
+            raise e
         finally:
             _metric_states_cv.reset(token)
 
@@ -146,7 +148,11 @@ class MetricState(MetricBase, Mapping[MetricBase, Dict[str, Any]]):
 
     def add_metric(self, metric: MetricBase) -> None:
         if not isinstance(metric, MetricBase):
-            msg = f"expected an instance of 'MetricBase', but got '{metric.__class__.__name__}'"
+            bases = ", ".join(base.__name__ for base in metric.__class__.__bases__)
+            msg = (
+                f"expected an instance of 'MetricBase', but got "
+                f"'{metric.__class__.__name__}({bases})'"
+            )
             raise TypeError(msg)
         class_ = metric.__class__
         for class_var in dir(class_):
