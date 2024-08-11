@@ -21,7 +21,10 @@ CT = TypeVar("CT", BertConfig, DistilBertConfig, RobertaConfig, GPT2Config)
 
 class TransformerConfig:
     def __init__(self, config: PretrainedConfig) -> None:
-        self._hf_config: PretrainedConfig = config
+        if isinstance(config, TransformerConfig):
+            self._hf_config = config._hf_config
+        else:
+            self._hf_config = config
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path: str, **kwargs: Any) -> Self:
