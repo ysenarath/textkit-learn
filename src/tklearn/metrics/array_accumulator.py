@@ -56,10 +56,10 @@ class ArrayAccumulator(MetricBase):
                 msg = f"expected {self.name} to be provided"
                 raise ValueError(msg)
             return
-        elif isinstance(value, list):
-            value = np.asarray(value)
         elif isinstance(value, torch.Tensor):
             value = value.detach().cpu().numpy()
+        elif isinstance(value, list):
+            value = np.asarray(value)
         if not isinstance(value, np.ndarray):
             msg = "expected {}, but got {}".format(
                 "np.ndarray, list, or torch.Tensor",
