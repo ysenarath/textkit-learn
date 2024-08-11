@@ -73,6 +73,7 @@ class Predictor(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
             callback_params.update(self.callbacks.params)
         callback_params.update({"pred_steps": len(self.dataloader)})
         self.callbacks.set_params(callback_params)
+        self.callbacks.set_model(self.model)
         # start the prediction
         self.callbacks.on_predict_begin()
         dataloader_idx = None
@@ -150,6 +151,13 @@ class Evaluator(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
             evaluation_step = self.model.validation_step
         dataloader_idx = None
         outputs = []
+        # set the callback params
+        callback_params = {}
+        if self.callbacks.params is not None:
+            callback_params.update(self.callbacks.params)
+        callback_params.update({"pred_steps": len(self.dataloader)})
+        self.callbacks.set_params(callback_params)
+        self.callbacks.set_model(self.model)
         self.callbacks.on_predict_begin()
         for batch_idx, batch in enumerate(self.dataloader):
             batch = move_to_device(batch, self.model.device, non_blocking=True)
