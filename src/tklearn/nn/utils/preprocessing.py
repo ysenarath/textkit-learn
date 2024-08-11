@@ -1,5 +1,5 @@
 from functools import singledispatch
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import torch
 from transformers import (
@@ -36,18 +36,20 @@ def is_one_hot(arr):
 
 
 @singledispatch
-def preprocess_target(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
+def preprocess_target(
+    arg, input: torch.Tensor, num_labels: Optional[int] = None
+) -> torch.Tensor:
     msg = f"unsupported target type: {arg.__class__.__name__}"
     raise NotImplementedError(msg)
 
 
 @preprocess_target.register(str)
-def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
-    return preprocess_target(type_of_target(arg), input, num_labels)
+def _(arg, input: torch.Tensor, num_labels: Optional[int] = None) -> torch.Tensor:
+    return preprocess_target(type_of_target(arg), input, num_labels=num_labels)
 
 
 @preprocess_target.register(ContinuousTargetType)
-def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
+def _(arg, input: torch.Tensor, num_labels: Optional[int] = None) -> torch.Tensor:
     # torch.float32, [min, max], 1D
     if len(input.shape) != 1:
         msg = "y_true shape should be 1-dimensional"
@@ -56,7 +58,7 @@ def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
 
 
 @preprocess_target.register(ContinuousMultioutputTargetType)
-def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
+def _(arg, input: torch.Tensor, num_labels: Optional[int] = None) -> torch.Tensor:
     # torch.float32, [min, max], 2D
     if len(input.shape) != 2:
         msg = "y_true shape should be 2-dimensional"
@@ -65,7 +67,7 @@ def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
 
 
 @preprocess_target.register(BinaryTargetType)
-def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
+def _(arg, input: torch.Tensor, num_labels: Optional[int] = None) -> torch.Tensor:
     # torch.float32, {0, 1}, 1D
     if not is_one_hot(input):
         msg = "y_true should be one-hot encoded"
@@ -83,14 +85,16 @@ def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
 
 
 @preprocess_target.register(MulticlassTargetType)
-def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
+def _(arg, input: torch.Tensor, num_labels: Optional[int] = None) -> torch.Tensor:
     # torch.long, {0, 1, ..., C-1}, 1D
     if len(input.shape) == 1:
         return input
     if len(input.shape) != 2:  # one-hot encoded
         msg = "y_true shape should be 1-dimensional or (one-hot encoded) 2-dimensional tensor"
         raise ValueError(msg)
-    if input.shape[1] != num_labels:  # every row is a one-hot encoded vector
+    if (
+        num_labels is not None and input.shape[1] != num_labels
+    ):  # every row is a one-hot encoded vector
         msg = f"y_true shape {input.shape} does not match num_labels: {num_labels}"
         raise ValueError(msg)
     if not is_one_hot(input):
@@ -110,13 +114,13 @@ def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
 
 
 @preprocess_target.register(MultilabelIndicatorTargetType)
-def _(arg, input: torch.Tensor, num_labels: int) -> torch.Tensor:
+def _(arg, input: torch.Tensor, num_labels: Optional[int] = None) -> torch.Tensor:
     # torch.float32, {0, 1}, 2D
     if len(input.shape) != 2:
         msg = "y_true shape should be 2-dimensional"
         raise ValueError(msg)
     # make sure it matches the number of labels
-    if input.shape[1] != num_labels:
+    if num_labels is not None and input.shape[1] != num_labels:
         msg = f"y_true shape {input.shape} does not match num_labels: {num_labels}"
         raise ValueError(msg)
     # make sure that the values are only 0 or 1
