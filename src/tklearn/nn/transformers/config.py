@@ -1,4 +1,6 @@
-from typing import Any, TypeVar
+from __future__ import annotations
+
+from typing import Any
 
 from transformers import (
     AutoConfig,
@@ -16,15 +18,20 @@ __all__ = [
     "TransformerConfig",
 ]
 
-CT = TypeVar("CT", BertConfig, DistilBertConfig, RobertaConfig, GPT2Config)
-
 
 class TransformerConfig:
     def __init__(self, config: PretrainedConfig) -> None:
         if isinstance(config, TransformerConfig):
-            self._hf_config = config._hf_config
-        else:
-            self._hf_config = config
+            config = config._hf_config
+        self._hf_config = config
+
+    @classmethod
+    def from_config(cls, config: PretrainedConfig | TransformerConfig) -> Self:
+        self = cls.__new__(cls)
+        if isinstance(config, TransformerConfig):
+            config = config._hf_config
+        self._hf_config = config
+        return self
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path: str, **kwargs: Any) -> Self:
@@ -121,6 +128,14 @@ class TransformerConfig:
             return self._hf_config.num_labels
         msg = f"config type '{self._hf_config.__class__.__name__}' not supported"
         raise ValueError(msg)
+
+    @num_labels.setter
+    def num_labels(self, value: int) -> None:
+        if isinstance(self._hf_config, PretrainedConfig):
+            self._hf_config.num_labels = value
+        else:
+            msg = f"config type '{self._hf_config.__class__.__name__}' not supported"
+            raise ValueError(msg)
 
     @property
     def output_attentions(self) -> bool:
