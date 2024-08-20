@@ -136,3 +136,4 @@ notebooks/logs/
 scripts/rsync.sh
 logs/
 scripts/sync.sh
+notebooks/outputs/
