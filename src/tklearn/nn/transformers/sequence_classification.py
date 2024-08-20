@@ -192,7 +192,13 @@ class TransformerForSequenceClassification(Module):
         target_type, num_labels = self.config.target_type, self.config.num_labels
         y_true = preprocess_target(target_type, targets, num_labels=num_labels)
         y_pred, y_score = preprocess_input(target_type, logits)
-        return {"y_true": y_true, "y_pred": y_pred, "y_score": y_score}
+        pooler_output = output.get("pooler_output")
+        return {
+            "y_true": y_true,
+            "y_pred": y_pred,
+            "y_score": y_score,
+            "embedding": pooler_output,
+        }
 
     def predict_step(self, batch: Any, **kwargs) -> OutputType:
         kwargs = {}
@@ -201,3 +207,35 @@ class TransformerForSequenceClassification(Module):
                 continue
             kwargs[k] = v
         return self(**kwargs)
+
+    def set_num_labels(self, num_labels: int):
+        original_device = self.device
+        output_layer = torch.nn.Linear(self.config.hidden_size, num_labels)
+        # PYTORCH_ENABLE_MPS_FALLBACK=1
+        self.to("cpu")
+        # copy old weights
+        with torch.no_grad():
+            output_layer.weight.index_copy_(
+                0,
+                torch.tensor(
+                    range(self.classifier.output.weight.size(0)),
+                    dtype=torch.long,
+                ),
+                self.classifier.output.weight,
+            )
+            output_layer.bias.index_copy_(
+                0,
+                torch.tensor(
+                    range(self.classifier.output.bias.size(0)),
+                    dtype=torch.long,
+                ),
+                self.classifier.output.bias,
+            )
+        # replace classifier
+        self.classifier.output = output_layer
+        self.config.num_labels = num_labels
+        self._loss_func = TargetBasedLoss(
+            self.config.target_type, num_labels=num_labels
+        )
+        # move back to original device
+        self.to(original_device)
