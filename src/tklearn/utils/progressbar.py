@@ -46,31 +46,6 @@ table_css = """<style scoped>
 </style>"""
 
 
-class ProgressBarIO(io.StringIO):
-    def __init__(self, pbar: Optional[ProgressBar] = None):
-        super().__init__()
-        self.get_pbar = weakref.ref(pbar)
-        self.current_line = ""
-
-    def write(self, s: str) -> int:
-        return super().write(s)
-
-    def flush(self) -> None:
-        super().flush()
-        self.current_line = self.getvalue().strip()
-        self.truncate(0)
-        self.seek(0)
-        self.get_pbar().refresh()
-
-    def display(self) -> None:
-        pbar = self.get_pbar()
-        content = self.current_line + "\r"
-        if pbar and pbar.table:
-            content += "\n\n"
-            content += pbar.table.to_string() + "\n"
-        sys.stdout.write(content)
-
-
 class ProgressBarTable:
     def __init__(self, pbar: Optional[ProgressBar] = None):
         self.get_pbar = weakref.ref(pbar)
@@ -115,13 +90,36 @@ class ProgressBarTable:
         return f"<div>{table_css}{table}</div>"
 
 
+class ProgressBarIO(io.StringIO):
+    def __init__(self, pbar: Optional[ProgressBar] = None):
+        super().__init__()
+        self.get_pbar = weakref.ref(pbar)
+        self.current_line = ""
+
+    def write(self, s: str) -> int:
+        return super().write(s)
+
+    def flush(self) -> None:
+        super().flush()
+        self.current_line = self.getvalue().strip()
+        self.truncate(0)
+        self.seek(0)
+        self.get_pbar().refresh()
+
+    def display(self) -> None:
+        pbar = self.get_pbar()
+        content = self.current_line + "\r"
+        if pbar and pbar.table:
+            content += "\n\n"
+            content += pbar.table.to_string() + "\n"
+        sys.stdout.write(content.strip())
+
+
 class ProgressBar(Iterable[T]):
     def __init__(self, *args, **kwargs):
-        nb = nb_tqdm in auto_tqdm.__bases__
-        # nb = False
         self.table = ProgressBarTable(self)
-        if nb:
-            bound_tqdm = functools.partial(nb_tqdm, *args, **kwargs)
+        if nb_tqdm in auto_tqdm.__bases__:
+            bound_tqdm = functools.partial(auto_tqdm, *args, **kwargs)
             # display = bound_tqdm.keywords.pop("display", False)
             bound_tqdm.keywords["display"] = False
             self.tqdm = bound_tqdm()
@@ -132,8 +130,8 @@ class ProgressBar(Iterable[T]):
         else:
             container = ProgressBarIO(self)
             # display = kwargs.pop("display", False)
-            kwargs.update({"file": container, "ascii": False})
-            self.tqdm = nb_tqdm(*args, **kwargs)
+            # kwargs.update({"file": container, "ascii": False})
+            self.tqdm = auto_tqdm(*args, **kwargs)
             self.container = container
 
     def __iter__(self) -> Iterable[T]:
