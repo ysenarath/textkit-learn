@@ -68,15 +68,25 @@ class PrototypeCallback(Callback):
     def __init__(
         self, dataloader: DataLoader | Iterable, device: torch.device | str = None
     ) -> None:
+        # if the model does not have an attribute "prototypes"
+        # then we will not do anything
+        super().__init__()
         self.dataloader = dataloader
         self.device = device
 
     def on_train_begin(self, logs=None):
         # reset the prototypes when training starts
+        if not hasattr(self.model, "prototypes"):
+            # not a prototype model so let's not do anything
+            return
         setattr(self.model, "prototypes", None)
 
     def on_predict_begin(self, logs=None):
-        if getattr(self.model, "prototypes", None) is not None:
+        if not hasattr(self.model, "prototypes"):
+            # not a prototype model so let's not do anything
+            return
+        if getattr(self.model, "prototypes") is not None:
+            # prototypes are already computed so let's skip
             return
         prototypes = compute_prototypes(self.model, self.dataloader, device=self.device)
         setattr(self.model, "prototypes", prototypes)
