@@ -131,11 +131,7 @@ class TransformerConfig:
 
     @num_labels.setter
     def num_labels(self, value: int) -> None:
-        if isinstance(self._hf_config, PretrainedConfig):
-            self._hf_config.num_labels = value
-        else:
-            msg = f"config type '{self._hf_config.__class__.__name__}' not supported"
-            raise ValueError(msg)
+        self.update(num_labels=value)
 
     @property
     def output_attentions(self) -> bool:
