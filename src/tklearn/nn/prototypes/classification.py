@@ -87,4 +87,9 @@ class PrototypeForSequenceClassification(Module):
         target_type = self.config.target_type
         y_true = preprocess_target(target_type, targets)
         y_pred, y_score = preprocess_input(target_type, logits)
-        return {"y_true": y_true, "y_pred": y_pred, "y_score": y_score}
+        return {
+            "y_true": y_true,
+            "y_pred": y_pred,
+            "y_score": y_score,
+            "embedding": pooler_output,
+        }
