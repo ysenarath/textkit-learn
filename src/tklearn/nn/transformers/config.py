@@ -20,18 +20,14 @@ __all__ = [
 
 
 class TransformerConfig:
-    def __init__(self, config: PretrainedConfig) -> None:
+    def __init__(self, config: PretrainedConfig | TransformerConfig) -> None:
         if isinstance(config, TransformerConfig):
             config = config._hf_config
         self._hf_config = config
 
     @classmethod
     def from_config(cls, config: PretrainedConfig | TransformerConfig) -> Self:
-        self = cls.__new__(cls)
-        if isinstance(config, TransformerConfig):
-            config = config._hf_config
-        self._hf_config = config
-        return self
+        return cls(config)
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path: str, **kwargs: Any) -> Self:
