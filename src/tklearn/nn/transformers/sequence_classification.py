@@ -7,11 +7,9 @@ from transformers import (
     AutoModel,
     BertConfig,
     DistilBertConfig,
-    PreTrainedModel,
     RobertaConfig,
 )
 from transformers.modeling_outputs import BaseModelOutput
-from typing_extensions import Self
 
 from tklearn.nn import Module
 from tklearn.nn.loss import TargetBasedLoss
@@ -66,8 +64,22 @@ class ClassifierLayer(nn.Module):
 
 
 class TransformerForSequenceClassification(Module):
-    def __init__(
-        self,
+    def __init__(self, config: TransformerConfig):
+        super().__init__()
+        self.config = config
+        self.base_model = AutoModel.from_config(config._hf_config)
+        self.classifier = ClassifierLayer(
+            num_labels=config.num_labels,
+            hidden_size=config.hidden_size,
+            dropout=config.output_dropout,
+        )
+        self.loss_func = TargetBasedLoss(
+            config.target_type, num_labels=config.num_labels
+        )
+
+    @classmethod
+    def from_pretrained(
+        cls,
         pretrained_model_name_or_path: Union[str, PathLike[str]],
         *,
         num_labels: int = 2,
@@ -76,9 +88,8 @@ class TransformerForSequenceClassification(Module):
         output_hidden_states: bool = True,
         target_type: Union[str, TargetType] = "multiclass",
     ):
-        super().__init__()
         # init base model
-        self.config = TransformerConfig.from_pretrained(
+        config = TransformerConfig.from_pretrained(
             pretrained_model_name_or_path,
             num_labels=num_labels,
             output_dropout=output_dropout,
@@ -86,15 +97,7 @@ class TransformerForSequenceClassification(Module):
             output_attentions=output_attentions,
             target_type=target_type,
         )
-        self.base_model: PreTrainedModel = AutoModel.from_config(self.config._hf_config)
-        self.classifier = ClassifierLayer(
-            num_labels=num_labels,
-            hidden_size=self.config.hidden_size,
-            dropout=self.config.output_dropout,
-        )
-        self._loss_func = TargetBasedLoss(
-            self.config.target_type, num_labels=num_labels
-        )
+        return cls(config)
 
     def forward(self, **kwargs):
         outputs = self.base_model(**kwargs)
@@ -166,26 +169,11 @@ class TransformerForSequenceClassification(Module):
             pooler_output=pooler_output,
         )
 
-    @classmethod
-    def from_pretrained(
-        cls, pretrained_model_name_or_path: Union[str, PathLike[str]]
-    ) -> Self:
-        config = TransformerConfig.from_pretrained(pretrained_model_name_or_path)
-        # init base model
-        return cls(
-            pretrained_model_name_or_path,
-            num_labels=config.num_labels,
-            output_dropout=config.output_dropout,
-            output_attentions=config.output_attentions,
-            output_hidden_states=config.output_hidden_states,
-            target_type=config.target_type,
-        )
-
     def compute_loss(self, batch: Any, output: OutputType, **kwargs):
         targets, logits = batch["labels"], output["logits"]
         target_type, num_labels = self.config.target_type, self.config.num_labels
         y_true = preprocess_target(target_type, targets, num_labels=num_labels)
-        return self._loss_func(logits, y_true)
+        return self.loss_func(logits, y_true)
 
     def compute_metric_inputs(self, batch: Any, output: OutputType):
         targets, logits = batch["labels"], output["logits"]
@@ -234,8 +222,6 @@ class TransformerForSequenceClassification(Module):
         # replace classifier
         self.classifier.output = output_layer
         self.config.num_labels = num_labels
-        self._loss_func = TargetBasedLoss(
-            self.config.target_type, num_labels=num_labels
-        )
+        self.loss_func = TargetBasedLoss(self.config.target_type, num_labels=num_labels)
         # move back to original device
         self.to(original_device)

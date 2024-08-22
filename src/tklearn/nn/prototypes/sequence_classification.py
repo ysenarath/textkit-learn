@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional, Union, overload
 
 import torch
-from transformers import AutoModel, PreTrainedModel
+from transformers import AutoModel
 from typing_extensions import Literal, Protocol, Self, runtime_checkable
 
 from tklearn.nn.base import Module
@@ -39,17 +39,11 @@ TRANSFORMERS_INPUTS = {
 
 
 class PrototypeForSequenceClassification(Module):
-    def __init__(
-        self,
-        backbone: PreTrainedModel,
-        target_type: Union[str, TargetType] = "multiclass",
-    ) -> None:
+    def __init__(self, config: PrototypeConfig) -> None:
         super().__init__()
-        self.backbone = backbone  # init base model
-        self.loss_func = BatchPrototypeLoss()
-        config = PrototypeConfig(self.backbone.config)
-        config.update(target_type=target_type)
         self.config = config
+        self.backbone = AutoModel.from_config(self.config._hf_config)
+        self.loss_func = BatchPrototypeLoss()
         self.prototypes: Optional[torch.Tensor] = None
         self.similarity = CosineSimilarity()
 
@@ -60,9 +54,12 @@ class PrototypeForSequenceClassification(Module):
         target_type: Union[str, TargetType] = "multiclass",
         **kwargs,
     ) -> Self:
-        backbone = AutoModel.from_pretrained(pretrained_model_name_or_path)
-        kwargs["target_type"] = target_type
-        return cls(backbone, **kwargs)
+        config = PrototypeConfig.from_pretrained(
+            pretrained_model_name_or_path,
+            target_type=target_type,
+            **kwargs,
+        )
+        return cls(config)
 
     def predict_step(
         self, batch: Dict[str, torch.Tensor], **kwargs
