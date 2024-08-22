@@ -13,15 +13,6 @@ from tklearn.nn.prototypes.loss import BatchPrototypeLoss
 from tklearn.nn.utils.preprocessing import preprocess_input, preprocess_target
 from tklearn.utils.targets import TargetType
 
-
-@runtime_checkable
-class OutputWithPooling(Protocol):
-    pooler_output: torch.Tensor
-
-    @overload
-    def __getitem__(self, key: Literal["pooler_output"]) -> torch.Tensor: ...
-
-
 TRANSFORMERS_INPUTS = {
     # https://huggingface.co/docs/transformers/v4.42.0/en/model_doc/bert#transformers.BertModel
     # input_ids, attention_mask, token_type_ids, position_ids, head_mask
@@ -36,6 +27,14 @@ TRANSFORMERS_INPUTS = {
     "position_ids",  # Indices of positions of each input sequence tokens in the position embeddings.
     "head_mask",  # Mask to nullify selected heads of the self-attention modules.
 }
+
+
+@runtime_checkable
+class OutputWithPooling(Protocol):
+    pooler_output: torch.Tensor
+
+    @overload
+    def __getitem__(self, key: Literal["pooler_output"]) -> torch.Tensor: ...
 
 
 class PrototypeForSequenceClassification(Module):
