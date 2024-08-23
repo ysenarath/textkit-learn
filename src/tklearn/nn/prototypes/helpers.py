@@ -80,24 +80,14 @@ class PrototypeCallback(Callback):
         self.device = device
         self.prototypes = prototypes
 
-    def on_train_begin(self, logs=None):
-        # reset the prototypes when training starts
-        if not hasattr(self.model, "prototypes"):
-            # not a prototype model so let's not do anything
-            return
-        setattr(self.model, "prototypes", None)
-
     def on_predict_begin(self, logs=None):
         if not hasattr(self.model, "prototypes"):
             # not a prototype model so let's not do anything
             return
-        if getattr(self.model, "prototypes") is None:
-            # prototypes are already computed so let's skip
-            prototypes = compute_prototypes(
-                self.model, self.dataloader, device=self.device
-            )
-            # copy prior prototypes to the model
-            if self.prototypes is not None:
-                for i, prototype in enumerate(prototypes):
-                    prototypes[i] = prototype
-            setattr(self.model, "prototypes", prototypes)
+        # prototypes are already computed so let's skip
+        prototypes = compute_prototypes(self.model, self.dataloader, device=self.device)
+        # copy prior prototypes to the model
+        if self.prototypes is not None:
+            for i, prototype in enumerate(prototypes):
+                prototypes[i] = prototype
+        setattr(self.model, "prototypes", prototypes)
