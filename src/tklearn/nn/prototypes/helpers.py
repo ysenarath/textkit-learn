@@ -58,6 +58,8 @@ def compute_prototypes(
     max_label_id = max(prototype_map.keys())
     # infer hidden_size from the prototype_map.values()
     hidden_size = next(iter(prototype_map.values())).size(0)
+    # max_label_id is zero-based so we need to add 1 as
+    # the argument to torch.zeros is the size/length of the tensor
     prototypes = torch.zeros(max_label_id + 1, hidden_size)
     for label_id, prototype in prototype_map.items():
         prototypes[label_id] = prototype
@@ -66,13 +68,17 @@ def compute_prototypes(
 
 class PrototypeCallback(Callback):
     def __init__(
-        self, dataloader: DataLoader | Iterable, device: torch.device | str = None
+        self,
+        dataloader: DataLoader | Iterable,
+        device: torch.device | str = None,
+        prototypes: torch.Tensor = None,
     ) -> None:
         # if the model does not have an attribute "prototypes"
         # then we will not do anything
         super().__init__()
         self.dataloader = dataloader
         self.device = device
+        self.prototypes = prototypes
 
     def on_train_begin(self, logs=None):
         # reset the prototypes when training starts
@@ -85,8 +91,13 @@ class PrototypeCallback(Callback):
         if not hasattr(self.model, "prototypes"):
             # not a prototype model so let's not do anything
             return
-        if getattr(self.model, "prototypes") is not None:
+        if getattr(self.model, "prototypes") is None:
             # prototypes are already computed so let's skip
-            return
-        prototypes = compute_prototypes(self.model, self.dataloader, device=self.device)
-        setattr(self.model, "prototypes", prototypes)
+            prototypes = compute_prototypes(
+                self.model, self.dataloader, device=self.device
+            )
+            # copy prior prototypes to the model
+            if self.prototypes is not None:
+                for i, prototype in enumerate(prototypes):
+                    prototypes[i] = prototype
+            setattr(self.model, "prototypes", prototypes)
