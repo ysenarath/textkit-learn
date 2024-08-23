@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Tuple
 
 import torch
 from torch.utils.data import DataLoader
@@ -38,8 +38,12 @@ def get_prototype_map(
 
 
 def compute_prototypes(
-    model: Module, dataloader: DataLoader | Iterable, *, device: torch.device = None
-) -> torch.Tensor:
+    model: Module,
+    dataloader: DataLoader | Iterable,
+    *,
+    device: torch.device = None,
+    return_updated_indices: bool = False,
+) -> Tuple[torch.Tensor, set[int]] | torch.Tensor:
     if device is None:
         device = model.device
     dataloader_idx = 0
@@ -61,8 +65,12 @@ def compute_prototypes(
     # max_label_id is zero-based so we need to add 1 as
     # the argument to torch.zeros is the size/length of the tensor
     prototypes = torch.zeros(max_label_id + 1, hidden_size)
+    updated_indices = set()
     for label_id, prototype in prototype_map.items():
         prototypes[label_id] = prototype
+        updated_indices.add(label_id)
+    if return_updated_indices:
+        return prototypes.to(device), updated_indices
     return prototypes.to(device)
 
 
@@ -85,9 +93,16 @@ class PrototypeCallback(Callback):
             # not a prototype model so let's not do anything
             return
         # prototypes are already computed so let's skip
-        prototypes = compute_prototypes(self.model, self.dataloader, device=self.device)
+        prototypes, updated_indices = compute_prototypes(
+            self.model,
+            self.dataloader,
+            device=self.device,
+            return_updated_indices=True,
+        )
         # copy prior prototypes to the model
         if self.prototypes is not None:
-            for i, prototype in enumerate(prototypes):
-                prototypes[i] = prototype
+            for i in range(len(self.prototypes)):
+                if i in updated_indices:
+                    continue
+                prototypes[i] = self.prototypes[i]
         setattr(self.model, "prototypes", prototypes)
