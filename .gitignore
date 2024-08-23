@@ -137,3 +137,4 @@ scripts/rsync.sh
 logs/
 scripts/sync.sh
 notebooks/outputs/
+mlruns/
