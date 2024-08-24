@@ -31,13 +31,13 @@ class TrackingCallback(Callback):
             values = [values]
         self._exclude = set(values)
 
-    def on_train_begin(self, logs: Optional[dict] = None): ...
-
     def on_epoch_end(self, epoch: int, logs: Optional[dict] = None):
         prefix = ""
         if len(self.prefix) > 0:
             prefix = f"{self.prefix}{self.delemiter}"
         mlflow.log_metric(f"{prefix}epoch", epoch, step=epoch)
-        logs = {f"{prefix}{k}": v for k, v in logs.items() if k not in self.exclude}
-        # and isinstance(v, (int, float, str))
+        logs = {f"{prefix}{k}": v for k, v in logs.items() if self.is_loggable(k, v)}
         mlflow.log_metrics(logs, step=epoch)
+
+    def is_loggable(self, key: str, value) -> bool:
+        return key not in self.exclude and isinstance(value, (int, float))
