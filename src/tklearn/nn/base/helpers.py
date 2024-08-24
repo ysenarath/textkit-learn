@@ -238,8 +238,8 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         epochs: int = 1,
         lr_scheduler: Union[LRScheduler, LRSchedulerConfig, None] = None,
         clip_grad_norm: ClipGradNormType = None,
-        callbacks: Union[CallbackList, Iterable[Callback], None] = None,
         evaluator: Optional[Evaluator] = None,
+        callbacks: Union[CallbackList, Iterable[Callback], None] = None,
     ) -> None:
         super().__init__()
         self.model = model
@@ -248,9 +248,9 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         self.epochs = epochs
         self.lr_scheduler = lr_scheduler
         self.clip_grad_norm = clip_grad_norm
-        self.callbacks = callbacks
         self.loss = loss
         self.evaluator = evaluator
+        self.callbacks = callbacks
 
     def _training_step(
         self,
