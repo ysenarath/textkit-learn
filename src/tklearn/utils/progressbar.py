@@ -22,27 +22,28 @@ __all__ = [
 T = TypeVar("T")
 
 table_css = """<style scoped>
-    .progressbar-table {
-        font-family: Arial, sans-serif;
-        border-collapse: collapse;
-        width: 100%;
-        overflow-x: auto;
-    }
+.progressbar-table {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0;
+}
 
-    .progressbar-table th, .progressbar-table td {
-        padding: 8px;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
-    }
+.progressbar-table th,
+.progressbar-table td {
+    padding: 8px;
+    text-align: left;
+    border: 1px solid currentColor;
+}
 
-    .progressbar-table tr:nth-child(even) {
-        background-color: #f2f2f2;
-    }
+.progressbar-table th {
+    font-weight: bold;
+    background-color: rgba(128, 128, 128, 0.1);
+}
 
-    .progressbar-table th {
-        background-color: #4CAF50;
-        color: white;
-    }
+.progressbar-table tr:nth-child(even) {
+    background-color: rgba(128, 128, 128, 0.05);
+}
 </style>"""
 
 
