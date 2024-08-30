@@ -134,8 +134,7 @@ scripts/rsync.sh
 logs/
 scripts/sync.share
 mlruns/
-notebooks/mlruns/
 notebooks/data/
 notebooks/logs/
 notebooks/outputs/
-notebooks/adapter_model/*
+notebooks/adapter_model/
