@@ -158,10 +158,10 @@ class Evaluator(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         callback_params.update({"pred_steps": len(self.dataloader)})
         self.callbacks.set_params(callback_params)
         self.callbacks.set_model(self.model)
-        self.callbacks.on_predict_begin()
+        self.callbacks.on_test_begin()
         for batch_idx, batch in enumerate(self.dataloader):
             batch = move_to_device(batch, self.model.device, non_blocking=True)
-            self.callbacks.on_predict_batch_begin(batch_idx)
+            self.callbacks.on_test_batch_begin(batch_idx)
             output = evaluation_step(
                 batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
             )
@@ -177,9 +177,9 @@ class Evaluator(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
                     )
                     raise ValueError(msg)
                 batch_logs.update(output)
-            self.callbacks.on_predict_batch_end(batch_idx, logs=batch_logs)
+            self.callbacks.on_test_batch_end(batch_idx, logs=batch_logs)
             outputs.append(output)
-        self.callbacks.on_predict_end()
+        self.callbacks.on_test_end()
         return outputs
 
     def validate(self) -> List[Dict[str, Any]]:
@@ -252,12 +252,12 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         self.evaluator = evaluator
         self.callbacks = callbacks
 
-    def _training_step_loss(
+    def _training_step_grad(
         self,
         batch: ModelInput,
         batch_idx: Optional[int] = None,
         dataloader_idx: Optional[int] = None,
-    ) -> LossDict:
+    ) -> None:
         if self.loss is None:
             # if loss is not defined, try to use the training_step method
             # if that is not implemented, try to use the predict_step method
@@ -281,21 +281,11 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
                 batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
             )
             batch_loss = self.loss(batch, batch_output)
-        if isinstance(batch_loss, LossDict):
-            return batch_loss
-        return LossDict(batch_loss)
-
-    def _training_step_grad(
-        self,
-        batch: ModelInput,
-        batch_idx: Optional[int] = None,
-        dataloader_idx: Optional[int] = None,
-    ) -> None:
-        batch_loss = self._training_step_loss(
-            batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
-        )
-        # self.callbacks.on_before_zero_grad
+        if not isinstance(batch_loss, LossDict):
+            batch_loss = LossDict(batch_loss)
+        self.callbacks.on_before_zero_grad(self.optimizer)
         self.optimizer.zero_grad()
+        self.callbacks.on_before_backward()
         batch_loss.backward()
         if self.clip_grad_norm:
             if isinstance(self.clip_grad_norm, (int, float, bool)):
@@ -308,7 +298,7 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
                 )
             else:
                 self.clip_grad_norm(self.model.parameters())
-        # self.callbacks.on_after_backward
+        self.callbacks.on_after_backward()
         return batch_loss
 
     def _training_step(
@@ -329,7 +319,7 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
             batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
         )
         # post grad calculation here
-        # self.callbacks.on_before_optimizer_step
+        self.callbacks.on_before_optimizer_step(self.optimizer)
         self.optimizer.step()
         if self.lr_scheduler:
             self.lr_scheduler.step()
