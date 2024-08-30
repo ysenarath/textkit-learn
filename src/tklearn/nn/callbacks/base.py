@@ -12,6 +12,7 @@ from typing import (
     Sequence,
 )
 
+from torch.optim.optimizer import Optimizer
 from typing_extensions import Self
 
 __all__ = [
@@ -325,6 +326,60 @@ class Callback:
         logs : dict, optional
             Currently no data is passed to this argument for this method but
             that may change in the future.
+        """
+        pass
+
+    def on_before_backward(self, logs=None):
+        """
+        Called before the backward pass.
+
+        Subclasses should override for any actions to run.
+
+        Parameters
+        ----------
+        logs : dict, optional
+            Currently no data is passed to this argument for this method but
+            that may change in the future.
+        """
+        pass
+
+    def on_after_backward(self, logs=None):
+        """
+        Called after the backward pass.
+
+        Subclasses should override for any actions to run.
+
+        Parameters
+        ----------
+        logs : dict, optional
+            Currently no data is passed to this argument for this method but
+            that may change in the future.
+        """
+        pass
+
+    def on_before_zero_grad(self, optimizer: Optimizer | None = None):
+        """
+        Called before the optimizer's `zero_grad` method is called.
+
+        Subclasses should override for any actions to run.
+
+        Parameters
+        ----------
+        optimizer : Optimizer, optional
+            The optimizer that is used for the training step.
+        """
+        pass
+
+    def on_before_optimizer_step(self, optimizer: Optimizer | None = None):
+        """
+        Called before the optimizer step.
+
+        Subclasses should override for any actions to run.
+
+        Parameters
+        ----------
+        optimizer : Optimizer, optional
+            The optimizer that is used for the training step.
         """
         pass
 
