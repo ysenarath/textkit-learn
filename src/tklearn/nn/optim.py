@@ -19,6 +19,9 @@ from typing import (
     Union,
 )
 
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 import torch
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Optimizer
@@ -248,22 +251,8 @@ class BERTAdamW(Optimizer):
         }
         super(BERTAdamW, self).__init__(params, defaults)
 
-    def get_lr(self):
-        lr = []
-        for group in self.param_groups:
-            for p in group["params"]:
-                state = self.state[p]
-                if len(state) == 0:
-                    return [0]
-                if group["t_total"] != -1:
-                    schedule_fct = SCHEDULES[group["schedule"]]
-                    lr_scheduled = group["lr"] * schedule_fct(
-                        state["step"] / group["t_total"], group["warmup"]
-                    )
-                else:
-                    lr_scheduled = group["lr"]
-                lr.append(lr_scheduled)
-        return lr
+    def __setstate__(self, state):
+        super(BERTAdamW, self).__setstate__(state)
 
     def step(self, closure=None, type=None, t=None, mask_back=None):
         """Performs a single optimization step.
@@ -287,12 +276,12 @@ class BERTAdamW(Optimizer):
         loss = None
         if closure is not None:
             loss = closure()
-
         for group in self.param_groups:
             for p_id, p in enumerate(group["params"]):
                 if p.grad is None:
                     continue
                 grad = p.grad.data
+
                 if grad.is_sparse:
                     msg = (
                         "Adam does not support sparse gradients, "
@@ -352,6 +341,7 @@ class BERTAdamW(Optimizer):
                 update_with_lr = lr_scheduled * update
                 p.data.add_(-update_with_lr)
 
+                # Update the step
                 state["step"] += 1
 
                 # step_size = lr_scheduled * math.sqrt(bias_correction2) / bias_correction1
@@ -360,3 +350,37 @@ class BERTAdamW(Optimizer):
                 # bias_correction2 = 1 - beta2 ** state['step']
 
         return loss
+
+    def plot_lr(self):
+        """Plot the learning rate schedule."""
+        data = []
+        for i, group in enumerate(self.param_groups):
+            t_total = group["t_total"]
+            if t_total == -1:
+                for x in range(1000):
+                    y = group["lr"]
+                    data.append({
+                        "step": x / 1000,
+                        "lr": y,
+                        "group": i,
+                    })
+            else:
+                lr = group["lr"]
+                warmup = group["warmup"]
+                schedule_fct = SCHEDULES[group["schedule"]]
+                for x in range(t_total):
+                    y = lr * schedule_fct(x / t_total, warmup)
+                    data.append({
+                        "step": x,
+                        "lr": y,
+                        "group": i,
+                    })
+        data = pd.DataFrame(data)
+        sns.lineplot(data=data, x="step", y="lr", hue="group", palette="viridis")
+        # rename the axis
+        plt.xlabel("Step")
+        plt.ylabel("Learning Rate")
+        # add a legend
+        plt.legend(title="Group")
+        # show the plot
+        plt.show()
