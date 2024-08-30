@@ -88,7 +88,7 @@ class PrototypeCallback(Callback):
         self.device = device
         self.prototypes = prototypes
 
-    def on_predict_begin(self, logs=None):
+    def _on_predict_or_test_begin(self, logs=None):
         if not hasattr(self.model, "prototypes"):
             # not a prototype model so let's not do anything
             return
@@ -106,3 +106,9 @@ class PrototypeCallback(Callback):
                     continue
                 prototypes[i] = self.prototypes[i]
         setattr(self.model, "prototypes", prototypes)
+
+    def on_test_begin(self, logs=None):
+        return self._on_predict_or_test_begin(logs)
+
+    def on_predict_begin(self, logs=None):
+        return self._on_predict_or_test_begin(logs)
