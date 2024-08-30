@@ -16,7 +16,6 @@ class TrackingCallback(Callback):
         if prefix is None:
             prefix = ""
         self.prefix = str(prefix).strip()
-        self.delemiter = "_"
         self.exclude = exclude
 
     @property
@@ -32,11 +31,11 @@ class TrackingCallback(Callback):
         self._exclude = set(values)
 
     def on_epoch_end(self, epoch: int, logs: Optional[dict] = None):
-        prefix = ""
-        if len(self.prefix) > 0:
-            prefix = f"{self.prefix}{self.delemiter}"
-        mlflow.log_metric(f"{prefix}epoch", epoch, step=epoch)
-        logs = {f"{prefix}{k}": v for k, v in logs.items() if self.is_loggable(k, v)}
+        mlflow.log_metric(f"{self.prefix}epoch", epoch, step=epoch)
+        logs = {
+            f"{self.prefix}{k}": v for k, v in logs.items() if self.is_loggable(k, v)
+        }
+        # metrics must be a Dict[str, float]
         mlflow.log_metrics(logs, step=epoch)
 
     def is_loggable(self, key: str, value) -> bool:
