@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Union
+from typing import Any, Mapping, Union
 
 import torch
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
@@ -13,7 +13,7 @@ __all__ = []
 
 class LossDict(TensorDict):
     def __init__(self, *args: Any, **kwargs: Any):
-        if len(args) == 1 and not isinstance(args[0], dict):
+        if len(args) == 1 and not isinstance(args[0], Mapping):
             args = ({"loss": args[0]},)
         super().__init__(*args, **kwargs)
 
