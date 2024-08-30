@@ -252,19 +252,12 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         self.evaluator = evaluator
         self.callbacks = callbacks
 
-    def _training_step(
+    def _training_step_loss(
         self,
         batch: ModelInput,
         batch_idx: Optional[int] = None,
         dataloader_idx: Optional[int] = None,
-        device: Union[torch.device, str, None] = None,
-    ) -> LossDict[torch.Tensor]:
-        if device is None:
-            device = self.model.device
-        batch = move_to_device(batch, device, non_blocking=True)
-        self.callbacks.on_train_batch_begin(batch_idx)
-        if not self.model.training:
-            self.model.train()
+    ) -> LossDict:
         if self.loss is None:
             # if loss is not defined, try to use the training_step method
             # if that is not implemented, try to use the predict_step method
@@ -288,7 +281,20 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
                 batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
             )
             batch_loss = self.loss(batch, batch_output)
-        batch_loss = LossDict(batch_loss)
+        if isinstance(batch_loss, LossDict):
+            return batch_loss
+        return LossDict(batch_loss)
+
+    def _training_step_grad(
+        self,
+        batch: ModelInput,
+        batch_idx: Optional[int] = None,
+        dataloader_idx: Optional[int] = None,
+    ) -> None:
+        batch_loss = self._training_step_loss(
+            batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
+        )
+        # self.callbacks.on_before_zero_grad
         self.optimizer.zero_grad()
         batch_loss.backward()
         if self.clip_grad_norm:
@@ -302,6 +308,28 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
                 )
             else:
                 self.clip_grad_norm(self.model.parameters())
+        # self.callbacks.on_after_backward
+        return batch_loss
+
+    def _training_step(
+        self,
+        batch: ModelInput,
+        batch_idx: Optional[int] = None,
+        dataloader_idx: Optional[int] = None,
+        device: Union[torch.device, str, None] = None,
+    ) -> LossDict[torch.Tensor]:
+        if device is None:
+            device = self.model.device
+        batch = move_to_device(batch, device, non_blocking=True)
+        if not self.model.training:
+            self.model.train()
+        self.callbacks.on_train_batch_begin(batch_idx)
+        # pre grad calculation here
+        batch_loss = self._training_step_grad(
+            batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
+        )
+        # post grad calculation here
+        # self.callbacks.on_before_optimizer_step
         self.optimizer.step()
         if self.lr_scheduler:
             self.lr_scheduler.step()
@@ -319,6 +347,8 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
             "epochs": self.epochs,
             "steps": steps,
         }
+        if hasattr(self.model, "stop_training"):
+            setattr(self.model, "stop_training", False)
         self.callbacks.set_params(params)
         self.callbacks.set_model(self.model)
         self.callbacks.on_train_begin()
