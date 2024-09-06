@@ -13,7 +13,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    TypeAlias,
     TypedDict,
     TypeVar,
     Union,
@@ -27,7 +26,7 @@ from torch.nn.utils import clip_grad_norm_
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import _LRScheduler as LRScheduler
 from torch.optim.optimizer import required
-from typing_extensions import Self
+from typing_extensions import Self, TypeAlias
 
 ParamsT: TypeAlias = Union[Iterable[torch.Tensor], Iterable[Dict[str, Any]]]
 
