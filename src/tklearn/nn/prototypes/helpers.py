@@ -74,12 +74,37 @@ def compute_prototypes(
     return prototypes.to(device)
 
 
+def update_prototypes_(
+    model: Module,
+    dataloader: DataLoader | Iterable,
+    device: torch.device | str = None,
+):
+    if not hasattr(model, "prototypes"):
+        # not a prototype model so let's not do anything
+        return
+    prototypes = getattr(model, "prototypes", None)
+    # prototypes are already computed so let's skip
+    new_prototypes, updated_indices = compute_prototypes(
+        model,
+        dataloader,
+        device=device,
+        return_updated_indices=True,
+    )
+    # copy prior prototypes to the model
+    if prototypes is not None:
+        for i in range(len(prototypes)):
+            if i in updated_indices:
+                continue
+            new_prototypes[i] = prototypes[i]
+    setattr(model, "prototypes", new_prototypes)
+
+
 class PrototypeCallback(Callback):
     def __init__(
         self,
         dataloader: DataLoader | Iterable,
         device: torch.device | str = None,
-        prototypes: torch.Tensor = None,
+        prototypes: torch.Tensor | None = None,
     ) -> None:
         # if the model does not have an attribute "prototypes"
         # then we will not do anything
@@ -88,27 +113,18 @@ class PrototypeCallback(Callback):
         self.device = device
         self.prototypes = prototypes
 
-    def _on_predict_or_test_begin(self, logs=None):
+    def _on_test_or_predict_begin(self):
         if not hasattr(self.model, "prototypes"):
-            # not a prototype model so let's not do anything
             return
-        # prototypes are already computed so let's skip
-        prototypes, updated_indices = compute_prototypes(
-            self.model,
-            self.dataloader,
-            device=self.device,
-            return_updated_indices=True,
-        )
-        # copy prior prototypes to the model
-        if self.prototypes is not None:
-            for i in range(len(self.prototypes)):
-                if i in updated_indices:
-                    continue
-                prototypes[i] = self.prototypes[i]
-        setattr(self.model, "prototypes", prototypes)
+        # reset prototypes to the original prototypes
+        self.model.prototypes = self.prototypes
+        # update prototypes based on the current model
+        # if there is no data supporting a prototype then this will pick that
+        # from the original prototypes
+        update_prototypes_(self.model, self.dataloader, device=self.device)
 
     def on_test_begin(self, logs=None):
-        return self._on_predict_or_test_begin(logs)
+        self._on_test_or_predict_begin()
 
     def on_predict_begin(self, logs=None):
-        return self._on_predict_or_test_begin(logs)
+        self._on_test_or_predict_begin()
