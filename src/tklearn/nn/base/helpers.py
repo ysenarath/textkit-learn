@@ -15,6 +15,7 @@ from typing import (
 
 import torch
 from torch.utils.data import DataLoader
+from transformers import get_scheduler as _get_scheduler
 
 from tklearn.metrics import MetricBase, MetricState
 from tklearn.nn.base.module import Module
@@ -34,6 +35,52 @@ ModelInput, ModelOutput = TypeVar("BatchInput"), TypeVar("BatchOutput")  # noqa:
 LossLike = Union[torch.Tensor, Mapping[str, torch.Tensor], LossDict, None]
 LossFunctionType = Callable[[ModelInput, ModelOutput], LossLike]
 PostprocessorFunctionType = Callable[[ModelInput, ModelOutput], Dict[str, Any]]
+
+
+def get_scheduler(
+    optimizer: torch.optim.Optimizer,
+    epochs: int,
+    steps_per_epoch: int,
+    name: str,
+    num_warmup_steps: Union[int, str, None] = None,
+    warmup_proportion: Optional[float] = None,
+    **kwargs: Any,
+) -> torch.optim.lr_scheduler._LRScheduler:
+    if isinstance(num_warmup_steps, float) and num_warmup_steps < 1:
+        # automatically convert to proportion
+        warmup_proportion = num_warmup_steps
+        num_warmup_steps = None
+    if warmup_proportion is None:
+        if isinstance(num_warmup_steps, str):
+            # e.g., "1 epoch", "1 batch"
+            number, unit = num_warmup_steps.split()
+            if unit == "epoch":
+                num_warmup_steps = int(number) * steps_per_epoch
+            elif unit == "batch":
+                num_warmup_steps = int(number)
+            else:
+                raise ValueError(f"invalid unit '{unit}' for num_warmup_steps")
+        elif isinstance(num_warmup_steps, float):
+            pass
+        elif num_warmup_steps is None:
+            pass
+        else:
+            raise ValueError("num_warmup_steps must be a float or None")
+    else:
+        if num_warmup_steps is None:
+            num_warmup_steps = int(epochs * steps_per_epoch * warmup_proportion)
+        else:
+            msg = "num_warmup_steps and warmup_proportion cannot be used together"
+            raise ValueError(msg)
+    num_training_steps = epochs * steps_per_epoch
+    return _get_scheduler(
+        name=name,
+        optimizer=optimizer,
+        num_warmup_steps=num_warmup_steps,
+        num_training_steps=num_training_steps,
+        warmup_proportion=warmup_proportion,
+        scheduler_specific_kwargs=kwargs,
+    )
 
 
 class CallbacksPropertyMixin:
@@ -236,7 +283,8 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         optimizer: Optimizer,
         loss: Optional[LossFunctionType] = None,
         epochs: int = 1,
-        lr_scheduler: Union[LRScheduler, LRSchedulerConfig, None] = None,
+        lr_scheduler: Union[LRScheduler, LRSchedulerConfig, str, None] = None,
+        lr_scheduler_kwargs: Optional[Mapping[str, Any]] = None,
         clip_grad_norm: ClipGradNormType = None,
         evaluator: Optional[Evaluator] = None,
         callbacks: Union[CallbackList, Iterable[Callback], None] = None,
@@ -247,6 +295,7 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         self.optimizer = optimizer
         self.epochs = epochs
         self.lr_scheduler = lr_scheduler
+        self.lr_scheduler_kwargs = lr_scheduler_kwargs
         self.clip_grad_norm = clip_grad_norm
         self.loss = loss
         self.evaluator = evaluator
@@ -257,7 +306,7 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         batch: ModelInput,
         batch_idx: Optional[int] = None,
         dataloader_idx: Optional[int] = None,
-    ) -> None:
+    ) -> LossDict:
         if self.loss is None:
             # if loss is not defined, try to use the training_step method
             # if that is not implemented, try to use the predict_step method
@@ -321,8 +370,9 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         # post grad calculation here
         self.callbacks.on_before_optimizer_step(self.optimizer)
         self.optimizer.step()
-        if self.lr_scheduler:
-            self.lr_scheduler.step()
+        if getattr(self, "_lr_scheduler", None) is not None:
+            # `_batch_lr_scheduler` is set during self.train() method
+            self._lr_scheduler.step()
         batch_logs = {}
         self.callbacks.on_train_batch_end(batch_idx, logs=batch_logs)
         return batch_loss.detach()
@@ -330,12 +380,25 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
     def train(self) -> None:
         device = self.model.device
         move_to_device(self.model, device, non_blocking=True)
-        steps = len(self.dataloader)
+        # get the number of steps per epoch
+        steps_per_epoch = len(self.dataloader)
+        # create the learning rate scheduler
+        if isinstance(self.lr_scheduler, str):
+            self._lr_scheduler = get_scheduler(
+                optimizer=self.optimizer,
+                epochs=self.epochs,
+                steps_per_epoch=steps_per_epoch,
+                name=self.lr_scheduler,
+                **(self.lr_scheduler_kwargs or {}),
+            )
+        else:
+            self._lr_scheduler = self.lr_scheduler
+        # change to train mode
         self.model.train()
         params = {
             "batch_size": self.dataloader.batch_size,
             "epochs": self.epochs,
-            "steps": steps,
+            "steps": steps_per_epoch,
         }
         if hasattr(self.model, "stop_training"):
             setattr(self.model, "stop_training", False)
