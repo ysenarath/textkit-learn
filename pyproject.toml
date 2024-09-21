@@ -63,7 +63,7 @@ packages = ["src/tklearn"]
 [tool.ruff]
 extend-include = ["*.ipynb"]
 target-version = "py38"
-line-length = 88
+line-length = 79
 indent-width = 4
 preview = true # preview features & checks, use with caution
 extend-select = [ # features in preview
