@@ -10,6 +10,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Type,
 )
 
 from torch.optim.optimizer import Optimizer
@@ -52,7 +53,11 @@ class Callback:
         model : Model
             The model to be set.
         """
-        if model is not None and self._model is not None and model is not self._model:
+        if (
+            model is not None
+            and self._model is not None
+            and model is not self._model
+        ):
             msg = (
                 f"the callback '{type(self).__name__}' is already "
                 f"associated with a model '{type(self._model).__name__}'"
@@ -394,7 +399,9 @@ class CallbackList(Callback, Sequence[Callback]):
         self._callbacks: List[Callback] = []
         self.extend(callbacks)
 
-    def extend(self, callbacks: List[Callback], /, inplace: bool = True) -> Self:
+    def extend(
+        self, callbacks: List[Callback], /, inplace: bool = True
+    ) -> Self:
         inst = self if inplace else self.copy()
         if callbacks is None:
             return
@@ -429,6 +436,15 @@ class CallbackList(Callback, Sequence[Callback]):
         else:
             return super().__getattribute__(__name)
 
+    def __contains__(self, item: Callback | Type[Callback]) -> bool:
+        if isinstance(item, type):
+            return any(isinstance(cb, item) for cb in self._callbacks)
+        return item in self._callbacks
+
+    def copy(self) -> Self:
+        """Return a shallow copy of the list."""
+        return self.__class__(self._callbacks.copy())
+
     def apply(self, __name: str, /, *args, **kwargs) -> UserList:
         # call on self
         super().__getattribute__(__name)(*args, **kwargs)
@@ -453,7 +469,3 @@ class CallbackList(Callback, Sequence[Callback]):
                 outputs.errors[-1] = e
             outputs.append(output)
         return outputs
-
-    def copy(self) -> Self:
-        """Return a shallow copy of the list."""
-        return self.__class__(self._callbacks.copy())
