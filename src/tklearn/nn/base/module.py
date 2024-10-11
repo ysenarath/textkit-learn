@@ -125,5 +125,7 @@ class Module(nn.Module, Generic[I, R]):
     ) -> Union[Tensor, Mapping[str, Any], None]:
         raise NotImplementedError
 
-    def compute_metric_inputs(self, batch: I, output: R, **kwargs) -> Dict[str, Any]:
+    def compute_metric_inputs(
+        self, batch: I, output: R, **kwargs
+    ) -> Dict[str, Any]:
         raise NotImplementedError
