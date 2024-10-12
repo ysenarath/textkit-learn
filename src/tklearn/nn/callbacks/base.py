@@ -421,8 +421,34 @@ class CallbackList(Callback, Sequence[Callback]):
             raise TypeError(msg)
         self._callbacks.append(callback)
 
-    def __getitem__(self, item) -> Callback:
+    def remove(self, callback: Callback | Type[Callback]) -> None:
+        if isinstance(callback, type):
+            callbacks = []
+            for cb in self._callbacks:
+                if isinstance(cb, callback):
+                    continue
+                callbacks.append(cb)
+            self._callbacks = callbacks
+        else:
+            self._callbacks.remove(callback)
+
+    def __getitem__(self, item: Callback | Type[Callback]) -> Callback:
+        if isinstance(item, type):
+            for callback in self._callbacks:
+                if isinstance(callback, item):
+                    return callback
+            raise KeyError(f"callback of type '{item.__name__}' not found")
         return self._callbacks[item]
+
+    def get(
+        self,
+        callback: Callback | Type[Callback],
+        default: Optional[Callback] = None,
+    ) -> Optional[Callback]:
+        try:
+            return self[callback]
+        except KeyError:
+            return default
 
     def __len__(self) -> int:
         return len(self._callbacks)
@@ -461,7 +487,7 @@ class CallbackList(Callback, Sequence[Callback]):
             except Exception as e:
                 warnings.warn(
                     f"An exception occurred while applying callback '{__name}' on "
-                    f"callback '{callback.__class__.__name__} with message: {str(e)}",
+                    f"callback '{callback.__class__.__name__} with message: {e!s}",
                     RuntimeWarning,
                     stacklevel=0,
                     source=e,
