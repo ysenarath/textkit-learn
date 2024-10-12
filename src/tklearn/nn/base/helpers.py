@@ -20,6 +20,7 @@ from transformers import get_scheduler as _get_scheduler
 from tklearn.metrics import MetricBase, MetricState
 from tklearn.nn.base.module import Module
 from tklearn.nn.callbacks.base import Callback, CallbackList
+from tklearn.nn.callbacks.history import History
 from tklearn.nn.loss import LossDict
 from tklearn.nn.optim import LRScheduler, LRSchedulerConfig, Optimizer
 from tklearn.utils.array import concat, move_to_device
@@ -68,7 +69,9 @@ def get_scheduler(
             raise ValueError("num_warmup_steps must be a float or None")
     else:
         if num_warmup_steps is None:
-            num_warmup_steps = int(epochs * steps_per_epoch * warmup_proportion)
+            num_warmup_steps = int(
+                epochs * steps_per_epoch * warmup_proportion
+            )
         else:
             msg = "num_warmup_steps and warmup_proportion cannot be used together"
             raise ValueError(msg)
@@ -89,7 +92,9 @@ class CallbacksPropertyMixin:
         return self._callbacks
 
     @callbacks.setter
-    def callbacks(self, value: Union[CallbackList, Iterable[Callback], None]) -> None:
+    def callbacks(
+        self, value: Union[CallbackList, Iterable[Callback], None]
+    ) -> None:
         if isinstance(value, Callback):
             value = [value]
         self._callbacks = CallbackList(value)
@@ -160,7 +165,9 @@ class Evaluator(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         self,
         model: Module,
         dataloader: DataLoader,
-        metrics: Union[Dict[str, MetricBase], Iterable[MetricBase], str, None] = None,
+        metrics: Union[
+            Dict[str, MetricBase], Iterable[MetricBase], str, None
+        ] = None,
         # only used if metrics MetricBase based
         loss: Optional[LossFunctionType] = None,
         include_loss: bool = True,
@@ -190,7 +197,9 @@ class Evaluator(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
             mode = "validate"
         if mode not in ("validate", "test"):
             # valid values for mode: validate, valid, val, test
-            msg = f"mode must be one of 'validate' or 'test', got {mode} instead"
+            msg = (
+                f"mode must be one of 'validate' or 'test', got {mode} instead"
+            )
             raise ValueError(msg)
         if mode == "test":
             evaluation_step = self.model.test_step
@@ -262,16 +271,21 @@ class Evaluator(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
                 average_loss = (total_loss / n_batches).item().to_dict()
             # add prefix to loss keys
             average_loss = {
-                f"{self.prefix}{key}": value for key, value in average_loss.items()
+                f"{self.prefix}{key}": value
+                for key, value in average_loss.items()
             }
         results = metric_state.result()
         if not isinstance(results, Mapping) and isinstance(results, Iterable):
             results = {
-                f"{self.prefix}metric[{i}]": results[i] for i in range(len(results))
+                f"{self.prefix}metric[{i}]": results[i]
+                for i in range(len(results))
             }
         return {
             **average_loss,
-            **{f"{self.prefix}{name}": value for name, value in results.items()},
+            **{
+                f"{self.prefix}{name}": value
+                for name, value in results.items()
+            },
         }
 
 
@@ -318,7 +332,9 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
             except NotImplementedError:
                 try:
                     batch_output = self.model.predict_step(
-                        batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
+                        batch,
+                        batch_idx=batch_idx,
+                        dataloader_idx=dataloader_idx,
                     )
                     batch_loss = self.model.compute_loss(batch, batch_output)
                 except NotImplementedError:
@@ -339,7 +355,8 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         if self.clip_grad_norm:
             if isinstance(self.clip_grad_norm, (int, float, bool)):
                 torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(), max_norm=float(self.clip_grad_norm)
+                    self.model.parameters(),
+                    max_norm=float(self.clip_grad_norm),
                 )
             elif isinstance(self.clip_grad_norm, Mapping):
                 torch.nn.utils.clip_grad_norm_(
@@ -377,7 +394,7 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         self.callbacks.on_train_batch_end(batch_idx, logs=batch_logs)
         return batch_loss.detach()
 
-    def train(self) -> None:
+    def train(self) -> History:
         device = self.model.device
         move_to_device(self.model, device, non_blocking=True)
         # get the number of steps per epoch
@@ -402,6 +419,13 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         }
         if hasattr(self.model, "stop_training"):
             setattr(self.model, "stop_training", False)
+        try:
+            history = self.callbacks[History]
+        except KeyError:
+            # add the history callback
+            history = History()
+            self.callbacks.append(history)
+        # set the callback params
         self.callbacks.set_params(params)
         self.callbacks.set_model(self.model)
         self.callbacks.on_train_begin()
@@ -429,3 +453,4 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
             if getattr(self.model, "stop_training", False):
                 break
         self.callbacks.on_train_end(epoch_logs)
+        return history
