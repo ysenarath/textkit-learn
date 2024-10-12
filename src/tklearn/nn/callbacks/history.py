@@ -1,10 +1,16 @@
+from __future__ import annotations
+
+from typing import Dict, List
+
+import pandas as pd
+
 from tklearn.nn.callbacks.base import Callback
 
 
 class History(Callback):
     def __init__(self):
         super().__init__()
-        self.history = {}
+        self.history: Dict[str, List[float | int | str]] = {}
 
     def on_train_begin(self, logs=None):
         self.epoch = []
@@ -17,3 +23,6 @@ class History(Callback):
         # Set the history attribute on the model after the epoch ends. This will
         # make sure that the state which is set is the latest one.
         self.model.history = self
+
+    def to_pandas(self) -> pd.DataFrame:
+        return pd.DataFrame(self.history, index=self.epoch)
