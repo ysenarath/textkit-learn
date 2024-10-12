@@ -6,6 +6,10 @@ import pandas as pd
 
 from tklearn.nn.callbacks.base import Callback
 
+__all__ = [
+    "History",
+]
+
 
 class History(Callback):
     def __init__(self):
