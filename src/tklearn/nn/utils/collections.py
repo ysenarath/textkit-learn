@@ -19,7 +19,9 @@ class TensorDict(Mapping[str, T], Generic[T]):
     def __init__(self, *args, **kwargs):
         super().__init__()
         if len(args) > 1:
-            raise ValueError(f"dict expected at most 1 argument, got {len(args)}")
+            raise ValueError(
+                f"dict expected at most 1 argument, got {len(args)}"
+            )
         if len(args) > 0:
             if not isinstance(args[0], Mapping):
                 args = {"arg": args[0]}
