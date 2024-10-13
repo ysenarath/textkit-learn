@@ -176,20 +176,27 @@ def move_to_device(
     elif isinstance(obj, Mapping):
         data = {}
         for k, v in obj.items():
-            v = move_to_device(v, device, non_blocking=non_blocking)
-            data[k] = v
+            data[k] = move_to_device(v, device, non_blocking=non_blocking)
         return data
     elif isinstance(obj, Tuple) and hasattr(obj, "_fields"):
         # namedtuple, e.g., RecordBatch
         dtype = type(obj)
-        return dtype(move_to_device(v, device, non_blocking=non_blocking) for v in obj)
+        return dtype(
+            move_to_device(v, device, non_blocking=non_blocking) for v in obj
+        )
     elif isinstance(obj, Tuple):
-        return tuple(move_to_device(v, device, non_blocking=non_blocking) for v in obj)
+        return tuple(
+            move_to_device(v, device, non_blocking=non_blocking) for v in obj
+        )
     elif isinstance(obj, List):
-        return [move_to_device(v, device, non_blocking=non_blocking) for v in obj]
+        return [
+            move_to_device(v, device, non_blocking=non_blocking) for v in obj
+        ]
     elif isinstance(obj, str):
         return obj
-    raise ValueError(f"cannot move object of type '{obj.__class__.__name__}' to device")
+    raise ValueError(
+        f"cannot move object of type '{obj.__class__.__name__}' to device"
+    )
 
 
 def concat(objs: List[RT], /, axis: int = 0) -> RT:
@@ -231,10 +238,14 @@ def concat(objs: List[RT], /, axis: int = 0) -> RT:
         dtype = type(elem)
         size = len(elem)
         # difference with normal tuple is that we return the same type as the input
-        return dtype(concat([o[i] for o in objs], axis=axis) for i in range(size))
+        return dtype(
+            concat([o[i] for o in objs], axis=axis) for i in range(size)
+        )
     if isinstance(elem, Tuple):
         size = len(elem)
-        return tuple(concat([o[i] for o in objs], axis=axis) for i in range(size))
+        return tuple(
+            concat([o[i] for o in objs], axis=axis) for i in range(size)
+        )
     if isinstance(elem, np.ndarray):
         return np.concatenate(objs, axis=axis)
     if isinstance(elem, torch.Tensor):
@@ -326,7 +337,9 @@ def get_index(data: Any, index: Union[int, slice]) -> Any:
     value : Any
         The value at the index in the nested dictionary.
     """
-    if isinstance(data, (torch.Tensor, np.ndarray, HuggingFaceDataset, ListLike)):
+    if isinstance(
+        data, (torch.Tensor, np.ndarray, HuggingFaceDataset, ListLike)
+    ):
         # will return dtyped value
         return data[index]
     if isinstance(data, (pd.DataFrame, pd.Series)):
