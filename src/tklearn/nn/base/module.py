@@ -17,7 +17,8 @@ import torch.nn as nn
 from torch import Tensor
 from typing_extensions import Generic, Self
 
-I, R = TypeVar("I"), TypeVar("R")  # noqa: E741
+I = TypeVar("I")  # noqa: E741
+R = TypeVar("R")
 
 
 class Module(nn.Module, Generic[I, R]):
