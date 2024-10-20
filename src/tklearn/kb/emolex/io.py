@@ -31,7 +31,7 @@ import pandas as pd
 from tqdm import auto as tqdm
 
 from tklearn import config
-from tklearn.base.resource import ResourceIO
+from tklearn.core.resource import ResourceIO
 from tklearn.utils import download
 
 __all__ = [
@@ -42,7 +42,12 @@ __all__ = [
 class EmoLexIO(ResourceIO):
     def __init__(self, path: Optional[str] = None):
         if path is None:
-            path = config.cache_dir / "resources" / "nrc" / "NRC-Emotion-Lexicon.zip"
+            path = (
+                config.cache_dir
+                / "resources"
+                / "nrc"
+                / "NRC-Emotion-Lexicon.zip"
+            )
         self.path = path
         data_path = (
             config.cache_dir
@@ -76,7 +81,9 @@ class EmoLexIO(ResourceIO):
         except ImportError as e:
             raise e
         except Exception:
-            try_this_command = f"wget --no-check-certificate -O {self.path} {url}"
+            try_this_command = (
+                f"wget --no-check-certificate -O {self.path} {url}"
+            )
             raise ValueError(
                 f"failed to get the NRC Emotion Lexicon, try: \n\t{try_this_command}"
             )

@@ -6,7 +6,7 @@ import orjson
 from tqdm import auto as tqdm
 
 from tklearn import config
-from tklearn.base.resource import ResourceIO
+from tklearn.core.resource import ResourceIO
 from tklearn.kb.conceptnet.uri import conjunction_uri, to_json_ld
 from tklearn.utils import download
 
@@ -59,7 +59,9 @@ class ConceptNetIO(ResourceIO):
         self.jsonl_path = self.csv_path.with_suffix(".jsonl")
         self.jsonld_path = self.csv_path.with_suffix(".jsonld")
 
-    def read_csv_iter(self, verbose: bool = False) -> Generator[dict, None, None]:
+    def read_csv_iter(
+        self, verbose: bool = False
+    ) -> Generator[dict, None, None]:
         with open(self.csv_path, "rb") as f:
             n_rows = sum(1 for _ in f)
         progress_bar = None
@@ -72,7 +74,9 @@ class ConceptNetIO(ResourceIO):
                 if progress_bar:
                     progress_bar.update(1)
 
-    def read_jsonl_iter(self, verbose: bool = False) -> Generator[dict, None, None]:
+    def read_jsonl_iter(
+        self, verbose: bool = False
+    ) -> Generator[dict, None, None]:
         with open(self.jsonl_path, "rb") as f:
             n_rows = sum(1 for _ in f)
         progress_bar = None
@@ -104,19 +108,26 @@ class ConceptNetIO(ResourceIO):
                 with open(self.csv_path, "rb") as fp:
                     n_rows = sum(1 for _ in fp)
                 edges = self.read_csv_iter(verbose=False)
-                progress_bar = tqdm.tqdm(total=n_rows, desc="Reading and Writing Edges")
+                progress_bar = tqdm.tqdm(
+                    total=n_rows, desc="Reading and Writing Edges"
+                )
             elif verbose:
-                progress_bar = tqdm.tqdm(total=len(self.edges), desc="Writing Edges")
+                progress_bar = tqdm.tqdm(
+                    total=len(self.edges), desc="Writing Edges"
+                )
             else:
                 progress_bar = None
             for edge in edges:
                 f.write(
-                    json.dumps(edge, ensure_ascii=False).replace("\\u0000", "") + "\n"
+                    json.dumps(edge, ensure_ascii=False).replace("\\u0000", "")
+                    + "\n"
                 )
                 if progress_bar:
                     progress_bar.update(1)
 
-    def to_jsonld(self, path: Union[str, Path] = None, verbose: bool = False) -> dict:
+    def to_jsonld(
+        self, path: Union[str, Path] = None, verbose: bool = False
+    ) -> dict:
         if path is None:
             path = self.jsonld_path
         with open(path, "w", encoding="utf-8") as f:

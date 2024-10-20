@@ -28,7 +28,7 @@ from tokenizers import Encoding
 from tqdm import auto as tqdm
 from transformers.tokenization_utils_base import BatchEncoding
 
-from tklearn.base.resource import ResourceIO
+from tklearn.core.resource import ResourceIO
 
 __all__ = [
     "KeywordAnnotator",

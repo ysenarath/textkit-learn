@@ -184,4 +184,8 @@ def is_negative_relation(rel: str) -> bool:
     bool
         True if the relation is negative, False otherwise.
     """
-    return rel.startswith("/r/Not") or rel == "/r/Antonym" or rel == "/r/DistinctFrom"
+    return (
+        rel.startswith("/r/Not")
+        or rel == "/r/Antonym"
+        or rel == "/r/DistinctFrom"
+    )
