@@ -5,7 +5,6 @@ This module provides a class for annotating text with keywords and labels.
 Examples
 --------
 >>> from tklearn.preprocessing.annotator import KeywordAnnotator
->>> from tklearn.base.resource import ResourceIO
 >>> from tklearn.kb.emolex.io import EmoLexIO
 >>> io = EmoLexIO()
 >>> emolex = KeywordAnnotator(io, "word", "emotion")
@@ -22,7 +21,7 @@ from typing import Dict, List, Optional, Union
 
 import numpy as np
 import torch
-from flashtext import KeywordProcessor
+from flashtext2 import KeywordProcessor
 from nltk.stem import SnowballStemmer, WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from tokenizers import Encoding
@@ -130,12 +129,16 @@ class KeywordAnnotator:
                 for label in doc[label_field].keys():
                     collected_labels.add(f"{namespace}/{label_field}/{label}")
         self.labels = (
-            labels if collected_labels is None else sorted(list(collected_labels))
+            labels
+            if collected_labels is None
+            else sorted(list(collected_labels))
         )
         self.namespace = namespace
         self.keyword_field = keyword_field
 
-    def get_keyword_processor(self, language: str = "english") -> KeywordProcessor:
+    def get_keyword_processor(
+        self, language: str = "english"
+    ) -> KeywordProcessor:
         if not hasattr(self, "emolex_processors"):
             self.emolex_processors = {}
         if language not in self.emolex_processors:
@@ -211,7 +214,9 @@ class KeywordAnnotator:
                 return annotations
             if isinstance(tokens, BatchEncoding):
                 # List[List[List[dict]]]
-                return batch_align(tokens, annotations, self.labels, return_tensors)
+                return batch_align(
+                    tokens, annotations, self.labels, return_tensors
+                )
             msg = f"unsupported tokens type: {tokens.__class__.__name__}"
             raise ValueError(msg)
         # augment the emolex processor with stemming

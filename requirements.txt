@@ -12,7 +12,7 @@ accelerate
 nltk
 sortedcontainers
 hnswlib
-flashtext
+flashtext2
 wordfreq
 rdflib
 orjson
