@@ -1,2 +1,0 @@
-class KnowledgeBase:
-    pass
