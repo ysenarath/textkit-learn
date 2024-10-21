@@ -67,7 +67,6 @@ class ConceptNetIO(ResourceIO):
         progress_bar = None
         if verbose:
             progress_bar = tqdm.tqdm(total=n_rows, desc="Reading Edges")
-        self.edges = []
         with open(self.csv_path, "r", encoding="utf-8") as f:
             for line in f:
                 yield parse_edge(line)
@@ -92,18 +91,22 @@ class ConceptNetIO(ResourceIO):
         self,
         path: Union[str, Path] = None,
         verbose: bool = False,
-        exist_ok: bool = False,
+        exist_ok: bool = True,
+        force: bool = False,
     ) -> None:
         if path is None:
             path = self.jsonl_path
         if path.exists():
-            if exist_ok:
+            if force:
+                path.unlink()
+            elif exist_ok:
                 return
-            raise FileExistsError(f"'{path}' already exists")
+            else:
+                raise FileExistsError(f"'{path}' already exists")
         if not self.csv_path.exists():
             raise FileNotFoundError(f"'{self.csv_path}' does not exist")
         with open(path, "w", encoding="utf-8") as f:
-            edges = self.edges
+            edges = None
             if edges is None:
                 with open(self.csv_path, "rb") as fp:
                     n_rows = sum(1 for _ in fp)
@@ -113,7 +116,7 @@ class ConceptNetIO(ResourceIO):
                 )
             elif verbose:
                 progress_bar = tqdm.tqdm(
-                    total=len(self.edges), desc="Writing Edges"
+                    total=len(edges), desc="Writing Edges"
                 )
             else:
                 progress_bar = None
@@ -130,6 +133,7 @@ class ConceptNetIO(ResourceIO):
     ) -> dict:
         if path is None:
             path = self.jsonld_path
+        edges = list(self.read_jsonl_iter(verbose=verbose))
         with open(path, "w", encoding="utf-8") as f:
             f.write(
                 json.dumps(
@@ -137,7 +141,7 @@ class ConceptNetIO(ResourceIO):
                         "@context": [
                             "http://api.conceptnet.io/ld/conceptnet5.7/context.ld.json"
                         ],
-                        "edges": self.edges,
+                        "edges": edges,
                     },
                     ensure_ascii=False,
                 ).replace("\\u0000", "")
@@ -148,7 +152,7 @@ class ConceptNetIO(ResourceIO):
         url: str = None,
         verbose: bool = False,
         force: bool = False,
-        exist_ok: bool = False,
+        exist_ok: bool = True,
         unzip: bool = True,
     ) -> None:
         if url is None:
@@ -161,6 +165,7 @@ class ConceptNetIO(ResourceIO):
             exist_ok=exist_ok,
             unzip=unzip,
         )
+        self.to_jsonl(verbose=verbose, force=force, exist_ok=exist_ok)
 
     def load(self, verbose: bool = False) -> Generator[dict, None, None]:
         existing = set()
@@ -170,3 +175,4 @@ class ConceptNetIO(ResourceIO):
                 if node_id not in existing:
                     existing.add(node_id)
                     yield edge[term_field]
+            yield edge

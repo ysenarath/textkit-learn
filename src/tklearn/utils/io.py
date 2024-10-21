@@ -58,10 +58,14 @@ def download(
     path: Union[str, Path],
     verbose: bool = False,
     force: bool = False,
-    exist_ok: bool = False,
+    exist_ok: bool = True,
     unzip: bool = True,
     mode: str = "auto",
 ) -> None:
+    # create the parent folder if it does not exist
+    if isinstance(path, str):
+        path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
     if force or not path.exists():
         mode = mode.lower()
         if (
