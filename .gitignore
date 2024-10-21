@@ -140,3 +140,4 @@ notebooks/outputs/
 notebooks/adapter_model/
 src/tklearn/nn/transformers/adapters.py
 scripts/sync.sh
+notebooks/testdb/*
