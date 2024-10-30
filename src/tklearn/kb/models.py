@@ -233,9 +233,9 @@ class Edge(Base):
     __tablename__ = "edge"
 
     id: Mapped[str] = mapped_column(primary_key=True)
-    rel_id: Mapped[str] = mapped_column(ForeignKey("relation.id"))
-    start_id: Mapped[str] = mapped_column(ForeignKey("node.id"))
-    end_id: Mapped[str] = mapped_column(ForeignKey("node.id"))
+    rel_id: Mapped[str] = mapped_column(ForeignKey("relation.id"), index=True)
+    start_id: Mapped[str] = mapped_column(ForeignKey("node.id"), index=True)
+    end_id: Mapped[str] = mapped_column(ForeignKey("node.id"), index=True)
     license: Mapped[Optional[str]]
     weight: Mapped[float] = mapped_column(default=1.0)
     dataset: Mapped[Optional[str]]
@@ -378,11 +378,3 @@ class Query:
     view: Optional[PartialCollectionView] = None
     value: Optional[float] = None
     license: Optional[str] = None
-
-
-def get_triples(session: Session) -> List[Tuple]:
-    # (s, p, o) triples
-    #   s is the ID of the subject node
-    #   p is the ID of the predicate relation
-    #   o is the ID of the object node
-    triples: List[Tuple[str, str, str]] = []
