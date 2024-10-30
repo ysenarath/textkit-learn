@@ -141,3 +141,5 @@ notebooks/adapter_model/
 src/tklearn/nn/transformers/adapters.py
 scripts/sync.sh
 notebooks/testdb/*
+notebooks/*.pkl
+notebooks/*.db
