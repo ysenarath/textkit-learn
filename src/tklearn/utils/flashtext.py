@@ -14,6 +14,9 @@ class KeywordProcessor:
     def __init__(self, case_sensitive: bool = False):
         self._processor = BaseKeywordProcessor(case_sensitive=case_sensitive)
 
+    def add_keyword(self, keyword: str, clean_word: str | None = None):
+        self._processor.add_keyword(keyword, clean_word=clean_word)
+
     def extract_keywords(self, text: str, span_info: bool = False):
         if span_info:
             return self._processor.extract_keywords_with_span(text)

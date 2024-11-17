@@ -2,17 +2,18 @@ from __future__ import annotations
 
 import os
 import shutil
-import urllib.parse
+from collections import defaultdict
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, List, Tuple, Union
+from typing import Generator, List, Union
 
-from rdflib import Graph, URIRef
-from sqlalchemy import Index, create_engine, or_, text
+from sqlalchemy import create_engine, or_, text
 from sqlalchemy.orm import Session
 from tqdm import auto as tqdm
 
 from tklearn.config import config
+from tklearn.core.triplet import TripletStore
+from tklearn.core.vocab import Vocab
 from tklearn.kb.loader import KnowledgeLoader
 from tklearn.kb.models import Base, Edge, Node
 from tklearn.utils import checksum as path_checksum
@@ -22,28 +23,11 @@ __all__ = [
 ]
 
 
-# class KnowledgeGraph:
-#     # index of the edges (s, p, o)
-#     adj_list: dict[str, dict[str, set[str]]]
-
-#     def __init__(self):
-#         self.adj_list = {}
-
-#     def add_edge(self, s: str, p: str, o: str):
-#         if s not in self.adj_list:
-#             self.adj_list[s] = {}
-#         if p not in self.adj_list[s]:
-#             self.adj_list[s][p] = set()
-#         self.adj_list[s][p].add(o)
-
-#     def get_edges(self, s: str, p: str) -> set[str]:
-#         return self.adj_list.get(s, {}).get(p, set())
-
-
 class KnowledgeBase:
     def __init__(
         self,
         database_name_or_path: str | Path,
+        create: bool = False,
         cache_dir: Union[Path, str, None] = None,
         verbose: int = 1,
     ):
@@ -56,6 +40,12 @@ class KnowledgeBase:
         input_path = input_path.with_name(f"{input_path.name}.db")
         if not input_path.exists() and isinstance(database_name_or_path, str):
             input_path = cache_dir / f"{database_name_or_path}.db"
+            # create the database if it does not exist
+            if not input_path.exists() and create:
+                input_engine = create_engine(
+                    f"sqlite:///{input_path}", echo=verbose > 2
+                )
+                Base.metadata.create_all(input_engine)
         elif input_path.exists():
             database_name_or_path = os.path.join("default", input_path.stem)
         else:
@@ -75,34 +65,26 @@ class KnowledgeBase:
             raise ValueError("invalid checksum")
         self.path = output_path
         self.engine = create_engine(f"sqlite:///{self.path}", echo=verbose > 2)
-        Base.metadata.create_all(self.engine)
         with self.session() as session:
             session.execute(text("PRAGMA journal_mode=WAL"))
+        # create index if not exists
+        self.index = self._get_or_create_index()
 
-    def import_from_loader(self, loader: KnowledgeLoader):
-        identifier = loader.config.identifier
-        if not identifier.isidentifier():
-            raise ValueError("identifier must be a valid Python identifier")
+    def _get_or_create_index(self) -> TripletStore:
+        # populate index if not frozen (frozen means index is up-to-date)
+        index_path = str(self.path.with_suffix("")) + "-index"
+        index = TripletStore(index_path)
+        if index.frozen:
+            return index
         with self.session() as session:
-            session.execute(text("PRAGMA journal_mode=WAL"))
-            for i, val in enumerate(loader.iterrows()):
-                _ = Edge.from_dict(  # ignore the return value
-                    val,
-                    session=session,
-                    commit=False,
-                    namespace=loader.config.namespace,
-                )
-                if i % 100 == 0:
-                    try:
-                        session.commit()
-                    except Exception as e:
-                        session.rollback()
-                        raise e
-            try:
-                session.commit()
-            except Exception as e:
-                session.rollback()
-                raise e
+            n_total = session.query(Edge).count()
+            query = session.query(Edge.start_id, Edge.rel_id, Edge.end_id)
+            pbar = tqdm.tqdm(
+                query.yield_per(int(1e5)), total=n_total, desc="Indexing"
+            )
+            index.add(pbar)
+        index.frozen = True
+        return index
 
     @contextmanager
     def session(self) -> Generator[Session, None, None]:
@@ -112,18 +94,6 @@ class KnowledgeBase:
         if not os.path.exists(self.path):
             return
         os.remove(self.path)
-
-    def get_triples(self) -> List[Tuple[str, str, str]]:
-        with self.session() as session:
-            triples: List[Tuple[str, str, str]] = session.query(
-                Edge.start_id, Edge.rel_id, Edge.end_id
-            ).all()
-        return triples
-
-    def get_vocab(self) -> List[str]:
-        with self.session() as session:
-            vocab: List[str] = session.query(Node.id, Node.label).all()
-        return vocab
 
     def find_neighbors(
         self, node_ids: List[str | Node] | str | Node
@@ -149,25 +119,46 @@ class KnowledgeBase:
             )
         return neighbors
 
-    def prepare(self):
-        edge_node_idse_index = Index(
-            "ix_edge_node_ids", Edge.start_id, Edge.end_id
-        )
-        edge_node_idse_index.create(bind=self.engine)
-
-    def create_graph(self) -> Graph:
-        graph = Graph()
+    @classmethod
+    def from_loader(cls, loader: KnowledgeLoader) -> KnowledgeBase:
+        identifier = loader.config.identifier
+        version = loader.config.version or "0.0.1"
+        if not identifier.isidentifier():
+            raise ValueError("identifier must be a valid Python identifier")
+        database_name = os.path.join(identifier, f"{identifier}-v{version}")
+        self = cls(database_name, create=True)
         with self.session() as session:
-            n_total = session.query(Edge).count()
-            query = session.query(Edge.start_id, Edge.rel_id, Edge.end_id)
-            pbar = tqdm.tqdm(total=n_total, desc="Creating graph")
-            for triple in query.yield_per(1000):
-                triple = tuple(map(uriref, triple))
-                graph.add(triple)
-                pbar.update(1)
-        return graph
+            session.execute(text("PRAGMA journal_mode=WAL"))
+            for i, val in enumerate(loader.iterrows()):
+                _ = Edge.from_dict(  # ignore the return value
+                    val,
+                    session=session,
+                    commit=False,
+                    namespace=loader.config.namespace,
+                )
+                if i % 100 == 0:
+                    try:
+                        session.commit()
+                    except Exception as e:
+                        session.rollback()
+                        raise e
+            try:
+                session.commit()
+            except Exception as e:
+                session.rollback()
+                raise e
 
-
-def uriref(val: str) -> URIRef:
-    val = urllib.parse.quote(val)
-    return URIRef(val)
+    def get_vocab2(self) -> Vocab:
+        # populate vocab if not frozen (frozen means vocab is up-to-date)
+        concepts = defaultdict(set)
+        with self.session() as session:
+            n_total = session.query(Node).count()
+            query = session.query(Node)
+            pbar = tqdm.tqdm(
+                query.yield_per(int(1e5)),
+                total=n_total,
+                desc="Initializing Vocab",
+            )
+            for node in pbar:
+                concepts[node.label].add(node.id)
+        return None

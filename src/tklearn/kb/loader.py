@@ -15,6 +15,7 @@ class KnowledgeLoaderConfig(BaseConfig, dispatch="identifier"):
     identifier: ClassVar[str]
     verbose: bool = 1
     namespace: Optional[str] = None
+    version: Optional[str] = None
 
 
 class AutoKnowledgeLoader(AutoModule):
