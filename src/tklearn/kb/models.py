@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
-from rdflib import RDF, Literal, URIRef
 from sqlalchemy import ForeignKey
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import (
@@ -14,8 +13,6 @@ from sqlalchemy.orm import (
     relationship,
 )
 from typing_extensions import Self
-
-from tklearn.kb.conceptnet import CN
 
 
 def apply_prefix(uri: Optional[str], namespace: Optional[str] = None) -> str:
@@ -85,33 +82,6 @@ class Node(Base):
             # If we still don't have an instance, something else went wrong
             raise e from None
 
-    def to_triples(self) -> List[Tuple]:
-        triples = []
-        node_uri = URIRef(CN[self.id])
-        triples.append((node_uri, RDF.type, CN.Concept))
-        triples.append((node_uri, CN.label, Literal(self.label)))
-        if self.language:
-            triples.append((node_uri, CN.language, Literal(self.language)))
-        if self.term:
-            triples.append((node_uri, CN.term, URIRef(CN[self.term.id])))
-        if self.sense_label:
-            triples.append((
-                node_uri,
-                CN.sense_label,
-                Literal(self.sense_label),
-            ))
-        if self.site:
-            triples.append((node_uri, CN.site, Literal(self.site)))
-        if self.path:
-            triples.append((node_uri, CN.path, Literal(self.path)))
-        if self.site_available:
-            triples.append((
-                node_uri,
-                CN.site_available,
-                Literal(self.site_available),
-            ))
-        return triples
-
     def __repr__(self) -> str:
         return f"Node(id='{self.id}', label='{self.label}', language='{self.language}')"
 
@@ -154,13 +124,6 @@ class Relation(Base):
                 return instance
             # If we still don't have an instance, something else went wrong
             raise e from None
-
-    def to_triples(self) -> List[Tuple]:
-        relation_uri = URIRef(CN[self.id])
-        triples = [(relation_uri, RDF.type, CN.Relation)]
-        triples.append((relation_uri, CN.label, Literal(self.label)))
-        triples.append((relation_uri, CN.symmetric, Literal(self.symmetric)))
-        return triples
 
     def __repr__(self) -> str:
         return f"Relation(id='{self.id}', label='{self.label}', symmetric={self.symmetric})"
@@ -209,21 +172,6 @@ class Source(Base):
                 return instance
             # If we still don't have an instance, something else went wrong
             raise e from None
-
-    def to_triples(self) -> List[Tuple]:
-        source_uri = URIRef(CN[self.id])
-        triples = [(source_uri, RDF.type, CN.Source)]
-        if self.contributor:
-            triples.append((
-                source_uri,
-                CN.contributor,
-                Literal(self.contributor),
-            ))
-        if self.process:
-            triples.append((source_uri, CN.process, Literal(self.process)))
-        if self.activity:
-            triples.append((source_uri, CN.activity, Literal(self.activity)))
-        return triples
 
     def __repr__(self) -> str:
         return f"Source(id='{self.id}', contributor='{self.contributor}')"
@@ -302,46 +250,6 @@ class Edge(Base):
                 return instance
             # If we still don't have an instance, something else went wrong
             raise e from None
-
-    def to_triples(self) -> List[Tuple]:
-        start_node = URIRef(CN[self.start.id])
-        end_node = URIRef(CN[self.end.id])
-        relation = URIRef(CN[self.rel.id])
-        edge_uri = URIRef(CN[self.id])
-
-        triples = []
-
-        # add edge
-        triples.append((edge_uri, RDF.type, CN.Assertion))
-        triples.append((edge_uri, CN.relation, relation))
-        triples.append((edge_uri, CN.start, start_node))
-        triples.append((edge_uri, CN.end, end_node))
-        triples.append((edge_uri, CN.weight, Literal(self.weight)))
-
-        if self.dataset:
-            triples.append((
-                edge_uri,
-                CN.dataset,
-                Literal(self.dataset),
-            ))
-        if self.surface_text:
-            triples.append((
-                edge_uri,
-                CN.surfaceText,
-                Literal(self.surface_text),
-            ))
-        if self.license:
-            triples.append((
-                edge_uri,
-                CN.license,
-                Literal(self.license),
-            ))
-
-        if self.sources:
-            for source in self.sources:
-                source_uri = URIRef(CN[source.id])
-                triples.append((edge_uri, CN.sources, source_uri))
-        return triples
 
     def __repr__(self) -> str:
         return f"Edge(id='{self.id}', start='{self.start_id}', rel='{self.rel_id}', end='{self.end_id}')"
