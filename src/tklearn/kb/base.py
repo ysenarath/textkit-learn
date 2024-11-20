@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import os
 import shutil
-from collections import defaultdict
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, List, Union
+from typing import Generator, Iterable, List, Union
 
 from sqlalchemy import create_engine, or_, text
 from sqlalchemy.orm import Session
 from tqdm import auto as tqdm
 
+from tklearn import logging
 from tklearn.config import config
 from tklearn.core.triplet import TripletStore
 from tklearn.core.vocab import Vocab
@@ -21,6 +21,8 @@ from tklearn.utils import checksum as path_checksum
 __all__ = [
     "KnowledgeBase",
 ]
+
+logger = logging.get_logger(__name__)
 
 
 class KnowledgeBase:
@@ -148,17 +150,49 @@ class KnowledgeBase:
                 session.rollback()
                 raise e
 
-    def get_vocab2(self) -> Vocab:
-        # populate vocab if not frozen (frozen means vocab is up-to-date)
-        concepts = defaultdict(set)
+    def get_vocab(self) -> Vocab:
         with self.session() as session:
             n_total = session.query(Node).count()
+        # populate vocab if not frozen (frozen means vocab is up-to-date)
+        vocab_db_path = self.path.with_name(self.path.stem + "-vocab.db")
+        config = {
+            "type": "sqlalchemy",
+            "url": f"sqlite:///{vocab_db_path}",
+            # "url": "sqlite:///:memory:",
+        }
+        vocab = Vocab(config)
+        if os.path.exists(vocab_db_path):
+            if len(vocab) == n_total:
+                logger.info("Found existing vocab database")
+                return vocab
+            logger.info("Existing vocab database is outdated")
+            # remove the existing vocab database
+            os.remove(vocab_db_path)
+            # recreate the database
+            vocab = Vocab(config)
+        batch_size = int(1e4)
+        with self.session() as session:
             query = session.query(Node)
             pbar = tqdm.tqdm(
-                query.yield_per(int(1e5)),
+                query.yield_per(batch_size),
                 total=n_total,
                 desc="Initializing Vocab",
             )
+            nodes = []
+            for i, node in enumerate(pbar):  # this will be done in parallel
+                nodes.append(node)
+                if i % batch_size == 0:
+                    vocab.extend(nodes)
+                    nodes = []
+            if nodes:
+                vocab.extend(nodes)
+        return vocab
+
+    def iternodes(self, verbose: bool = False) -> Iterable[Node]:
+        with self.session() as session:
+            query = session.query(Node)
+            pbar = tqdm.tqdm(
+                query.all(), desc="Iterating Nodes", disable=not verbose
+            )
             for node in pbar:
-                concepts[node.label].add(node.id)
-        return None
+                yield node
