@@ -1,49 +1,71 @@
 from collections import defaultdict
-from typing import Iterable, List, Optional
+from typing import TYPE_CHECKING, Iterable, List
 
-import tqdm
+from textrush import KeywordProcessor
+from tqdm import auto as tqdm
 
-from tklearn.core.vocab import Vocab
+from tklearn import logging
+from tklearn.core.vocab import Vocab, VocabItem
 from tklearn.kb.base import KnowledgeBase
-from tklearn.utils.flashtext import KeywordProcessor
 
 __all__ = [
     "KeywordAnnotator",
 ]
 
+logger = logging.get_logger(__name__)
+
 
 class KeywordAnnotator:
     def __init__(
         self,
-        ignore_chars: Optional[Iterable[str]] = None,
+        ignore_chars: str = "-_",
+        case_sensitive: bool = False,
         verbose: bool = True,
     ):
-        self.kp = KeywordProcessor()
-        if ignore_chars is None:
-            ignore_chars = {"-", "_"}
-        self.ignore_chars = set(ignore_chars)
+        self.kp = KeywordProcessor(case_sensitive=case_sensitive)
+        self.ignore_chars = set(ignore_chars) or set()
         self.verbose = verbose
         self.matches = defaultdict(set)
 
     @classmethod
     def from_vocab(
-        cls, vocab: Iterable[str] | Vocab | KnowledgeBase, verbose: bool = True
+        cls,
+        vocab: Iterable[str] | Vocab | KnowledgeBase,
+        ignore_chars: str = "-_",
+        case_sensitive: bool = False,
+        verbose: bool = True,
     ):
+        kwargs = {
+            "ignore_chars": ignore_chars,
+            "case_sensitive": case_sensitive,
+            "verbose": verbose,
+        }
         if isinstance(vocab, KnowledgeBase):
-            vocab = vocab.vocab.tokens
-        elif isinstance(vocab, Vocab):
-            vocab = vocab.tokens
-        self = cls()
-        pbar = tqdm.tqdm(vocab, desc="Adding keywords", disable=not verbose)
-        for lbl in pbar:
-            self.matches[lbl].add(lbl)
-            self.kp.add_keyword(lbl)
+            vocab = vocab.get_vocab()
+        self = cls(**kwargs)
+        if not TYPE_CHECKING:
+            vocab = tqdm.tqdm(
+                vocab, desc="Adding keywords", disable=not verbose
+            )
+        for keyword in vocab:
+            if isinstance(keyword, VocabItem):
+                keyword = keyword.token
+            self.matches[keyword].add(keyword)
+            self._add_keyword_ignore_errors(keyword)
+            alt = keyword
             for char in self.ignore_chars:
-                if char in lbl:
-                    new_label = lbl.replace(char, " ")
-                    self.matches[new_label].add(lbl)
-                    self.kp.add_keyword(new_label)
+                alt = alt.replace(char, " ")
+            alt = alt.strip()
+            self.matches[alt].add(keyword)
+            self._add_keyword_ignore_errors(alt)
         return self
+
+    def _add_keyword_ignore_errors(self, keyword: str):
+        try:
+            self.kp.add_keyword(keyword)
+        except Exception as e:
+            if self.verbose:
+                logger.error(f"Error adding keyword {keyword}: {e}")
 
     def annotate(
         self, texts: str | List[str]
@@ -57,16 +79,15 @@ class KeywordAnnotator:
                     "annotate input must be a string or a list of strings"
                 )
             for char in self.ignore_chars:
-                if char in text:
-                    text = text.replace(char, " ")
+                text = text.replace(char, " ")
             text_annotations = [
                 {
                     "string": text[start:end],
                     "start": start,
                     "end": end,
-                    "candidates": list(self.matches[lbl]),
+                    "matches": list(self.matches[clean_name]),
                 }
-                for (lbl, start, end) in self.kp.extract_keywords(
+                for (clean_name, start, end) in self.kp.extract_keywords(
                     text, span_info=True
                 )
             ]
