@@ -1,8 +1,3 @@
-from tklearn.lang.en import _contractions as contractions
+from tklearn.lang import en
 
-__all__ = [
-    "contractions",
-    "uncontract",
-]
-
-uncontract = contractions.expand
+__all__ = ["en"]
