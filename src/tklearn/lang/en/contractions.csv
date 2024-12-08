@@ -1,0 +1,297 @@
+contraction,full_forms,type
+'bout,about,word
+'cause,because,word
+'cept,except,word
+'em,them,word
+'gainst,against,word
+'n',and,word
+'neath,beneath,word
+'round,around,word
+'thout,without,word
+'til,until,word
+'tis,it is,word
+'twas,it was,word
+'tween,between,word
+'twere,it were,word
+I'd,I had,word
+I'd,I would,word
+I'd'nt,I would not,word
+I'd'nt,I did not,word
+I'd'nt've,I would not have,word
+I'd'nt've,I did not have,word
+I'd've,I would have,word
+I'd've,I did have,word
+I'll,I shall,word
+I'll,I will,word
+I'm,I am,word
+I'm'na,I am going to,word
+I'm'o,I am going to,word
+I'm'onna,I am going to,word
+I've,I have,word
+Idunno,I do not know,word
+If'n,If and when,word
+Imma,I am about to,word
+Imma,I am going to,word
+Ion,I do not,word
+Ion,I do not,word
+a'ight,alright,word
+ain't,am not,word
+ain't,is not,word
+ain't,are not,word
+ain't,has not,word
+ain't,have not,word
+ain't,did not,word
+amn't,am not,word
+aren't,are not,word
+arencha,are not you,word
+arencha,are not you,word
+c'mon,come on,word
+can't,cannot,word
+cap'n,captain,word
+could've,could have,word
+couldn't,could not,word
+couldn't've,could not have,word
+cuppa,cup of,word
+cuz,because,word
+d'ya,do you,word
+d'ya,did you,word
+d'ye,do you,word
+d'ye,did you,word
+daren't,dare not,word
+daren't,dared not,word
+daresn't,dare not,word
+dasn't,dare not,word
+didn't,did not,word
+doesn't,does not,word
+don't,do not,word
+don't,does not,word
+dunno,do not know,word
+dunno,do not know,word
+e'en,even,word
+e'er,ever,word
+everybody's,everybody has,word
+everybody's,everybody is,word
+everyone's,everyone has,word
+everyone's,everyone is,word
+everything's,everything has,word
+everything's,everything is,word
+finna,fixing to,word
+fo'c'sle,forecastle,word
+g'day,good day,word
+gi'z,give us,word
+gimme,give me,word
+giv'n,given,word
+gon't,go not,word
+gonna,going to,word
+gotta,got to,word
+had've,had have,word
+hadn't,had not,word
+hasn't,has not,word
+haven't,have not,word
+he'd,he had,word
+he'd,he would,word
+he'd'nt've,he did not have,word
+he'd'nt've,he would not have,word
+he'll,he shall,word
+he'll,he will,word
+he's,he has,word
+he's,he is,word
+helluva,hell of a,word
+here's,here is,word
+how'd,how did,word
+how'd,how would,word
+how'll,how will,word
+how'll,how shall,word
+how're,how are,word
+how's,how has,word
+how's,how is,word
+how's,how does,word
+howdy,how do you do,word
+howdy,how do you fare,word
+innit,is not it,word
+innit,am not it,word
+isn't,is not,word
+it'd,it would,word
+it'll,it shall,word
+it'll,it will,word
+it's,it has,word
+it's,it is,word
+kinda,kind of,word
+lemme,let me,word
+let's,let us,word
+loven't,love not,word
+ma'am,madam,word
+may've,may have,word
+mayn't,may not,word
+methinks,I think,word
+might've,might have,word
+mightn't,might not,word
+mine's,mine is,word
+must've,must have,word
+mustn't,must not,word
+mustn't've,must not have,word
+nal,and all,word
+ne'er,never,word
+needn't,need not,word
+o'clock,of the clock,word
+o'er,over,word
+ol',old,word
+ought've,ought have,word
+oughtn't,ought not,word
+oughtn't've,ought not have,word
+shalln't,shall not,word
+shan',shall not,word
+shan't,shall not,word
+she'd,she had,word
+she'd,she would,word
+she'd'nt've,she did not have,word
+she'd'nt've,she would not have,word
+she'll,she shall,word
+she'll,she will,word
+she's,she has,word
+she's,she is,word
+should've,should have,word
+shouldn't,should not,word
+shouldn't've,should not have,word
+so're,so are,word
+so's,so is,word
+so's,so has,word
+so've,so have,word
+somebody's,somebody has,word
+somebody's,somebody is,word
+someone's,someone has,word
+someone's,someone is,word
+something's,something has,word
+something's,something is,word
+that'd,that would,word
+that'd,that had,word
+that'll,that shall,word
+that'll,that will,word
+that're,that are,word
+that's,that has,word
+that's,that is,word
+there'd,there had,word
+there'd,there would,word
+there'll,there shall,word
+there'll,there will,word
+there're,there are,word
+there's,there has,word
+there's,there is,word
+these're,these are,word
+these've,these have,word
+they'd,they had,word
+they'd,they would,word
+they'd've,they would have,word
+they'd've,they could have,word
+they'd've,they should have,word
+they'll,they shall,word
+they'll,they will,word
+they're,they are,word
+they're,they were,word
+they've,they have,word
+this's,this has,word
+this's,this is,word
+those're,those are,word
+those've,those have,word
+to've,to have,word
+tryna,trying to,word
+w'all,we all,word
+w'at,we at,word
+w/,with,word
+w/o,without,word
+wanna,want to,word
+wasn't,was not,word
+we'd,we had,word
+we'd,we would,word
+we'd,we did,word
+we'd've,we would have,word
+we'll,we shall,word
+we'll,we will,word
+we're,we are,word
+we've,we have,word
+weren't,were not,word
+what'd,what did,word
+what'll,what shall,word
+what'll,what will,word
+what're,what are,word
+what're,what were,word
+what's,what has,word
+what's,what is,word
+what's,what does,word
+what've,what have,word
+whatcha,what are you,word
+when'd,when did,word
+when's,when has,word
+when's,when is,word
+where'd,where did,word
+where'll,where shall,word
+where'll,where will,word
+where're,where are,word
+where's,where has,word
+where's,where is,word
+where's,where does,word
+where've,where have,word
+which'd,which had,word
+which'd,which would,word
+which'll,which shall,word
+which'll,which will,word
+which're,which are,word
+which's,which has,word
+which's,which is,word
+which've,which have,word
+who'd,who would,word
+who'd,who had,word
+who'd,who did,word
+who'd've,who would have,word
+who'll,who shall,word
+who'll,who will,word
+who're,who are,word
+who's,who has,word
+who's,who is,word
+who's,who does,word
+who've,who have,word
+why'd,why did,word
+why're,why are,word
+why's,why has,word
+why's,why is,word
+why's,why does,word
+willn't,will not,word
+won't,will not,word
+wonnot,will not,word
+would've,would have,word
+wouldn't,would not,word
+wouldn't've,would not have,word
+y'ain't,you are not,word
+y'ain't,you have not,word
+y'ain't,you did not,word
+y'all,you all,word
+y'all'd've,you all would have,word
+y'all'dn't've,you all would not have,word
+y'all're,you all are,word
+y'all'ren't,you all are not,word
+y'at,you at,word
+y'ever,have you ever,word
+y'know,you know,word
+yes'm,yes madam,word
+yes'm,yes madam,word
+yesn't,yes not,word
+yesn't,yes no,word
+yessir,yes sir,word
+you'd,you had,word
+you'd,you would,word
+you'll,you shall,word
+you'll,you will,word
+you're,you are,word
+you've,you have,word
+'s,is,suffix
+'s,has,suffix
+'s,does,suffix
+'s,us,suffix
+'s, is,suffix
+'ll,will,suffix
+'d,had,suffix
+'d,would,suffix
+'re,are,suffix
+'re,were,suffix
+'m,am,suffix
+n't,not,suffix

@@ -1,3 +1,5 @@
-from tklearn.lang import en
+from tklearn.lang.en.contractions import uncontract
 
-__all__ = ["en"]
+__all__ = [
+    "uncontract",
+]
