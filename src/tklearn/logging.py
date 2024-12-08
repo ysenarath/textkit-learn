@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import functools
 import logging
 from dataclasses import field
-from typing import Union, cast
+from typing import Callable, Optional, TypeVar, Union, cast, overload
 
 from nightjar import BaseConfig
 
@@ -11,6 +12,8 @@ __all__ = [
 ]
 
 _LOGGING_TEMPLATE = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+T = TypeVar("T")
 
 
 class LoggingFormatterConfig(BaseConfig):
@@ -51,6 +54,35 @@ def get_logger(
     console_hdlr.setFormatter(formatter)
     logger.addHandler(console_hdlr)
     return logger
+
+
+@overload
+def log_on_exception(logger: logging.Logger) -> Callable[[T], T]: ...
+
+
+@overload
+def log_on_exception(
+    func: T, logger: Optional[logging.Logger] = None
+) -> T: ...
+
+
+def log_on_exception(
+    func_or_logger: T | logging.Logger, logger: Optional[logging.Logger] = None
+) -> T | Callable[..., T]:
+    if isinstance(func_or_logger, logging.Logger):
+        return functools.partial(log_on_exception, logger=func_or_logger)
+
+    func = func_or_logger
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error in {func.__name__}: {e}")
+            raise e
+
+    return wrapper
 
 
 def main():

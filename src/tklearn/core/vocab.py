@@ -26,6 +26,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, scoped_session, sessionmaker
 from sqlalchemy.pool import QueuePool
+from tqdm import auto as tqdm
 
 T = TypeVar("T", List[int], np.ndarray, torch.Tensor)
 
@@ -85,10 +86,7 @@ class SQLAlchemyVocabStore:
     """SQLAlchemy-based persistent vocabulary implementation with advanced features."""
 
     def __init__(
-        self,
-        url: str,
-        cache_size: int = 10000,
-        verbose: bool = False,
+        self, url: str, cache_size: int = 10000, verbose: bool = False
     ):
         self.db_url = url
         self.cache_size = cache_size
@@ -207,11 +205,17 @@ class SQLAlchemyVocabStore:
         finally:
             session.close()
 
-    def items(self) -> Generator[Tuple[VocabItem], None, None]:
+    def items(
+        self, verbose: bool = False
+    ) -> Generator[Tuple[VocabItem], None, None]:
         """Iterate over all tokens in the vocabulary."""
         session = self.Session()
         try:
-            for vocab_token in session.query(VocabToken).all():
+            q = session.query(VocabToken)
+            n = q.count()
+            for vocab_token in tqdm.tqdm(
+                q.yield_per(1000), total=n, disable=not verbose
+            ):
                 yield VocabItem(vocab_token.id, vocab_token.token)
         finally:
             session.close()
@@ -239,9 +243,9 @@ class Vocab:
     def get_index(self, text: str) -> int:
         try:
             default = self.store.get_index("[UNK]")
-            return self.store.get_token(text, default=default)
-        except IndexError:
-            return self.store.get_token(text)
+        except KeyError:
+            return self.store.get_index(text)
+        return self.store.get_index(text, default=default)
 
     def get_token(self, index: int) -> str:
         return self.store.get_token(index)
@@ -259,8 +263,12 @@ class Vocab:
         self.store.extend(items)
         return self
 
-    def items(self) -> Iterable[Tuple[int, str]]:
-        return self.store.items()
+    def items(self, verbose: bool = False) -> Iterable[Tuple[int, str]]:
+        return self.store.items(verbose=verbose)
 
     def __len__(self) -> int:
         return len(self.store)
+
+    def __iter__(self) -> Iterable[str]:
+        for _, token in self.items():
+            yield token

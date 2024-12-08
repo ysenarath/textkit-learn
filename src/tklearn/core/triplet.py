@@ -208,3 +208,7 @@ class TripletStore:
 
         # If no components specified, return all triplets
         return self.find_by_subject("")
+
+    def __len__(self) -> int:
+        """Return the number of triplets in the store."""
+        return sum(1 for _ in self.spo_db.iterator())
