@@ -1,9 +1,8 @@
-from tklearn.utils.checksum import checksum
-from tklearn.utils.flashtext import KeywordProcessor
+from tklearn.utils.hashing import get_content_hash
 from tklearn.utils.io import download
 
 __all__ = [
     "download",
-    "checksum",
+    "get_content_hash",
     "KeywordProcessor",
 ]

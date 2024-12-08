@@ -8,7 +8,7 @@ import pandas as pd
 from datasets import Dataset, DatasetDict
 from tqdm import auto as tqdm
 
-from tklearn.config import config as tk_config
+from tklearn.config import config
 
 T_BI = Dict[str, List[Any]]
 T_BO = Union[Dict[str, List[Any]], List[Dict[str, Any]], pd.DataFrame]
@@ -27,7 +27,7 @@ class DatasetMapper:
         if isinstance(cache_dir, str):
             cache_dir = Path(cache_dir)
         elif cache_dir is None:
-            cache_dir = Path(tk_config.cache_dir) / "cache"
+            cache_dir = Path(config.cache_dir) / "cache"
         self._cache_dir = cache_dir
         self.func = func
         self.batched = batched
@@ -125,15 +125,3 @@ def map_dataset(
         verbose=verbose,
         func_kwargs=func_kwargs,
     )
-
-
-def example_2():
-    def to_upper(x: T_BI) -> T_BO:
-        return {"text": pd.Series(x["text"]).str.upper().tolist()}
-
-    dataset = Dataset.from_dict({
-        "text": ["hello world", "foo bar"],
-        "label": [0, 1],
-    })
-    out = map_dataset(dataset, to_upper)
-    print(type(out).__name__, out[:])
