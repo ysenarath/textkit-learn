@@ -79,7 +79,9 @@ class TextPreprocessor:
     ascii_arrows: OptionLabel = create_field(
         default=F.IGNORE,
         metadata={
-            "pattern": re.compile(RE_ASCII_ARROWS, re.VERBOSE | re.I | re.UNICODE),
+            "pattern": re.compile(
+                RE_ASCII_ARROWS, re.VERBOSE | re.I | re.UNICODE
+            ),
             "replacement": "[ASCII_ARROW]",
         },
     )
@@ -114,7 +116,9 @@ class TextPreprocessor:
     punctuations: OptionLabel = create_field(
         default=F.IGNORE,
         metadata={
-            "pattern": re.compile(RE_PUCTUATION, re.VERBOSE | re.I | re.UNICODE),
+            "pattern": re.compile(
+                RE_PUCTUATION, re.VERBOSE | re.I | re.UNICODE
+            ),
             "replacement": "[PUNCTUATION]",
         },
     )
@@ -157,7 +161,9 @@ class TextPreprocessor:
             self._stopwords_pattern = {}
         if self.stopwords not in self._stopwords_pattern:
             self._stopwords_pattern.clear()
-            base_pattern = "(?:" + "|".join(map(re.escape, self.stopwords)) + ")"
+            base_pattern = (
+                "(?:" + "|".join(map(re.escape, self.stopwords)) + ")"
+            )
             self._stopwords_pattern[self.stopwords] = re.compile(
                 rf"\s*\b{base_pattern}(?:'{base_pattern})?\b\s*(?=\s\b)",
                 re.VERBOSE | re.I | re.UNICODE,
@@ -174,7 +180,9 @@ class TextPreprocessor:
 
     def _preprocess(self, text: Union[str, bytes]) -> str:
         text_lang = lang.detect(text, default="en")
-        x = escape(text if isinstance(text, str) else text.decode(self.encoding))
+        x = escape(
+            text if isinstance(text, str) else text.decode(self.encoding)
+        )
         if self.uncontract and text_lang == "en":
             x = lang.en.uncontract(x)
         if self.lowercase:
