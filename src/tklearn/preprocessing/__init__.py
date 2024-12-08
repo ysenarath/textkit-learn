@@ -1,9 +1,4 @@
-from tklearn.preprocessing.annotator_v1 import (
-    KeywordAnnotator as DeprecatedKeywordAnnotator,
-)
-from tklearn.preprocessing.preprocessor import (
-    TextPreprocessor,
-)
+from tklearn.preprocessing.preprocessor import TextPreprocessor
 from tklearn.preprocessing.tokenization import (
     FunctionTokenizer,
     HuggingFaceTokenizer,
