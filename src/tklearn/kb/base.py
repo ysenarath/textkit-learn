@@ -4,7 +4,7 @@ import os
 import shutil
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, Iterable, Union
+from typing import Generator, Iterable, List, Union
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
@@ -12,7 +12,7 @@ from tqdm import auto as tqdm
 
 from tklearn import logging
 from tklearn.config import config
-from tklearn.core.triplet import TripletStore
+from tklearn.kb.triplet import TripletStore
 from tklearn.core.vocab import Vocab
 from tklearn.kb.loader import KnowledgeLoader
 from tklearn.kb.models import Base, Edge, Node
