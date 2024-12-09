@@ -16,7 +16,6 @@ from tklearn.core.triplet import TripletStore
 from tklearn.core.vocab import Vocab
 from tklearn.kb.loader import KnowledgeLoader
 from tklearn.kb.models import Base, Edge, Node
-from tklearn.utils import get_content_hash as path_checksum
 
 __all__ = [
     "KnowledgeBase",
@@ -52,19 +51,8 @@ class KnowledgeBase:
             database_name_or_path = os.path.join("default", input_path.stem)
         else:
             raise ValueError("invalid path")
-        # get checksum of the file
-        checksum = path_checksum(input_path)
         # output path with checksum
-        output_path = cache_dir / f"{database_name_or_path}-{checksum}.db"
-        # copy the database file(s) to the cache directory
-        for old_path in list(input_path.parent.glob(f"{input_path.name}*")):
-            new_path_name = f"{old_path.stem}-{checksum}{old_path.suffix}"
-            new_path = output_path.with_name(new_path_name)
-            if new_path.exists():
-                continue
-            shutil.copy(old_path, new_path)
-        if path_checksum(output_path) != checksum:
-            raise ValueError("invalid checksum")
+        output_path = cache_dir / f"{database_name_or_path}.db"
         self.path = output_path
         self.engine = create_engine(f"sqlite:///{self.path}", echo=verbose > 2)
         with self.session() as session:
@@ -139,7 +127,7 @@ class KnowledgeBase:
             pbar = tqdm.tqdm(
                 query.yield_per(batch_size),
                 total=n_total,
-                desc="Initializing Vocab",
+                desc="Building Vocabulary",
             )
             nodes = []
             for i, node in enumerate(pbar):  # this will be done in parallel
