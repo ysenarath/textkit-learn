@@ -24,6 +24,39 @@ __all__ = [
 logger = logging.get_logger(__name__)
 
 
+def get_cache_dir(base_dir: Union[Path, str, None]) -> Path:
+    if base_dir is None:
+        base_dir = Path(config.cache_dir)
+    else:
+        base_dir = Path(base_dir)
+    base_dir.mkdir(parents=True, exist_ok=True)
+    return base_dir.absolute().expanduser()
+
+
+def get_kb_path(
+    name_or_path: str | Path,
+    cache_dir: str | Path | None = None,
+    create: bool = False,
+    verbose: int = 1,
+) -> Path:
+    kb_cache_dir = get_cache_dir(cache_dir) / "kb"
+    input_path = Path(name_or_path)
+    input_path = input_path.with_name(f"{input_path.name}.db")
+    if not input_path.exists() and isinstance(name_or_path, str):
+        input_path = kb_cache_dir / f"{name_or_path}.db"
+        # create the database if it does not exist
+        if not input_path.exists() and create:
+            input_engine = create_engine(
+                f"sqlite:///{input_path}", echo=verbose > 2
+            )
+            Base.metadata.create_all(input_engine)
+    elif input_path.exists():
+        name_or_path = os.path.join("default", input_path.stem)
+    else:
+        raise ValueError("invalid path")
+    return kb_cache_dir / f"{name_or_path}.db"
+
+
 class KnowledgeBase:
     def __init__(
         self,
@@ -32,28 +65,13 @@ class KnowledgeBase:
         cache_dir: Union[Path, str, None] = None,
         verbose: int = 1,
     ):
-        if cache_dir is None:
-            cache_dir = Path(config.cache_dir) / "kb"
-        else:
-            cache_dir = Path(cache_dir)
-        cache_dir = cache_dir.absolute().expanduser()
-        input_path = Path(database_name_or_path)
-        input_path = input_path.with_name(f"{input_path.name}.db")
-        if not input_path.exists() and isinstance(database_name_or_path, str):
-            input_path = cache_dir / f"{database_name_or_path}.db"
-            # create the database if it does not exist
-            if not input_path.exists() and create:
-                input_engine = create_engine(
-                    f"sqlite:///{input_path}", echo=verbose > 2
-                )
-                Base.metadata.create_all(input_engine)
-        elif input_path.exists():
-            database_name_or_path = os.path.join("default", input_path.stem)
-        else:
-            raise ValueError("invalid path")
         # output path with checksum
-        output_path = cache_dir / f"{database_name_or_path}.db"
-        self.path = output_path
+        self.path = get_kb_path(
+            database_name_or_path,
+            cache_dir=cache_dir,
+            create=create,
+            verbose=verbose,
+        )
         self.engine = create_engine(f"sqlite:///{self.path}", echo=verbose > 2)
         with self.session() as session:
             session.execute(text("PRAGMA journal_mode=WAL"))
