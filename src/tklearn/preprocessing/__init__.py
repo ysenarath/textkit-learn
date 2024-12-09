@@ -1,3 +1,4 @@
+from tklearn.preprocessing.annotator import KeywordAnnotator
 from tklearn.preprocessing.preprocessor import TextPreprocessor
 from tklearn.preprocessing.tokenization import (
     FunctionTokenizer,
@@ -9,7 +10,7 @@ from tklearn.preprocessing.tokenization import (
 )
 
 __all__ = [
-    "DeprecatedKeywordAnnotator",
+    "KeywordAnnotator",
     "Tokenizer",
     "FunctionTokenizer",
     "WordTokenizer",
