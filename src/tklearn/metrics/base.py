@@ -30,7 +30,9 @@ __all__ = [
 
 T = TypeVar("T")
 
-_metric_states_cv: ContextVar[MetricState] = ContextVar("metric_state", default=MISSING)
+_metric_states_cv: ContextVar[MetricState] = ContextVar(
+    "metric_state", default=MISSING
+)
 
 
 class MetricVariable(Generic[T]):
@@ -148,7 +150,9 @@ class MetricState(MetricBase, Mapping[MetricBase, Dict[str, Any]]):
 
     def add_metric(self, metric: MetricBase) -> None:
         if not isinstance(metric, MetricBase):
-            bases = ", ".join(base.__name__ for base in metric.__class__.__bases__)
+            bases = ", ".join(
+                base.__name__ for base in metric.__class__.__bases__
+            )
             msg = (
                 f"expected an instance of 'MetricBase', but got "
                 f"'{metric.__class__.__name__}({bases})'"

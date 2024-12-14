@@ -9,7 +9,9 @@ def display(references, candidates, similarity_matrix):
     for idx_i, sentence1 in enumerate(references):
         print(sentence1)
         for idx_j, sentence2 in enumerate(candidates):
-            print(f" - {sentence2: <30}: {similarity_matrix[idx_i][idx_j]:.4f}")
+            print(
+                f" - {sentence2: <30}: {similarity_matrix[idx_i][idx_j]:.4f}"
+            )
         print()
 
 

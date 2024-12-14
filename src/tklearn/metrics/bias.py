@@ -80,7 +80,9 @@ def nuanced_bias_report(
         bpsn_auc, bnsp_auc = 1.0, 1.0
         # 0.0 is the default value for AEG metrics
         pos_aeg, neg_aeg = 0.0, 0.0
-        if not np.all(group_mask):  # check if there is background to compare against
+        if not np.all(
+            group_mask
+        ):  # check if there is background to compare against
             # Background Positive, Subgroup Negative (BPSN) AUC
             bpsn_labels = np.concatenate([
                 np.zeros(len(group_neg)),

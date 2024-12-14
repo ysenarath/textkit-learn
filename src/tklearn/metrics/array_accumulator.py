@@ -18,7 +18,9 @@ __all__ = [
     "ArrayAccumulator",
 ]
 
-_ArgNameType = Union[Literal["y_true", "y_pred", "sample_weight", "y_score"], str]
+_ArgNameType = Union[
+    Literal["y_true", "y_pred", "sample_weight", "y_score"], str
+]
 
 
 class ArrayAccumulator(MetricBase):
@@ -80,4 +82,6 @@ class ArrayAccumulator(MetricBase):
         return np.concatenate(self.arrays, axis=self.axis)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(name='{self.name}', axis={self.axis})"
+        return (
+            f"{self.__class__.__name__}(name='{self.name}', axis={self.axis})"
+        )

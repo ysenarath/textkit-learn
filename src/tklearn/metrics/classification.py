@@ -81,7 +81,9 @@ class AUC(MetricBase):
 
     def __init__(
         self,
-        average: Optional[Literal["micro", "macro", "samples", "weighted"]] = "macro",
+        average: Optional[
+            Literal["micro", "macro", "samples", "weighted"]
+        ] = "macro",
         max_fpr: Optional[float] = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "raise",
         labels: Optional[ArrayLike] = None,
@@ -276,7 +278,9 @@ class OptimalPRThreshold(MetricBase):
             sample_weight=sample_weight,
             drop_intermediate=self.drop_intermediate,
         )
-        optimal_idx = np.argmax(2 * precision * recall / (precision + recall + 1e-12))
+        optimal_idx = np.argmax(
+            2 * precision * recall / (precision + recall + 1e-12)
+        )
         return [
             {
                 "precision": p,
