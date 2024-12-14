@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import re
-from typing import Mapping, Union
+from typing import Iterable, Mapping, Optional
 
 from typing_extensions import Protocol, runtime_checkable
 
 __all__ = [
     "Verbalizer",
-    "RegexVerbalizer",
+    "MulticlassVerbalizer",
+    "MultilabelVerbalizer",
 ]
 
 
@@ -15,40 +18,47 @@ class Verbalizer(Protocol):
         raise NotImplementedError
 
 
-class RegexVerbalizer:
+class MulticlassVerbalizer:
+    classes: set[str]
     labels_re: re.Pattern
-    labels: set[str]
-    multilabel: bool
 
-    def __init__(self, labels: Mapping[str, str], multilabel: bool = False):
-        self.labels = set(labels)
-        labels = "|".join([
-            f"(?P<{re.escape(key)}>{token})" for key, token in labels.items()
+    def __init__(self, classes: Mapping[str, str]):
+        self.classes = set(classes)
+        classes = "|".join([
+            f"(?P<{re.escape(key)}>{token})" for key, token in classes.items()
         ])
-        self.labels_re = re.compile(labels, re.IGNORECASE)
-        self.multilabel = multilabel
+        self.labels_re = re.compile(classes, re.IGNORECASE)
 
-    def _verbalize_multilabel(self, input: str) -> list[str]:
-        pos = 0
-        m = self.labels_re.search(input, pos)
-        labels = set()
-        while m is not None:
-            for label in self.labels:
-                if m.group(label) is not None:
-                    labels.add(label)
-            m = self.labels_re.search(input, m.end())
-        return list(labels)
-
-    def _verbalize_multiclass(self, input: str) -> str:
+    def verbalize(self, input: str) -> Optional[str]:
         m = self.labels_re.search(input)
         if m is None:
             return None
-        for label in self.labels:
+        for label in self.classes:
             if m.group(label) is not None:
                 return label
         return None
 
-    def verbalize(self, input: str) -> Union[str, list[str]]:
-        if self.multilabel:
-            return self._verbalize_multilabel(input)
-        return self._verbalize_multiclass(input)
+
+class MultilabelVerbalizer:
+    classes: set[str]
+    labels_re: re.Pattern
+
+    def __init__(self, classes: Iterable[str] | Mapping[str, str]):
+        self.classes = set(classes)
+        if not isinstance(classes, Mapping):
+            classes = {label: label for label in classes}
+        classes = "|".join([
+            f"(?P<{re.escape(key)}>{token})" for key, token in classes.items()
+        ])
+        self.labels_re = re.compile(classes, re.IGNORECASE)
+
+    def verbalize(self, input: str) -> list[str]:
+        pos = 0
+        m = self.labels_re.search(input, pos)
+        labels = set()
+        while m is not None:
+            for label in self.classes:
+                if m.group(label) is not None:
+                    labels.add(label)
+            m = self.labels_re.search(input, m.end())
+        return list(labels)

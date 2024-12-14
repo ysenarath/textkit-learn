@@ -1,4 +1,8 @@
-from transformers.generation import Constraint, DisjunctiveConstraint, PhrasalConstraint
+from transformers.generation import (
+    Constraint,
+    DisjunctiveConstraint,
+    PhrasalConstraint,
+)
 
 __all__ = [
     "Constraint",
