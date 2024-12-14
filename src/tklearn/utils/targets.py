@@ -113,11 +113,15 @@ class UnknownTargetType(TargetType):
     description = "Unknown (possibly 3D array, sequence of sequences, or array of non-sequence objects)"
 
     def is_multioutput(self) -> bool:
-        msg = "cannot determine if target is multioutput for unknown target type"
+        msg = (
+            "cannot determine if target is multioutput for unknown target type"
+        )
         raise ValueError(msg)
 
     def is_continuous(self) -> bool:
-        msg = "cannot determine if target is continuous for unknown target type"
+        msg = (
+            "cannot determine if target is continuous for unknown target type"
+        )
         raise ValueError(msg)
 
 
