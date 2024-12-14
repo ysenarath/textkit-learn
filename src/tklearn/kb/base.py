@@ -4,7 +4,7 @@ import os
 import shutil
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator, Iterable, Union
+from typing import Generator, Iterable, Set, Union
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
@@ -15,7 +15,7 @@ from tklearn.config import config
 from tklearn.core.vocab import Vocab
 from tklearn.kb.loader import KnowledgeLoader
 from tklearn.kb.models import Base, Edge, Node
-from tklearn.kb.triplet import TripletStore
+from tklearn.kb.triplet import NodeIndex, TripletStore
 
 __all__ = [
     "KnowledgeBase",
@@ -77,6 +77,19 @@ class KnowledgeBase:
             session.execute(text("PRAGMA journal_mode=WAL"))
         # create index if not exists
         self.index = self._get_or_create_index()
+        self.node_index = NodeIndex(self.path.with_suffix(".node.db"))
+
+    def get_node_ids_by_label(self, label: str) -> Iterable[str]:
+        return self.label2index.get(label, set())
+
+    def _create_label2index(self) -> dict[str, Set[int]]:
+        label2index: dict[str, Set[int]] = {}
+        with self.session() as session:
+            for node in session.query(Node):
+                if node.label not in label2index:
+                    label2index[node.label] = set()
+                label2index[node.label].add(node.id)
+        return label2index
 
     def num_edges(self) -> int:
         with self.session() as session:

@@ -212,3 +212,63 @@ class TripletStore:
     def __len__(self) -> int:
         """Return the number of triplets in the store."""
         return sum(1 for _ in self.spo_db.iterator())
+
+
+class NodeIndex:
+    """A LevelDB-backed node store for storing node labels.
+
+    id2label: id -> label
+    label2id: label -> id
+    """
+
+    def __init__(self, path: str):
+        """Initialize the node store with a path to the LevelDB database."""
+        self.path = path
+        self.open()
+
+    def open(self):
+        """Open the database connection."""
+        self.db = plyvel.DB(self.path, create_if_missing=True)
+        self.id2label = self.db.prefixed_db(b"id2label:")
+        self.label2id = self.db.prefixed_db(b"label2id:")
+        return self
+
+    def close(self):
+        """Close the database connection."""
+        self.db.close()
+        self.db = None
+        self.id2label = None
+        self.label2id = None
+
+    def __enter__(self):
+        return self.open()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def _make_key(self, *parts: str) -> bytes:
+        """Create a composite key from parts."""
+        return b"\x00".join(part.encode("utf-8") for part in parts)
+
+    def add(self, label: str) -> int:
+        """Add a node to the store and return its ID."""
+        if label in self.label2id:
+            return int(self.label2id.get(label))
+        node_id = len(self.id2label)
+        self.id2label.put(str(node_id).encode("utf-8"), label.encode("utf-8"))
+        self.label2id.put(label.encode("utf-8"), str(node_id).encode("utf-8"))
+        return node_id
+
+    def get(self, node_id: int) -> str:
+        """Get the label of a node by its ID."""
+        return self.id2label.get(str(node_id).encode("utf-8")).decode("utf-8")
+
+    def get_id(self, label: str) -> Optional[int]:
+        """Get the ID of a node by its label."""
+        if label in self.label2id:
+            return int(self.label2id.get(label))
+        return None
+
+    def __len__(self) -> int:
+        """Return the number of nodes in the store."""
+        return len(self.id2label)
