@@ -34,7 +34,7 @@ class Embedding(Mapping[str, T], Generic[T]):
 
     @overload
     def set_format(
-        self, value: Literal["torch"] | Literal["pt"]
+        self, value: Literal["torch", "pt"]
     ) -> Embedding[torch.Tensor]: ...
 
     def set_format(self, format: Optional[str]) -> Embedding:
