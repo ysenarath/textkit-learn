@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import contextvars
 import copy
 from contextvars import ContextVar
 from dataclasses import MISSING
@@ -35,6 +36,29 @@ _metric_states_cv: ContextVar[MetricState] = ContextVar(
 )
 
 
+class MetricBase(abc.ABC):
+    def reset(self) -> None: ...
+
+    def update(self, **kwargs: Any) -> None: ...
+
+    @abc.abstractmethod
+    def result(self) -> Any:
+        raise NotImplementedError
+
+    def copy(self, deep: bool = True) -> MetricBase:
+        if deep:
+            return cloudpickle.loads(cloudpickle.dumps(self))
+        return copy.copy(self)
+
+    def __call__(self, **kwargs: Any) -> Any:
+        state = MetricState(self)
+        state.update(**kwargs)
+        return next(iter(state.result()))
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(...)"
+
+
 class MetricVariable(Generic[T]):
     def __set_name__(self, owner: MetricBase, name: str) -> None:
         self.name = name
@@ -60,39 +84,19 @@ class MetricVariable(Generic[T]):
         metric_state[self.name] = value
 
 
-class MetricBase(abc.ABC):
-    def reset(self) -> None: ...
-
-    def update(self, **kwargs: Any) -> None: ...
-
-    @abc.abstractmethod
-    def result(self) -> Any:
-        raise NotImplementedError
-
-    def copy(self, deep: bool = True) -> MetricBase:
-        if deep:
-            return cloudpickle.loads(cloudpickle.dumps(self))
-        return copy.copy(self)
-
-    def __call__(self, **kwargs: Any) -> Any:
-        state = MetricState(self)
-        state.update(**kwargs)
-        return next(iter(state.result()))
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(...)"
-
-
 def with_metric_context(func: T) -> T:
     @wraps(func)
     def decorator(self, *args: Any, **kwargs: Any) -> Any:
-        token = _metric_states_cv.set(self)
-        try:
-            return func(self, *args, **kwargs)
-        except Exception as e:
-            raise e
-        finally:
-            _metric_states_cv.reset(token)
+        def run_in_context() -> Any:
+            token = _metric_states_cv.set(self)
+            try:
+                return func(self, *args, **kwargs)
+            except Exception as e:
+                raise e
+            finally:
+                _metric_states_cv.reset(token)
+
+        return self._context.run(run_in_context)
 
     return decorator
 
@@ -128,9 +132,30 @@ class MetricState(MetricBase, Mapping[MetricBase, Dict[str, Any]]):
         # update states
         # this should be a ordered dictionary
         self._metric_states = WeakKeyDictionary()
+        self._context = contextvars.copy_context()
         for metric in self.metrics:
             self.add_metric(metric)
         self.reset()
+
+    def add_metric(self, metric: MetricBase) -> None:
+        if not isinstance(metric, MetricBase):
+            bases = ", ".join(
+                base.__name__ for base in metric.__class__.__bases__
+            )
+            msg = (
+                f"expected an instance of 'MetricBase', but got "
+                f"'{metric.__class__.__name__}({bases})'"
+            )
+            raise TypeError(msg)
+        if metric in self._metric_states:
+            return
+        self._metric_states[metric] = {}
+        class_ = metric.__class__
+        for class_var in dir(class_):
+            class_var_val = getattr(class_, class_var)
+            if not isinstance(class_var_val, MetricBase):
+                continue
+            self.add_metric(class_var_val)
 
     def __getitem__(self, metric: MetricBase) -> Dict[str, Any]:
         return self._metric_states[metric]
@@ -147,26 +172,6 @@ class MetricState(MetricBase, Mapping[MetricBase, Dict[str, Any]]):
 
     def __len__(self) -> int:
         return len(self._metric_states)
-
-    def add_metric(self, metric: MetricBase) -> None:
-        if not isinstance(metric, MetricBase):
-            bases = ", ".join(
-                base.__name__ for base in metric.__class__.__bases__
-            )
-            msg = (
-                f"expected an instance of 'MetricBase', but got "
-                f"'{metric.__class__.__name__}({bases})'"
-            )
-            raise TypeError(msg)
-        class_ = metric.__class__
-        for class_var in dir(class_):
-            class_var_val = getattr(class_, class_var)
-            if not isinstance(class_var_val, MetricBase):
-                continue
-            self.add_metric(class_var_val)
-        if metric in self._metric_states:
-            return
-        self._metric_states[metric] = {}
 
     @with_metric_context
     def reset(self) -> None:

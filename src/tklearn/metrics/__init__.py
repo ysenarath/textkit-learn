@@ -1,6 +1,6 @@
-from tklearn.metrics.array_accumulator import ArrayAccumulator
+from tklearn.metrics._bias import nuanced_bias_report
+from tklearn.metrics._statistical_tests import mcnemar
 from tklearn.metrics.base import MetricBase, MetricState
-from tklearn.metrics.bias import nuanced_bias_report
 from tklearn.metrics.classification import (
     AUC,
     F1,
@@ -10,8 +10,7 @@ from tklearn.metrics.classification import (
     Precision,
     Recall,
 )
-from tklearn.metrics.statistical_tests import mcnemar
-from tklearn.metrics.steps_counter import StepsCounter
+from tklearn.metrics.helpers import ArrayAccum, StepsCounter
 
 __all__ = [
     # --- Base Metrics ---
@@ -19,7 +18,7 @@ __all__ = [
     "MetricBase",
     # --- General Metrics ---
     "StepsCounter",
-    "ArrayAccumulator",
+    "ArrayAccum",
     # --- Classification Metrics ---
     "AUC",
     "Accuracy",

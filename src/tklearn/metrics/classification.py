@@ -23,8 +23,8 @@ from sklearn.metrics import (
     roc_curve,
 )
 
-from tklearn.metrics.array_accumulator import ArrayAccumulator
 from tklearn.metrics.base import MetricBase
+from tklearn.metrics.helpers import ArrayAccum
 
 __all__ = [
     "Accuracy",
@@ -38,9 +38,9 @@ __all__ = [
 
 
 class Accuracy(MetricBase):
-    y_true = ArrayAccumulator("y_true")
-    y_pred = ArrayAccumulator("y_pred")
-    sample_weight = ArrayAccumulator("sample_weight")
+    y_true = ArrayAccum("y_true")
+    y_pred = ArrayAccum("y_pred")
+    sample_weight = ArrayAccum("sample_weight")
 
     def __init__(
         self,
@@ -75,9 +75,9 @@ class Accuracy(MetricBase):
 
 
 class AUC(MetricBase):
-    y_true = ArrayAccumulator("y_true")
-    y_score = ArrayAccumulator("y_score")
-    sample_weight = ArrayAccumulator("sample_weight")
+    y_true = ArrayAccum("y_true")
+    y_score = ArrayAccum("y_score")
+    sample_weight = ArrayAccum("sample_weight")
 
     def __init__(
         self,
@@ -110,9 +110,9 @@ class AUC(MetricBase):
 
 
 class Precision(MetricBase):
-    y_true = ArrayAccumulator("y_true")
-    y_pred = ArrayAccumulator("y_pred")
-    sample_weight = ArrayAccumulator("sample_weight")
+    y_true = ArrayAccum("y_true")
+    y_pred = ArrayAccum("y_pred")
+    sample_weight = ArrayAccum("sample_weight")
 
     def __init__(
         self,
@@ -145,9 +145,9 @@ class Precision(MetricBase):
 
 
 class Recall(MetricBase):
-    y_true = ArrayAccumulator("y_true")
-    y_pred = ArrayAccumulator("y_pred")
-    sample_weight = ArrayAccumulator("sample_weight")
+    y_true = ArrayAccum("y_true")
+    y_pred = ArrayAccum("y_pred")
+    sample_weight = ArrayAccum("sample_weight")
 
     def __init__(
         self,
@@ -180,9 +180,9 @@ class Recall(MetricBase):
 
 
 class F1(MetricBase):
-    y_true = ArrayAccumulator("y_true")
-    y_pred = ArrayAccumulator("y_pred")
-    sample_weight = ArrayAccumulator("sample_weight")
+    y_true = ArrayAccum("y_true")
+    y_pred = ArrayAccum("y_pred")
+    sample_weight = ArrayAccum("sample_weight")
 
     def __init__(
         self,
@@ -215,9 +215,9 @@ class F1(MetricBase):
 
 
 class OptimalAUCThreshold(MetricBase):
-    y_true = ArrayAccumulator("y_true")
-    y_score = ArrayAccumulator("y_score")
-    sample_weight = ArrayAccumulator("sample_weight")
+    y_true = ArrayAccum("y_true")
+    y_score = ArrayAccum("y_score")
+    sample_weight = ArrayAccum("sample_weight")
 
     def __init__(
         self,
@@ -252,9 +252,9 @@ class OptimalAUCThreshold(MetricBase):
 
 
 class OptimalPRThreshold(MetricBase):
-    y_true = ArrayAccumulator("y_true")
-    y_score = ArrayAccumulator("y_score")
-    sample_weight = ArrayAccumulator("sample_weight")
+    y_true = ArrayAccum("y_true")
+    y_score = ArrayAccum("y_score")
+    sample_weight = ArrayAccum("sample_weight")
 
     def __init__(
         self,
