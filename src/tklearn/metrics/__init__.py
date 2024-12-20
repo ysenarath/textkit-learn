@@ -25,8 +25,4 @@ __all__ = [
     "Recall",
     "OptimalAUCThreshold",
     "OptimalPRThreshold",
-    # --- Bias Metrics ---
-    "nuanced_bias_report",
-    # --- Statistical Tests ---
-    "mcnemar",
 ]
