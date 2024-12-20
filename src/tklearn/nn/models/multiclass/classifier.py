@@ -5,13 +5,13 @@ from torch import nn
 from transformers.modeling_outputs import BaseModelOutput
 from typing_extensions import Literal, Protocol
 
-from tklearn.models.base import Model, ModelConfig
-from tklearn.models.multiclass.helpers import (
+from tklearn.nn.loss import TargetBasedLoss
+from tklearn.nn.models.base import Model, ModelConfig
+from tklearn.nn.models.multiclass.helpers import (
     BatchPrototypeLoss,
     CosineSimilarity,
     SequenceClassifierOutputWithPooling,
 )
-from tklearn.nn.loss import TargetBasedLoss
 from tklearn.nn.utils.preprocessing import preprocess_input, preprocess_target
 
 __all__ = [

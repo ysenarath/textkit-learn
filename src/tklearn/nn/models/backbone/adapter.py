@@ -8,7 +8,7 @@ from adapters.model_mixin import EmbeddingAdaptersWrapperMixin
 from transformers import AutoModel, AutoTokenizer, PreTrainedModel
 from transformers.modeling_outputs import BaseModelOutputWithPooling
 
-from tklearn.models.backbone.base import Backbone, BackboneConfig
+from tklearn.nn.models.backbone.base import Backbone, BackboneConfig
 
 TRANSFORMERS_INPUTS = {
     "input_ids",

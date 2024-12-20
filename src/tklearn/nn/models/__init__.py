@@ -1,5 +1,5 @@
-from tklearn.models.base import AutoModel, ModelConfig
-from tklearn.models.multiclass.classifier import (
+from tklearn.nn.models.base import AutoModel, ModelConfig
+from tklearn.nn.models.multiclass.classifier import (
     LinearLayerMulticlassClassifierConfig,
     PrototypeBasedMulticlassClassifierConfig,
 )

@@ -5,7 +5,7 @@ from typing import ClassVar
 from transformers import AutoModel, AutoTokenizer
 from transformers.modeling_outputs import BaseModelOutputWithPooling
 
-from tklearn.models.backbone.base import Backbone, BackboneConfig
+from tklearn.nn.models.backbone.base import Backbone, BackboneConfig
 
 TRANSFORMERS_INPUTS = {
     "input_ids",
