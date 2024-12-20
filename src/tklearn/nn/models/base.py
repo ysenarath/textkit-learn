@@ -6,8 +6,12 @@ from typing import ClassVar
 from nightjar import AutoModule, BaseConfig, BaseModule
 
 from tklearn.nn import Module
-from tklearn.nn.models.backbone import AutoBackbone, Backbone, BackboneConfig
-from tklearn.nn.models.backbone.base import Tokenizer
+from tklearn.nn.models.backbone import (
+    AutoBackbone,
+    Backbone,
+    BackboneConfig,
+    Tokenizer,
+)
 
 __all__ = [
     "AutoModel",

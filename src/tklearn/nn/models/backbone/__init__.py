@@ -3,6 +3,7 @@ from tklearn.nn.models.backbone.base import (
     AutoBackbone,
     Backbone,
     BackboneConfig,
+    Tokenizer,
 )
 from tklearn.nn.models.backbone.transformer import TransformerConfig
 
@@ -12,4 +13,5 @@ __all__ = [
     "BackboneConfig",
     "Backbone",
     "TransformerConfig",
+    "Tokenizer",
 ]
