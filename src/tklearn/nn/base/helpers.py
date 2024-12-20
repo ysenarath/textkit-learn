@@ -32,7 +32,8 @@ ClipGradNormType = Union[
 ]
 
 
-ModelInput, ModelOutput = TypeVar("BatchInput"), TypeVar("BatchOutput")  # noqa: E741
+ModelInput = TypeVar("BatchInput")
+ModelOutput = TypeVar("BatchOutput")
 LossLike = Union[torch.Tensor, Mapping[str, torch.Tensor], LossDict, None]
 LossFunctionType = Callable[[ModelInput, ModelOutput], LossLike]
 PostprocessorFunctionType = Callable[[ModelInput, ModelOutput], Dict[str, Any]]
