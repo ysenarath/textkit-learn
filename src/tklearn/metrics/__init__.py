@@ -1,5 +1,3 @@
-from tklearn.metrics._bias import nuanced_bias_report
-from tklearn.metrics._statistical_tests import mcnemar
 from tklearn.metrics.base import MetricBase, MetricState
 from tklearn.metrics.classification import (
     AUC,
