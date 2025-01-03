@@ -147,4 +147,4 @@ notebooks/benchmark_value_based/*
 notebooks/triplet_db/*
 notebooks/benchmark_key_only/*
 /tmp/
-/_scratch
+/scratch
