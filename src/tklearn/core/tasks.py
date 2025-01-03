@@ -2,16 +2,49 @@ from __future__ import annotations
 
 import functools
 from dataclasses import MISSING
-from typing import Any, Callable, Mapping, TypeVar
+from itertools import islice
+from typing import (
+    Any,
+    Callable,
+    Generic,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    TypeVar,
+)
 from weakref import WeakKeyDictionary
 
-from typing_extensions import ParamSpec
+import pandas as pd
+import torch
 
-P = ParamSpec("P")
 T = TypeVar("T")
+I = TypeVar("I")  # noqa: E741
 
 
-class Future:
+def validate(results: Any) -> Iterable[Any]:
+    if isinstance(results, pd.DataFrame):
+        # Pandas DataFrame
+        return results.to_dict(orient="records")
+    elif pd.api.types.is_list_like(results, allow_sets=False):
+        # lists, tuples, NumPy arrays, Pandas Series
+        return results
+    elif torch.is_tensor(results):
+        # PyTorch tensors
+        return results
+    elif isinstance(results, Mapping):
+        # assume that mapping is a dict of lists
+        key = next(iter(results.keys()))
+        N = len(results[key])
+        expected = [{} for _ in range(N)]
+        for key in results.keys():
+            for i in range(N):
+                expected[i][key] = results[key][i]
+        return expected
+    raise TypeError(f"invalid return type: {results.__class__.__name__}")
+
+
+class Future(Generic[T]):
     def __init__(self, task: LazyTask):
         self.task = task
         self._result = MISSING
@@ -22,47 +55,81 @@ class Future:
         return self._result
 
 
-class LazyTask:
-    def __init__(self, task: Callable, buffer_size: int = 32):
+class Task(Generic[I, T]):
+    def __init__(self, task: Callable[[I], T]):
         self.task = task
-        self.buffer_size = buffer_size
+
+    def __call__(self, obj: I) -> T:
+        return self.task(obj)
+
+
+class LazyTask(Task[I, T]):
+    def __init__(
+        self,
+        task: Callable[[List[I]], T],
+        batched: bool = True,
+        batch_size: Optional[int] = None,
+    ):
+        self.task = task
+        self.batched = batched
+        self.batch_size = batch_size
         self.buffer = WeakKeyDictionary()
         self.results = WeakKeyDictionary()
 
     def process(self):
-        futures = list(self.buffer.keys())
-        buffer = []
-        for future in futures:
-            obj = self.buffer.pop(future)
-            buffer.append(obj)
-        results = self.task(buffer)
-        if isinstance(results, Mapping):
-            key = next(iter(results.keys()))
-            N = len(results[key])
-            expected = [{} for _ in range(N)]
-            for key in results.keys():
-                for i in range(N):
-                    expected[i][key] = results[key][i]
-            results = expected
-        for future, result in zip(futures, results):
-            self.results[future] = result
+        if self.batched:
+            if self.batch_size is None:
+                batch_size = 32
+            else:
+                batch_size = self.batch_size
+            while self.buffer:
+                futures = list(islice(self.buffer, batch_size))
+                buffer = []
+                for future in futures:
+                    obj = self.buffer.pop(future)
+                    buffer.append(obj)
+                results = validate(self.task(buffer))
+                for future, result in zip(futures, results):
+                    self.results[future] = result
+        else:
+            if batch_size:
+                raise ValueError(
+                    "batch_size must be None for non-batched tasks"
+                )
+            for future, obj in self.buffer.items():
+                self.results[future] = self.task(obj)
 
-    def compute(self, future: Future) -> Any:
+    def compute(self, future: Future) -> T:
         if future not in self.results:
             self.process()
         return self.results.pop(future)
 
-    def __call__(self, obj: Any) -> Future:
+    def __call__(self, obj: I) -> Future[T]:
         future = Future(self)
         self.buffer[future] = obj
-        if len(self.buffer) >= self.buffer_size:
-            self.process()
         return future
 
 
-def task(task: Callable) -> Callable[[], LazyTask]:
-    @functools.wraps(task)
-    def wrapped(buffer_size: int = 32):
-        return LazyTask(task, buffer_size=buffer_size)
+def task(lazy: bool = True, batched: bool = True) -> Any:
+    def decorator(func: Any) -> Any:
+        if lazy and batched:
 
-    return wrapped
+            @functools.wraps(func)
+            def wrapped(batch_size: int = 32) -> LazyTask:
+                return LazyTask(func, batched=True, batch_size=batch_size)
+
+        elif lazy:
+
+            @functools.wraps(func)
+            def wrapped() -> LazyTask:
+                return LazyTask(func, batch_size=1)
+
+        else:
+
+            @functools.wraps(func)
+            def wrapped() -> Task:
+                return Task(func)
+
+        return wrapped
+
+    return decorator
