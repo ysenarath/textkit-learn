@@ -18,8 +18,6 @@ T_BO = Union[Dict[str, List[Any]], List[Dict[str, Any]], pd.DataFrame]
 T_I = Dict[str, Any]
 T_O = Dict[str, Any]
 
-CACHE_DIR = Path.home().absolute() / ".cache" / "tklearn"
-
 
 class DatasetMapper:
     def __init__(
@@ -31,10 +29,9 @@ class DatasetMapper:
     ):
         if isinstance(temp_dir, str):
             temp_dir = Path(temp_dir)
-        elif temp_dir is None and config is not None:
+        elif temp_dir is None:
+            # e.g., ~/.cache/tklearn/temp
             temp_dir = Path(config.cache_dir) / "temp"
-        else:
-            temp_dir = CACHE_DIR / "temp"
         self._temp_dir = temp_dir
         self.func = func
         self.batched = batched
