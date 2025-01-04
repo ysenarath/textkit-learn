@@ -18,6 +18,7 @@ from typing import (
 
 import nltk
 from datasets import Dataset, DatasetDict
+from datasets.fingerprint import Hasher
 from nltk import TweetTokenizer
 from typing_extensions import Concatenate, ParamSpec
 
@@ -71,7 +72,7 @@ class DocumentWrapper(Mapping[str, Any]):
         return f"{self.__class__.__name__}({self.data})"
 
 
-class MappingBase:
+class FieldType:
     def __getitem__(self, key: str) -> Any:
         try:
             return getattr(self, key)
@@ -82,7 +83,7 @@ class MappingBase:
         return f"{self.__class__.__name__}()"
 
 
-class Text(MappingBase):
+class Text(FieldType):
     def __init__(
         self,
         data: str,
@@ -94,6 +95,13 @@ class Text(MappingBase):
     ) -> None:
         self.type = type
         self.raw = data[column]
+        self.fingerprint = Hasher.hash((
+            self.raw,
+            preprocessor,
+            tokenizer,
+            vectorizer,
+            self.type,
+        ))
         if preprocessor:
             self._cleaned = preprocessor(self)
         else:
