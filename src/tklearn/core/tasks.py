@@ -110,26 +110,31 @@ class LazyTask(Task[I, T]):
         return future
 
 
-def task(lazy: bool = True, batched: bool = True) -> Any:
+def task(lazy: bool = True, batched: bool = True) -> Callable[[Any], Any]:
     def decorator(func: Any) -> Any:
         if lazy and batched:
 
-            @functools.wraps(func)
             def wrapped(batch_size: int = 32) -> LazyTask:
                 return LazyTask(func, batched=True, batch_size=batch_size)
 
         elif lazy:
 
-            @functools.wraps(func)
             def wrapped() -> LazyTask:
                 return LazyTask(func, batch_size=1)
 
         else:
 
-            @functools.wraps(func)
             def wrapped() -> Task:
                 return Task(func)
 
-        return wrapped
+        assigned = (
+            "__module__",
+            "__name__",
+            "__qualname__",
+            # "__doc__",
+            # "__annotations__",
+        )
+
+        return functools.wraps(func, assigned=assigned)(wrapped)
 
     return decorator
