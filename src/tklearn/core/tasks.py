@@ -110,7 +110,10 @@ class LazyTask(Task[I, T]):
         return future
 
 
-def task(lazy: bool = True, batched: bool = True) -> Callable[[Any], Any]:
+def task(func: Any | None = None, lazy: bool = True, batched: bool = True):
+    if func is not None:
+        return task()(func)
+
     def decorator(func: Any) -> Any:
         if lazy and batched:
 
@@ -134,7 +137,6 @@ def task(lazy: bool = True, batched: bool = True) -> Callable[[Any], Any]:
             # "__doc__",
             # "__annotations__",
         )
-
         return functools.wraps(func, assigned=assigned)(wrapped)
 
     return decorator
