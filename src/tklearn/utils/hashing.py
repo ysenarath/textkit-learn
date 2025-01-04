@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
-from typing import List
+from typing import Any, List, Union
 
 import xxhash
+from datasets.fingerprint import dumps
 
 __all__ = [
     "get_content_hash",
@@ -35,3 +38,15 @@ def get_content_hash(paths: str | Path | List[str | Path]) -> str:
                     for chunk in iter(lambda: f.read(4096), b""):
                         x_hash.update(chunk)
     return x_hash.hexdigest()
+
+
+def hash_bytes(value: Union[bytes, List[bytes]]) -> str:
+    value = [value] if isinstance(value, bytes) else value
+    m = xxhash.xxh64()
+    for x in value:
+        m.update(x)
+    return m.hexdigest()
+
+
+def hash(value: Any) -> str:
+    return hash_bytes(dumps(value))
