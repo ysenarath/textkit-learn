@@ -26,12 +26,6 @@ def validate(results: Any) -> Iterable[Any]:
     if isinstance(results, pd.DataFrame):
         # Pandas DataFrame
         return results.to_dict(orient="records")
-    elif pd.api.types.is_list_like(results, allow_sets=False):
-        # lists, tuples, NumPy arrays, Pandas Series
-        return results
-    elif torch.is_tensor(results):
-        # PyTorch tensors
-        return results
     elif isinstance(results, Mapping):
         # assume that mapping is a dict of lists
         key = next(iter(results.keys()))
@@ -41,6 +35,12 @@ def validate(results: Any) -> Iterable[Any]:
             for i in range(N):
                 expected[i][key] = results[key][i]
         return expected
+    elif torch.is_tensor(results):
+        # PyTorch tensors
+        return results
+    elif pd.api.types.is_list_like(results, allow_sets=False):
+        # lists, tuples, NumPy arrays, Pandas Series
+        return results
     raise TypeError(f"invalid return type: {results.__class__.__name__}")
 
 
