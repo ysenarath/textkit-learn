@@ -1,41 +1,25 @@
 from __future__ import annotations
 
+import abc
 import weakref
-from collections import deque
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generator,
-    Generic,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Protocol,
-    TypeVar,
-    runtime_checkable,
-)
+from dataclasses import MISSING, dataclass, fields
+from dataclasses import field as _field
+from shlex import quote
+from typing import Any, Generic, Mapping, Optional, TypeVar, get_origin
+from typing import get_type_hints as _get_type_hints
 
+import jmespath
 import nltk
+import torch
 from datasets import Dataset, DatasetDict
-from datasets.fingerprint import Hasher
-from nltk import TweetTokenizer
-from typing_extensions import Concatenate, ParamSpec
+from numpy import typing as nt
+from typing_extensions import dataclass_transform
 
-__all__ = [
-    "Document",
-]
+from tklearn.core.tasks import Future
 
-P = ParamSpec("P")
 T = TypeVar("T")
 
-tweet_tokenizer = TweetTokenizer()
-
-
-@runtime_checkable
-class Future(Protocol):
-    def result(self) -> Any:
-        raise NotImplementedError
+tweet_tokenizer = nltk.TweetTokenizer()
 
 
 class DocumentWrapper(Mapping[str, Any]):
@@ -72,6 +56,30 @@ class DocumentWrapper(Mapping[str, Any]):
         return f"{self.__class__.__name__}({self.data})"
 
 
+def mapped(**kwargs):
+    if kwargs is None:
+        kwargs = {}
+    return _field(
+        default=None,
+        default_factory=MISSING,
+        init=True,
+        repr=True,
+        hash=None,
+        compare=True,
+        metadata=kwargs,
+    )
+
+
+def get_type_hints(cls, globalns: Any = None, localns: Any = None):
+    types = {}
+    hints = _get_type_hints(cls, globalns=globalns, localns=localns)
+    for field in fields(cls):
+        if field.name not in hints:
+            continue
+        types[field.name] = hints[field.name]
+    return types
+
+
 class FieldType:
     def __getitem__(self, key: str) -> Any:
         try:
@@ -83,37 +91,33 @@ class FieldType:
         return f"{self.__class__.__name__}()"
 
 
+class Mapped(FieldType, Generic[T]):
+    def __new__(cls, doc: Any, field: str) -> str:
+        value = jmespath.search(field, doc)
+        return value
+
+
 class Text(FieldType):
     def __init__(
         self,
-        data: str,
-        column: str = "text",
-        preprocessor: Callable[[Text], str] | None = None,
+        doc: Any,
+        field: str,
+        preprocessor: Any = None,
         tokenizer: Any = None,
         vectorizer: Any = None,
         type: str = None,
-    ) -> None:
+    ):
+        super().__init__()
         self.type = type
-        self.raw = data[column]
-        self.fingerprint = Hasher.hash((
-            self.raw,
-            preprocessor,
-            tokenizer,
-            vectorizer,
-            self.type,
-        ))
-        if preprocessor:
-            self._cleaned = preprocessor(self)
-        else:
-            self._cleaned = self.raw
-        if tokenizer:
-            self._tokens = tokenizer(self)
-        else:
-            self._tokens = self._default_tokenizer()
-        if vectorizer:
-            self._embedding = vectorizer(self)
-        else:
-            self._embedding = None
+        self.raw: str = jmespath.search(field, doc)
+        if self.raw is None:
+            msg = f"field {field} not found in {doc}"
+            raise ValueError(msg)
+        self._cleaned: str | Future[str] = self.preprocess(preprocessor)
+        self._tokens: Any | Future = self.tokenize(tokenizer)
+        self._embedding: (
+            nt.NDArray | torch.Tensor | Future[nt.NDArray | torch.Tensor]
+        ) = self.vectorize(vectorizer)
 
     @property
     def cleaned(self) -> str:
@@ -122,7 +126,7 @@ class Text(FieldType):
         return self._cleaned
 
     @property
-    def tokens(self) -> list[str]:
+    def tokens(self) -> Any:
         if isinstance(self._tokens, Future):
             self._tokens = self._tokens.result()
         return self._tokens
@@ -133,97 +137,82 @@ class Text(FieldType):
             self._embedding = self._embedding.result()
         return self._embedding
 
-    def _default_tokenizer(self) -> list[str]:
+    def preprocess(self, preprocessor: Any = None) -> str:
+        if preprocessor is None:
+            return self.raw
+        return preprocessor(self)
+
+    def _default_tokenize(self) -> list[str]:
         return [
             tok
             for sent in nltk.sent_tokenize(self.cleaned)
             for tok in (
                 tweet_tokenizer.tokenize(sent)
-                if self.type.lower() == "tweet"
+                if self.type and self.type.lower() == "tweet"
                 else nltk.word_tokenize(sent)
             )
         ]
 
-    def __repr__(self):
-        qtext = self.raw
-        if len(qtext) > 20:
-            qtext = qtext[:17] + "..."
-        qtext = qtext.replace('"', '\\"')
-        return f'{self.__class__.__name__}("{qtext}")'
+    def tokenize(self, tokenizer: Any = None) -> list[str] | Any:
+        if tokenizer is None:
+            return self._default_tokenize()
+        return tokenizer(self)
 
-    def __str__(self):
+    def vectorize(self, vectorizer: Any = None) -> Any:
+        if vectorizer is None:
+            return None
+        return vectorizer(self)
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(raw={quote(self.raw)})"
+
+    def __str__(self) -> str:
         return self.raw
 
 
-class Field(Generic[P, T]):
-    def __init__(
-        self,
-        __func: Callable[Concatenate[Any, P], T],
+@dataclass_transform()
+class DocumentMeta(abc.ABCMeta):
+    def __new__(
+        cls,
+        __name: str,
+        __bases: tuple[type, ...],
+        __namespace: dict[str, Any],
         /,
-        *args: P.args,
-        **kwargs: P.kwargs,
+        **kwargs,
     ):
-        self.__func = __func
-        self.args = args
-        self.kwargs = kwargs
-
-    def __call__(self, data: Mapping[str, Any]) -> T:
-        return self.__func(data, *self.args, **self.kwargs)
+        obj = super().__new__(cls, __name, __bases, __namespace)
+        return dataclass(**kwargs)(obj)
 
 
-class Document(MutableMapping[str, Any]):
-    def __init__(
-        self,
-        data: Mapping[str, Any],
-        mapping: Dict[str, Any] | None = None,
-    ) -> None:
-        self.data = data
-        if mapping is None and "text" in self.data:
-            mapping = {"text": Field(Text, "text")}
-        elif mapping is None:
-            mapping = {}
-        self.mapping = mapping
-        self.cache = {}
-        deque(self[key] for key in mapping)
+class Document(Mapping, metaclass=DocumentMeta):
+    data: dict[str, Any]
 
-    @property
-    def dataset(self) -> Optional[Dataset]:
-        return getattr(self.data, "dataset", None)
-
-    def __setitem__(self, key: str, value: Any) -> None:
-        self.data[key] = value
-        # invalidate cache
-        self.cache = {}
-
-    def __delitem__(self, key: str) -> None:
-        del self.data[key]
-        # invalidate cache
-        self.cache = {}
-
-    def __getitem__(self, key: str) -> Any:
-        if key in self.mapping:
-            if key not in self.cache:
-                func = self.mapping[key]
-                self.cache[key] = func(self.data)
-            return self.cache[key]
-        return self.data[key]
+    def __post_init__(self):
+        # init fields that are not initialized
+        cls = self.__class__
+        metadata = {f.name: f.metadata for f in fields(cls)}
+        for name, type_ in get_type_hints(cls).items():
+            # args = get_args(type_)
+            type_ = get_origin(type_) or type_
+            if not issubclass(type_, FieldType):
+                continue
+            value = type_(self, **metadata[name])
+            setattr(self, name, value)
 
     def __getattr__(self, key: str) -> Any:
-        try:
-            return self[key]
-        except KeyError:
-            cls = self.__class__.__name__
-            msg = f"'{cls}' object has no attribute '{key}'"
-            raise AttributeError(msg)
+        if key in self.data:
+            return self.data[key]
+        return super().__getattr__(key)
 
-    def __iter__(self) -> Generator[str, None, None]:
-        return iter(self.data)
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
+    def __iter__(self):
+        for field in fields(self):
+            yield field.name
 
     def __len__(self) -> int:
-        return len(self.data)
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.data})"
+        return len(fields(self))
 
     @classmethod
     def from_dataset(
