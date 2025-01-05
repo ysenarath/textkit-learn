@@ -15,6 +15,11 @@ logger = logging.get_logger(__name__)
 POS_METRICS_SUFFIX = ["acc", "accuracy", "auc", "_score"]
 NEG_METRICS_SUFFIX = ["loss", "error"]
 
+if hasattr(np, "Inf"):
+    Inf = np.Inf
+else:
+    Inf = np.inf
+
 
 def get_monitor_op(mode: str, monitor: str) -> np.ufunc:
     # give preference to the mode
@@ -54,7 +59,7 @@ class EarlyStopping(Callback):
         # internal variables
         self.wait = 0
         self.stopped_epoch = 0
-        self.best = np.Inf if self.monitor_op == np.less else -np.Inf
+        self.best = Inf if self.monitor_op == np.less else -Inf
         self.best_weights = None
         self.best_epoch = 0
         self.history = []
@@ -92,7 +97,7 @@ class EarlyStopping(Callback):
     def on_train_begin(self, logs=None):
         self.wait = 0
         self.stopped_epoch = 0
-        self.best = np.Inf if self.monitor_op == np.less else -np.Inf
+        self.best = Inf if self.monitor_op == np.less else -Inf
         self.best_weights = None
         self.best_epoch = 0
         self.history = []
