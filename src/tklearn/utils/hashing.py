@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import itertools
 import os
 from pathlib import Path
 from typing import Any, List, Union
 
 import xxhash
-from datasets.fingerprint import dumps
+from datasets.utils import _dill as dill
 
 __all__ = [
     "get_content_hash",
@@ -48,5 +49,5 @@ def hash_bytes(value: Union[bytes, List[bytes]]) -> str:
     return m.hexdigest()
 
 
-def hash(value: Any) -> str:
-    return hash_bytes(dumps(value))
+def hash(value: Any, *args: Any) -> str:
+    return hash_bytes(map(dill.dumps, itertools.chain([value], args)))
