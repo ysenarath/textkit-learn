@@ -30,8 +30,7 @@ class AutoModel(AutoModule):
         approach = super().__new__(cls, config)
         if not isinstance(approach, Model):
             msg = (
-                f"expected {Model.__name__}, "
-                f"got {approach.__class__.__name__}"
+                f"expected {Model.__name__}, got {approach.__class__.__name__}"
             )
             raise TypeError(msg)
         return approach
