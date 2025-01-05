@@ -68,10 +68,8 @@ class FileCache:
 
     def load(self, fingerprint: str) -> Any:
         path = self._get_path(fingerprint)
-        if path.exists():
-            with path.open("rb") as f:
-                return pickle.load(f)
-        return None
+        with path.open("rb") as f:
+            return pickle.load(f)
 
     def exists(self, fingerprint: str) -> bool:
         return self._get_path(fingerprint).exists()
@@ -88,7 +86,6 @@ class FileCache:
         Returns number of files removed."""
         current_time = time.time()
         cleaned = 0
-
         # Find all .tmp files recursively
         for tmp_file in Path(self.temp_dir).rglob("*.tmp"):
             try:
@@ -107,5 +104,10 @@ class FileCache:
                         cleaned += 1
             except OSError:
                 continue
-
         return cleaned
+
+    def __getitem__(self, key: str) -> Any:
+        return self.load(key)
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self.dump(value, fingerprint=key)
