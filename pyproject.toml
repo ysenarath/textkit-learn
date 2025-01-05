@@ -36,7 +36,7 @@ dependencies = [
     "torch",
     "werkzeug",
     "pyarrow",
-    "transformers",
+    "transformers~=4.45.2",
     "datasets",
     "evaluate",
     "accelerate",
@@ -45,6 +45,12 @@ dependencies = [
     "hnswlib",
     "flashtext",
     "langdetect",
+    "nightjar",
+    "omegaconf",
+    "tabulate",
+    "ipywidgets",
+    "seaborn",
+    "adapters~=1.0.1",
 ]
 dynamic = ["version"]
 
