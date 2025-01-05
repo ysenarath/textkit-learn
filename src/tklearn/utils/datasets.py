@@ -31,7 +31,7 @@ class DatasetMapper:
             temp_dir = Path(temp_dir)
         elif temp_dir is None:
             # e.g., ~/.cache/tklearn/temp
-            temp_dir = Path(config.cache_dir) / "temp"
+            temp_dir = Path(config.temp_dir)
         self._temp_dir = temp_dir
         self.func = func
         self.batched = batched
