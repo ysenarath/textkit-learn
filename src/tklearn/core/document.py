@@ -22,7 +22,7 @@ T = TypeVar("T")
 tweet_tokenizer = nltk.TweetTokenizer()
 
 
-class DocumentWrapper(Mapping[str, Any]):
+class DocumentWrapperForDataset(Mapping[str, Any]):
     def __init__(
         self,
         dataset: Dataset | DatasetDict,
@@ -221,4 +221,4 @@ class Document(Mapping, metaclass=DocumentMeta):
         idx: int,
         split: Optional[str] = None,
     ) -> "Document":
-        return cls(DocumentWrapper(dataset, idx, split=split))
+        return cls(DocumentWrapperForDataset(dataset, idx, split=split))
