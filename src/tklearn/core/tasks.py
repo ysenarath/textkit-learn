@@ -18,6 +18,9 @@ from weakref import WeakKeyDictionary
 import pandas as pd
 import torch
 
+from tklearn.utils import hashing
+from tklearn.utils.cache import FileCache
+
 T = TypeVar("T")
 I = TypeVar("I")  # noqa: E741
 
@@ -45,8 +48,9 @@ def validate(results: Any) -> Iterable[Any]:
 
 
 class Future(Generic[T]):
-    def __init__(self, task: LazyTask):
+    def __init__(self, task: LazyTask, fingerprint: str):
         self.task = task
+        self.fingerprint = fingerprint
         self._result = MISSING
 
     def result(self) -> T:
@@ -67,14 +71,17 @@ class LazyTask(Task[I, T]):
     def __init__(
         self,
         task: Callable[[List[I]], T],
-        batched: bool = True,
+        batched: bool = False,
         batch_size: Optional[int] = None,
+        cached: bool = False,
     ):
         self.task = task
         self.batched = batched
         self.batch_size = batch_size
         self.buffer = WeakKeyDictionary()
         self.results = WeakKeyDictionary()
+        self.cache = FileCache() if cached else None
+        self.fingerprint = hashing.hash(self)
 
     def process(self):
         if self.batched:
@@ -92,7 +99,7 @@ class LazyTask(Task[I, T]):
                 for future, result in zip(futures, results):
                     self.results[future] = result
         else:
-            if batch_size:
+            if self.batch_size:
                 raise ValueError(
                     "batch_size must be None for non-batched tasks"
                 )
@@ -100,43 +107,81 @@ class LazyTask(Task[I, T]):
                 self.results[future] = self.task(obj)
 
     def compute(self, future: Future) -> T:
-        if future not in self.results:
-            self.process()
-        return self.results.pop(future)
+        try:
+            if not self.cache:
+                # proceed to computation
+                raise FileNotFoundError
+            result = self.cache.load(future.fingerprint)
+            self.buffer.pop(future)
+        except FileNotFoundError:
+            if future not in self.results:
+                self.process()
+            result = self.results.pop(future)
+            if self.cache:
+                self.cache.dump(
+                    result,
+                    fingerprint=future.fingerprint,
+                )
+        return result
 
     def __call__(self, obj: I) -> Future[T]:
-        future = Future(self)
+        # take fingerprint of obj and task
+        if self.cache:
+            fingerprint = hashing.hash(self.fingerprint, obj)
+        else:
+            fingerprint = None
+        future = Future(self, fingerprint=fingerprint)
         self.buffer[future] = obj
         return future
 
+    def __getstate__(self) -> dict:
+        state = self.__dict__.copy()
+        state.pop("buffer", None)
+        state.pop("results", None)
+        state.pop("cache", None)
+        state.pop("fingerprint", None)
+        state["cached"] = self.cache is not None
+        return state
 
-def task(func: Any | None = None, lazy: bool = True, batched: bool = True):
+    def __setstate__(self, state: dict):
+        cached = state.pop("cached")
+        self.__dict__.update(state)
+        self.buffer = WeakKeyDictionary()
+        self.results = WeakKeyDictionary()
+        self.cache = FileCache() if cached else None
+        self.fingerprint = hashing.hash(self)
+
+
+def task(
+    func: Any | None = None,
+    lazy: bool = True,
+    batched: bool = True,
+    cached: bool = False,
+) -> Any:
     if func is not None:
         return task()(func)
 
     def decorator(func: Any) -> Any:
-        if lazy and batched:
+        if batched:
+            if not lazy:
+                raise ValueError("batched tasks must be lazy")
 
             def wrapped(batch_size: int = 32) -> LazyTask:
-                return LazyTask(func, batched=True, batch_size=batch_size)
+                return LazyTask(
+                    func, batched=True, batch_size=batch_size, cached=cached
+                )
 
         elif lazy:
 
             def wrapped() -> LazyTask:
-                return LazyTask(func, batch_size=1)
+                return LazyTask(func, cached=cached)
 
         else:
 
             def wrapped() -> Task:
                 return Task(func)
 
-        assigned = (
-            "__module__",
-            "__name__",
-            "__qualname__",
-            # "__doc__",
-            # "__annotations__",
-        )
+        assigned = ("__module__", "__name__", "__qualname__")
         return functools.wraps(func, assigned=assigned)(wrapped)
 
     return decorator
