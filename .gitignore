@@ -148,3 +148,4 @@ notebooks/triplet_db/*
 notebooks/benchmark_key_only/*
 /tmp/
 /scratch
+/resources/
