@@ -75,7 +75,7 @@ class KnowledgeBasedTokenizer:
         s = s.translate(self.punctrans)
         # remove all digits (by checking if each character is a digit)
         s = "".join([i for i in s if not i.isdigit()])
-        # remove all stopwords
+        # tokenize
         tokens = word_tokenize(s)
         # lemmatize
         tokens = [
@@ -107,12 +107,44 @@ class KnowledgeBasedTokenizer:
                     for key, value in current_entities.items():
                         entities[key].update(value)
                     break
+                if k in self.stopwords:
+                    # do not match stopwords
+                    continue
                 matches = self.triplets.get(k)
                 if matches is None:
                     # may be we found a prefix
                     continue
                 for match in matches:
-                    for edge in pickle.loads(match):
+                    # edges is the set of tuples
+                    edges = pickle.loads(match)
+                    # visited will help to avoid cycles
+                    visited = set()
+                    edges = {(0, edge) for edge in edges}
+                    while len(edges) > 0:
+                        depth, edge = edges.pop()
+                        # same edge may only be visited once
+                        if edge in visited:
+                            continue
+                        # mark the edge as visited
+                        visited.add(edge)
+                        # if the edge is a FormOf edge
+                        if edge[1] in {"FormOf"}:
+                            if depth > 0:
+                                # only look at forms of one hop away
+                                continue
+                            # extend the edges with the triplets of the entity
+                            extended_matches = self.triplets.get(edge[2])
+                            if extended_matches is None:
+                                continue
+                            for extended_match in extended_matches:
+                                extended_edges = pickle.loads(extended_match)
+                                edges.update({
+                                    (depth + 1, e) for e in extended_edges
+                                })
+                            continue
+                        # go to the next edge if the edge is not IsA or HasContext
+                        if edge[1] not in {"IsA", "HasContext"}:
+                            continue
                         current_entities[edge].update(
                             range(
                                 offsets[tokens[i][0]][0],
@@ -125,11 +157,21 @@ class KnowledgeBasedTokenizer:
         aug_text = text
         aug_entities = defaultdict(set)
         aug_entities.update(entities)
+        # augmented is a mapping from the triplet representation
+        #   to the character indices
+        # it helps to avoid duplicating the same entity across
+        #   different subjects of the sentence
+        augmented = {}
         for triplet, _ in entities.items():
             # +1 is for the space
-            start = len(aug_text) + 1
-            aug_text += f" {triplet[1]} {triplet[2]}"
-            end = len(aug_text)
+            triplet_repr = f" {triplet[1]} {triplet[2]}"
+            if triplet_repr not in augmented:
+                start = len(aug_text) + 1
+                aug_text += triplet_repr
+                end = len(aug_text)
+                augmented[triplet_repr] = (start, end)
+            else:
+                start, end = augmented[triplet_repr]
             # j is the character index of the triplet/entity
             aug_entities[triplet].update(range(start, end + 1))
         return aug_text, aug_entities
