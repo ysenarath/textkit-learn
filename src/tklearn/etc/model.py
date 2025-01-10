@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import warnings
 from typing import Any, Tuple
 
@@ -19,6 +21,20 @@ class AutoKnowledgeBasedModel(torch.nn.Module):
             )
         self.base_model.get_extended_attention_mask = (
             self.get_extended_attention_mask
+        )
+
+    @property
+    def config(self) -> Any:
+        return self.base_model.config
+
+    def resize_token_embeddings(
+        self,
+        new_num_tokens: int | None = None,
+        pad_to_multiple_of: int | None = None,
+    ) -> None:
+        self.base_model.resize_token_embeddings(
+            new_num_tokens=new_num_tokens,
+            pad_to_multiple_of=pad_to_multiple_of,
         )
 
     @classmethod
