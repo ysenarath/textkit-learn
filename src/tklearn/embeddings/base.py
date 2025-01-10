@@ -9,6 +9,7 @@ from fasttext.FastText import _FastText as FastText
 from nightjar import AutoModule, BaseConfig, BaseModule
 
 from tklearn import config
+from tklearn.utils.cache import lru_cache
 
 __all__ = [
     "EmbeddingConfig",
@@ -103,6 +104,7 @@ class Embedding(BaseModule, Mapping[str, np.ndarray]):
         with open(path.with_suffix(".word_to_index.json"), "w") as f:
             json.dump(self.word_to_index, f)
 
+    @lru_cache(maxsize=None)
     def get_word_vector(self, word: str) -> np.ndarray:
         if self.model:
             return self.model.get_word_vector(word)
