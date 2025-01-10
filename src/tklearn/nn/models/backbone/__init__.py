@@ -5,6 +5,9 @@ from tklearn.nn.models.backbone.base import (
     BackboneConfig,
     Tokenizer,
 )
+from tklearn.nn.models.backbone.knowledge import (
+    KnowledgeBasedTransformerConfig,
+)
 from tklearn.nn.models.backbone.transformer import TransformerConfig
 
 __all__ = [
@@ -14,4 +17,5 @@ __all__ = [
     "Backbone",
     "TransformerConfig",
     "Tokenizer",
+    "KnowledgeBasedTransformerConfig",
 ]
