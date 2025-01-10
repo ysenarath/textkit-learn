@@ -15,20 +15,19 @@ import tqdm
 from nltk.corpus import stopwords as sw
 from nltk.corpus import wordnet as wn
 from nltk.tokenize import word_tokenize
-from scipy.spatial.distance import cdist
 from transformers import AutoTokenizer, PreTrainedModel, PreTrainedTokenizer
 from typing_extensions import Self
 
-from tklearn.embeddings import AutoEmbedding, Embedding
+from tklearn.embeddings import AutoEmbedding
 from tklearn.etc.helpers import SubwordDetector
 from tklearn.utils.lexrank import degree_centrality_scores
 from tklearn.utils.trie import BytesTrie
 
 __all__ = ["KnowledgeBasedTokenizer"]
 
-nltk.download("wordnet", quiet=True)
-nltk.download("punkt_tab", quiet=True)
-nltk.download("stopwords", quiet=True)
+nltk.download("wordnet")
+nltk.download("punkt_tab")
+nltk.download("stopwords")
 
 DEFAULT_TOP_K = 3
 
@@ -39,7 +38,7 @@ class KnowledgeBasedTokenizer:
     punctrans: str
     stopwords: set
     subword_detector: SubwordDetector
-    embedding: Embedding
+    embedding: AutoEmbedding
 
     def __init__(self):
         raise NotImplementedError
@@ -130,11 +129,10 @@ class KnowledgeBasedTokenizer:
         ]
         return " ".join(tokens).strip()
 
-    def query(
-        self, encodings: dict, index: int
-    ) -> Dict[Tuple[str, str, str], set]:
-        input_ids = encodings["input_ids"][index]
-        offsets = encodings["offset_mapping"][index]
+    def query(self, text: str) -> Dict[Tuple[str, str, str], set]:
+        encoding = self.tokenizer(text, return_offsets_mapping=True)
+        input_ids = encoding["input_ids"]
+        offsets = encoding["offset_mapping"]
         local_triples = defaultdict(set)
         tokens: List[Tuple[int, str]] = self.convert_ids_to_tokens(
             input_ids,
@@ -260,9 +258,8 @@ class KnowledgeBasedTokenizer:
         texts = [text] if isinstance(text, str) else text
         del text
         augmented = ([], [])
-        encodings = self.tokenizer(texts, return_offsets_mapping=True)
-        for i, text in enumerate(texts):
-            triples = self.query(encodings, i)
+        for text in texts:
+            triples = self.query(text)
             triples = self.filter(triples, top_k=top_k)
             aug_start = len(text)
             aug_text, aug_triples = self.augment(text, triples)
@@ -276,10 +273,9 @@ class KnowledgeBasedTokenizer:
             return_offsets_mapping=True,
         )
         visibility_mask = []
-        offset_mapping = encodings["offset_mapping"].cpu().numpy()
-        for x in range(len(texts)):
-            aug_start, aug_triples = augmented[1][x]
-            offsets = offset_mapping[x]
+        for i in range(len(texts)):
+            aug_start, aug_triples = augmented[1][i]
+            offsets = encodings["offset_mapping"][0]
             num_tokens = len(offsets)
             token_triples = self.get_entites_per_token(offsets, aug_triples)
             # visibility matrix
@@ -287,8 +283,8 @@ class KnowledgeBasedTokenizer:
             for i in range(num_tokens):
                 for j in range(num_tokens):
                     if (
-                        offsets[j][0] <= aug_start
-                        and offsets[i][1] <= aug_start
+                        offsets[j][0].item() <= aug_start
+                        and offsets[i][1].item() <= aug_start
                     ):
                         M[i][j] = 1
                         continue
@@ -340,15 +336,25 @@ class KnowledgeBasedTokenizer:
     def get_scores(
         self, triples: Dict[Tuple[str, str, str], set]
     ) -> List[Tuple[str, int]]:
+        vectors = {}
         vocab = set()
         for s, v, o in triples.keys():
             vocab.update([s, o])
         vocab = list(vocab)
-        ndim = self.embedding.shape[1]
-        vectors = np.zeros((len(vocab), ndim))
+        for term in vocab:
+            vectors[term] = self.embedding.get_word_vector(term)
+        similarity_matrix = np.zeros((len(vocab), len(vocab)))
         for i, term in enumerate(vocab):
-            vectors[i] = self.embedding.get_word_vector(term)
-        similarity_matrix = 1 - cdist(vectors, vectors, metric="cosine")
+            for j, other_term in enumerate(vocab):
+                if term == other_term:
+                    continue
+                a, b = vectors[term], vectors[other_term]
+                denom = np.linalg.norm(a) * np.linalg.norm(b)
+                if denom == 0:
+                    s = 0
+                else:
+                    s = np.dot(a, b) / (denom)
+                similarity_matrix[i, j] = s
         try:
             scores = degree_centrality_scores(similarity_matrix, threshold=0.1)
         except ValueError:
