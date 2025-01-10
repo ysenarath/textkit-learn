@@ -1,12 +1,23 @@
 from __future__ import annotations
 
+import abc
 import json
+import warnings
 from pathlib import Path
-from typing import Any, ClassVar, Dict, Iterable, Mapping, Optional, Union
+from typing import (
+    ClassVar,
+    Dict,
+    Iterable,
+    Mapping,
+    Optional,
+    Protocol,
+    Union,
+    runtime_checkable,
+)
 
 import numpy as np
-from fasttext.FastText import _FastText as FastText
 from nightjar import AutoModule, BaseConfig, BaseModule
+from numpy.typing import ArrayLike
 
 from tklearn import config
 from tklearn.utils.cache import lru_cache
@@ -43,11 +54,26 @@ class AutoEmbedding(AutoModule):
         return cls(config)
 
 
-class Embedding(BaseModule, Mapping[str, np.ndarray]):
+@runtime_checkable
+class EmbeddingModel(Protocol):
+    def get_word_vector(self, word: str) -> np.ndarray: ...
+
+
+class BaseEmbedding(Mapping[str, np.ndarray], abc.ABC):
+    def load(self) -> Dict[str, ArrayLike]:
+        """Load resource."""
+        raise NotImplementedError
+
+    def get_model(self) -> EmbeddingModel:
+        """Return the model."""
+        raise NotImplementedError
+
+
+class Embedding(BaseModule, BaseEmbedding):
     config: EmbeddingConfig
     word_to_index: Optional[Dict[str, int]] = None
     vectors: Optional[np.ndarray] = None
-    model: Optional[FastText] = None
+    model: Optional[EmbeddingModel] = None
 
     def __post_init__(self) -> None:
         cache_path = (
@@ -65,17 +91,16 @@ class Embedding(BaseModule, Mapping[str, np.ndarray]):
             self._from_dict(mapping)
             self._dump(cache_path)
         try:
-            self.model = self.get_model()
+            model = self.get_model()
+            if model and not isinstance(model, EmbeddingModel):
+                warnings.warn(
+                    f"{model!r} is not an instance of EmbeddingModel",
+                    UserWarning,
+                )
+                raise NotImplementedError
+            self.model = model
         except NotImplementedError:
             self.model = None
-
-    def load(self) -> Dict[str, Any]:
-        """Load resource."""
-        raise NotImplementedError
-
-    def get_model(self) -> Any:
-        """Return the model."""
-        raise NotImplementedError
 
     def _load(self, path: Path | str) -> Embedding:
         path = Path(path)
@@ -104,14 +129,14 @@ class Embedding(BaseModule, Mapping[str, np.ndarray]):
         with open(path.with_suffix(".word_to_index.json"), "w") as f:
             json.dump(self.word_to_index, f)
 
+    def __getitem__(self, key: str) -> np.ndarray:
+        return self.vectors[self.word_to_index[key]]
+
     @lru_cache(maxsize=None)
     def get_word_vector(self, word: str) -> np.ndarray:
         if self.model:
             return self.model.get_word_vector(word)
         return self[word]
-
-    def __getitem__(self, key: str) -> np.ndarray:
-        return self.vectors[self.word_to_index[key]]
 
     def __iter__(self) -> Iterable[str]:
         return iter(self.word_to_index)
