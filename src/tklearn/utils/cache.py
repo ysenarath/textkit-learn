@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import functools
 import os
 import pickle
 import time
 import uuid
+import weakref
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +15,28 @@ from tklearn.utils import hashing
 __all__ = [
     "FileCache",
 ]
+
+
+@functools.wraps(functools.lru_cache, assigned=())
+def lru_cache(*args, **kwargs):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapped_func(self, *method_args, **method_kwargs):
+            # We're storing the wrapped method inside the instance. If we had
+            # a strong reference to self the instance would never die.
+            self_weak = weakref.ref(self)
+
+            @functools.wraps(func)
+            @functools.lru_cache(*args, **kwargs)
+            def cached_method(*args, **kwargs):
+                return func(self_weak(), *args, **kwargs)
+
+            setattr(self, func.__name__, cached_method)
+            return cached_method(*method_args, **method_kwargs)
+
+        return wrapped_func
+
+    return decorator
 
 
 class FileCache:
