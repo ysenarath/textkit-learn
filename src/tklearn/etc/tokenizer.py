@@ -169,7 +169,7 @@ class KnowledgeBasedTokenizer:
                 # special token or subword
                 i += 1
                 continue
-            token_triples = defaultdict(set)
+            phrase_triples = defaultdict(set)
             add_to_i = 1
             for j in range(i + 1, len(tokens) + 1):
                 k = self.convert_tokens_to_string([i[1] for i in tokens[i:j]])
@@ -181,7 +181,7 @@ class KnowledgeBasedTokenizer:
                     # did not find a prefix
                     # no need to explore further
                     # first add the current triples to the local triples
-                    for key, value in token_triples.items():
+                    for key, value in phrase_triples.items():
                         local_triples[key].update(value)
                     add_to_i = j - i - 1
                     break
@@ -194,7 +194,7 @@ class KnowledgeBasedTokenizer:
                     continue
                 # there are matches longer than the current token sequence
                 #   we need to update the token triples
-                token_triples.clear()
+                phrase_triples.clear()
                 for match in matches:
                     # edges is the set of tuples
                     edges = self.load_pickled_tuple(match)
@@ -228,7 +228,7 @@ class KnowledgeBasedTokenizer:
                         # go to the next edge if the edge is not IsA or HasContext
                         if edge[1] not in {"IsA", "HasContext"}:
                             continue
-                        token_triples[edge].update(
+                        phrase_triples[edge].update(
                             range(
                                 offsets[tokens[i][0]][0],
                                 offsets[tokens[j - 1][0]][1],
