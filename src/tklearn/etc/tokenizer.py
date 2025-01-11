@@ -35,7 +35,6 @@ DEFAULT_TOP_K = 3
 
 class KnowledgeBasedTokenizer:
     tokenizer: PreTrainedTokenizer
-    triplets: BytesTrie
     punctrans: str
     stopwords: set
     subword_detector: SubwordDetector
@@ -52,7 +51,6 @@ class KnowledgeBasedTokenizer:
         self.tokenizer = AutoTokenizer.from_pretrained(
             pretrained_model_name_or_path
         )
-        self.triplets = None
         self.punctrans = str.maketrans("", "", string.punctuation)
         self.stopwords = set(sw.words("english"))
         # has the tokenizer been created?
@@ -60,6 +58,30 @@ class KnowledgeBasedTokenizer:
         self.subword_detector = SubwordDetector(self.tokenizer)
         self.embedding = AutoEmbedding.from_config({"identifier": "fasttext"})
         return self
+
+    @property
+    def triplets(self) -> BytesTrie:
+        triples = getattr(self, "_triplets", None)
+        if triples is None:
+            raise AttributeError("triplets have not been set")
+        return triples
+
+    @triplets.setter
+    def triplets(self, value: BytesTrie):
+        self._triplets = value
+        try:
+            self.load_pickled_tuple(b"")
+        except KeyError:
+            pass
+
+    def load_pickled_tuple(self, key: bytes) -> List[Tuple[str, str, str]]:
+        if not hasattr(self, "_pickle_cache"):
+            cache = {}
+            for k in self.triplets.keys():
+                for triple in self.triplets.get(k):
+                    cache[triple] = pickle.loads(triple)
+            self._pickle_cache = cache
+        return self._pickle_cache[key]
 
     def load_triples(self, path: str | Path) -> None:
         path = Path(path)
@@ -91,7 +113,7 @@ class KnowledgeBasedTokenizer:
         new_tokens = set()
         for k in self.triplets.keys():
             for triple in self.triplets.get(k):
-                for _, p, _ in pickle.loads(triple):
+                for _, p, _ in self.load_pickled_tuple(triple):
                     new_tokens.add(p)
         vocab = set(self.tokenizer.get_vocab().keys())
         new_tokens = new_tokens - vocab
@@ -103,14 +125,14 @@ class KnowledgeBasedTokenizer:
         self, ids: List[int], skip_special_tokens: bool = True
     ) -> List[Tuple[int, str]]:
         tokens = []
-        for i, index in enumerate(ids):
-            index = int(index)
-            if skip_special_tokens and index in self.tokenizer.all_special_ids:
+        for i, id_ in enumerate(ids):
+            id_ = int(id_)
+            if skip_special_tokens and id_ in self.tokenizer.all_special_ids:
                 continue
-            if index in getattr(self.tokenizer, "_added_tokens_decoder", {}):
-                content = self.tokenizer._added_tokens_decoder[index].content
+            if id_ in getattr(self.tokenizer, "_added_tokens_decoder", {}):
+                content = self.tokenizer._added_tokens_decoder[id_].content
             else:
-                content = self.tokenizer._convert_id_to_token(index)
+                content = self.tokenizer._convert_id_to_token(id_)
             tokens.append((i, content))
         return tokens
 
@@ -175,7 +197,7 @@ class KnowledgeBasedTokenizer:
                 token_triples.clear()
                 for match in matches:
                     # edges is the set of tuples
-                    edges = pickle.loads(match)
+                    edges = self.load_pickled_tuple(match)
                     # visited will help to avoid cycles
                     visited = set()
                     edges = {(0, edge) for edge in edges}
@@ -196,7 +218,9 @@ class KnowledgeBasedTokenizer:
                             if extended_matches is None:
                                 continue
                             for extended_match in extended_matches:
-                                extended_edges = pickle.loads(extended_match)
+                                extended_edges = self.load_pickled_tuple(
+                                    extended_match
+                                )
                                 edges.update({
                                     (depth + 1, e) for e in extended_edges
                                 })
