@@ -65,7 +65,10 @@ class KnowledgeBasedTokenizer:
         path = Path(path)
         cache_path = path.with_suffix(".marisa")
         if cache_path.exists():
-            self.triplets = BytesTrie().mmap(str(cache_path))
+            # self.triplets = BytesTrie().mmap(str(cache_path))
+            triplets = BytesTrie()
+            triplets.load(str(cache_path))
+            self.triplets = triplets
             return
         triplets = defaultdict(set)
         with open(path, "r") as f:
@@ -136,18 +139,16 @@ class KnowledgeBasedTokenizer:
         input_ids = encodings["input_ids"][index]
         offsets = encodings["offset_mapping"][index]
         local_triples = defaultdict(set)
-        tokens: List[Tuple[int, str]] = self.convert_ids_to_tokens(
-            input_ids,
-            skip_special_tokens=True,
-        )
+        tokens = self.convert_ids_to_tokens(input_ids)
         i = 0
-        while i < len(tokens):
+        while i < len(tokens):  # for each instance
             start_token = tokens[i][1]
             if self.subword_detector.is_prefix(start_token, i == 0):
                 # special token or subword
                 i += 1
                 continue
             token_triples = defaultdict(set)
+            add_to_i = 1
             for j in range(i + 1, len(tokens) + 1):
                 k = self.convert_tokens_to_string([i[1] for i in tokens[i:j]])
                 k = self.preprocess(k)
@@ -160,6 +161,7 @@ class KnowledgeBasedTokenizer:
                     # first add the current triples to the local triples
                     for key, value in token_triples.items():
                         local_triples[key].update(value)
+                    add_to_i = j - i - 1
                     break
                 if k in self.stopwords:
                     # do not match stopwords
@@ -208,7 +210,7 @@ class KnowledgeBasedTokenizer:
                                 offsets[tokens[j - 1][0]][1],
                             )
                         )
-            i += 1
+            i += add_to_i
         return local_triples
 
     def augment(self, text: str, triples: Dict[Tuple[str, str, str], set]):
@@ -277,9 +279,9 @@ class KnowledgeBasedTokenizer:
         )
         visibility_mask = []
         offset_mapping = encodings["offset_mapping"].cpu().numpy()
-        for x in range(len(texts)):
-            aug_start, aug_triples = augmented[1][x]
-            offsets = offset_mapping[x]
+        for index in range(len(texts)):
+            aug_start, aug_triples = augmented[1][index]
+            offsets = offset_mapping[index]
             num_tokens = len(offsets)
             token_triples = self.get_entites_per_token(offsets, aug_triples)
             # visibility matrix
