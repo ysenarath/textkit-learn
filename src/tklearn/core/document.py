@@ -103,6 +103,7 @@ class Text(FieldType):
         doc: Any,
         field: str,
         preprocessor: Any = None,
+        encoder: Any = None,
         tokenizer: Any = None,
         vectorizer: Any = None,
         type: str = None,
@@ -115,6 +116,7 @@ class Text(FieldType):
             raise ValueError(msg)
         self._cleaned: str | Future[str] = self.preprocess(preprocessor)
         self._tokens: Any | Future = self.tokenize(tokenizer)
+        self._encoding: Any | Future = self.encode(encoder)
         self._embedding: (
             nt.NDArray | torch.Tensor | Future[nt.NDArray | torch.Tensor]
         ) = self.vectorize(vectorizer)
@@ -130,6 +132,12 @@ class Text(FieldType):
         if isinstance(self._tokens, Future):
             self._tokens = self._tokens.result()
         return self._tokens
+
+    @property
+    def encoding(self) -> Any:
+        if isinstance(self._encoding, Future):
+            self._encoding = self._encoding.result()
+        return self._encoding
 
     @property
     def embedding(self) -> Any:
@@ -157,6 +165,11 @@ class Text(FieldType):
         if tokenizer is None:
             return self._default_tokenize()
         return tokenizer(self)
+
+    def encode(self, encoder: Any = None) -> Any:
+        if encoder is None:
+            return None
+        return encoder(self)
 
     def vectorize(self, vectorizer: Any = None) -> Any:
         if vectorizer is None:
