@@ -32,6 +32,9 @@ nltk.download("stopwords", quiet=True)
 
 DEFAULT_TOP_K = 3
 
+# TODO:
+#  - set notation may be replaced with intervaltree
+
 
 class KnowledgeBasedTokenizer:
     tokenizer: PreTrainedTokenizer
@@ -70,11 +73,11 @@ class KnowledgeBasedTokenizer:
     def triplets(self, value: BytesTrie):
         self._triplets = value
         try:
-            self.load_pickled_tuple(b"")
+            self.load_triplet(b"")
         except KeyError:
             pass
 
-    def load_pickled_tuple(self, key: bytes) -> List[Tuple[str, str, str]]:
+    def load_triplet(self, key: bytes) -> List[Tuple[str, str, str]]:
         if not hasattr(self, "_pickle_cache"):
             cache = {}
             for k in self.triplets.keys():
@@ -113,7 +116,7 @@ class KnowledgeBasedTokenizer:
         new_tokens = set()
         for k in self.triplets.keys():
             for triple in self.triplets.get(k):
-                for _, p, _ in self.load_pickled_tuple(triple):
+                for _, p, _ in self.load_triplet(triple):
                     new_tokens.add(p)
         vocab = set(self.tokenizer.get_vocab().keys())
         new_tokens = new_tokens - vocab
@@ -140,6 +143,8 @@ class KnowledgeBasedTokenizer:
         return self.tokenizer.convert_tokens_to_string(tokens)
 
     def preprocess(self, text: str) -> str:
+        # this could have drastic effects on the input sentence
+        #   therefore should not be used on the full text
         s = text.lower()
         # remove all consecative spaces
         s = " ".join(s.split())
@@ -180,9 +185,6 @@ class KnowledgeBasedTokenizer:
                 if not self.triplets.keys(k):
                     # did not find a prefix
                     # no need to explore further
-                    # first add the current triples to the local triples
-                    for key, value in phrase_triples.items():
-                        local_triples[key].update(value)
                     add_to_i = j - i - 1
                     break
                 if k in self.stopwords:
@@ -197,7 +199,7 @@ class KnowledgeBasedTokenizer:
                 phrase_triples.clear()
                 for match in matches:
                     # edges is the set of tuples
-                    edges = self.load_pickled_tuple(match)
+                    edges = self.load_triplet(match)
                     # visited will help to avoid cycles
                     visited = set()
                     edges = {(0, edge) for edge in edges}
@@ -209,23 +211,22 @@ class KnowledgeBasedTokenizer:
                         # mark the edge as visited
                         visited.add(edge)
                         # if the edge is a FormOf edge
-                        if edge[1] in {"FormOf"}:
-                            if depth > 0:
-                                # only look at forms of one hop away
-                                continue
+                        #   only depth of <= 1 are allowed
+                        #   we check < 1 because we want to extend depth 0 but not 1
+                        if depth < 1 and edge[1] in {"FormOf"}:  # fix - FormOf
                             # extend the edges with the triplets of the entity
-                            extended_matches = self.triplets.get(edge[2])
-                            if extended_matches is None:
+                            #   edge[2] is the object of the edge
+                            forms = self.triplets.get(edge[2])
+                            if forms is None:
                                 continue
-                            for extended_match in extended_matches:
-                                extended_edges = self.load_pickled_tuple(
-                                    extended_match
-                                )
+                            for form in forms:
+                                form_triplets = self.load_triplet(form)
                                 edges.update({
-                                    (depth + 1, e) for e in extended_edges
+                                    (depth + 1, e) for e in form_triplets
                                 })
                             continue
                         # go to the next edge if the edge is not IsA or HasContext
+                        #   edge[1] is the predicate of the edge
                         if edge[1] not in {"IsA", "HasContext"}:
                             continue
                         phrase_triples[edge].update(
@@ -234,6 +235,9 @@ class KnowledgeBasedTokenizer:
                                 offsets[tokens[j - 1][0]][1],
                             )
                         )
+            # first add the current triples to the local triples
+            for key, value in phrase_triples.items():
+                local_triples[key].update(value)
             i += add_to_i
         return local_triples
 
