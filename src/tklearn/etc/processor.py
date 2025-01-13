@@ -171,6 +171,16 @@ class TextProcessor:
             )
         return tokens
 
+    def join(self, tokens: List[Token]) -> str:
+        joined = ""
+        last_end = 0
+        for token in tokens:
+            if joined and token.span[0] > last_end:
+                joined += " "
+            joined += token.text
+            last_end = token.span[1]
+        return joined
+
 
 class TweetTextProcessor(TextProcessor):
     def __init__(
