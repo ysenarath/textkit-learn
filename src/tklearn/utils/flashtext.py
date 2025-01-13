@@ -1,6 +1,10 @@
 import io
 import os
 import string
+from functools import lru_cache
+from typing import List
+
+non_word_boundaries = set(string.digits + string.ascii_letters + "_")
 
 
 class KeywordProcessor(object):
@@ -9,8 +13,6 @@ class KeywordProcessor(object):
     Attributes:
         _keyword (str): Used as key to store keywords in trie dictionary.
             Defaults to '_keyword_'
-        non_word_boundaries (set(str)): Characters that will determine if the word is continuing.
-            Defaults to set([A-Za-z0-9_])
         keyword_trie_dict (dict): Trie dict built character by character, that is used for lookup
             Defaults to empty dictionary
         case_sensitive (boolean): if the search algorithm should be case sensitive or not.
@@ -43,16 +45,6 @@ class KeywordProcessor(object):
         """
         self._keyword = "_keyword_"
         self._white_space_chars = set([".", "\t", "\n", "\a", " ", ","])
-        try:
-            # python 2.x
-            self.non_word_boundaries = set(
-                string.digits + string.letters + "_"
-            )
-        except AttributeError:
-            # python 3.x
-            self.non_word_boundaries = set(
-                string.digits + string.ascii_letters + "_"
-            )
         self.keyword_trie_dict = dict()
         self.case_sensitive = case_sensitive
         self._terms_in_trie = 0
@@ -204,26 +196,6 @@ class KeywordProcessor(object):
     def __iter__(self):
         """Disabled iteration as get_all_keywords() is the right way to iterate"""
         raise NotImplementedError("Please use get_all_keywords() instead")
-
-    def set_non_word_boundaries(self, non_word_boundaries):
-        """set of characters that will be considered as part of word.
-
-        Args:
-            non_word_boundaries (set(str)):
-                Set of characters that will be considered as part of word.
-
-        """
-        self.non_word_boundaries = non_word_boundaries
-
-    def add_non_word_boundary(self, character):
-        """add a character that will be considered as part of word.
-
-        Args:
-            character (char):
-                Character that will be considered as part of word.
-
-        """
-        self.non_word_boundaries.add(character)
 
     def add_keyword(self, keyword, clean_name=None):
         """To add one or more keywords to the dictionary
@@ -496,7 +468,7 @@ class KeywordProcessor(object):
         while idx < sentence_len:
             char = sentence[idx]
             # when we reach a character that might denote word end
-            if char not in self.non_word_boundaries:
+            if self._is_word_boundary(sentence, idx):
                 # if end is present in current_dict
                 if self._keyword in current_dict or char in current_dict:
                     # update longest sequence found
@@ -516,7 +488,7 @@ class KeywordProcessor(object):
                         while idy < sentence_len:
                             inner_char = sentence[idy]
                             if (
-                                inner_char not in self.non_word_boundaries
+                                self._is_word_boundary(sentence, idy)
                                 and self._keyword in current_dict_continued
                             ):
                                 # update longest sequence found
@@ -591,7 +563,7 @@ class KeywordProcessor(object):
                 idy = idx + 1
                 while idy < sentence_len:
                     char = sentence[idy]
-                    if char not in self.non_word_boundaries:
+                    if self._is_word_boundary(sentence, idy):
                         break
                     idy += 1
                 idx = idy
@@ -649,7 +621,7 @@ class KeywordProcessor(object):
         while idx < sentence_len:
             char = sentence[idx]
             # when we reach whitespace
-            if char not in self.non_word_boundaries:
+            if self._is_word_boundary(sentence, idx):
                 current_word += orig_sentence[idx]
                 current_white_space = char
                 # if end is present in current_dict
@@ -671,7 +643,7 @@ class KeywordProcessor(object):
                         while idy < sentence_len:
                             inner_char = sentence[idy]
                             if (
-                                inner_char not in self.non_word_boundaries
+                                self._is_word_boundary(sentence, idy)
                                 and self._keyword in current_dict_continued
                             ):
                                 current_word_continued += orig_sentence[idy]
@@ -767,7 +739,7 @@ class KeywordProcessor(object):
                 while idy < sentence_len:
                     char = sentence[idy]
                     current_word += orig_sentence[idy]
-                    if char not in self.non_word_boundaries:
+                    if self._is_word_boundary(sentence, idy):
                         break
                     idy += 1
                 idx = idy
@@ -787,7 +759,7 @@ class KeywordProcessor(object):
     def get_next_word(self, sentence):
         """
         Retrieve the next word in the sequence
-        Iterate in the string until finding the first char not in non_word_boundaries
+        Iterate in the string until finding the first next group start
 
         Args:
             sentence (str): Line of text where we will look for the next word
@@ -801,8 +773,8 @@ class KeywordProcessor(object):
             >>> 'Big'
         """
         next_word = str()
-        for char in sentence:
-            if char not in self.non_word_boundaries:
+        for idx, char in enumerate(sentence):
+            if self._is_word_boundary(sentence, idx):
                 break
             next_word += char
         return next_word
@@ -869,3 +841,24 @@ class KeywordProcessor(object):
                     max_cost,
                     depth=depth + 1,
                 )
+
+    def _is_word_boundary(self, sent: str, i: int) -> bool:
+        """
+        Check if the character at index i is a split character
+        """
+        groups = self.get_char_groups(sent)
+        return groups[i + 1] != groups[i]
+
+    @lru_cache(maxsize=128)
+    def get_char_groups(self, text: str) -> List[int]:
+        """
+        Get the group of characters that are not in the non_word_boundaries
+        """
+        g = 0
+        groups = [g]
+        for i in range(len(text)):
+            char = text[i]
+            if char not in non_word_boundaries:
+                g += 1
+            groups.append(g)
+        return groups
