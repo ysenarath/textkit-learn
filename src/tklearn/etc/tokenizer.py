@@ -13,14 +13,13 @@ import numpy as np
 import torch
 import tqdm
 from nltk.corpus import stopwords as sw
-from nltk.corpus import wordnet as wn
-from nltk.tokenize import word_tokenize
 from scipy.spatial.distance import cdist
 from transformers import AutoTokenizer, PreTrainedModel, PreTrainedTokenizer
 from typing_extensions import Self
 
 from tklearn.embeddings import AutoEmbedding, Embedding
 from tklearn.etc.helpers import SubwordDetector
+from tklearn.etc.processor import TextProcessor
 from tklearn.utils.lexrank import degree_centrality_scores
 from tklearn.utils.trie import BytesTrie
 
@@ -42,6 +41,7 @@ class KnowledgeBasedTokenizer:
     stopwords: set
     subword_detector: SubwordDetector
     embedding: Embedding
+    processor: TextProcessor
 
     def __init__(self):
         raise NotImplementedError
@@ -60,6 +60,7 @@ class KnowledgeBasedTokenizer:
         # AutoTokenizer.from_pretrained("bert-base-uncased")
         self.subword_detector = SubwordDetector(self.tokenizer)
         self.embedding = AutoEmbedding.from_config({"identifier": "fasttext"})
+        self.processor = TextProcessor()
         return self
 
     @property
@@ -104,7 +105,7 @@ class KnowledgeBasedTokenizer:
             for s, p, o in tqdm.tqdm(
                 reader, total=nlines, desc="Loading triples"
             ):
-                k = self.preprocess(s)
+                k = s
                 triplets[k].add((s, p, o))
         triplets = ((k, pickle.dumps(v)) for k, v in triplets.items())
         triplets = BytesTrie(triplets)
@@ -142,104 +143,14 @@ class KnowledgeBasedTokenizer:
     def convert_tokens_to_string(self, tokens: List[str]) -> str:
         return self.tokenizer.convert_tokens_to_string(tokens)
 
-    def preprocess(self, text: str) -> str:
-        # this could have drastic effects on the input sentence
-        #   therefore should not be used on the full text
-        s = text.lower()
-        # remove all consecative spaces
-        s = " ".join(s.split())
-        # remove all punctuations
-        s = s.translate(self.punctrans)
-        # remove all digits (by checking if each character is a digit)
-        s = "".join([i for i in s if not i.isdigit()])
-        # tokenize
-        tokens = word_tokenize(s)
-        # lemmatize
-        tokens = [
-            (i if i in self.stopwords else (wn.morphy(i) or i)) for i in tokens
-        ]
-        return " ".join(tokens).strip()
-
-    def query(
-        self, encodings: dict, index: int
-    ) -> Dict[Tuple[str, str, str], set]:
-        input_ids = encodings["input_ids"][index]
-        offsets = encodings["offset_mapping"][index]
-        local_triples = defaultdict(set)
-        tokens = self.convert_ids_to_tokens(input_ids)
-        i = 0
-        while i < len(tokens):  # for each instance
-            start_token = tokens[i][1]
-            if self.subword_detector.is_prefix(start_token, i == 0):
-                # special token or subword
-                i += 1
-                continue
-            phrase_triples = defaultdict(set)
-            add_to_i = 1
-            for j in range(i + 1, len(tokens) + 1):
-                k = self.convert_tokens_to_string([i[1] for i in tokens[i:j]])
-                k = self.preprocess(k)
-                if not k:
-                    # not worth exploring - go to the next token
-                    break
-                if not self.triplets.keys(k):
-                    # did not find a prefix
-                    # no need to explore further
-                    add_to_i = j - i - 1
-                    break
-                if k in self.stopwords:
-                    # do not match stopwords
-                    continue
-                matches = self.triplets.get(k)
-                if matches is None:
-                    # may be we found a prefix
-                    continue
-                # there are matches longer than the current token sequence
-                #   we need to update the token triples
-                phrase_triples.clear()
-                for match in matches:
-                    # edges is the set of tuples
-                    edges = self.load_triplet(match)
-                    # visited will help to avoid cycles
-                    visited = set()
-                    edges = {(0, edge) for edge in edges}
-                    while len(edges) > 0:
-                        depth, edge = edges.pop()
-                        # same edge may only be visited once
-                        if edge in visited:
-                            continue
-                        # mark the edge as visited
-                        visited.add(edge)
-                        # if the edge is a FormOf edge
-                        #   only depth of <= 1 are allowed
-                        #   we check < 1 because we want to extend depth 0 but not 1
-                        if depth < 1 and edge[1] in {"FormOf"}:  # fix - FormOf
-                            # extend the edges with the triplets of the entity
-                            #   edge[2] is the object of the edge
-                            forms = self.triplets.get(edge[2])
-                            if forms is None:
-                                continue
-                            for form in forms:
-                                form_triplets = self.load_triplet(form)
-                                edges.update({
-                                    (depth + 1, e) for e in form_triplets
-                                })
-                            continue
-                        # go to the next edge if the edge is not IsA or HasContext
-                        #   edge[1] is the predicate of the edge
-                        if edge[1] not in {"IsA", "HasContext"}:
-                            continue
-                        phrase_triples[edge].update(
-                            range(
-                                offsets[tokens[i][0]][0],
-                                offsets[tokens[j - 1][0]][1],
-                            )
-                        )
-            # first add the current triples to the local triples
-            for key, value in phrase_triples.items():
-                local_triples[key].update(value)
-            i += add_to_i
-        return local_triples
+    def query(self, text: str) -> Dict[Tuple[str, str, str], set]:
+        tokens = self.processor.process(text)
+        ntokens = len(tokens)
+        for idx in range(ntokens):
+            start_token = tokens[idx]
+            for idy in range(idx + 1, ntokens):
+                end_token = tokens[idy]
+                span_text = text[start_token.span.start : end_token.span.end]
 
     def augment(self, text: str, triples: Dict[Tuple[str, str, str], set]):
         aug_text = text
@@ -290,9 +201,8 @@ class KnowledgeBasedTokenizer:
         texts = [text] if isinstance(text, str) else text
         del text
         augmented = ([], [])
-        encodings = self.tokenizer(texts, return_offsets_mapping=True)
         for i, text in enumerate(texts):
-            triples = self.query(encodings, i)
+            triples = self.query(text)
             triples = self.filter(triples, top_k=top_k)
             aug_start = len(text)
             aug_text, aug_triples = self.augment(text, triples)
