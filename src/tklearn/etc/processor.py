@@ -181,6 +181,40 @@ class TextProcessor:
             last_end = token.span[1]
         return joined
 
+    def build_trie(self, keywords: List[str]) -> dict:
+        [
+            " ".join([token.lemma for token in self.process(keyword)])
+            for keyword in keywords
+        ]
+        return root
+
+    def extract_keywords(self, text: str, root: dict) -> List[str]:
+        tokens = self.process(text)
+        ntokens = len(tokens)
+        idx = 0
+        while idx < ntokens:
+            current = root
+            idy = idx
+            longest_match = None
+            while idy < ntokens:
+                if idy != idx:
+                    if " " not in current:
+                        current = None
+                        break
+                    current = current[" "]
+                for char in tokens[idy].lemma:
+                    if char not in current:
+                        current = None
+                        break
+                    current = current[char]
+                if not current:
+                    break
+                if "__keyword__" in current:
+                    longest_match = (idx, idy)
+                idy += 1
+            idx += 1
+        return matches
+
 
 class TweetTextProcessor(TextProcessor):
     def __init__(
@@ -200,3 +234,45 @@ class TweetTextProcessor(TextProcessor):
 
     def tokenize(self, text: str, language: Optional[str] = None) -> List[str]:
         return self.tokenizer.tokenize(text)
+
+
+if __name__ == "__main__":
+    processor = TextProcessor()
+    # keywords = ["new york city", "new york", "egg yolk"]
+    # root = processor.build_trie(keywords)
+    # text = "New York City is a city in New York."
+    # sinhala example
+    # sri lanka, colombo, jaffna, kandy, galle, matara, nuwara eliya
+    keywords = ["ශ්‍රී ලංකා", "කොළඹ", "යාපනය", "මහනුවර", "ගාල්ල", "මාතර", "නුවර එළිය"]
+    root = processor.build_trie(keywords)
+    text = "කොළඹ නගරය අගුලු පාර්ලිමේන්තුවේ පළාත් විශේෂ නගරයක් බවට සහභාගී විය."
+    print(processor.extract_keywords(text, root))
+
+
+# def extract_keywords(self, text: str, root: dict) -> List[str]:
+#     tokens = self.process(text)
+#     ntokens = len(tokens)
+#     idx = 0
+#     matches = {}
+#     while idx < ntokens:
+#         longest_match = None
+#         x = tokens[idx]
+#         current: dict = root.get(x.lemma, {})
+#         node_path = [x.lemma]
+#         if "__keyword__" in current:
+#             longest_match = (idx, idx, node_path)
+#         for idy in range(idx + 1, ntokens):
+#             y = tokens[idy]
+#             current = current.get(y.lemma, {})
+#             node_path.append(y.lemma)
+#             if "__keyword__" in current:
+#                 longest_match = (idx, idy, node_path)
+#             if not current:
+#                 break
+#         if longest_match is not None:
+#             idx_, idy_, node_path_ = longest_match
+#             span = Span(tokens[idx_].span.start, tokens[idy_].span.end)
+#             matches[span] = node_path_
+#             idx = longest_match[1]
+#         idx += 1
+#     return matches
