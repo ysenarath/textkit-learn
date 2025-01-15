@@ -1,47 +1,48 @@
 from __future__ import annotations
 
 import csv
-import pickle
-import string
 from collections import defaultdict
 from os import PathLike
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import nltk
 import numpy as np
 import torch
 import tqdm
-from nltk.corpus import stopwords as sw
+from nltk.corpus import stopwords
 from scipy.spatial.distance import cdist
 from transformers import AutoTokenizer, PreTrainedModel, PreTrainedTokenizer
 from typing_extensions import Self
 
+from tklearn.core.lexicon import Lexicon
 from tklearn.embeddings import AutoEmbedding, Embedding
-from tklearn.etc.helpers import SubwordDetector
-from tklearn.etc.processor import TextProcessor
 from tklearn.utils.lexrank import degree_centrality_scores
-from tklearn.utils.trie import BytesTrie
 
 __all__ = ["KnowledgeBasedTokenizer"]
 
-nltk.download("wordnet", quiet=True)
-nltk.download("punkt_tab", quiet=True)
-nltk.download("stopwords", quiet=True)
 
 DEFAULT_TOP_K = 3
 
 # TODO:
 #  - set notation may be replaced with intervaltree
 
+nltk.download("stopwords", quiet=True)
+
+stop_words = set(stopwords.words("english"))
+
+
+def preprocess(s: str) -> Optional[str]:
+    s = " ".join(s.split()).lower()
+    if s in stop_words:
+        return None
+    return s
+
 
 class KnowledgeBasedTokenizer:
     tokenizer: PreTrainedTokenizer
-    punctrans: str
-    stopwords: set
-    subword_detector: SubwordDetector
     embedding: Embedding
-    processor: TextProcessor
+    lexicon: Lexicon[Set[Tuple[str, str, str]]]
 
     def __init__(self):
         raise NotImplementedError
@@ -54,48 +55,17 @@ class KnowledgeBasedTokenizer:
         self.tokenizer = AutoTokenizer.from_pretrained(
             pretrained_model_name_or_path
         )
-        self.punctrans = str.maketrans("", "", string.punctuation)
-        self.stopwords = set(sw.words("english"))
         # has the tokenizer been created?
-        # AutoTokenizer.from_pretrained("bert-base-uncased")
-        self.subword_detector = SubwordDetector(self.tokenizer)
         self.embedding = AutoEmbedding.from_config({"identifier": "fasttext"})
-        self.processor = TextProcessor()
         return self
-
-    @property
-    def triplets(self) -> BytesTrie:
-        triples = getattr(self, "_triplets", None)
-        if triples is None:
-            raise AttributeError("triplets have not been set")
-        return triples
-
-    @triplets.setter
-    def triplets(self, value: BytesTrie):
-        self._triplets = value
-        try:
-            self.load_triplet(b"")
-        except KeyError:
-            pass
-
-    def load_triplet(self, key: bytes) -> List[Tuple[str, str, str]]:
-        if not hasattr(self, "_pickle_cache"):
-            cache = {}
-            for k in self.triplets.keys():
-                for triple in self.triplets.get(k):
-                    cache[triple] = pickle.loads(triple)
-            self._pickle_cache = cache
-        return self._pickle_cache[key]
 
     def load_triples(self, path: str | Path) -> None:
         path = Path(path)
-        cache_path = path.with_suffix(".marisa")
-        if cache_path.exists():
-            # self.triplets = BytesTrie().mmap(str(cache_path))
-            triplets = BytesTrie()
-            triplets.load(str(cache_path))
-            self.triplets = triplets
-            return
+        # lexicon_path = path.with_suffix(".lex.pkl")
+        # if lexicon_path.exists():
+        #     with open(lexicon_path, "rb") as f:
+        #         self.lexicon = pickle.load(f)
+        #     return
         triplets = defaultdict(set)
         with open(path, "r") as f:
             nlines = sum(1 for _ in f)
@@ -105,52 +75,49 @@ class KnowledgeBasedTokenizer:
             for s, p, o in tqdm.tqdm(
                 reader, total=nlines, desc="Loading triples"
             ):
-                k = s
-                triplets[k].add((s, p, o))
-        triplets = ((k, pickle.dumps(v)) for k, v in triplets.items())
-        triplets = BytesTrie(triplets)
-        # cache it near the path for future use
-        triplets.save(str(cache_path))
-        self.triplets = triplets
+                k = preprocess(s)
+                if k:
+                    triplets[k].add((s, p, o))
+        lexicon = Lexicon()
+        for k in triplets.keys():
+            lexicon[k] = triplets[k]
+        # build lexicon (no need to build from now on)
+        lexicon.build()
+        # # write lexicon to disk
+        # with open(lexicon_path, "wb") as f:
+        #     pickle.dump(lexicon, f)
+        self.lexicon = lexicon
 
     def prepare_model(self, model: PreTrainedModel) -> PreTrainedModel:
         new_tokens = set()
-        for k in self.triplets.keys():
-            for triple in self.triplets.get(k):
-                for _, p, _ in self.load_triplet(triple):
-                    new_tokens.add(p)
+        for triples in self.lexicon.values():
+            for _, p, _ in triples:
+                new_tokens.add(p)
         vocab = set(self.tokenizer.get_vocab().keys())
         new_tokens = new_tokens - vocab
         self.tokenizer.add_tokens(list(new_tokens))
         model.resize_token_embeddings(len(self.tokenizer))
         return model
 
-    def convert_ids_to_tokens(
-        self, ids: List[int], skip_special_tokens: bool = True
-    ) -> List[Tuple[int, str]]:
-        tokens = []
-        for i, id_ in enumerate(ids):
-            id_ = int(id_)
-            if skip_special_tokens and id_ in self.tokenizer.all_special_ids:
-                continue
-            if id_ in getattr(self.tokenizer, "_added_tokens_decoder", {}):
-                content = self.tokenizer._added_tokens_decoder[id_].content
-            else:
-                content = self.tokenizer._convert_id_to_token(id_)
-            tokens.append((i, content))
-        return tokens
-
-    def convert_tokens_to_string(self, tokens: List[str]) -> str:
-        return self.tokenizer.convert_tokens_to_string(tokens)
-
     def query(self, text: str) -> Dict[Tuple[str, str, str], set]:
-        tokens = self.processor.process(text)
-        ntokens = len(tokens)
-        for idx in range(ntokens):
-            start_token = tokens[idx]
-            for idy in range(idx + 1, ntokens):
-                end_token = tokens[idy]
-                span_text = text[start_token.span.start : end_token.span.end]
+        result = defaultdict(set)
+        matches = list(self.lexicon.extract(text))
+        visited = set()
+        while matches:
+            triples, start, end = matches.pop()
+            for triple in triples:
+                if triple in visited:
+                    continue
+                visited.add(triple)
+                _, p, o = triple
+                if p in {"IsA", "HasContext"}:
+                    result[triple].update(range(start, end))
+                elif p == "FormOf":
+                    matches.extend(
+                        (forms, start, end)
+                        for forms, _, _ in self.lexicon.extract(o)
+                    )
+        return result
 
     def augment(self, text: str, triples: Dict[Tuple[str, str, str], set]):
         aug_text = text
@@ -191,7 +158,7 @@ class KnowledgeBasedTokenizer:
                     token_triples[i].add(triple)
         return token_triples
 
-    def tokenize(
+    def encode(
         self,
         text: str | List[str],
         return_offsets_mapping: bool = False,
@@ -199,7 +166,6 @@ class KnowledgeBasedTokenizer:
         top_k: int = DEFAULT_TOP_K,
     ) -> Dict[str, torch.Tensor | List[List[str]]]:
         texts = [text] if isinstance(text, str) else text
-        del text
         augmented = ([], [])
         for i, text in enumerate(texts):
             triples = self.query(text)
@@ -255,7 +221,7 @@ class KnowledgeBasedTokenizer:
         return_tokens: bool = False,
         top_k: int = DEFAULT_TOP_K,
     ):
-        return self.tokenize(
+        return self.encode(
             text,
             return_offsets_mapping=return_offsets_mapping,
             return_tokens=return_tokens,

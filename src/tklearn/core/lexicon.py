@@ -206,6 +206,8 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
 
                 child.fail = failure.children[key] if failure else root
 
+        self._updated = False
+
     @overload
     def extract(self, text: str) -> Iterator[Tuple[T, int, int]]: ...
     @overload
@@ -254,7 +256,7 @@ class MatchIterator(Generic[T]):
 
         longest_sequence = None
         longest_sequence_length = 0
-        first_longest_end = None
+        first_longest_end = 0
         traversal_start_idx = self.idx
         current_idx = self.idx
 
