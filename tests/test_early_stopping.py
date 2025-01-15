@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+
 from tklearn.nn.callbacks.early_stopping import EarlyStopping
 
 
