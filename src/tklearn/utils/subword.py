@@ -1,8 +1,12 @@
-from transformers import AutoTokenizer
+from transformers import PreTrainedTokenizer
+
+__all__ = [
+    "SubwordDetector",
+]
 
 
 class SubwordDetector:
-    def __init__(self, tokenizer: AutoTokenizer):
+    def __init__(self, tokenizer: PreTrainedTokenizer):
         prefix = ""
         text = "thequickbrownfoxjumpsover thelazydog"
         input_ids = tokenizer.encode(text, add_special_tokens=False)
