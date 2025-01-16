@@ -9,12 +9,14 @@ from transformers import (
 )
 
 MODEL_NAME_OR_PATH = "google-bert/bert-base-uncased"
+DATASET = "yelp_review_full"
+NUM_EPOCHS = 3
 
 # evaluation_strategy
 metric = evaluate.load("accuracy")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH)
 model = AutoModelForSequenceClassification.from_pretrained(
-    "google-bert/bert-base-uncased", num_labels=5
+    MODEL_NAME_OR_PATH, num_labels=5
 )
 
 
@@ -28,7 +30,7 @@ def tokenize_function(examples):
     return tokenizer(examples["text"], padding="max_length", truncation=True)
 
 
-dataset = load_dataset("yelp_review_full")
+dataset = load_dataset(DATASET)
 tokenized_datasets = dataset.map(tokenize_function, batched=True)
 small_train_dataset = (
     tokenized_datasets["train"].shuffle(seed=42).select(range(1000))
@@ -37,16 +39,15 @@ small_eval_dataset = (
     tokenized_datasets["test"].shuffle(seed=42).select(range(1000))
 )
 
-
-# training_args = TrainingArguments(output_dir="test_trainer", eval_strategy="epoch")
 training_args = TrainingArguments(
     output_dir="./examples/outputs",
     per_device_train_batch_size=16,
     per_device_eval_batch_size=32,
     use_mps_device=True,
-    num_train_epochs=3,
+    num_train_epochs=NUM_EPOCHS,
     evaluation_strategy="epoch",
 )
+
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -54,4 +55,5 @@ trainer = Trainer(
     eval_dataset=small_eval_dataset,
     compute_metrics=compute_metrics,
 )
+
 trainer.train()
