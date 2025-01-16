@@ -149,3 +149,4 @@ notebooks/benchmark_key_only/*
 /tmp/
 /scratch
 /resources/
+examples/outputs/*
