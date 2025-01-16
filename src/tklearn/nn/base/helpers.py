@@ -63,7 +63,7 @@ def get_scheduler(
                 num_warmup_steps = int(number)
             else:
                 raise ValueError(f"invalid unit '{unit}' for num_warmup_steps")
-        elif isinstance(num_warmup_steps, float):
+        elif isinstance(num_warmup_steps, (int, float)):
             pass
         elif num_warmup_steps is None:
             pass
