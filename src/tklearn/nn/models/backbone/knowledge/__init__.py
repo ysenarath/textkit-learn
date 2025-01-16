@@ -6,9 +6,11 @@ from typing import ClassVar
 from transformers.modeling_outputs import BaseModelOutputWithPooling
 
 import tklearn
-from tklearn.etc.model import AutoKnowledgeBasedModel
-from tklearn.etc.tokenizer import KnowledgeBasedTokenizer
 from tklearn.nn.models.backbone.base import Backbone, BackboneConfig
+from tklearn.nn.models.backbone.knowledge.model import AutoKnowledgeBasedModel
+from tklearn.nn.models.backbone.knowledge.tokenizer import (
+    KnowledgeBasedTokenizer,
+)
 
 TRANSFORMERS_INPUTS = {
     "input_ids",
