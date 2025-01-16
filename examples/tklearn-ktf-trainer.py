@@ -57,8 +57,8 @@ def tokenize_function(examples):
 
 datasets = load_dataset(DATASET)
 dataset = DatasetDict({
-    "train": datasets["train"].take(10000),
-    "test": datasets["test"].take(10000),
+    "train": datasets["train"].take(100),
+    "test": datasets["test"].take(100),
 })
 
 tokenized_datasets = dataset.map(
@@ -76,8 +76,6 @@ valid_dataloader = DataLoader(small_eval_dataset, batch_size=32)
 optimizer = AdamW(
     model.parameters(),
     lr=2e-6,
-    # warmup=0.1,
-    # t_total=len(train_dataloader) * NUM_EPOCHS,
 )
 
 evaluator = Evaluator(
@@ -92,9 +90,18 @@ trainer = Trainer(
     model,
     train_dataloader,
     optimizer=optimizer,
-    callbacks=[ProgbarLogger(), EarlyStopping(patience=5)],
+    callbacks=[
+        ProgbarLogger(),
+        EarlyStopping(
+            monitor="valid_accuracy",
+            patience=5,
+            min_delta=0.05,
+        ),
+    ],
     evaluator=evaluator,
     epochs=NUM_EPOCHS,
+    lr_scheduler="linear",
+    lr_scheduler_kwargs={"warmup_proportion": 0.1},
 )
 
 trainer.train()
