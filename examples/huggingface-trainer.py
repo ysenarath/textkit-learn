@@ -38,7 +38,7 @@ small_eval_dataset = (
 
 # training_args = TrainingArguments(output_dir="test_trainer", eval_strategy="epoch")
 training_args = TrainingArguments(
-    output_dir="./outputs",
+    output_dir="./examples/outputs",
     per_device_train_batch_size=16,
     per_device_eval_batch_size=32,
 )
