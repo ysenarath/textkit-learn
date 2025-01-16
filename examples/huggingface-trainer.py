@@ -8,9 +8,11 @@ from transformers import (
     TrainingArguments,
 )
 
+MODEL_NAME_OR_PATH = "google-bert/bert-base-uncased"
+
 # evaluation_strategy
 metric = evaluate.load("accuracy")
-tokenizer = AutoTokenizer.from_pretrained("google-bert/bert-base-uncased")
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH)
 model = AutoModelForSequenceClassification.from_pretrained(
     "google-bert/bert-base-uncased", num_labels=5
 )
@@ -41,6 +43,9 @@ training_args = TrainingArguments(
     output_dir="./examples/outputs",
     per_device_train_batch_size=16,
     per_device_eval_batch_size=32,
+    use_mps_device=True,
+    num_train_epochs=3,
+    evaluation_strategy="epoch",
 )
 trainer = Trainer(
     model=model,

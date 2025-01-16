@@ -1,7 +1,6 @@
 from datasets import load_dataset
-from torch.optim import AdamW
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer
+from transformers import AdamW, AutoTokenizer
 
 from tklearn.metrics import Accuracy
 from tklearn.nn import Evaluator, Trainer
@@ -10,7 +9,7 @@ from tklearn.nn.models import AutoModel, ModelConfig
 
 MODEL_NAME_OR_PATH = "google-bert/bert-base-uncased"
 DATASET = "yelp_review_full"
-NUM_EPOCHS = 20
+NUM_EPOCHS = 3
 
 dataset = load_dataset(DATASET)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH)
@@ -43,9 +42,12 @@ model_config = ModelConfig.from_dict({
 })
 model = AutoModel(model_config)
 
+
+model.to("mps")
+
 optimizer = AdamW(
     model.parameters(),
-    lr=2e-6,
+    lr=5e-5,
 )
 
 evaluator = Evaluator(
@@ -64,7 +66,7 @@ trainer = Trainer(
     evaluator=evaluator,
     epochs=NUM_EPOCHS,
     lr_scheduler="linear",
-    lr_scheduler_kwargs={"warmup_proportion": 0.1},
+    lr_scheduler_kwargs={"num_warmup_steps": 0},
 )
 
 
