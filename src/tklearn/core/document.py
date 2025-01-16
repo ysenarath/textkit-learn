@@ -205,7 +205,6 @@ class Document(Mapping, metaclass=DocumentMeta):
         cls = self.__class__
         metadata = {f.name: f.metadata for f in fields(cls)}
         for name, type_ in get_type_hints(cls).items():
-            # args = get_args(type_)
             type_ = get_origin(type_) or type_
             if not issubclass(type_, FieldType):
                 continue
