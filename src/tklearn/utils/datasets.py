@@ -11,7 +11,6 @@ from datasets import load_dataset as hf_load_dataset
 from tqdm import auto as tqdm
 
 from tklearn.config import config
-from tklearn.core.document import Document
 
 T_BI = Dict[str, List[Any]]
 T_BO = Union[Dict[str, List[Any]], List[Dict[str, Any]], pd.DataFrame]
@@ -121,7 +120,7 @@ def load_dataset(
 
 def islice(
     dataset: Dataset | DatasetDict, *args, **kwargs
-) -> Generator[Document, None, None]:
+) -> Generator[dict, None, None]:
     split = kwargs.get("split", None)
     if split is None:
         n = dataset.num_rows
@@ -131,7 +130,10 @@ def islice(
         if i >= n:
             break
         j = n + i if i < 0 else i
-        yield Document.from_dataset(dataset, j, split)
+        if split is None:
+            yield dataset[j]
+        else:
+            yield dataset[split][j]
 
 
 def map_dataset(
