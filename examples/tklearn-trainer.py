@@ -1,7 +1,6 @@
 from datasets import load_dataset
-from torch.optim import AdamW
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer
+from transformers import AdamW, AutoTokenizer
 
 from tklearn.metrics import Accuracy
 from tklearn.nn import Evaluator, Trainer
@@ -48,7 +47,7 @@ model.to("mps")
 
 optimizer = AdamW(
     model.parameters(),
-    lr=0.00005,
+    lr=5e-5,
 )
 
 evaluator = Evaluator(
@@ -66,8 +65,8 @@ trainer = Trainer(
     callbacks=[ProgbarLogger(), EarlyStopping(patience=5)],
     evaluator=evaluator,
     epochs=NUM_EPOCHS,
-    # lr_scheduler="linear",
-    # lr_scheduler_kwargs={"warmup_proportion": 0.1},
+    lr_scheduler="linear",
+    lr_scheduler_kwargs={"num_warmup_steps": 0},
 )
 
 
