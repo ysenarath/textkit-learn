@@ -40,10 +40,11 @@ PostprocessorFunctionType = Callable[[ModelInput, ModelOutput], Dict[str, Any]]
 
 
 def get_scheduler(
+    name: str,
     optimizer: torch.optim.Optimizer,
     epochs: int,
     steps_per_epoch: int,
-    name: str,
+    # either num_warmup_steps or warmup_proportion
     num_warmup_steps: Union[int, str, None] = None,
     warmup_proportion: Optional[float] = None,
     **kwargs: Any,
@@ -68,21 +69,18 @@ def get_scheduler(
             pass
         else:
             raise ValueError("num_warmup_steps must be a float or None")
+    elif num_warmup_steps is None:
+        num_warmup_steps = int(epochs * steps_per_epoch * warmup_proportion)
     else:
-        if num_warmup_steps is None:
-            num_warmup_steps = int(
-                epochs * steps_per_epoch * warmup_proportion
-            )
-        else:
-            msg = "num_warmup_steps and warmup_proportion cannot be used together"
-            raise ValueError(msg)
+        msg = "num_warmup_steps and warmup_proportion cannot be used together"
+        raise ValueError(msg)
     num_training_steps = epochs * steps_per_epoch
     return _get_scheduler(
         name=name,
         optimizer=optimizer,
         num_warmup_steps=num_warmup_steps,
         num_training_steps=num_training_steps,
-        warmup_proportion=warmup_proportion,
+        # warmup_proportion=warmup_proportion,
         scheduler_specific_kwargs=kwargs,
     )
 
@@ -403,10 +401,10 @@ class Trainer(CallbacksPropertyMixin, Generic[ModelInput, ModelOutput]):
         # create the learning rate scheduler
         if isinstance(self.lr_scheduler, str):
             self._lr_scheduler = get_scheduler(
+                name=self.lr_scheduler,
                 optimizer=self.optimizer,
                 epochs=self.epochs,
                 steps_per_epoch=steps_per_epoch,
-                name=self.lr_scheduler,
                 **(self.lr_scheduler_kwargs or {}),
             )
         else:

@@ -33,21 +33,19 @@ small_eval_dataset = (
 train_dataloader = DataLoader(small_train_dataset, shuffle=True, batch_size=16)
 valid_dataloader = DataLoader(small_eval_dataset, batch_size=32)
 
-model_config = ModelConfig(
-    type="linear",
-    backbone=dict(
-        type="transformer",
-        name=MODEL_NAME_OR_PATH,
-    ),
-    num_labels=5,
-)
+model_config = ModelConfig.from_dict({
+    "type": "linear",
+    "backbone": {
+        "type": "transformer",
+        "model_name_or_path": MODEL_NAME_OR_PATH,
+    },
+    "num_labels": 5,
+})
 model = AutoModel(model_config)
 
 optimizer = AdamW(
     model.parameters(),
     lr=2e-6,
-    # warmup=0.1,
-    # t_total=len(train_dataloader) * NUM_EPOCHS,
 )
 
 evaluator = Evaluator(
@@ -65,6 +63,8 @@ trainer = Trainer(
     callbacks=[ProgbarLogger(), EarlyStopping(patience=5)],
     evaluator=evaluator,
     epochs=NUM_EPOCHS,
+    lr_scheduler="linear",
+    lr_scheduler_kwargs={"warmup_proportion": 0.1},
 )
 
 
