@@ -1,42 +1,24 @@
 from __future__ import annotations
 
-import csv
 from collections import defaultdict
 from os import PathLike
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Set, Tuple
 
-import nltk
 import numpy as np
 import torch
-import tqdm
-from nltk.corpus import stopwords
-from scipy.spatial.distance import cdist
 from transformers import AutoTokenizer, PreTrainedModel, PreTrainedTokenizer
 from typing_extensions import Self
 
-from tklearn.core.lexicon import Lexicon
+from tklearn.core.lexicon import (
+    DEFAULT_TOP_K,
+    Lexicon,
+    augment,
+    filter_triples,
+)
 from tklearn.embeddings import AutoEmbedding, Embedding
-from tklearn.utils.lexrank import degree_centrality_scores
 
 __all__ = ["KnowledgeBasedTokenizer"]
-
-
-DEFAULT_TOP_K = 3
-
-# TODO:
-#  - set notation may be replaced with intervaltree
-
-nltk.download("stopwords", quiet=True)
-
-stop_words = set(stopwords.words("english"))
-
-
-def preprocess(s: str) -> Optional[str]:
-    s = " ".join(s.split()).lower()
-    if s in stop_words:
-        return None
-    return s
 
 
 class KnowledgeBasedTokenizer:
@@ -60,33 +42,7 @@ class KnowledgeBasedTokenizer:
         return self
 
     def load_triples(self, path: str | Path) -> None:
-        path = Path(path)
-        # lexicon_path = path.with_suffix(".lex.pkl")
-        # if lexicon_path.exists():
-        #     with open(lexicon_path, "rb") as f:
-        #         self.lexicon = pickle.load(f)
-        #     return
-        triplets = defaultdict(set)
-        with open(path, "r") as f:
-            nlines = sum(1 for _ in f)
-        with open(path, "r") as f:
-            reader = csv.reader(f)
-            # no header
-            for s, p, o in tqdm.tqdm(
-                reader, total=nlines, desc="Loading triples"
-            ):
-                k = preprocess(s)
-                if k:
-                    triplets[k].add((s, p, o))
-        lexicon = Lexicon()
-        for k in triplets.keys():
-            lexicon[k] = triplets[k]
-        # build lexicon (no need to build from now on)
-        lexicon.build()
-        # # write lexicon to disk
-        # with open(lexicon_path, "wb") as f:
-        #     pickle.dump(lexicon, f)
-        self.lexicon = lexicon
+        self.lexicon = Lexicon.load(path)
 
     def prepare_model(self, model: PreTrainedModel) -> PreTrainedModel:
         new_tokens = set()
@@ -98,49 +54,6 @@ class KnowledgeBasedTokenizer:
         self.tokenizer.add_tokens(list(new_tokens))
         model.resize_token_embeddings(len(self.tokenizer))
         return model
-
-    def query(self, text: str) -> Dict[Tuple[str, str, str], set]:
-        result = defaultdict(set)
-        matches = list(self.lexicon.extract(text))
-        visited = set()
-        while matches:
-            triples, start, end = matches.pop()
-            for triple in triples:
-                if triple in visited:
-                    continue
-                visited.add(triple)
-                _, p, o = triple
-                if p in {"IsA", "HasContext"}:
-                    result[triple].update(range(start, end))
-                elif p == "FormOf":
-                    matches.extend(
-                        (forms, start, end)
-                        for forms, _, _ in self.lexicon.extract(o)
-                    )
-        return result
-
-    def augment(self, text: str, triples: Dict[Tuple[str, str, str], set]):
-        aug_text = text
-        aug_triples = defaultdict(set)
-        aug_triples.update(triples)
-        # augmented is a mapping from the triplet representation
-        #   to the character indices
-        # it helps to avoid duplicating the same entity across
-        #   different subjects of the sentence
-        augmented = {}
-        for triplet, _ in triples.items():
-            # +1 is for the space
-            triplet_repr = f" {triplet[1]} {triplet[2]}"
-            if triplet_repr not in augmented:
-                start = len(aug_text) + 1
-                aug_text += triplet_repr
-                end = len(aug_text)
-                augmented[triplet_repr] = (start, end)
-            else:
-                start, end = augmented[triplet_repr]
-            # j is the character index of the triplet/entity
-            aug_triples[triplet].update(range(start, end + 1))
-        return aug_text, aug_triples
 
     def get_entites_per_token(
         self,
@@ -168,10 +81,12 @@ class KnowledgeBasedTokenizer:
         texts = [text] if isinstance(text, str) else text
         augmented = ([], [])
         for i, text in enumerate(texts):
-            triples = self.query(text)
-            triples = self.filter(triples, top_k=top_k)
+            triples = self.lexicon.query(text)
+            triples = filter_triples(
+                triples, top_k=top_k, embedding=self.embedding
+            )
             aug_start = len(text)
-            aug_text, aug_triples = self.augment(text, triples)
+            aug_text, aug_triples = augment(text, triples)
             augmented[0].append(aug_text)
             augmented[1].append((aug_start, aug_triples))
         encodings = self.tokenizer(
@@ -227,41 +142,3 @@ class KnowledgeBasedTokenizer:
             return_tokens=return_tokens,
             top_k=top_k,
         )
-
-    def filter(
-        self,
-        triples: Dict[Tuple[str, str, str], set],
-        top_k: int = DEFAULT_TOP_K,
-    ) -> Dict[Tuple[str, str, str], set]:
-        # select top 2 per subject
-        scores = defaultdict(list)
-        for (s, p, o), score in self.get_scores(triples).items():
-            scores[s] += [(score, p, o)]
-        filtered_triples = {}
-        for s, scores in scores.items():
-            for _, p, o in sorted(scores, reverse=True)[:top_k]:
-                filtered_triples[(s, p, o)] = triples[(s, p, o)]
-        return filtered_triples
-
-    def get_scores(
-        self, triples: Dict[Tuple[str, str, str], set]
-    ) -> List[Tuple[str, int]]:
-        vocab = set()
-        for s, v, o in triples.keys():
-            vocab.update([s, o])
-        vocab = list(vocab)
-        ndim = self.embedding.shape[1]
-        vectors = np.zeros((len(vocab), ndim))
-        for i, term in enumerate(vocab):
-            vectors[i] = self.embedding.get_word_vector(term)
-        similarity_matrix = 1 - cdist(vectors, vectors, metric="cosine")
-        try:
-            scores = degree_centrality_scores(similarity_matrix, threshold=0.1)
-        except ValueError:
-            scores = np.zeros(len(vocab))
-        scores = dict(zip(vocab, scores))
-        triple_score = {}
-        for s, v, o in triples.keys():
-            avg_score = (scores[s] + scores[o]) / 2
-            triple_score[(s, v, o)] = avg_score
-        return triple_score

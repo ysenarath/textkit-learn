@@ -24,8 +24,13 @@ args = parser.parse_args()
 
 MODEL_NAME_OR_PATH = "google-bert/bert-base-uncased"
 DATASET = "yelp_review_full"
-NUM_EPOCHS = 4
-PROFILE = args.profile
+NUM_EPOCHS = 3
+
+dataset = load_dataset(DATASET)
+dataset = DatasetDict({
+    "train": dataset["train"].take(1000),
+    "test": dataset["test"].take(1000),
+})
 
 model_config = ModelConfig.from_dict({
     "type": "linear",
@@ -37,9 +42,11 @@ model_config = ModelConfig.from_dict({
 })
 model = AutoModel(model_config)
 
+model.to("mps")
+
 
 def tokenize_function(examples):
-    if PROFILE:
+    if args.profile:
         with pyinstrument.Profiler() as profiler:
             encodings = model.tokenizer(examples["text"])
         profiler.open_in_browser()
@@ -55,12 +62,6 @@ def tokenize_function(examples):
     return encodings
 
 
-datasets = load_dataset(DATASET)
-dataset = DatasetDict({
-    "train": datasets["train"].take(100),
-    "test": datasets["test"].take(100),
-})
-
 tokenized_datasets = dataset.map(
     tokenize_function, batched=True, batch_size=10
 )
@@ -72,10 +73,9 @@ small_eval_dataset = tokenized_datasets["test"].shuffle(seed=42)
 train_dataloader = DataLoader(small_train_dataset, shuffle=True, batch_size=16)
 valid_dataloader = DataLoader(small_eval_dataset, batch_size=32)
 
-
 optimizer = AdamW(
     model.parameters(),
-    lr=2e-6,
+    lr=5e-5,
 )
 
 evaluator = Evaluator(
@@ -90,18 +90,11 @@ trainer = Trainer(
     model,
     train_dataloader,
     optimizer=optimizer,
-    callbacks=[
-        ProgbarLogger(),
-        EarlyStopping(
-            monitor="valid_accuracy",
-            patience=5,
-            min_delta=0.05,
-        ),
-    ],
+    callbacks=[ProgbarLogger(), EarlyStopping(patience=5)],
     evaluator=evaluator,
     epochs=NUM_EPOCHS,
     lr_scheduler="linear",
-    lr_scheduler_kwargs={"warmup_proportion": 0.1},
+    lr_scheduler_kwargs={"num_warmup_steps": 0},
 )
 
 trainer.train()
