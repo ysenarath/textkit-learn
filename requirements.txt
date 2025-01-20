@@ -22,3 +22,5 @@ langdetect
 nightjar
 adapters
 git+https://github.com/facebookresearch/fastText.git
+unibreak
+gensim
