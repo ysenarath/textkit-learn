@@ -28,8 +28,8 @@ NUM_EPOCHS = 3
 
 dataset = load_dataset(DATASET)
 dataset = DatasetDict({
-    "train": dataset["train"].take(1000),
-    "test": dataset["test"].take(1000),
+    "train": dataset["train"].take(10000),
+    "test": dataset["test"].take(10000),
 })
 
 model_config = ModelConfig.from_dict({
@@ -42,7 +42,7 @@ model_config = ModelConfig.from_dict({
 })
 model = AutoModel(model_config)
 
-model.to("mps")
+model.to("cuda")
 
 
 def tokenize_function(examples):

@@ -14,6 +14,9 @@ NUM_EPOCHS = 3
 
 # evaluation_strategy
 metric = evaluate.load("accuracy")
+f1_metric = evaluate.load("f1")
+roc_auc_score = evaluate.load("roc_auc")
+
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH)
 model = AutoModelForSequenceClassification.from_pretrained(
     MODEL_NAME_OR_PATH, num_labels=5
@@ -23,7 +26,14 @@ model = AutoModelForSequenceClassification.from_pretrained(
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
-    return metric.compute(predictions=predictions, references=labels)
+    # return metric.compute(predictions=predictions, references=labels)
+    return {
+        "accuracy": metric.compute(predictions=predictions, references=labels),
+        "f1": f1_metric.compute(predictions=predictions, references=labels),
+        "roc_auc": roc_auc_score.compute(
+            predictions=predictions, references=labels
+        ),
+    }
 
 
 def tokenize_function(examples):
@@ -43,9 +53,10 @@ training_args = TrainingArguments(
     output_dir="./examples/outputs",
     per_device_train_batch_size=16,
     per_device_eval_batch_size=32,
-    use_mps_device=True,
+    # use_mps_device=True,
+    no_cuda=False,
     num_train_epochs=NUM_EPOCHS,
-    evaluation_strategy="epoch",
+    eval_strategy="epoch",
 )
 
 trainer = Trainer(

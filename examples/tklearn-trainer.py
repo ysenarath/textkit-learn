@@ -42,8 +42,7 @@ model_config = ModelConfig.from_dict({
 })
 model = AutoModel(model_config)
 
-
-model.to("mps")
+model.to("cuda")
 
 optimizer = AdamW(
     model.parameters(),
