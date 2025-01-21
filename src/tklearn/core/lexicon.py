@@ -235,9 +235,7 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
     @overload
     def extract(self, text: str) -> Iterator[Tuple[T, int, int]]: ...
     @overload
-    def extract(
-        self, text: List[str]
-    ) -> Iterator[Iterator[Tuple[T, int, int]]]: ...
+    def extract(self, text: List[str]) -> Iterator[Iterator[Tuple[T, int, int]]]: ...
     def extract(self, text: Any) -> Any:
         """Extract keywords from text."""
         # build the failure links if needed
@@ -269,9 +267,7 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
         with open(path, "r") as f:
             reader = csv.reader(f)
             # no header
-            for s, p, o in tqdm.tqdm(
-                reader, total=nlines, desc="Loading triples"
-            ):
+            for s, p, o in tqdm.tqdm(reader, total=nlines, desc="Loading triples"):
                 k = preprocess(s)
                 if k:
                     triplets[k].add((s, p, o))
@@ -343,9 +339,7 @@ class MatchIterator(Generic[T]):
                         traversal_start_idx,
                         end_token_idx,
                     )
-                    longest_sequence_length = (
-                        end_token_idx - traversal_start_idx
-                    )
+                    longest_sequence_length = end_token_idx - traversal_start_idx
                     first_longest_end = end_token_idx
                 else:
                     sequence_length = end_token_idx - traversal_start_idx
