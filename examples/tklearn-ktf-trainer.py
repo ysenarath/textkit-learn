@@ -37,6 +37,7 @@ model_config = ModelConfig.from_dict({
     "backbone": {
         "type": "knowledge-based-transformer",
         "model_name_or_path": MODEL_NAME_OR_PATH,
+        "prepare_model": False,
     },
     "num_labels": 5,
 })
