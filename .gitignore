@@ -131,6 +131,8 @@ dmypy.json
 .idea/
 .DS_Store
 scripts/rsync.sh
+scripts/sync.sh
+scripts/sync2.sh
 logs/
 scripts/sync.share
 mlruns/
@@ -139,7 +141,6 @@ notebooks/logs/
 notebooks/outputs/
 notebooks/adapter_model/
 src/tklearn/nn/transformers/adapters.py
-scripts/sync.sh
 notebooks/testdb/*
 notebooks/*.pkl
 notebooks/*.db
