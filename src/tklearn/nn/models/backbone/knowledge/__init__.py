@@ -24,6 +24,7 @@ TRANSFORMERS_INPUTS = {
 class KnowledgeBasedTransformerConfig(BackboneConfig):
     type: ClassVar[str] = "knowledge-based-transformer"
     model_name_or_path: str = "bert-base-uncased"
+    prepare_model: bool = False
 
 
 class KnowledgeBasedTransformer(Backbone):
@@ -36,7 +37,8 @@ class KnowledgeBasedTransformer(Backbone):
         tokenizer.load_triples(
             Path(tklearn.__file__).parents[2] / "resources/triplets.csv"
         )
-        tokenizer.prepare_model(model)
+        if self.config.prepare_model:
+            tokenizer.prepare_model(model)
         self.tokenizer = tokenizer
         self.model = model
 
