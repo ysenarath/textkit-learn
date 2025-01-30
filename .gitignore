@@ -130,11 +130,9 @@ dmypy.json
 
 .idea/
 .DS_Store
-scripts/rsync.sh
-scripts/sync.sh
-scripts/sync2.sh
+.env/bin/sync.sh
+.env/bin/sync2.sh
 logs/
-scripts/sync.share
 mlruns/
 notebooks/data/
 notebooks/logs/

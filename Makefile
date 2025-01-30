@@ -8,4 +8,4 @@ publish:
 	twine upload dist/*
 
 sync:
-	bash scripts/sync.sh
+	bash .env/bin/sync.sh
