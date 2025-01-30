@@ -12,7 +12,7 @@ from tklearn.nn.models import AutoModel, ModelConfig
 MODEL_NAME_OR_PATH = "google-bert/bert-base-uncased"
 DATASET = "yelp_review_full"
 NUM_EPOCHS = 3
-TRAIN_DATASET_SIZE = 10000
+TRAIN_DATASET_SIZE = 100000
 EVAL_DATASET_SIZE = 1000
 
 METRICS = {

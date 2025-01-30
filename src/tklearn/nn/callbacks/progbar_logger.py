@@ -1,64 +1,51 @@
-import math
-from typing import Optional
+from typing import Dict, Optional
+
+from rich.console import Group
+from rich.live import Live
+from rich.progress import Progress, SpinnerColumn, TimeElapsedColumn
+from rich.table import Table
 
 from tklearn.nn.callbacks.base import Callback
-from tklearn.utils.progressbar import ProgressBar
 
 __all__ = [
     "ProgbarLogger",
 ]
 
 
+def get_performance_report(logs, exclude=None, epoch=None) -> Dict[str, str]:
+    if logs is None:
+        logs = {}
+    row = {}
+    for k, v in logs.items():
+        if exclude is not None and k in exclude:
+            continue
+        if isinstance(v, float):
+            v = f"{v:0.4f}"
+        elif isinstance(v, int):
+            v = f"{v:d}"
+        elif isinstance(v, str):
+            v = (v[:10] + "...") if len(v) > 10 else v
+        else:
+            continue
+        row[k] = v
+    if epoch is not None:
+        row["Epoch"] = f"{epoch}"
+    return row
+
+
 class ProgbarLogger(Callback):
-    """
-    Callback that logs the progress of training using a progress bar.
-
-    Parameters
-    ----------
-    desc : str, optional
-        The description template for the progress bar.
-    prefix : str, optional
-        The prefix for the progress bar. Default is "Training".
-
-    Attributes
-    ----------
-    desc : str
-        The description template for the progress bar.
-    prefix : str
-        The prefix for the progress bar.
-    bar_format : str
-        The format string for the progress bar.
-    pbar : Progbar
-        The progress bar object.
-
-    Methods
-    -------
-    on_train_begin(logs=None)
-        Called at the beginning of training.
-    on_train_batch_end(batch, logs=None)
-        Called at the end of each training batch.
-    on_epoch_end(epoch, logs=None)
-        Called at the end of each epoch.
-    on_train_end(logs=None)
-        Called at the end of training.
-    """
-
-    def __init__(
-        self,
-        desc: Optional[
-            str
-        ] = "Training | Epoch: {epoch:4d} | Loss: {loss:0.4f} | Progress",
-        prefix: Optional[str] = "Training",
-        exclude: Optional[list] = None,
-    ):
+    def __init__(self, exclude: Optional[list] = None):
         super().__init__()
-        self.desc = desc
-        self.prefix = prefix
-        l_bar = "{desc}: {percentage:3.0f}% |"
-        self.bar_format = f"{l_bar}{{bar}}{{r_bar}}"
-        self.pbar = None
-        self.pred_pbar = None
         self.exclude = exclude
+        self.progress = None
+        self.table: Table = None
+        self.live: Live = None
+        self.epoch_tracker = None
+        self.batch_tracker_train = None
+        self.batch_tracker_valid = None
+        self._zero_based_epoch = False
+        self._zero_based_step = False
+        self._started_by_predict = False
 
     def on_train_begin(self, logs=None):
         """
@@ -69,13 +56,19 @@ class ProgbarLogger(Callback):
         logs : dict, optional
             Dictionary of logs. Default is None.
         """
-        total = self.params["epochs"] * self.params["steps"]
-        self.pbar = ProgressBar(
-            total=total,
-            desc=self.desc.format(epoch=0, loss=math.inf),
-            postfix={},
-            bar_format=self.bar_format,
+        self.progress = self.create_progress_bar()
+        self.table = Table()
+        layout = Group(self.table, self.progress)
+        num_epochs = self.params["epochs"]
+        num_steps = self.params["steps"]
+        self.live = Live(
+            layout, refresh_per_second=4, vertical_overflow="visible"
         )
+        self.epoch_tracker = self.progress.add_task("Epoch", total=num_epochs)
+        self.batch_tracker_train = self.progress.add_task(
+            "Batch[Train]", total=num_steps
+        )
+        self.live.start()
 
     def on_train_batch_end(self, batch, logs=None):
         """
@@ -88,8 +81,15 @@ class ProgbarLogger(Callback):
         logs : dict, optional
             Dictionary of logs. Default is None.
         """
-        self.pbar.update(1)
-        self.pbar.refresh()
+        if batch == 0:
+            self._zero_based_step = True
+        if self.batch_tracker_train is None:
+            return
+        # update by 1 or to batch
+        if self._zero_based_step:
+            self.progress.update(self.batch_tracker_train, completed=batch + 1)
+        else:
+            self.progress.update(self.batch_tracker_train, completed=batch)
 
     def on_epoch_end(self, epoch, logs=None):
         """
@@ -102,29 +102,28 @@ class ProgbarLogger(Callback):
         logs : dict, optional
             Dictionary of logs. Default is None.
         """
-        if logs is None:
-            logs = {}
-        self.pbar.set_description_str(
-            self.desc.format(
-                epoch=epoch + 1,
-                loss=logs.get("loss", math.inf),
-            ),
-            refresh=False,
+        if epoch == 0:
+            self._zero_based_epoch = True
+        if self.epoch_tracker is None:
+            return
+        report = get_performance_report(
+            logs,
+            exclude=self.exclude,
+            epoch=epoch + 1 if self._zero_based_epoch else epoch,
         )
-        row = {}
-        for k, v in logs.items():
-            if self.exclude is not None and k in self.exclude:
-                continue
-            if isinstance(v, float):
-                v = f"{v:0.4f}"
-            elif isinstance(v, int):
-                v = f"{v:d}"
-            elif isinstance(v, str):
-                v = (v[:10] + "...") if len(v) > 10 else v
-            else:
-                continue
-            row[k] = v
-        self.pbar.table.add_row(row)
+        if not self.table.columns:
+            for column in sorted(report.keys()):
+                self.table.add_column(column, justify="left")
+        self.table.add_row(
+            *[
+                report.get(column.header, "N/A")
+                for column in self.table.columns
+            ],
+        )
+        if self._zero_based_epoch:
+            self.progress.update(self.epoch_tracker, completed=epoch + 1)
+        else:
+            self.progress.update(self.epoch_tracker, completed=epoch)
 
     def on_train_end(self, logs=None):
         """
@@ -135,22 +134,51 @@ class ProgbarLogger(Callback):
         logs : dict, optional
             Dictionary of logs. Default is None.
         """
-        self.pbar.close()
-        self.pbar = None
+        if self.batch_tracker_train is not None:
+            self.progress.remove_task(self.batch_tracker_train)
+        if self.live is None:
+            return
+        self.live.stop()
+        self.progress = None
+        self.live = None
 
     def on_predict_begin(self, logs=None):
-        self.pred_pbar = ProgressBar(
-            total=self.params["pred_steps"],
-            desc="Predicting | Progress",
-            postfix={},
-            bar_format=self.bar_format,
-            leave=False,
+        if "pred_steps" not in self.params:
+            return None
+        if self.progress is None:
+            self.progress = self.create_progress_bar()
+            layout = Group(self.progress)
+            self.live = Live(
+                layout, refresh_per_second=4, vertical_overflow="visible"
+            )
+            self.live.start()
+            self._started_by_predict = True
+        pred_steps = self.params["pred_steps"]
+        self.batch_tracker_valid = self.progress.add_task(
+            "Batch[Valid]", total=pred_steps
         )
 
     def on_predict_batch_end(self, batch, logs=None):
-        self.pred_pbar.update(1)
-        self.pred_pbar.refresh()
+        if self.batch_tracker_valid is None:
+            return
+        self.progress.update(self.batch_tracker_valid, advance=1)
 
     def on_predict_end(self, logs=None):
-        self.pred_pbar.close()
-        self.pred_pbar = None
+        if self.batch_tracker_valid is None:
+            return
+        self.progress.remove_task(self.batch_tracker_valid)
+        if not self._started_by_predict:
+            return
+        if self.live is None:
+            return
+        self.live.stop()
+        self.progress = None
+        self.live = None
+        self._started_by_predict = False
+
+    def create_progress_bar(self):
+        return Progress(
+            SpinnerColumn(),
+            *Progress.get_default_columns(),
+            TimeElapsedColumn(),
+        )
