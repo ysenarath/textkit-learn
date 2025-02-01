@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from os import PathLike
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import torch
@@ -70,6 +70,16 @@ class KnowledgeBasedTokenizer:
                 if token_char_idxs.intersection(mention_char_idxs):
                     token_triples[i].add(triple)
         return token_triples
+
+    def analyze(self, text: str, top_k: Optional[int] = DEFAULT_TOP_K):
+        triples = self.lexicon.query(text)
+        if top_k:
+            triples = filter_triples(
+                triples,
+                top_k=top_k,
+                embedding=self.embedding,
+            )
+        return triples
 
     def encode(
         self,
