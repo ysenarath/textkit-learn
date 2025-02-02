@@ -27,7 +27,9 @@ class TargetBasedLoss(torch.nn.Module):
         self.target_type = target_type
         self._loss_func = None
 
-    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, input: torch.Tensor, target: torch.Tensor
+    ) -> torch.Tensor:
         if self.target_type is None:
             if self.num_labels == 1:
                 target_type = "continuous"

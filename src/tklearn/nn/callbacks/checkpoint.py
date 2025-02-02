@@ -59,14 +59,14 @@ def _validate_save_freq(
     if isinstance(save_freq, float):
         save_freq = int(save_freq)
     if save_freq != "epoch" and not isinstance(save_freq, int):
-        msg = (
-            f"{cls.__name__} save_freq should be 'epoch' or an integer, got {save_freq}"
-        )
+        msg = f"{cls.__name__} save_freq should be 'epoch' or an integer, got {save_freq}"
         raise ValueError(msg)
     return save_freq
 
 
-def _validate_save_weights_only(save_weights_only: bool, filepath: Union[Path, str]):
+def _validate_save_weights_only(
+    save_weights_only: bool, filepath: Union[Path, str]
+):
     if not isinstance(save_weights_only, bool):
         raise ValueError(
             f"save_weights_only should be a boolean, got {save_weights_only}"
@@ -142,7 +142,9 @@ class ModelCheckpoint(Callback):
 
     def _save_model(self, logs=None):
         logs = logs or {}
-        filepath = Path(self.filepath.format(epoch=self.epoch, step=self.step, **logs))
+        filepath = Path(
+            self.filepath.format(epoch=self.epoch, step=self.step, **logs)
+        )
         filepath.parent.mkdir(parents=True, exist_ok=True)
         if self.save_best_only:
             current = logs.get(self.monitor)
@@ -164,7 +166,9 @@ class ModelCheckpoint(Callback):
                     )
         else:
             if self.verbose > 0:
-                logger.debug(f"Save model at epoch {self.epoch} to {filepath}.")
+                logger.debug(
+                    f"Save model at epoch {self.epoch} to {filepath}."
+                )
             self._save_model_internal(filepath)
 
     def _save_model_internal(self, filepath: Path):

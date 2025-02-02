@@ -375,7 +375,9 @@ class BERTAdamW(Optimizer):
                         "group": i,
                     })
         data = pd.DataFrame(data)
-        sns.lineplot(data=data, x="step", y="lr", hue="group", palette="viridis")
+        sns.lineplot(
+            data=data, x="step", y="lr", hue="group", palette="viridis"
+        )
         # rename the axis
         plt.xlabel("Step")
         plt.ylabel("Learning Rate")

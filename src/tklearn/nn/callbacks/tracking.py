@@ -10,7 +10,9 @@ __all__ = [
 
 
 class TrackingCallback(Callback):
-    def __init__(self, prefix: Optional[str] = None, exclude: Optional[str] = None):
+    def __init__(
+        self, prefix: Optional[str] = None, exclude: Optional[str] = None
+    ):
         super().__init__()
         # the actual run used to track the trainer progress
         if prefix is None:
@@ -33,7 +35,9 @@ class TrackingCallback(Callback):
     def on_epoch_end(self, epoch: int, logs: Optional[dict] = None):
         mlflow.log_metric(f"{self.prefix}epoch", epoch, step=epoch)
         logs = {
-            f"{self.prefix}{k}": v for k, v in logs.items() if self.is_loggable(k, v)
+            f"{self.prefix}{k}": v
+            for k, v in logs.items()
+            if self.is_loggable(k, v)
         }
         # metrics must be a Dict[str, float]
         mlflow.log_metrics(logs, step=epoch)

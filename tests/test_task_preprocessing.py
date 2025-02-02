@@ -1,6 +1,7 @@
 import unittest
 
 import torch
+
 from tklearn.nn.utils.preprocessing import preprocess_input, preprocess_target
 
 
@@ -12,7 +13,9 @@ class TestPreprocessInput(unittest.TestCase):
 
     def test_continuous_multioutput(self):
         input_tensor = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
-        result = preprocess_target("continuous-multioutput", input_tensor, num_labels=2)
+        result = preprocess_target(
+            "continuous-multioutput", input_tensor, num_labels=2
+        )
         self.assertTrue(torch.allclose(result, input_tensor))
 
     def test_binary(self):
@@ -39,12 +42,16 @@ class TestPreprocessInput(unittest.TestCase):
 
     def test_multilabel_indicator(self):
         input_tensor = torch.tensor([[1, 0, 1], [0, 1, 1], [1, 1, 0]])
-        result = preprocess_target("multilabel-indicator", input_tensor, num_labels=3)
+        result = preprocess_target(
+            "multilabel-indicator", input_tensor, num_labels=3
+        )
         self.assertTrue(torch.allclose(result, input_tensor))
 
     def test_multiclass_multioutput(self):
         input_tensor = torch.tensor([[0, 1, 2], [2, 0, 1], [1, 2, 0]])
-        result = preprocess_target("multiclass-multioutput", input_tensor, num_labels=3)
+        result = preprocess_target(
+            "multiclass-multioutput", input_tensor, num_labels=3
+        )
         self.assertTrue(torch.allclose(result, input_tensor))
 
     def test_invalid_shape(self):
@@ -80,7 +87,9 @@ class TestPreprocessInput(unittest.TestCase):
     def test_invalid_multilabel_values(self):
         input_tensor = torch.tensor([[0, 1, 2], [1, 0, 1]])
         with self.assertRaises(ValueError):
-            preprocess_target("multilabel-indicator", input_tensor, num_labels=3)
+            preprocess_target(
+                "multilabel-indicator", input_tensor, num_labels=3
+            )
 
 
 class TestPreprocessTarget(unittest.TestCase):
@@ -129,8 +138,12 @@ class TestPreprocessTarget(unittest.TestCase):
         y_pred, y_score = preprocess_input("multiclass-multioutput", logits)
         self.assertTrue(torch.allclose(y_pred[0], torch.tensor([1, 1])))
         self.assertTrue(torch.allclose(y_pred[1], torch.tensor([1, 0])))
-        self.assertTrue(torch.allclose(y_score[0], torch.softmax(logits[0], dim=-1)))
-        self.assertTrue(torch.allclose(y_score[1], torch.softmax(logits[1], dim=-1)))
+        self.assertTrue(
+            torch.allclose(y_score[0], torch.softmax(logits[0], dim=-1))
+        )
+        self.assertTrue(
+            torch.allclose(y_score[1], torch.softmax(logits[1], dim=-1))
+        )
 
     def test_invalid_shape(self):
         target_types = [
@@ -145,7 +158,10 @@ class TestPreprocessTarget(unittest.TestCase):
             with self.subTest(target_type=target_type):
                 if target_type in ["continuous", "binary"]:
                     logits = torch.tensor([[[1.0]]])
-                elif target_type in ["continuous-multioutput", "multilabel-indicator"]:
+                elif target_type in [
+                    "continuous-multioutput",
+                    "multilabel-indicator",
+                ]:
                     logits = torch.tensor([1.0, 2.0, 3.0])
                 elif target_type == "multiclass":
                     logits = torch.tensor([1.0, 2.0, 3.0])
