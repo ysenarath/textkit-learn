@@ -6,3 +6,4 @@ Sphinx
 jupyter
 jupyterlab
 ipykernel
+pre-commit
