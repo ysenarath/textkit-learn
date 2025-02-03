@@ -149,3 +149,5 @@ notebooks/benchmark_key_only/*
 /scratch
 /resources/
 examples/outputs/*
+requirements.txt
+requirements-dev.txt

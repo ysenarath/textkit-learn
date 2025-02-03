@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "textkit-learn"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -13,7 +13,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -65,6 +64,9 @@ path = "src/tklearn/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/tklearn"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
 
 [tool.ruff]
 extend-include = ["*.ipynb"]
