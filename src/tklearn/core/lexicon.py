@@ -398,7 +398,7 @@ def score_triples(
     triples: Dict[Tuple[str, str, str], set], embedding: Embedding
 ) -> Dict[Tuple[str, str, str], float]:
     vocab = set()
-    for s, v, o in triples.keys():
+    for s, p, o in triples.keys():
         vocab.update([s, o])
     vocab = list(vocab)
     ndim = embedding.shape[1]
@@ -412,9 +412,9 @@ def score_triples(
         scores = np.zeros(len(vocab))
     scores = dict(zip(vocab, scores))
     triple_score = {}
-    for s, v, o in triples.keys():
+    for s, p, o in triples.keys():
         avg_score = (scores[s] + scores[o]) / 2
-        triple_score[(s, v, o)] = avg_score
+        triple_score[(s, p, o)] = avg_score
     return triple_score
 
 
@@ -457,3 +457,71 @@ def augment(text: str, triples: Dict[Tuple[str, str, str], set]):
         # j is the character index of the triplet/entity
         aug_triples[triplet].update(range(start, end + 1))
     return aug_text, aug_triples
+
+
+def score_triples_v2(
+    triples: Dict[Tuple[str, str, str], set],
+    embedding: Embedding,
+    threshold: float = 0.1,
+) -> Dict[Tuple[str, str, str], float]:
+    vocab2triple = {}
+    for s, p, o in triples.keys():
+        if p == "HasContext":
+            key = f"{s} has context {o}"
+        elif p == "IsA":
+            key = f"{s} is a {o}"
+        else:
+            raise ValueError(f"predicate {p} is not supported")
+        if key in vocab2triple:
+            raise ValueError(f"key {key} is already in the vocab")
+        vocab2triple[key] = (s, p, o)
+    vocab = list(vocab2triple.keys())
+    ndim = embedding.shape[1]
+    vectors = np.zeros((len(vocab), ndim))
+    for i, term in enumerate(vocab):
+        vectors[i] = embedding.get_word_vector(term)
+    similarity_matrix = 1 - cdist(vectors, vectors, metric="cosine")
+    try:
+        scores = degree_centrality_scores(
+            similarity_matrix, threshold=threshold
+        )
+    except ValueError:
+        scores = np.zeros(len(vocab))
+    scores = dict(zip(vocab, scores))
+    triple_score = {}
+    for vocab_key, vocab_score in scores.items():
+        triple_score[vocab2triple[vocab_key]] = vocab_score
+    return triple_score
+
+
+def score_triples_v3(
+    triples: Dict[Tuple[str, str, str], set],
+    embedding: Embedding,
+    context: str,
+    threshold: float = 0.1,
+) -> Dict[Tuple[str, str, str], float]:
+    vocab = {
+        v.strip()
+        for v in unibreak.split_words(context)
+        if v.strip() and v not in stop_words
+    }
+    for s, p, o in triples.keys():
+        vocab.update([s, o])
+    vocab = list({v.lower() for v in vocab})
+    ndim = embedding.shape[1]
+    vectors = np.zeros((len(vocab), ndim))
+    for i, term in enumerate(vocab):
+        vectors[i] = embedding.get_word_vector(term)
+    similarity_matrix = 1 - cdist(vectors, vectors, metric="cosine")
+    try:
+        scores = degree_centrality_scores(
+            similarity_matrix, threshold=threshold
+        )
+    except ValueError:
+        scores = np.zeros(len(vocab))
+    scores = dict(zip(vocab, scores))
+    triple_score = {}
+    for s, p, o in triples.keys():
+        avg_score = (scores[s.lower()] + 2 * scores[o.lower()]) / 3
+        triple_score[(s, p, o)] = avg_score
+    return triple_score
