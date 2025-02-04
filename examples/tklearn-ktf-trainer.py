@@ -2,7 +2,6 @@
 import argparse
 import time
 
-import pyinstrument
 from datasets import DatasetDict, load_dataset
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
@@ -48,6 +47,13 @@ model.to("cuda")
 
 def tokenize_function(examples):
     if args.profile:
+        try:
+            import pyinstrument
+        except ImportError:
+            raise ImportError(
+                "You need to install pyinstrument to use profiling"
+            )
+
         with pyinstrument.Profiler() as profiler:
             encodings = model.tokenizer(examples["text"])
         profiler.open_in_browser()
