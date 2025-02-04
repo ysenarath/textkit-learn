@@ -135,6 +135,12 @@ class Embedding(BaseModule, BaseEmbedding):
     @lru_cache(maxsize=None)
     def get_word_vector(self, word: str) -> np.ndarray:
         if self.model:
+            if " " in word:
+                word = " ".join(word.split())
+                return np.mean(
+                    [self.model.get_word_vector(w) for w in word.split()],
+                    axis=0,
+                )
             return self.model.get_word_vector(word)
         return self[word]
 
