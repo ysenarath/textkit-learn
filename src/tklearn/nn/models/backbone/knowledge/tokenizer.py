@@ -10,13 +10,13 @@ import torch
 from transformers import AutoTokenizer, PreTrainedModel, PreTrainedTokenizer
 from typing_extensions import Self
 
-from tklearn.core.lexicon import (
+from tklearn.embeddings import AutoEmbedding, Embedding
+from tklearn.nn.models.backbone.knowledge.lexicon import (
     DEFAULT_TOP_K,
     Lexicon,
     augment,
     filter_triples,
 )
-from tklearn.embeddings import AutoEmbedding, Embedding
 
 __all__ = ["KnowledgeBasedTokenizer"]
 
