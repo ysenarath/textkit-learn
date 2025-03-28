@@ -50,6 +50,7 @@ dependencies = [
     "ipywidgets",
     "seaborn",
     "adapters~=1.0.1",
+    "mlflow>=2.20.1",
 ]
 dynamic = ["version"]
 
