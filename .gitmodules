@@ -1,0 +1,4 @@
+[submodule "textkit-learn-docs"]
+	path = docs
+	url = https://github.com/ysenarath/textkit-learn.git
+	branch = docs
