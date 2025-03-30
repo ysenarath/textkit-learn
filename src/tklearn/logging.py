@@ -10,7 +10,6 @@ from nightjar import BaseConfig
 __all__ = [
     "get_logger",
 ]
-
 _LOGGING_TEMPLATE = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 T = TypeVar("T")
