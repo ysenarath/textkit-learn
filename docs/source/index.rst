@@ -5,4 +5,4 @@ TextKit Learn
    :maxdepth: 1
 
    api_docs
-   examples/index
+   examples_docs

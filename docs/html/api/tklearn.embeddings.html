@@ -132,7 +132,7 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../examples/index.html">
+  <a class="nav-link nav-internal" href="../examples_docs.html">
     Examples
   </a>
 </li>
@@ -218,7 +218,7 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../examples/index.html">
+  <a class="nav-link nav-internal" href="../examples_docs.html">
     Examples
   </a>
 </li>
@@ -269,6 +269,24 @@
 <li class="toctree-l2"><a class="reference internal" href="tklearn.utils.html">tklearn.utils package</a></li>
 </ul>
 </details></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">tklearn.embeddings package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tklearn.metrics.html">tklearn.metrics package</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tklearn.nn.html">tklearn.nn package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.base.html">tklearn.nn.base package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.calibration.html">tklearn.nn.calibration package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.callbacks.html">tklearn.nn.callbacks package</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tklearn.nn.models.html">tklearn.nn.models package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="tklearn.nn.models.backbone.html">tklearn.nn.models.backbone package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.knowledge.html">tklearn.nn.models.backbone.knowledge package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.models.multiclass.html">tklearn.nn.models.multiclass package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.utils.html">tklearn.nn.utils package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="tklearn.utils.html">tklearn.utils package</a></li>
 </ul>
 </div>
 </nav></div>
@@ -418,57 +436,8 @@
 </dd></dl>
 
 </section>
-<section id="module-tklearn.embeddings.fasttext">
-<span id="tklearn-embeddings-fasttext-module"></span><h2>tklearn.embeddings.fasttext module<a class="headerlink" href="#module-tklearn.embeddings.fasttext" title="Link to this heading">#</a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbedding">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.fasttext.</span></span><span class="sig-name descname"><span class="pre">FastTextEmbedding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbedding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbedding" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#tklearn.embeddings.base.Embedding" title="tklearn.embeddings.base.Embedding"><code class="xref py py-class docutils literal notranslate"><span class="pre">Embedding</span></code></a></p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbedding.config">
-<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">FastTextEmbeddingConfig</span></em><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbedding.config" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbedding.get_model">
-<span class="sig-name descname"><span class="pre">get_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbedding.get_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbedding.get_model" title="Link to this definition">#</a></dt>
-<dd><p>Return the model.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbedding.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbedding.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbedding.load" title="Link to this definition">#</a></dt>
-<dd><p>Load resource.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</span></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbeddingConfig">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.fasttext.</span></span><span class="sig-name descname"><span class="pre">FastTextEmbeddingConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cc.en.300'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbeddingConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmbeddingConfig</span></code></a></p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbeddingConfig.identifier">
-<span class="sig-name descname"><span class="pre">identifier</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[str]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'fasttext'</span></em><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.identifier" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbeddingConfig.version">
-<span class="sig-name descname"><span class="pre">version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'cc.en.300'</span></em><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.version" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.change_dir">
-<span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.fasttext.</span></span><span class="sig-name descname"><span class="pre">change_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#change_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.fasttext.change_dir" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
+<section id="tklearn-embeddings-fasttext-module">
+<h2>tklearn.embeddings.fasttext module<a class="headerlink" href="#tklearn-embeddings-fasttext-module" title="Link to this heading">#</a></h2>
 </section>
 <section id="tklearn-embeddings-gensim-module">
 <h2>tklearn.embeddings.gensim module<a class="headerlink" href="#tklearn-embeddings-gensim-module" title="Link to this heading">#</a></h2>
@@ -548,21 +517,7 @@
 </li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.embeddings.fasttext">tklearn.embeddings.fasttext module</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbedding"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbedding.config"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.config</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbedding.get_model"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.get_model()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbedding.load"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.load()</span></code></a></li>
-</ul>
-</li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig"><code class="docutils literal notranslate"><span class="pre">FastTextEmbeddingConfig</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.identifier"><code class="docutils literal notranslate"><span class="pre">FastTextEmbeddingConfig.identifier</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.version"><code class="docutils literal notranslate"><span class="pre">FastTextEmbeddingConfig.version</span></code></a></li>
-</ul>
-</li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.change_dir"><code class="docutils literal notranslate"><span class="pre">change_dir()</span></code></a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn-embeddings-fasttext-module">tklearn.embeddings.fasttext module</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn-embeddings-gensim-module">tklearn.embeddings.gensim module</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module contents</a></li>
 </ul>
