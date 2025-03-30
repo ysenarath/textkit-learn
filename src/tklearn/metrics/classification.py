@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import (
     Any,
-    Dict,
     List,
     Literal,
     Optional,
+    TypedDict,
     Union,
 )
 
@@ -106,7 +106,7 @@ class AUC(MetricBase):
             max_fpr=self.max_fpr,
             multi_class=self.multi_class,
             labels=self.labels,
-        )
+        ).item()
 
 
 class Precision(MetricBase):
@@ -219,6 +219,16 @@ class OptimalAUCThreshold(MetricBase):
     y_score = ArrayAccum("y_score")
     sample_weight = ArrayAccum("sample_weight")
 
+    class PR(TypedDict):
+        class PlotData(TypedDict):
+            fpr: float
+            tpr: float
+            thresholds: float
+            optimal: bool
+
+        threshold: float
+        data: List[PlotData]
+
     def __init__(
         self,
         pos_label: Union[int, str, None] = None,
@@ -228,7 +238,30 @@ class OptimalAUCThreshold(MetricBase):
         self.pos_label = pos_label
         self.drop_intermediate = drop_intermediate
 
-    def result(self) -> List[Dict[str, float]]:
+    def _get_plot_data(
+        self,
+        fpr: np.ndarray,
+        tpr: np.ndarray,
+        thresholds: np.ndarray,
+        optimal_idx: int,
+    ) -> List[PR.PlotData]:
+        return [
+            {
+                "fpr": f,
+                "tpr": t,
+                "thresholds": th,
+                "optimal": i == optimal_idx,
+            }
+            for i, (f, t, th) in enumerate(
+                zip(
+                    fpr.tolist(),
+                    tpr.tolist(),
+                    thresholds.tolist(),
+                )
+            )
+        ]
+
+    def result(self) -> List[PR]:
         y_true = self.y_true.result()
         y_score = self.y_score.result()
         sample_weight = self.sample_weight.result()
@@ -240,21 +273,29 @@ class OptimalAUCThreshold(MetricBase):
             drop_intermediate=self.drop_intermediate,
         )
         optimal_idx = np.argmax(tpr - fpr)
-        return [
-            {
-                "fpr": f,
-                "tpr": t,
-                "thresholds": th,
-                "optimal": i == optimal_idx,
-            }
-            for i, (f, t, th) in enumerate(zip(fpr, tpr, thresholds))
-        ]
+        best_threshold = thresholds[optimal_idx].item()
+        plot_data = self._get_plot_data(fpr, tpr, thresholds, optimal_idx)
+        return {
+            "threshold": best_threshold,
+            "data": plot_data,
+        }
 
 
 class OptimalPRThreshold(MetricBase):
     y_true = ArrayAccum("y_true")
     y_score = ArrayAccum("y_score")
     sample_weight = ArrayAccum("sample_weight")
+
+    class PR(TypedDict):
+        class PlotData(TypedDict):
+            precision: float
+            recall: float
+            f1: float
+            thresholds: float
+            optimal: bool
+
+        threshold: float
+        data: List[PlotData]
 
     def __init__(
         self,
@@ -267,7 +308,31 @@ class OptimalPRThreshold(MetricBase):
         self.drop_intermediate = drop_intermediate
         self.zero_division = zero_division
 
-    def result(self) -> List[Dict[str, float]]:
+    def _get_plot_data(
+        self,
+        precision: np.ndarray,
+        recall: np.ndarray,
+        thresholds: np.ndarray,
+        optimal_idx: int,
+    ) -> List[PR.PlotData]:
+        return [
+            {
+                "precision": p,
+                "recall": r,
+                "f1": 2 * p * r / (p + r) if p + r > 0 else self.zero_division,
+                "thresholds": t,
+                "optimal": i == optimal_idx,
+            }
+            for i, (p, r, t) in enumerate(
+                zip(
+                    precision.tolist(),
+                    recall.tolist(),
+                    thresholds.tolist(),
+                )
+            )
+        ]
+
+    def result(self) -> PR:
         y_true = self.y_true.result()
         y_score = self.y_score.result()
         sample_weight = self.sample_weight.result()
@@ -278,16 +343,13 @@ class OptimalPRThreshold(MetricBase):
             sample_weight=sample_weight,
             drop_intermediate=self.drop_intermediate,
         )
-        optimal_idx = np.argmax(
-            2 * precision * recall / (precision + recall + 1e-12)
+        recall = 2 * precision * recall / (precision + recall + 1e-12)
+        optimal_idx = np.argmax(recall).item()
+        best_threshold = thresholds[optimal_idx].item()
+        plot_data = self._get_plot_data(
+            precision, recall, thresholds, optimal_idx
         )
-        return [
-            {
-                "precision": p,
-                "recall": r,
-                "f1": 2 * p * r / (p + r) if p + r > 0 else self.zero_division,
-                "thresholds": t,
-                "optimal": i == optimal_idx,
-            }
-            for i, (p, r, t) in enumerate(zip(precision, recall, thresholds))
-        ]
+        return {
+            "threshold": best_threshold,
+            "data": plot_data,
+        }

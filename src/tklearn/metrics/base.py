@@ -101,7 +101,21 @@ def with_metric_context(func: T) -> T:
     return decorator
 
 
-class MetricState(MetricBase, Mapping[MetricBase, Dict[str, Any]]):
+class MetricStateMeta(abc.ABCMeta):
+    def __new__(cls, *args, **kwargs) -> MetricState:
+        msc: type[MetricState] = super().__new__(cls, *args, **kwargs)
+        # wrap methods
+        msc.reset = with_metric_context(msc.reset)
+        msc.update = with_metric_context(msc.update)
+        msc.result = with_metric_context(msc.result)
+        return msc
+
+
+class MetricState(
+    MetricBase,
+    Mapping[MetricBase, Dict[str, Any]],
+    metaclass=MetricStateMeta,
+):
     _metric_states: Dict[MetricBase, Dict[str, Any]]
 
     def __init__(
@@ -173,17 +187,14 @@ class MetricState(MetricBase, Mapping[MetricBase, Dict[str, Any]]):
     def __len__(self) -> int:
         return len(self._metric_states)
 
-    @with_metric_context
     def reset(self) -> None:
         for metric in self._metric_states:
             metric.reset()
 
-    @with_metric_context
     def update(self, **kwargs: Any) -> None:
         for metric in self._metric_states:
             metric.update(**kwargs)
 
-    @with_metric_context
     def result(self) -> Union[Tuple[Any], Mapping[str, Any]]:
         if self.metric_names is None:
             return tuple(metric.result() for metric in self.metrics)
