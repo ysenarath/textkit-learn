@@ -4,5 +4,5 @@ Examples
 .. toctree::
    :maxdepth: 2
 
-   examples/getting_started
+   examples/using_metrics
    examples/creating_metrics
