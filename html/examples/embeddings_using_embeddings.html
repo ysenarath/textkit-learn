@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>&lt;no title&gt; &#8212; TextKit Learn</title>
+    <title>Using Embeddings &#8212; TextKit Learn</title>
   
   
   
@@ -39,11 +39,13 @@
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
     <script src="../_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/using_embeddings';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/embeddings_using_embeddings';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Creating New Embedding Models" href="embeddings_create_embedding.html" />
+    <link rel="prev" title="Examples" href="../examples_docs.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -129,7 +131,7 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../examples_docs.html">
     Examples
   </a>
@@ -199,10 +201,8 @@
       
       
       
-        
-      
       <dialog id="pst-primary-sidebar-modal"></dialog>
-      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
         
 
   
@@ -224,7 +224,7 @@
 </li>
 
 
-<li class="nav-item ">
+<li class="nav-item current active">
   <a class="nav-link nav-internal" href="../examples_docs.html">
     Examples
   </a>
@@ -258,6 +258,21 @@
       </div>
     
   </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Using Embeddings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embeddings_create_embedding.html">Creating New Embedding Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics_using_metrics.html">Using Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metrics_creating_metrics.html">Creating New Metrics</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
   
   
   <div class="sidebar-primary-items__end sidebar-primary__section">
@@ -294,7 +309,10 @@
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">&lt;no title&gt;</span></li>
+    
+    <li class="breadcrumb-item"><a href="../examples_docs.html" class="nav-link">Examples</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Using Embeddings</span></li>
   </ul>
 </nav>
 </div>
@@ -311,7 +329,83 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  
+  <section id="using-embeddings">
+<h1>Using Embeddings<a class="headerlink" href="#using-embeddings" title="Link to this heading">#</a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">AutoEmbedding</span></code> class from <code class="docutils literal notranslate"><span class="pre">tklearn.embeddings</span></code> provides a unified interface for loading and using word embedding models like GloVe and FastText.</p>
+<section id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading">#</a></h2>
+<p>First, import the necessary class:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">tklearn.embeddings</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoEmbedding</span>
+</pre></div>
+</div>
+</section>
+<section id="available-embedding-models">
+<h2>Available Embedding Models<a class="headerlink" href="#available-embedding-models" title="Link to this heading">#</a></h2>
+<section id="gensim-models">
+<h3>Gensim Models<a class="headerlink" href="#gensim-models" title="Link to this heading">#</a></h3>
+<p>The library supports all pre-trained word embedding models from the
+<a class="reference external" href="https://github.com/piskvorky/gensim-data?tab=readme-ov-file#models">gensim-data repository</a>,
+including popular ones like GloVe, Word2Vec, and FastText.</p>
+</section>
+<section id="fasttext-models">
+<h3>FastText Models<a class="headerlink" href="#fasttext-models" title="Link to this heading">#</a></h3>
+<p>You can use any of the pre-trained word vectors for 157 languages from
+<a class="reference external" href="https://fasttext.cc/docs/en/crawl-vectors.html#models">FastText’s Crawl Vectors</a>,
+which include 300-dimensional word vectors trained on Common Crawl and Wikipedia.</p>
+</section>
+</section>
+<section id="loading-embedding-models">
+<h2>Loading Embedding Models<a class="headerlink" href="#loading-embedding-models" title="Link to this heading">#</a></h2>
+<p>There are several ways to load embedding models:</p>
+<section id="simple-string-configuration">
+<h3>Simple String Configuration<a class="headerlink" href="#simple-string-configuration" title="Link to this heading">#</a></h3>
+<p>For quick access to Gensim models:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load GloVe Twitter 25d embeddings</span>
+<span class="n">wv</span> <span class="o">=</span> <span class="n">AutoEmbedding</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="s2">&quot;glove-twitter-25&quot;</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">wv</span><span class="p">[</span><span class="s2">&quot;hello&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">25</span><span class="p">,)</span>
+</pre></div>
+</div>
+</section>
+<section id="dictionary-configuration">
+<h3>Dictionary Configuration<a class="headerlink" href="#dictionary-configuration" title="Link to this heading">#</a></h3>
+<p>With name parameter:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">wv</span> <span class="o">=</span> <span class="n">AutoEmbedding</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;glove-twitter-25&quot;</span><span class="p">})</span>
+<span class="k">assert</span> <span class="n">wv</span><span class="p">[</span><span class="s2">&quot;hello&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">25</span><span class="p">,)</span>
+</pre></div>
+</div>
+<p>With name and version parameters for explicit model selection:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># GloVe from Gensim</span>
+<span class="n">wv</span> <span class="o">=</span> <span class="n">AutoEmbedding</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;gensim&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;glove-twitter-25&quot;</span><span class="p">,</span>
+<span class="p">})</span>
+<span class="k">assert</span> <span class="n">wv</span><span class="p">[</span><span class="s2">&quot;hello&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">25</span><span class="p">,)</span>
+
+<span class="c1"># FastText model</span>
+<span class="n">wv</span> <span class="o">=</span> <span class="n">AutoEmbedding</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;fasttext&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;cc.en.300.bin&quot;</span><span class="p">,</span>
+<span class="p">})</span>
+<span class="k">assert</span> <span class="n">wv</span><span class="p">[</span><span class="s2">&quot;hello&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">300</span><span class="p">,)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="using-the-embeddings">
+<h2>Using the Embeddings<a class="headerlink" href="#using-the-embeddings" title="Link to this heading">#</a></h2>
+<p>Once loaded, retrieve word vectors using dictionary-like syntax:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get embedding for a specific word</span>
+<span class="n">vector</span> <span class="o">=</span> <span class="n">wv</span><span class="p">[</span><span class="s2">&quot;hello&quot;</span><span class="p">]</span>
+
+<span class="c1"># The dimensionality depends on the model</span>
+<span class="c1"># - 25 dimensions for &quot;glove-twitter-25&quot;</span>
+<span class="c1"># - 300 dimensions for FastText&#39;s &quot;cc.en.300.bin&quot;</span>
+</pre></div>
+</div>
+<p>The resulting vectors can be used for various NLP tasks like semantic similarity, text classification, or as input features for neural networks.</p>
+</section>
+</section>
+
 
                 </article>
               
@@ -322,6 +416,24 @@
                 <footer class="prev-next-footer d-print-none">
                   
 <div class="prev-next-area">
+    <a class="left-prev"
+       href="../examples_docs.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Examples</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="embeddings_create_embedding.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Creating New Embedding Models</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
 </div>
                 </footer>
               
@@ -340,16 +452,27 @@
     <i class="fa-solid fa-list"></i> On this page
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
-    <ul class="simple visible nav section-nav flex-column">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#getting-started">Getting Started</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#available-embedding-models">Available Embedding Models</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensim-models">Gensim Models</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fasttext-models">FastText Models</a></li>
 </ul>
-
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#loading-embedding-models">Loading Embedding Models</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#simple-string-configuration">Simple String Configuration</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#dictionary-configuration">Dictionary Configuration</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#using-the-embeddings">Using the Embeddings</a></li>
+</ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="../_sources/examples/using_embeddings.rst.txt"
+      <li><a href="../_sources/examples/embeddings_using_embeddings.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div></div>
@@ -388,7 +511,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
     <br/>
   </p>
 </div>

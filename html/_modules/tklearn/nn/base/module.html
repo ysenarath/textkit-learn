@@ -38,7 +38,7 @@
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
     <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="../../../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/tklearn/nn/base/module';</script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
@@ -334,14 +334,14 @@
 
 
 <div class="viewcode-block" id="Module">
-<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.Module">[docs]</a>
+<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Module</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">Generic</span><span class="p">[</span><span class="n">I</span><span class="p">,</span> <span class="n">R</span><span class="p">]):</span>
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">device</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="o">.</span><span class="n">device</span>
 
 <div class="viewcode-block" id="Module.compile">
-<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.Module.compile">[docs]</a>
+<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.compile">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">compile</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">fullgraph</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -363,7 +363,7 @@
 
 
 <div class="viewcode-block" id="Module.freeze_layers">
-<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.Module.freeze_layers">[docs]</a>
+<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.freeze_layers">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">freeze_layers</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">layers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
@@ -422,7 +422,7 @@
 
 
 <div class="viewcode-block" id="Module.validation_step">
-<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.Module.validation_step">[docs]</a>
+<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.validation_step">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">validation_step</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">I</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">]:</span>
@@ -430,7 +430,7 @@
 
 
 <div class="viewcode-block" id="Module.test_step">
-<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.Module.test_step">[docs]</a>
+<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.test_step">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">test_step</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">I</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">]:</span>
@@ -438,7 +438,7 @@
 
 
 <div class="viewcode-block" id="Module.training_step">
-<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.Module.training_step">[docs]</a>
+<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.training_step">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">training_step</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">I</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">]:</span>
@@ -446,7 +446,7 @@
 
 
 <div class="viewcode-block" id="Module.predict_step">
-<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.Module.predict_step">[docs]</a>
+<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.predict_step">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">predict_step</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">I</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">R</span><span class="p">:</span>
@@ -454,7 +454,7 @@
 
 
 <div class="viewcode-block" id="Module.compute_loss">
-<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.Module.compute_loss">[docs]</a>
+<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.compute_loss">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">compute_loss</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">I</span><span class="p">,</span> <span class="n">output</span><span class="p">:</span> <span class="n">R</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">]:</span>
@@ -462,7 +462,7 @@
 
 
 <div class="viewcode-block" id="Module.compute_metric_inputs">
-<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.Module.compute_metric_inputs">[docs]</a>
+<a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.compute_metric_inputs">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">compute_metric_inputs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">I</span><span class="p">,</span> <span class="n">output</span><span class="p">:</span> <span class="n">R</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
@@ -519,7 +519,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
     <br/>
   </p>
 </div>

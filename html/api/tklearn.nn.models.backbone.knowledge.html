@@ -39,7 +39,7 @@
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
     <script src="../_static/documentation_options.js?v=5929fcd5"></script>
-    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/tklearn.nn.models.backbone.knowledge';</script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -381,73 +381,8 @@
 <section id="tklearn-nn-models-backbone-knowledge-lexicon-module">
 <h2>tklearn.nn.models.backbone.knowledge.lexicon module<a class="headerlink" href="#tklearn-nn-models-backbone-knowledge-lexicon-module" title="Link to this heading">#</a></h2>
 </section>
-<section id="module-tklearn.nn.models.backbone.knowledge.model">
-<span id="tklearn-nn-models-backbone-knowledge-model-module"></span><h2>tklearn.nn.models.backbone.knowledge.model module<a class="headerlink" href="#module-tklearn.nn.models.backbone.knowledge.model" title="Link to this heading">#</a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.models.backbone.knowledge.model.</span></span><span class="sig-name descname"><span class="pre">AutoKnowledgeBasedModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/model.html#AutoKnowledgeBasedModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
-<dl class="py property">
-<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.config">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.config" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.forward">
-<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/model.html#AutoKnowledgeBasedModel.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.forward" title="Link to this definition">#</a></dt>
-<dd><p>Define the computation performed at every call.</p>
-<p>Should be overridden by all subclasses.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Although the recipe for forward pass needs to be defined within
-this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
-instead of this since the former takes care of running the
-registered hooks while the latter silently ignores them.</p>
-</div>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.from_pretrained">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_pretrained</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained_model_name_or_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/model.html#AutoKnowledgeBasedModel.from_pretrained"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.from_pretrained" title="Link to this definition">#</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></span></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.get_extended_attention_mask">
-<span class="sig-name descname"><span class="pre">get_extended_attention_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attention_mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/model.html#AutoKnowledgeBasedModel.get_extended_attention_mask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.get_extended_attention_mask" title="Link to this definition">#</a></dt>
-<dd><p>Makes broadcastable attention and causal masks so that future and masked tokens are ignored.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>attention_mask</strong> (<cite>torch.Tensor</cite>) – Mask with ones indicating tokens to attend to, zeros for tokens to ignore.</p></li>
-<li><p><strong>input_shape</strong> (<cite>Tuple[int]</cite>) – The shape of the input to the model.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><cite>torch.Tensor</cite> The extended attention mask, with a the same dtype as <cite>attention_mask.dtype</cite>.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.resize_token_embeddings">
-<span class="sig-name descname"><span class="pre">resize_token_embeddings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_num_tokens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pad_to_multiple_of</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/model.html#AutoKnowledgeBasedModel.resize_token_embeddings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.resize_token_embeddings" title="Link to this definition">#</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">None</span></p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
+<section id="tklearn-nn-models-backbone-knowledge-model-module">
+<h2>tklearn.nn.models.backbone.knowledge.model module<a class="headerlink" href="#tklearn-nn-models-backbone-knowledge-model-module" title="Link to this heading">#</a></h2>
 </section>
 <section id="tklearn-nn-models-backbone-knowledge-tokenizer-module">
 <h2>tklearn.nn.models.backbone.knowledge.tokenizer module<a class="headerlink" href="#tklearn-nn-models-backbone-knowledge-tokenizer-module" title="Link to this heading">#</a></h2>
@@ -506,17 +441,7 @@ registered hooks while the latter silently ignores them.</p>
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submodules">Submodules</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn-nn-models-backbone-knowledge-lexicon-module">tklearn.nn.models.backbone.knowledge.lexicon module</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.models.backbone.knowledge.model">tklearn.nn.models.backbone.knowledge.model module</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel"><code class="docutils literal notranslate"><span class="pre">AutoKnowledgeBasedModel</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.config"><code class="docutils literal notranslate"><span class="pre">AutoKnowledgeBasedModel.config</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.forward"><code class="docutils literal notranslate"><span class="pre">AutoKnowledgeBasedModel.forward()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.from_pretrained"><code class="docutils literal notranslate"><span class="pre">AutoKnowledgeBasedModel.from_pretrained()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.get_extended_attention_mask"><code class="docutils literal notranslate"><span class="pre">AutoKnowledgeBasedModel.get_extended_attention_mask()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.resize_token_embeddings"><code class="docutils literal notranslate"><span class="pre">AutoKnowledgeBasedModel.resize_token_embeddings()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn-nn-models-backbone-knowledge-model-module">tklearn.nn.models.backbone.knowledge.model module</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn-nn-models-backbone-knowledge-tokenizer-module">tklearn.nn.models.backbone.knowledge.tokenizer module</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module contents</a></li>
 </ul>
@@ -565,7 +490,7 @@ registered hooks while the latter silently ignores them.</p>
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
     <br/>
   </p>
 </div>
