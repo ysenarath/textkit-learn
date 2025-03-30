@@ -1,0 +1,2137 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>tklearn.nn.callbacks package &#8212; TextKit Learn</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/tklearn.nn.callbacks';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="tklearn.nn.models package" href="tklearn.nn.models.html" />
+    <link rel="prev" title="tklearn.nn.calibration package" href="tklearn.nn.calibration.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">TextKit Learn</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples_docs.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api_docs.html">
+    API
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples_docs.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api_docs.html">
+    API
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="tklearn.html">tklearn package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="tklearn.embeddings.html">tklearn.embeddings package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.metrics.html">tklearn.metrics package</a></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="tklearn.nn.html">tklearn.nn package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html">tklearn.nn.base package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.calibration.html">tklearn.nn.calibration package</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">tklearn.nn.callbacks package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="tklearn.nn.models.html">tklearn.nn.models package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.html">tklearn.nn.models.backbone package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.multiclass.html">tklearn.nn.models.multiclass package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.utils.html">tklearn.nn.utils package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.utils.html">tklearn.utils package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="tklearn.embeddings.html">tklearn.embeddings package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tklearn.metrics.html">tklearn.metrics package</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="tklearn.nn.html">tklearn.nn package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.base.html">tklearn.nn.base package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.calibration.html">tklearn.nn.calibration package</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">tklearn.nn.callbacks package</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tklearn.nn.models.html">tklearn.nn.models package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="tklearn.nn.models.backbone.html">tklearn.nn.models.backbone package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.knowledge.html">tklearn.nn.models.backbone.knowledge package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.models.multiclass.html">tklearn.nn.models.multiclass package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.utils.html">tklearn.nn.utils package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="tklearn.utils.html">tklearn.utils package</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api_docs.html" class="nav-link">API</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="tklearn.html" class="nav-link">tklearn package</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="tklearn.nn.html" class="nav-link">tklearn.nn package</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">tklearn.nn.callbacks package</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="tklearn-nn-callbacks-package">
+<h1>tklearn.nn.callbacks package<a class="headerlink" href="#tklearn-nn-callbacks-package" title="Link to this heading">#</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
+</section>
+<section id="module-tklearn.nn.callbacks.base">
+<span id="tklearn-nn-callbacks-base-module"></span><h2>tklearn.nn.callbacks.base module<a class="headerlink" href="#module-tklearn.nn.callbacks.base" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.base.</span></span><span class="sig-name descname"><span class="pre">Callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.model">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.module.Module" title="tklearn.nn.base.module.Module"><span class="pre">Module</span></a></em><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.model" title="Link to this definition">#</a></dt>
+<dd><p>Get the model associated with the callback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The model associated with the callback.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_after_backward">
+<span class="sig-name descname"><span class="pre">on_after_backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_after_backward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_after_backward" title="Link to this definition">#</a></dt>
+<dd><p>Called after the backward pass.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_before_backward">
+<span class="sig-name descname"><span class="pre">on_before_backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_before_backward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_before_backward" title="Link to this definition">#</a></dt>
+<dd><p>Called before the backward pass.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_before_optimizer_step">
+<span class="sig-name descname"><span class="pre">on_before_optimizer_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_before_optimizer_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_before_optimizer_step" title="Link to this definition">#</a></dt>
+<dd><p>Called before the optimizer step.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>optimizer</strong> (<em>Optimizer</em><em>, </em><em>optional</em>) – The optimizer that is used for the training step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_before_zero_grad">
+<span class="sig-name descname"><span class="pre">on_before_zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_before_zero_grad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_before_zero_grad" title="Link to this definition">#</a></dt>
+<dd><p>Called before the optimizer’s <cite>zero_grad</cite> method is called.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>optimizer</strong> (<em>Optimizer</em><em>, </em><em>optional</em>) – The optimizer that is used for the training step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_epoch_begin">
+<span class="sig-name descname"><span class="pre">on_epoch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_epoch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_epoch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the start of an epoch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – Index of epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_epoch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of an epoch.</p>
+<p>Subclasses should override for any actions to run. This function should
+only be called during TRAIN mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – Index of epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Metric results for this training epoch, and for the validation
+epoch if validation is performed.
+Validation result keys are prefixed with <cite>val_</cite>.
+For the training epoch, the values of the <cite>Model</cite>’s metrics are
+returned.
+Example: <cite>{‘loss’: 0.2, ‘accuracy’: 0.7}</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_predict_batch_begin">
+<span class="sig-name descname"><span class="pre">on_predict_batch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_predict_batch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_predict_batch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of a batch in <cite>predict</cite> methods.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_predict_batch_end">
+<span class="sig-name descname"><span class="pre">on_predict_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_predict_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_predict_batch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of a batch in <cite>predict</cite> methods.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Aggregated metric results up until this batch.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_predict_begin">
+<span class="sig-name descname"><span class="pre">on_predict_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_predict_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_predict_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of prediction.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_predict_end">
+<span class="sig-name descname"><span class="pre">on_predict_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_predict_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_predict_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of prediction.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_test_batch_begin">
+<span class="sig-name descname"><span class="pre">on_test_batch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_test_batch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_test_batch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of a batch in <cite>evaluate</cite> methods.</p>
+<p>Also called at the beginning of a validation batch in the <cite>fit</cite>
+methods, if validation data is provided.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_test_batch_end">
+<span class="sig-name descname"><span class="pre">on_test_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_test_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_test_batch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of a batch in <cite>evaluate</cite> methods.</p>
+<p>Also called at the end of a validation batch in the <cite>fit</cite>
+methods, if validation data is provided.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Aggregated metric results up until this batch.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_test_begin">
+<span class="sig-name descname"><span class="pre">on_test_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_test_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_test_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of evaluation or validation.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_test_end">
+<span class="sig-name descname"><span class="pre">on_test_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_test_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_test_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of evaluation or validation.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently the output of the last call to <cite>on_test_batch_end()</cite> is
+passed to this argument for this method but that may change in the
+future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_train_batch_begin">
+<span class="sig-name descname"><span class="pre">on_train_batch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_train_batch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_train_batch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of a training batch in <cite>fit</cite> methods.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_train_batch_end">
+<span class="sig-name descname"><span class="pre">on_train_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_train_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_train_batch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of a training batch in <cite>fit</cite> methods.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Aggregated metric results up until this batch.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_train_begin">
+<span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_train_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_train_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of training.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.on_train_end">
+<span class="sig-name descname"><span class="pre">on_train_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_train_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.on_train_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of training.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently the output of the last call to <cite>on_epoch_end()</cite> is
+passed to this argument for this method but that may change
+in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.params" title="Link to this definition">#</a></dt>
+<dd><p>Get the parameters of the callback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The parameters of the callback.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.set_model">
+<span class="sig-name descname"><span class="pre">set_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.set_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.set_model" title="Link to this definition">#</a></dt>
+<dd><p>Set the model associated with the callback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model</strong> (<em>Model</em>) – The model to be set.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.Callback.set_params">
+<span class="sig-name descname"><span class="pre">set_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.set_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.Callback.set_params" title="Link to this definition">#</a></dt>
+<dd><p>Set the parameters of the callback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>params</strong> (<em>dict</em>) – The parameters to be set.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.CallbackList">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.base.</span></span><span class="sig-name descname"><span class="pre">CallbackList</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callbacks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.CallbackList" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a>]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.CallbackList.append">
+<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList.append"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.CallbackList.append" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.CallbackList.apply">
+<span class="sig-name descname"><span class="pre">apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_CallbackList__name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList.apply"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.CallbackList.apply" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserList</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.CallbackList.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.CallbackList.copy" title="Link to this definition">#</a></dt>
+<dd><p>Return a shallow copy of the list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.CallbackList.extend">
+<span class="sig-name descname"><span class="pre">extend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callbacks</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList.extend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.CallbackList.extend" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.CallbackList.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.CallbackList.get" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">Optional[Callback]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.base.CallbackList.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList.remove"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.base.CallbackList.remove" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">None</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tklearn.nn.callbacks.checkpoint">
+<span id="tklearn-nn-callbacks-checkpoint-module"></span><h2>tklearn.nn.callbacks.checkpoint module<a class="headerlink" href="#module-tklearn.nn.callbacks.checkpoint" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.checkpoint.ModelCheckpoint">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.checkpoint.</span></span><span class="sig-name descname"><span class="pre">ModelCheckpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monitor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'val_loss'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_best_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_weights_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'epoch'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_value_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/checkpoint.html#ModelCheckpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.checkpoint.ModelCheckpoint" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.checkpoint.ModelCheckpoint.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/checkpoint.html#ModelCheckpoint.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.checkpoint.ModelCheckpoint.on_epoch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of an epoch.</p>
+<p>Subclasses should override for any actions to run. This function should
+only be called during TRAIN mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – Index of epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Metric results for this training epoch, and for the validation
+epoch if validation is performed.
+Validation result keys are prefixed with <cite>val_</cite>.
+For the training epoch, the values of the <cite>Model</cite>’s metrics are
+returned.
+Example: <cite>{‘loss’: 0.2, ‘accuracy’: 0.7}</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.checkpoint.ModelCheckpoint.on_train_batch_end">
+<span class="sig-name descname"><span class="pre">on_train_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/checkpoint.html#ModelCheckpoint.on_train_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.checkpoint.ModelCheckpoint.on_train_batch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of a training batch in <cite>fit</cite> methods.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Aggregated metric results up until this batch.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.checkpoint.ModelCheckpoint.on_train_begin">
+<span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/checkpoint.html#ModelCheckpoint.on_train_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.checkpoint.ModelCheckpoint.on_train_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of training.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tklearn.nn.callbacks.early_stopping">
+<span id="tklearn-nn-callbacks-early-stopping-module"></span><h2>tklearn.nn.callbacks.early_stopping module<a class="headerlink" href="#module-tklearn.nn.callbacks.early_stopping" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.early_stopping.EarlyStopping">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.early_stopping.</span></span><span class="sig-name descname"><span class="pre">EarlyStopping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monitor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'valid_loss'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patience</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restore_best_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_from_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/early_stopping.html#EarlyStopping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.early_stopping.EarlyStopping.get_monitor_value">
+<span class="sig-name descname"><span class="pre">get_monitor_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/early_stopping.html#EarlyStopping.get_monitor_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping.get_monitor_value" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.early_stopping.EarlyStopping.mode">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping.mode" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.early_stopping.EarlyStopping.monitor">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">monitor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping.monitor" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.early_stopping.EarlyStopping.monitor_op">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">monitor_op</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ufunc</span></em><a class="headerlink" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping.monitor_op" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.early_stopping.EarlyStopping.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/early_stopping.html#EarlyStopping.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping.on_epoch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of an epoch.</p>
+<p>Subclasses should override for any actions to run. This function should
+only be called during TRAIN mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – Index of epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Metric results for this training epoch, and for the validation
+epoch if validation is performed.
+Validation result keys are prefixed with <cite>val_</cite>.
+For the training epoch, the values of the <cite>Model</cite>’s metrics are
+returned.
+Example: <cite>{‘loss’: 0.2, ‘accuracy’: 0.7}</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.early_stopping.EarlyStopping.on_train_begin">
+<span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/early_stopping.html#EarlyStopping.on_train_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping.on_train_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of training.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tklearn.nn.callbacks.history">
+<span id="tklearn-nn-callbacks-history-module"></span><h2>tklearn.nn.callbacks.history module<a class="headerlink" href="#module-tklearn.nn.callbacks.history" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.history.History">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.history.</span></span><span class="sig-name descname"><span class="pre">History</span></span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/history.html#History"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.history.History" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.history.History.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/history.html#History.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.history.History.on_epoch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of an epoch.</p>
+<p>Subclasses should override for any actions to run. This function should
+only be called during TRAIN mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – Index of epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Metric results for this training epoch, and for the validation
+epoch if validation is performed.
+Validation result keys are prefixed with <cite>val_</cite>.
+For the training epoch, the values of the <cite>Model</cite>’s metrics are
+returned.
+Example: <cite>{‘loss’: 0.2, ‘accuracy’: 0.7}</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.history.History.on_train_begin">
+<span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/history.html#History.on_train_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.history.History.on_train_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of training.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.history.History.to_pandas">
+<span class="sig-name descname"><span class="pre">to_pandas</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/history.html#History.to_pandas"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.history.History.to_pandas" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tklearn.nn.callbacks.plateau_early_stopping">
+<span id="tklearn-nn-callbacks-plateau-early-stopping-module"></span><h2>tklearn.nn.callbacks.plateau_early_stopping module<a class="headerlink" href="#module-tklearn.nn.callbacks.plateau_early_stopping" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.plateau_early_stopping.</span></span><span class="sig-name descname"><span class="pre">PlateauEarlyStopping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monitor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'valid_loss'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patience</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restore_best_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_from_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plateau_epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plateau_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/plateau_early_stopping.html#PlateauEarlyStopping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.get_monitor_value">
+<span class="sig-name descname"><span class="pre">get_monitor_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/plateau_early_stopping.html#PlateauEarlyStopping.get_monitor_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.get_monitor_value" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.mode">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.mode" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.monitor">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">monitor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.monitor" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.monitor_op">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">monitor_op</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ufunc</span></em><a class="headerlink" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.monitor_op" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/plateau_early_stopping.html#PlateauEarlyStopping.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.on_epoch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of an epoch.</p>
+<p>Subclasses should override for any actions to run. This function should
+only be called during TRAIN mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – Index of epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Metric results for this training epoch, and for the validation
+epoch if validation is performed.
+Validation result keys are prefixed with <cite>val_</cite>.
+For the training epoch, the values of the <cite>Model</cite>’s metrics are
+returned.
+Example: <cite>{‘loss’: 0.2, ‘accuracy’: 0.7}</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.on_train_begin">
+<span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/plateau_early_stopping.html#PlateauEarlyStopping.on_train_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.on_train_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of training.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tklearn.nn.callbacks.progbar_logger">
+<span id="tklearn-nn-callbacks-progbar-logger-module"></span><h2>tklearn.nn.callbacks.progbar_logger module<a class="headerlink" href="#module-tklearn.nn.callbacks.progbar_logger" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.progbar_logger.</span></span><span class="sig-name descname"><span class="pre">ProgbarLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exclude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.create_progress_bar">
+<span class="sig-name descname"><span class="pre">create_progress_bar</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.create_progress_bar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.create_progress_bar" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_epoch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of each epoch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – The epoch index.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_batch_end">
+<span class="sig-name descname"><span class="pre">on_predict_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_batch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of a batch in <cite>predict</cite> methods.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Aggregated metric results up until this batch.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_begin">
+<span class="sig-name descname"><span class="pre">on_predict_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of prediction.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_end">
+<span class="sig-name descname"><span class="pre">on_predict_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of prediction.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_batch_end">
+<span class="sig-name descname"><span class="pre">on_train_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_batch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of each training batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – The batch index.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_begin">
+<span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_end">
+<span class="sig-name descname"><span class="pre">on_train_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tklearn.nn.callbacks.tracking">
+<span id="tklearn-nn-callbacks-tracking-module"></span><h2>tklearn.nn.callbacks.tracking module<a class="headerlink" href="#module-tklearn.nn.callbacks.tracking" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.tracking.TrackingCallback">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.tracking.</span></span><span class="sig-name descname"><span class="pre">TrackingCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/tracking.html#TrackingCallback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.tracking.TrackingCallback" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.tracking.TrackingCallback.exclude">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">exclude</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">set</span></em><a class="headerlink" href="#tklearn.nn.callbacks.tracking.TrackingCallback.exclude" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.tracking.TrackingCallback.is_loggable">
+<span class="sig-name descname"><span class="pre">is_loggable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/tracking.html#TrackingCallback.is_loggable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.tracking.TrackingCallback.is_loggable" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.tracking.TrackingCallback.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/tracking.html#TrackingCallback.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.tracking.TrackingCallback.on_epoch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of an epoch.</p>
+<p>Subclasses should override for any actions to run. This function should
+only be called during TRAIN mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – Index of epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Metric results for this training epoch, and for the validation
+epoch if validation is performed.
+Validation result keys are prefixed with <cite>val_</cite>.
+For the training epoch, the values of the <cite>Model</cite>’s metrics are
+returned.
+Example: <cite>{‘loss’: 0.2, ‘accuracy’: 0.7}</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tklearn.nn.callbacks">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-tklearn.nn.callbacks" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.</span></span><span class="sig-name descname"><span class="pre">Callback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.model">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.module.Module" title="tklearn.nn.base.module.Module"><span class="pre">Module</span></a></em><a class="headerlink" href="#tklearn.nn.callbacks.Callback.model" title="Link to this definition">#</a></dt>
+<dd><p>Get the model associated with the callback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The model associated with the callback.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Model</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_after_backward">
+<span class="sig-name descname"><span class="pre">on_after_backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_after_backward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_after_backward" title="Link to this definition">#</a></dt>
+<dd><p>Called after the backward pass.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_before_backward">
+<span class="sig-name descname"><span class="pre">on_before_backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_before_backward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_before_backward" title="Link to this definition">#</a></dt>
+<dd><p>Called before the backward pass.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_before_optimizer_step">
+<span class="sig-name descname"><span class="pre">on_before_optimizer_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_before_optimizer_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_before_optimizer_step" title="Link to this definition">#</a></dt>
+<dd><p>Called before the optimizer step.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>optimizer</strong> (<em>Optimizer</em><em>, </em><em>optional</em>) – The optimizer that is used for the training step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_before_zero_grad">
+<span class="sig-name descname"><span class="pre">on_before_zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optimizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_before_zero_grad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_before_zero_grad" title="Link to this definition">#</a></dt>
+<dd><p>Called before the optimizer’s <cite>zero_grad</cite> method is called.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>optimizer</strong> (<em>Optimizer</em><em>, </em><em>optional</em>) – The optimizer that is used for the training step.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_epoch_begin">
+<span class="sig-name descname"><span class="pre">on_epoch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_epoch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_epoch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the start of an epoch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – Index of epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_epoch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of an epoch.</p>
+<p>Subclasses should override for any actions to run. This function should
+only be called during TRAIN mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – Index of epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Metric results for this training epoch, and for the validation
+epoch if validation is performed.
+Validation result keys are prefixed with <cite>val_</cite>.
+For the training epoch, the values of the <cite>Model</cite>’s metrics are
+returned.
+Example: <cite>{‘loss’: 0.2, ‘accuracy’: 0.7}</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_predict_batch_begin">
+<span class="sig-name descname"><span class="pre">on_predict_batch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_predict_batch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_predict_batch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of a batch in <cite>predict</cite> methods.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_predict_batch_end">
+<span class="sig-name descname"><span class="pre">on_predict_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_predict_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_predict_batch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of a batch in <cite>predict</cite> methods.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Aggregated metric results up until this batch.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_predict_begin">
+<span class="sig-name descname"><span class="pre">on_predict_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_predict_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_predict_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of prediction.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_predict_end">
+<span class="sig-name descname"><span class="pre">on_predict_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_predict_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_predict_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of prediction.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_test_batch_begin">
+<span class="sig-name descname"><span class="pre">on_test_batch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_test_batch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_test_batch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of a batch in <cite>evaluate</cite> methods.</p>
+<p>Also called at the beginning of a validation batch in the <cite>fit</cite>
+methods, if validation data is provided.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_test_batch_end">
+<span class="sig-name descname"><span class="pre">on_test_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_test_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_test_batch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of a batch in <cite>evaluate</cite> methods.</p>
+<p>Also called at the end of a validation batch in the <cite>fit</cite>
+methods, if validation data is provided.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Aggregated metric results up until this batch.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_test_begin">
+<span class="sig-name descname"><span class="pre">on_test_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_test_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_test_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of evaluation or validation.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_test_end">
+<span class="sig-name descname"><span class="pre">on_test_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_test_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_test_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of evaluation or validation.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently the output of the last call to <cite>on_test_batch_end()</cite> is
+passed to this argument for this method but that may change in the
+future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_train_batch_begin">
+<span class="sig-name descname"><span class="pre">on_train_batch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_train_batch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_train_batch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of a training batch in <cite>fit</cite> methods.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_train_batch_end">
+<span class="sig-name descname"><span class="pre">on_train_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_train_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_train_batch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of a training batch in <cite>fit</cite> methods.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Aggregated metric results up until this batch.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_train_begin">
+<span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_train_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_train_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of training.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.on_train_end">
+<span class="sig-name descname"><span class="pre">on_train_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.on_train_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.on_train_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of training.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently the output of the last call to <cite>on_epoch_end()</cite> is
+passed to this argument for this method but that may change
+in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#tklearn.nn.callbacks.Callback.params" title="Link to this definition">#</a></dt>
+<dd><p>Get the parameters of the callback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The parameters of the callback.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.set_model">
+<span class="sig-name descname"><span class="pre">set_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.set_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.set_model" title="Link to this definition">#</a></dt>
+<dd><p>Set the model associated with the callback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model</strong> (<em>Model</em>) – The model to be set.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.Callback.set_params">
+<span class="sig-name descname"><span class="pre">set_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#Callback.set_params"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.Callback.set_params" title="Link to this definition">#</a></dt>
+<dd><p>Set the parameters of the callback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>params</strong> (<em>dict</em>) – The parameters to be set.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.CallbackList">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.</span></span><span class="sig-name descname"><span class="pre">CallbackList</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callbacks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.CallbackList" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a>]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.CallbackList.append">
+<span class="sig-name descname"><span class="pre">append</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList.append"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.CallbackList.append" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.CallbackList.apply">
+<span class="sig-name descname"><span class="pre">apply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_CallbackList__name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList.apply"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.CallbackList.apply" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserList</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.CallbackList.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.CallbackList.copy" title="Link to this definition">#</a></dt>
+<dd><p>Return a shallow copy of the list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.CallbackList.extend">
+<span class="sig-name descname"><span class="pre">extend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callbacks</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList.extend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.CallbackList.extend" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.CallbackList.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.CallbackList.get" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">Optional[Callback]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.CallbackList.remove">
+<span class="sig-name descname"><span class="pre">remove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">callback</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/base.html#CallbackList.remove"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.CallbackList.remove" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">None</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.EarlyStopping">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.</span></span><span class="sig-name descname"><span class="pre">EarlyStopping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monitor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'valid_loss'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patience</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baseline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restore_best_weights</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_from_epoch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/early_stopping.html#EarlyStopping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.EarlyStopping" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.EarlyStopping.get_monitor_value">
+<span class="sig-name descname"><span class="pre">get_monitor_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/early_stopping.html#EarlyStopping.get_monitor_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.EarlyStopping.get_monitor_value" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.EarlyStopping.mode">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#tklearn.nn.callbacks.EarlyStopping.mode" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.EarlyStopping.monitor">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">monitor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#tklearn.nn.callbacks.EarlyStopping.monitor" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.EarlyStopping.monitor_op">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">monitor_op</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ufunc</span></em><a class="headerlink" href="#tklearn.nn.callbacks.EarlyStopping.monitor_op" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.EarlyStopping.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/early_stopping.html#EarlyStopping.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.EarlyStopping.on_epoch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of an epoch.</p>
+<p>Subclasses should override for any actions to run. This function should
+only be called during TRAIN mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – Index of epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Metric results for this training epoch, and for the validation
+epoch if validation is performed.
+Validation result keys are prefixed with <cite>val_</cite>.
+For the training epoch, the values of the <cite>Model</cite>’s metrics are
+returned.
+Example: <cite>{‘loss’: 0.2, ‘accuracy’: 0.7}</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.EarlyStopping.on_train_begin">
+<span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/early_stopping.html#EarlyStopping.on_train_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.EarlyStopping.on_train_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of training.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ModelCheckpoint">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.</span></span><span class="sig-name descname"><span class="pre">ModelCheckpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monitor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'val_loss'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_best_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_weights_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'epoch'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_value_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/checkpoint.html#ModelCheckpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ModelCheckpoint" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ModelCheckpoint.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/checkpoint.html#ModelCheckpoint.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ModelCheckpoint.on_epoch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of an epoch.</p>
+<p>Subclasses should override for any actions to run. This function should
+only be called during TRAIN mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – Index of epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Metric results for this training epoch, and for the validation
+epoch if validation is performed.
+Validation result keys are prefixed with <cite>val_</cite>.
+For the training epoch, the values of the <cite>Model</cite>’s metrics are
+returned.
+Example: <cite>{‘loss’: 0.2, ‘accuracy’: 0.7}</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ModelCheckpoint.on_train_batch_end">
+<span class="sig-name descname"><span class="pre">on_train_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/checkpoint.html#ModelCheckpoint.on_train_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ModelCheckpoint.on_train_batch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of a training batch in <cite>fit</cite> methods.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Aggregated metric results up until this batch.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ModelCheckpoint.on_train_begin">
+<span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/checkpoint.html#ModelCheckpoint.on_train_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ModelCheckpoint.on_train_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of training.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method
+but that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.</span></span><span class="sig-name descname"><span class="pre">ProgbarLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exclude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.create_progress_bar">
+<span class="sig-name descname"><span class="pre">create_progress_bar</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.create_progress_bar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.create_progress_bar" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_epoch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of each epoch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – The epoch index.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_predict_batch_end">
+<span class="sig-name descname"><span class="pre">on_predict_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_batch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of a batch in <cite>predict</cite> methods.</p>
+<p>Subclasses should override for any actions to run.</p>
+<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
+<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
+<cite>N</cite> batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Aggregated metric results up until this batch.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_predict_begin">
+<span class="sig-name descname"><span class="pre">on_predict_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of prediction.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_predict_end">
+<span class="sig-name descname"><span class="pre">on_predict_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of prediction.</p>
+<p>Subclasses should override for any actions to run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
+that may change in the future.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_train_batch_end">
+<span class="sig-name descname"><span class="pre">on_train_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_batch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of each training batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch</strong> (<em>int</em>) – The batch index.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_train_begin">
+<span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_begin" title="Link to this definition">#</a></dt>
+<dd><p>Called at the beginning of training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_train_end">
+<span class="sig-name descname"><span class="pre">on_train_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.TrackingCallback">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.</span></span><span class="sig-name descname"><span class="pre">TrackingCallback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/tracking.html#TrackingCallback"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.TrackingCallback" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.TrackingCallback.exclude">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">exclude</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">set</span></em><a class="headerlink" href="#tklearn.nn.callbacks.TrackingCallback.exclude" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.TrackingCallback.is_loggable">
+<span class="sig-name descname"><span class="pre">is_loggable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/tracking.html#TrackingCallback.is_loggable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.TrackingCallback.is_loggable" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.TrackingCallback.on_epoch_end">
+<span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/tracking.html#TrackingCallback.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.TrackingCallback.on_epoch_end" title="Link to this definition">#</a></dt>
+<dd><p>Called at the end of an epoch.</p>
+<p>Subclasses should override for any actions to run. This function should
+only be called during TRAIN mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epoch</strong> (<em>int</em>) – Index of epoch.</p></li>
+<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Metric results for this training epoch, and for the validation
+epoch if validation is performed.
+Validation result keys are prefixed with <cite>val_</cite>.
+For the training epoch, the values of the <cite>Model</cite>’s metrics are
+returned.
+Example: <cite>{‘loss’: 0.2, ‘accuracy’: 0.7}</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="tklearn.nn.calibration.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">tklearn.nn.calibration package</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="tklearn.nn.models.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">tklearn.nn.models package</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submodules">Submodules</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.callbacks.base">tklearn.nn.callbacks.base module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback"><code class="docutils literal notranslate"><span class="pre">Callback</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.model"><code class="docutils literal notranslate"><span class="pre">Callback.model</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_after_backward"><code class="docutils literal notranslate"><span class="pre">Callback.on_after_backward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_before_backward"><code class="docutils literal notranslate"><span class="pre">Callback.on_before_backward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_before_optimizer_step"><code class="docutils literal notranslate"><span class="pre">Callback.on_before_optimizer_step()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_before_zero_grad"><code class="docutils literal notranslate"><span class="pre">Callback.on_before_zero_grad()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_epoch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_epoch_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_epoch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_predict_batch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_batch_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_predict_batch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_batch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_predict_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_predict_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_test_batch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_batch_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_test_batch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_batch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_test_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_test_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_train_batch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_batch_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_batch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_train_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.on_train_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.params"><code class="docutils literal notranslate"><span class="pre">Callback.params</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.set_model"><code class="docutils literal notranslate"><span class="pre">Callback.set_model()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.Callback.set_params"><code class="docutils literal notranslate"><span class="pre">Callback.set_params()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.CallbackList"><code class="docutils literal notranslate"><span class="pre">CallbackList</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.CallbackList.append"><code class="docutils literal notranslate"><span class="pre">CallbackList.append()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.CallbackList.apply"><code class="docutils literal notranslate"><span class="pre">CallbackList.apply()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.CallbackList.copy"><code class="docutils literal notranslate"><span class="pre">CallbackList.copy()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.CallbackList.extend"><code class="docutils literal notranslate"><span class="pre">CallbackList.extend()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.CallbackList.get"><code class="docutils literal notranslate"><span class="pre">CallbackList.get()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.base.CallbackList.remove"><code class="docutils literal notranslate"><span class="pre">CallbackList.remove()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.callbacks.checkpoint">tklearn.nn.callbacks.checkpoint module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.checkpoint.ModelCheckpoint"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.checkpoint.ModelCheckpoint.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint.on_epoch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.checkpoint.ModelCheckpoint.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint.on_train_batch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.checkpoint.ModelCheckpoint.on_train_begin"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint.on_train_begin()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.callbacks.early_stopping">tklearn.nn.callbacks.early_stopping module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping"><code class="docutils literal notranslate"><span class="pre">EarlyStopping</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping.get_monitor_value"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.get_monitor_value()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping.mode"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.mode</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping.monitor"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.monitor</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping.monitor_op"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.monitor_op</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.on_epoch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.early_stopping.EarlyStopping.on_train_begin"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.on_train_begin()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.callbacks.history">tklearn.nn.callbacks.history module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.history.History"><code class="docutils literal notranslate"><span class="pre">History</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.history.History.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">History.on_epoch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.history.History.on_train_begin"><code class="docutils literal notranslate"><span class="pre">History.on_train_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.history.History.to_pandas"><code class="docutils literal notranslate"><span class="pre">History.to_pandas()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.callbacks.plateau_early_stopping">tklearn.nn.callbacks.plateau_early_stopping module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.get_monitor_value"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping.get_monitor_value()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.mode"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping.mode</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.monitor"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping.monitor</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.monitor_op"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping.monitor_op</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping.on_epoch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.on_train_begin"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping.on_train_begin()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.callbacks.progbar_logger">tklearn.nn.callbacks.progbar_logger module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.create_progress_bar"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.create_progress_bar()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_epoch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_batch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_batch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_batch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_end()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.callbacks.tracking">tklearn.nn.callbacks.tracking module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.tracking.TrackingCallback"><code class="docutils literal notranslate"><span class="pre">TrackingCallback</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.tracking.TrackingCallback.exclude"><code class="docutils literal notranslate"><span class="pre">TrackingCallback.exclude</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.tracking.TrackingCallback.is_loggable"><code class="docutils literal notranslate"><span class="pre">TrackingCallback.is_loggable()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.tracking.TrackingCallback.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">TrackingCallback.on_epoch_end()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.callbacks">Module contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback"><code class="docutils literal notranslate"><span class="pre">Callback</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.model"><code class="docutils literal notranslate"><span class="pre">Callback.model</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_after_backward"><code class="docutils literal notranslate"><span class="pre">Callback.on_after_backward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_before_backward"><code class="docutils literal notranslate"><span class="pre">Callback.on_before_backward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_before_optimizer_step"><code class="docutils literal notranslate"><span class="pre">Callback.on_before_optimizer_step()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_before_zero_grad"><code class="docutils literal notranslate"><span class="pre">Callback.on_before_zero_grad()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_epoch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_epoch_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_epoch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_predict_batch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_batch_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_predict_batch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_batch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_predict_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_predict_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_test_batch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_batch_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_test_batch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_batch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_test_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_test_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_train_batch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_batch_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_batch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_train_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.on_train_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.params"><code class="docutils literal notranslate"><span class="pre">Callback.params</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.set_model"><code class="docutils literal notranslate"><span class="pre">Callback.set_model()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.Callback.set_params"><code class="docutils literal notranslate"><span class="pre">Callback.set_params()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.CallbackList"><code class="docutils literal notranslate"><span class="pre">CallbackList</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.CallbackList.append"><code class="docutils literal notranslate"><span class="pre">CallbackList.append()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.CallbackList.apply"><code class="docutils literal notranslate"><span class="pre">CallbackList.apply()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.CallbackList.copy"><code class="docutils literal notranslate"><span class="pre">CallbackList.copy()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.CallbackList.extend"><code class="docutils literal notranslate"><span class="pre">CallbackList.extend()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.CallbackList.get"><code class="docutils literal notranslate"><span class="pre">CallbackList.get()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.CallbackList.remove"><code class="docutils literal notranslate"><span class="pre">CallbackList.remove()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.EarlyStopping"><code class="docutils literal notranslate"><span class="pre">EarlyStopping</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.EarlyStopping.get_monitor_value"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.get_monitor_value()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.EarlyStopping.mode"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.mode</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.EarlyStopping.monitor"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.monitor</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.EarlyStopping.monitor_op"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.monitor_op</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.EarlyStopping.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.on_epoch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.EarlyStopping.on_train_begin"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.on_train_begin()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ModelCheckpoint"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ModelCheckpoint.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint.on_epoch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ModelCheckpoint.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint.on_train_batch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ModelCheckpoint.on_train_begin"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint.on_train_begin()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.create_progress_bar"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.create_progress_bar()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_epoch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_batch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_batch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_batch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_begin()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_end()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.TrackingCallback"><code class="docutils literal notranslate"><span class="pre">TrackingCallback</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.TrackingCallback.exclude"><code class="docutils literal notranslate"><span class="pre">TrackingCallback.exclude</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.TrackingCallback.is_loggable"><code class="docutils literal notranslate"><span class="pre">TrackingCallback.is_loggable()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.TrackingCallback.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">TrackingCallback.on_epoch_end()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/tklearn.nn.callbacks.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Yasas Senarath.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
