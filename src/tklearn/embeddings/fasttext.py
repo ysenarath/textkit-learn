@@ -14,9 +14,10 @@ from typing_extensions import Self
 from tklearn import config
 from tklearn.embeddings.base import Embedding, EmbeddingConfig
 
-URLS = {"fasttext-cc.en.300": None}
-
 logger = logging.getLogger(__name__)
+
+
+URLS = {"fasttext-cc.en.300": None}
 
 
 @contextmanager
@@ -32,8 +33,8 @@ def change_dir(path: str | Path):
 
 
 class FastTextEmbeddingConfig(EmbeddingConfig):
-    identifier: ClassVar[str] = "fasttext"
-    version: str = "cc.en.300"
+    name: ClassVar[str] = "fasttext"
+    version: str = "cc.en.300.bin"
 
 
 class FastTextEmbedding(Embedding):
@@ -41,7 +42,7 @@ class FastTextEmbedding(Embedding):
 
     def __post_init__(self):
         self.files_dir = (
-            Path(config.resources_dir) / self.config.identifier / "loader"
+            Path(config.resources_dir) / self.config.name / "loader"
         )
         super().__post_init__()
 
@@ -52,7 +53,7 @@ class FastTextEmbedding(Embedding):
         return self
 
     def _read_embedding(self) -> Dict[str, np.ndarray]:
-        fn = f"{self.config.version}.bin"
+        fn = self.config.version
         model = fasttext.load_model(f"{self.files_dir / fn}")
         vectors = {}
         for term in model.get_words():
@@ -63,5 +64,5 @@ class FastTextEmbedding(Embedding):
         return self._fetch_embedding()._read_embedding()
 
     def get_model(self) -> fasttext.FastText:
-        fn = f"{self.config.version}.bin"
+        fn = self.config.version
         return fasttext.load_model(f"{self.files_dir / fn}")

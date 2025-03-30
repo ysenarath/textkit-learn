@@ -30,7 +30,7 @@ def change_dir(path: str | Path):
 
 
 class GensimEmbeddingConfig(EmbeddingConfig):
-    identifier: ClassVar[str] = "gensim"
+    name: ClassVar[str] = "gensim"
     version: str = "word2vec-google-news-300"
 
 
@@ -39,7 +39,7 @@ class GensimEmbedding(Embedding):
 
     def __post_init__(self):
         self.files_dir = (
-            Path(config.resources_dir) / self.config.identifier / "loader"
+            Path(config.resources_dir) / self.config.name / "loader"
         )
         super().__post_init__()
 

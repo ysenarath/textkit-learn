@@ -29,8 +29,8 @@ __all__ = [
 ]
 
 
-class EmbeddingConfig(BaseConfig, dispatch="identifier"):
-    identifier: ClassVar[str]
+class EmbeddingConfig(BaseConfig, dispatch="name"):
+    name: ClassVar[str]
     version: str = "0.0.1"
     verbose: Union[bool, int] = 1
 
@@ -40,16 +40,16 @@ class AutoEmbedding(AutoModule):
         return super().__new__(cls, config)
 
     @classmethod
-    def from_config(cls, config: EmbeddingConfig | Mapping) -> Embedding:
-        if not isinstance(config, EmbeddingConfig):
+    def from_config(cls, config: EmbeddingConfig | Mapping | str) -> Embedding:
+        if isinstance(config, str):
+            config = EmbeddingConfig.from_dict(
+                {"name": "gensim", "version": config},
+            )
+        elif not isinstance(config, EmbeddingConfig):
             try:
                 config = EmbeddingConfig.from_dict(config)
             except KeyError:
-                config = {
-                    "identifier": "gensim",
-                    # make the identidier as the version for loading
-                    "version": config["identifier"],
-                }
+                config = {"name": "gensim", "version": config["name"]}
                 config = EmbeddingConfig.from_dict(config)
         return cls(config)
 
@@ -78,7 +78,7 @@ class Embedding(BaseModule, BaseEmbedding):
     def __post_init__(self) -> None:
         cache_path = (
             Path(config.resources_dir)
-            / self.config.identifier
+            / self.config.name
             / "data"
             / f"vectors-{self.config.version}.data"
         )
