@@ -1,0 +1,1042 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>tklearn.nn package &#8212; TextKit Learn</title>
+
+
+
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/tklearn.nn';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="tklearn.nn.base package" href="tklearn.nn.base.html" />
+    <link rel="prev" title="tklearn.metrics package" href="tklearn.metrics.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+
+
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+
+
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  <div id="pst-scroll-pixel-helper"></div>
+
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+
+  <dialog id="pst-search-dialog">
+
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+
+
+  <div class="col-lg-3 navbar-header-items__start">
+
+      <div class="navbar-item">
+
+
+
+
+
+<a class="navbar-brand logo" href="../index.html">
+
+
+
+
+
+
+    <p class="title logo__title">TextKit Learn</p>
+
+</a></div>
+
+  </div>
+
+  <div class="col-lg-9 navbar-header-items">
+
+    <div class="me-auto navbar-header-items__center">
+
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api_docs.html">
+    API
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples/index.html">
+    Examples
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+
+    </div>
+
+
+    <div class="navbar-header-items__end">
+
+        <div class="navbar-item navbar-persistent--container">
+
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+
+
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+
+    </div>
+
+  </div>
+
+
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+
+
+
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+
+</div>
+
+    </header>
+
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+
+
+
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+
+
+
+  <div class="sidebar-header-items sidebar-primary__section">
+
+
+      <div class="sidebar-header-items__center">
+
+
+
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api_docs.html">
+    API
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples/index.html">
+    Examples
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+
+
+      </div>
+
+
+
+      <div class="sidebar-header-items__end">
+
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+
+      </div>
+
+  </div>
+
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="tklearn.html">tklearn package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="tklearn.embeddings.html">tklearn.embeddings package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.metrics.html">tklearn.metrics package</a></li>
+<li class="toctree-l2 current active has-children"><a class="current reference internal" href="#">tklearn.nn package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html">tklearn.nn.base package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.calibration.html">tklearn.nn.calibration package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html">tklearn.nn.callbacks package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="tklearn.nn.models.html">tklearn.nn.models package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.html">tklearn.nn.models.backbone package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.multiclass.html">tklearn.nn.models.multiclass package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.utils.html">tklearn.nn.utils package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.utils.html">tklearn.utils package</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+
+
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+
+      <main id="main-content" class="bd-main" role="main">
+
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+
+    <div class="header-article-items__start">
+
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+
+    <li class="breadcrumb-item"><a href="../api_docs.html" class="nav-link">API</a></li>
+
+
+    <li class="breadcrumb-item"><a href="tklearn.html" class="nav-link">tklearn package</a></li>
+
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">tklearn.nn package</span></li>
+  </ul>
+</nav>
+</div>
+
+    </div>
+
+
+</div>
+</div>
+
+
+
+
+<div id="searchbox"></div>
+                <article class="bd-article">
+
+  <section id="tklearn-nn-package">
+<h1>tklearn.nn package<a class="headerlink" href="#tklearn-nn-package" title="Link to this heading">#</a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Link to this heading">#</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tklearn.nn.base.html">tklearn.nn.base package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.base.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.base.html#module-tklearn.nn.base.helpers">tklearn.nn.base.helpers module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.CallbacksPropertyMixin"><code class="docutils literal notranslate"><span class="pre">CallbacksPropertyMixin</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.CallbacksPropertyMixin.callbacks"><code class="docutils literal notranslate"><span class="pre">CallbacksPropertyMixin.callbacks</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.Evaluator"><code class="docutils literal notranslate"><span class="pre">Evaluator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.Evaluator.evaluate"><code class="docutils literal notranslate"><span class="pre">Evaluator.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.Evaluator.test"><code class="docutils literal notranslate"><span class="pre">Evaluator.test()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.Evaluator.validate"><code class="docutils literal notranslate"><span class="pre">Evaluator.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.Predictor"><code class="docutils literal notranslate"><span class="pre">Predictor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.Predictor.iter_batches"><code class="docutils literal notranslate"><span class="pre">Predictor.iter_batches()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.Predictor.predict"><code class="docutils literal notranslate"><span class="pre">Predictor.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.Trainer"><code class="docutils literal notranslate"><span class="pre">Trainer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.Trainer.train"><code class="docutils literal notranslate"><span class="pre">Trainer.train()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.get_scheduler"><code class="docutils literal notranslate"><span class="pre">get_scheduler()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.base.html#module-tklearn.nn.base.module">tklearn.nn.base.module module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.module.Module"><code class="docutils literal notranslate"><span class="pre">Module</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.module.Module.compile"><code class="docutils literal notranslate"><span class="pre">Module.compile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.module.Module.compute_loss"><code class="docutils literal notranslate"><span class="pre">Module.compute_loss()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.module.Module.compute_metric_inputs"><code class="docutils literal notranslate"><span class="pre">Module.compute_metric_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.module.Module.device"><code class="docutils literal notranslate"><span class="pre">Module.device</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.module.Module.freeze_layers"><code class="docutils literal notranslate"><span class="pre">Module.freeze_layers()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.module.Module.predict_step"><code class="docutils literal notranslate"><span class="pre">Module.predict_step()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.module.Module.test_step"><code class="docutils literal notranslate"><span class="pre">Module.test_step()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.module.Module.training_step"><code class="docutils literal notranslate"><span class="pre">Module.training_step()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.module.Module.validation_step"><code class="docutils literal notranslate"><span class="pre">Module.validation_step()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.base.html#module-tklearn.nn.base">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Evaluator"><code class="docutils literal notranslate"><span class="pre">Evaluator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Evaluator.evaluate"><code class="docutils literal notranslate"><span class="pre">Evaluator.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Evaluator.test"><code class="docutils literal notranslate"><span class="pre">Evaluator.test()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Evaluator.validate"><code class="docutils literal notranslate"><span class="pre">Evaluator.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Module"><code class="docutils literal notranslate"><span class="pre">Module</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Module.compile"><code class="docutils literal notranslate"><span class="pre">Module.compile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Module.compute_loss"><code class="docutils literal notranslate"><span class="pre">Module.compute_loss()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Module.compute_metric_inputs"><code class="docutils literal notranslate"><span class="pre">Module.compute_metric_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Module.device"><code class="docutils literal notranslate"><span class="pre">Module.device</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Module.freeze_layers"><code class="docutils literal notranslate"><span class="pre">Module.freeze_layers()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Module.predict_step"><code class="docutils literal notranslate"><span class="pre">Module.predict_step()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Module.test_step"><code class="docutils literal notranslate"><span class="pre">Module.test_step()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Module.training_step"><code class="docutils literal notranslate"><span class="pre">Module.training_step()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Module.validation_step"><code class="docutils literal notranslate"><span class="pre">Module.validation_step()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Predictor"><code class="docutils literal notranslate"><span class="pre">Predictor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Predictor.iter_batches"><code class="docutils literal notranslate"><span class="pre">Predictor.iter_batches()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Predictor.predict"><code class="docutils literal notranslate"><span class="pre">Predictor.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Trainer"><code class="docutils literal notranslate"><span class="pre">Trainer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.Trainer.train"><code class="docutils literal notranslate"><span class="pre">Trainer.train()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tklearn.nn.calibration.html">tklearn.nn.calibration package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.calibration.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.calibration.html#tklearn-nn-calibration-temperature-module">tklearn.nn.calibration.temperature module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.calibration.html#module-tklearn.nn.calibration">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tklearn.nn.callbacks.html">tklearn.nn.callbacks package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.callbacks.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.base">tklearn.nn.callbacks.base module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback"><code class="docutils literal notranslate"><span class="pre">Callback</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.model"><code class="docutils literal notranslate"><span class="pre">Callback.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_after_backward"><code class="docutils literal notranslate"><span class="pre">Callback.on_after_backward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_before_backward"><code class="docutils literal notranslate"><span class="pre">Callback.on_before_backward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_before_optimizer_step"><code class="docutils literal notranslate"><span class="pre">Callback.on_before_optimizer_step()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_before_zero_grad"><code class="docutils literal notranslate"><span class="pre">Callback.on_before_zero_grad()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_epoch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_epoch_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_epoch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_predict_batch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_batch_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_predict_batch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_batch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_predict_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_predict_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_test_batch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_batch_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_test_batch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_batch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_test_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_test_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_train_batch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_batch_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_batch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_train_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.on_train_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.params"><code class="docutils literal notranslate"><span class="pre">Callback.params</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.set_model"><code class="docutils literal notranslate"><span class="pre">Callback.set_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.Callback.set_params"><code class="docutils literal notranslate"><span class="pre">Callback.set_params()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.CallbackList"><code class="docutils literal notranslate"><span class="pre">CallbackList</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.CallbackList.append"><code class="docutils literal notranslate"><span class="pre">CallbackList.append()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.CallbackList.apply"><code class="docutils literal notranslate"><span class="pre">CallbackList.apply()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.CallbackList.copy"><code class="docutils literal notranslate"><span class="pre">CallbackList.copy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.CallbackList.extend"><code class="docutils literal notranslate"><span class="pre">CallbackList.extend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.CallbackList.get"><code class="docutils literal notranslate"><span class="pre">CallbackList.get()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.base.CallbackList.remove"><code class="docutils literal notranslate"><span class="pre">CallbackList.remove()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.checkpoint">tklearn.nn.callbacks.checkpoint module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.checkpoint.ModelCheckpoint"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.checkpoint.ModelCheckpoint.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint.on_epoch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.checkpoint.ModelCheckpoint.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint.on_train_batch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.checkpoint.ModelCheckpoint.on_train_begin"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint.on_train_begin()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.early_stopping">tklearn.nn.callbacks.early_stopping module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.early_stopping.EarlyStopping"><code class="docutils literal notranslate"><span class="pre">EarlyStopping</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.early_stopping.EarlyStopping.get_monitor_value"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.get_monitor_value()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.early_stopping.EarlyStopping.mode"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.early_stopping.EarlyStopping.monitor"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.monitor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.early_stopping.EarlyStopping.monitor_op"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.monitor_op</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.early_stopping.EarlyStopping.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.on_epoch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.early_stopping.EarlyStopping.on_train_begin"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.on_train_begin()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.history">tklearn.nn.callbacks.history module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.history.History"><code class="docutils literal notranslate"><span class="pre">History</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.history.History.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">History.on_epoch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.history.History.on_train_begin"><code class="docutils literal notranslate"><span class="pre">History.on_train_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.history.History.to_pandas"><code class="docutils literal notranslate"><span class="pre">History.to_pandas()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.plateau_early_stopping">tklearn.nn.callbacks.plateau_early_stopping module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.get_monitor_value"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping.get_monitor_value()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.mode"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping.mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.monitor"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping.monitor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.monitor_op"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping.monitor_op</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping.on_epoch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.plateau_early_stopping.PlateauEarlyStopping.on_train_begin"><code class="docutils literal notranslate"><span class="pre">PlateauEarlyStopping.on_train_begin()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.progbar_logger">tklearn.nn.callbacks.progbar_logger module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.progbar_logger.ProgbarLogger"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.create_progress_bar"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.create_progress_bar()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_epoch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_batch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_batch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_batch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_end()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.tracking">tklearn.nn.callbacks.tracking module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.tracking.TrackingCallback"><code class="docutils literal notranslate"><span class="pre">TrackingCallback</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.tracking.TrackingCallback.exclude"><code class="docutils literal notranslate"><span class="pre">TrackingCallback.exclude</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.tracking.TrackingCallback.is_loggable"><code class="docutils literal notranslate"><span class="pre">TrackingCallback.is_loggable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.tracking.TrackingCallback.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">TrackingCallback.on_epoch_end()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback"><code class="docutils literal notranslate"><span class="pre">Callback</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.model"><code class="docutils literal notranslate"><span class="pre">Callback.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_after_backward"><code class="docutils literal notranslate"><span class="pre">Callback.on_after_backward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_before_backward"><code class="docutils literal notranslate"><span class="pre">Callback.on_before_backward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_before_optimizer_step"><code class="docutils literal notranslate"><span class="pre">Callback.on_before_optimizer_step()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_before_zero_grad"><code class="docutils literal notranslate"><span class="pre">Callback.on_before_zero_grad()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_epoch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_epoch_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_epoch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_predict_batch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_batch_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_predict_batch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_batch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_predict_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_predict_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_predict_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_test_batch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_batch_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_test_batch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_batch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_test_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_test_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_test_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_train_batch_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_batch_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_batch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_train_begin"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.on_train_end"><code class="docutils literal notranslate"><span class="pre">Callback.on_train_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.params"><code class="docutils literal notranslate"><span class="pre">Callback.params</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.set_model"><code class="docutils literal notranslate"><span class="pre">Callback.set_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.Callback.set_params"><code class="docutils literal notranslate"><span class="pre">Callback.set_params()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.CallbackList"><code class="docutils literal notranslate"><span class="pre">CallbackList</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.CallbackList.append"><code class="docutils literal notranslate"><span class="pre">CallbackList.append()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.CallbackList.apply"><code class="docutils literal notranslate"><span class="pre">CallbackList.apply()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.CallbackList.copy"><code class="docutils literal notranslate"><span class="pre">CallbackList.copy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.CallbackList.extend"><code class="docutils literal notranslate"><span class="pre">CallbackList.extend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.CallbackList.get"><code class="docutils literal notranslate"><span class="pre">CallbackList.get()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.CallbackList.remove"><code class="docutils literal notranslate"><span class="pre">CallbackList.remove()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.EarlyStopping"><code class="docutils literal notranslate"><span class="pre">EarlyStopping</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.EarlyStopping.get_monitor_value"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.get_monitor_value()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.EarlyStopping.mode"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.EarlyStopping.monitor"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.monitor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.EarlyStopping.monitor_op"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.monitor_op</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.EarlyStopping.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.on_epoch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.EarlyStopping.on_train_begin"><code class="docutils literal notranslate"><span class="pre">EarlyStopping.on_train_begin()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.ModelCheckpoint"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.ModelCheckpoint.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint.on_epoch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.ModelCheckpoint.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint.on_train_batch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.ModelCheckpoint.on_train_begin"><code class="docutils literal notranslate"><span class="pre">ModelCheckpoint.on_train_begin()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.ProgbarLogger"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.ProgbarLogger.create_progress_bar"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.create_progress_bar()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.ProgbarLogger.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_epoch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.ProgbarLogger.on_predict_batch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_batch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.ProgbarLogger.on_predict_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.ProgbarLogger.on_predict_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.ProgbarLogger.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_batch_end()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.ProgbarLogger.on_train_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_begin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.ProgbarLogger.on_train_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_end()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.TrackingCallback"><code class="docutils literal notranslate"><span class="pre">TrackingCallback</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.TrackingCallback.exclude"><code class="docutils literal notranslate"><span class="pre">TrackingCallback.exclude</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.TrackingCallback.is_loggable"><code class="docutils literal notranslate"><span class="pre">TrackingCallback.is_loggable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.TrackingCallback.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">TrackingCallback.on_epoch_end()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tklearn.nn.models.html">tklearn.nn.models package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.models.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.models.backbone.html">tklearn.nn.models.backbone package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.html#subpackages">Subpackages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.html#module-tklearn.nn.models.backbone.adapter">tklearn.nn.models.backbone.adapter module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.html#module-tklearn.nn.models.backbone.base">tklearn.nn.models.backbone.base module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.html#tklearn-nn-models-backbone-transformer-module">tklearn.nn.models.backbone.transformer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.models.multiclass.html">tklearn.nn.models.multiclass package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.multiclass.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.multiclass.html#tklearn-nn-models-multiclass-classifier-module">tklearn.nn.models.multiclass.classifier module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.multiclass.html#tklearn-nn-models-multiclass-helpers-module">tklearn.nn.models.multiclass.helpers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.multiclass.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.models.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.models.html#tklearn-nn-models-base-module">tklearn.nn.models.base module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.models.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tklearn.nn.utils.html">tklearn.nn.utils package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.utils.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.utils.html#module-tklearn.nn.utils.collections">tklearn.nn.utils.collections module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.utils.html#tklearn.nn.utils.collections.TensorDict"><code class="docutils literal notranslate"><span class="pre">TensorDict</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#tklearn.nn.utils.collections.TensorDict.backward"><code class="docutils literal notranslate"><span class="pre">TensorDict.backward()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#tklearn.nn.utils.collections.TensorDict.cpu"><code class="docutils literal notranslate"><span class="pre">TensorDict.cpu()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#tklearn.nn.utils.collections.TensorDict.cuda"><code class="docutils literal notranslate"><span class="pre">TensorDict.cuda()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#tklearn.nn.utils.collections.TensorDict.detach"><code class="docutils literal notranslate"><span class="pre">TensorDict.detach()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#tklearn.nn.utils.collections.TensorDict.item"><code class="docutils literal notranslate"><span class="pre">TensorDict.item()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#tklearn.nn.utils.collections.TensorDict.to"><code class="docutils literal notranslate"><span class="pre">TensorDict.to()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#tklearn.nn.utils.collections.TensorDict.to_dict"><code class="docutils literal notranslate"><span class="pre">TensorDict.to_dict()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.utils.html#module-tklearn.nn.utils.preprocessing">tklearn.nn.utils.preprocessing module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.utils.html#tklearn.nn.utils.preprocessing.preprocess_input"><code class="docutils literal notranslate"><span class="pre">preprocess_input()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.utils.html#tklearn.nn.utils.preprocessing.preprocess_target"><code class="docutils literal notranslate"><span class="pre">preprocess_target()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.utils.html#module-tklearn.nn.utils">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
+</section>
+<section id="module-tklearn.nn.loss">
+<span id="tklearn-nn-loss-module"></span><h2>tklearn.nn.loss module<a class="headerlink" href="#module-tklearn.nn.loss" title="Link to this heading">#</a></h2>
+</section>
+<section id="module-tklearn.nn.optim">
+<span id="tklearn-nn-optim-module"></span><h2>tklearn.nn.optim module<a class="headerlink" href="#module-tklearn.nn.optim" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.optim.LRSchedulerList">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.optim.</span></span><span class="sig-name descname"><span class="pre">LRSchedulerList</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">lrs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/optim.html#LRSchedulerList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.optim.LRSchedulerList" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">_LRScheduler</span></code>]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.optim.LRSchedulerList.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/optim.html#LRSchedulerList.step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.optim.LRSchedulerList.step" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.optim.OptimizerList">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.optim.</span></span><span class="sig-name descname"><span class="pre">OptimizerList</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">optims</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/optim.html#OptimizerList"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.optim.OptimizerList" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code>]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.optim.OptimizerList.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/optim.html#OptimizerList.step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.optim.OptimizerList.step" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.optim.OptimizerList.zero_grad">
+<span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/optim.html#OptimizerList.zero_grad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.optim.OptimizerList.zero_grad" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tklearn.nn">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-tklearn.nn" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.Evaluator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.</span></span><span class="sig-name descname"><span class="pre">Evaluator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">postprocessor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">callbacks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/helpers.html#Evaluator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Evaluator" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.CallbacksPropertyMixin" title="tklearn.nn.base.helpers.CallbacksPropertyMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">CallbacksPropertyMixin</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">BatchInput</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">BatchOutput</span></code>]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Evaluator.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/helpers.html#Evaluator.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Evaluator.evaluate" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Evaluator.test">
+<span class="sig-name descname"><span class="pre">test</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/helpers.html#Evaluator.test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Evaluator.test" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Evaluator.validate">
+<span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/helpers.html#Evaluator.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Evaluator.validate" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.Module">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.</span></span><span class="sig-name descname"><span class="pre">Module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/module.html#Module"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Module" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">I</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">R</span></code>]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Module.compile">
+<span class="sig-name descname"><span class="pre">compile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fullgraph</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dynamic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'inductor'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/module.html#Module.compile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Module.compile" title="Link to this definition">#</a></dt>
+<dd><p>Compile this Module’s forward using <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p>
+<p>This Module’s <cite>__call__</cite> method is compiled and all arguments are passed as-is
+to <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code>.</p>
+<p>See <code class="xref py py-func docutils literal notranslate"><span class="pre">torch.compile()</span></code> for details on the arguments for this function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">Self</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Module.compute_loss">
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/module.html#Module.compute_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Module.compute_loss" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Module.compute_metric_inputs">
+<span class="sig-name descname"><span class="pre">compute_metric_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/module.html#Module.compute_metric_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Module.compute_metric_inputs" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.Module.device">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">device</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">device</span></em><a class="headerlink" href="#tklearn.nn.Module.device" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Module.freeze_layers">
+<span class="sig-name descname"><span class="pre">freeze_layers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/module.html#Module.freeze_layers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Module.freeze_layers" title="Link to this definition">#</a></dt>
+<dd><p>Freeze layers in the model that match the given patterns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>layers</strong> (<em>list</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – A list of layer names or patterns to freeze. Supports wildcards (*)
+and dot notation for nested layers. If None, no layers will be frozen.</p></li>
+<li><p><strong>prefix</strong> (<em>str</em><em>, </em><em>default=&quot;&quot;</em>) – An optional prefix to apply to all layer patterns.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The number of parameters frozen.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If an invalid regex pattern is provided.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">freeze_layers</span><span class="p">([</span><span class="s1">&#39;encoder.*&#39;</span><span class="p">,</span> <span class="s1">&#39;encoder.layer.[0-8].*&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">freeze_layers</span><span class="p">([</span><span class="s1">&#39;layer_[1-3]&#39;</span><span class="p">],</span> <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;transformer&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="rubric">Notes</p>
+<p>This method uses regular expressions to match layer names. Dots in layer
+names are treated as literal dots, while asterisks are treated as wildcards.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Module.predict_step">
+<span class="sig-name descname"><span class="pre">predict_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/module.html#Module.predict_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Module.predict_step" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code>(<code class="docutils literal notranslate"><span class="pre">R</span></code>)</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Module.test_step">
+<span class="sig-name descname"><span class="pre">test_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/module.html#Module.test_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Module.test_step" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Module.training_step">
+<span class="sig-name descname"><span class="pre">training_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/module.html#Module.training_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Module.training_step" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Module.validation_step">
+<span class="sig-name descname"><span class="pre">validation_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/module.html#Module.validation_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Module.validation_step" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.Predictor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.</span></span><span class="sig-name descname"><span class="pre">Predictor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">callbacks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/helpers.html#Predictor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Predictor" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.CallbacksPropertyMixin" title="tklearn.nn.base.helpers.CallbacksPropertyMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">CallbacksPropertyMixin</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">BatchInput</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">BatchOutput</span></code>]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Predictor.iter_batches">
+<span class="sig-name descname"><span class="pre">iter_batches</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/helpers.html#Predictor.iter_batches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Predictor.iter_batches" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Generator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code>(<code class="docutils literal notranslate"><span class="pre">BatchInput</span></code>), <code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code>(<code class="docutils literal notranslate"><span class="pre">BatchOutput</span></code>), <code class="xref py py-class docutils literal notranslate"><span class="pre">LossDict</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Predictor.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/helpers.html#Predictor.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Predictor.predict" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.Trainer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.</span></span><span class="sig-name descname"><span class="pre">Trainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataloader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_grad_norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">callbacks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/helpers.html#Trainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Trainer" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="tklearn.nn.base.html#tklearn.nn.base.helpers.CallbacksPropertyMixin" title="tklearn.nn.base.helpers.CallbacksPropertyMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">CallbacksPropertyMixin</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">BatchInput</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">BatchOutput</span></code>]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.Trainer.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/base/helpers.html#Trainer.train"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.Trainer.train" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn.nn.callbacks.history.History" title="tklearn.nn.callbacks.history.History"><code class="xref py py-class docutils literal notranslate"><span class="pre">History</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+
+
+
+
+
+                <footer class="prev-next-footer d-print-none">
+
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="tklearn.metrics.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">tklearn.metrics package</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="tklearn.nn.base.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">tklearn.nn.base package</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+
+            </div>
+
+
+
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#subpackages">Subpackages</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submodules">Submodules</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.loss">tklearn.nn.loss module</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.optim">tklearn.nn.optim module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.optim.LRSchedulerList"><code class="docutils literal notranslate"><span class="pre">LRSchedulerList</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.optim.LRSchedulerList.step"><code class="docutils literal notranslate"><span class="pre">LRSchedulerList.step()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.optim.OptimizerList"><code class="docutils literal notranslate"><span class="pre">OptimizerList</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.optim.OptimizerList.step"><code class="docutils literal notranslate"><span class="pre">OptimizerList.step()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.optim.OptimizerList.zero_grad"><code class="docutils literal notranslate"><span class="pre">OptimizerList.zero_grad()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn">Module contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Evaluator"><code class="docutils literal notranslate"><span class="pre">Evaluator</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Evaluator.evaluate"><code class="docutils literal notranslate"><span class="pre">Evaluator.evaluate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Evaluator.test"><code class="docutils literal notranslate"><span class="pre">Evaluator.test()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Evaluator.validate"><code class="docutils literal notranslate"><span class="pre">Evaluator.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Module"><code class="docutils literal notranslate"><span class="pre">Module</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Module.compile"><code class="docutils literal notranslate"><span class="pre">Module.compile()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Module.compute_loss"><code class="docutils literal notranslate"><span class="pre">Module.compute_loss()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Module.compute_metric_inputs"><code class="docutils literal notranslate"><span class="pre">Module.compute_metric_inputs()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Module.device"><code class="docutils literal notranslate"><span class="pre">Module.device</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Module.freeze_layers"><code class="docutils literal notranslate"><span class="pre">Module.freeze_layers()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Module.predict_step"><code class="docutils literal notranslate"><span class="pre">Module.predict_step()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Module.test_step"><code class="docutils literal notranslate"><span class="pre">Module.test_step()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Module.training_step"><code class="docutils literal notranslate"><span class="pre">Module.training_step()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Module.validation_step"><code class="docutils literal notranslate"><span class="pre">Module.validation_step()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Predictor"><code class="docutils literal notranslate"><span class="pre">Predictor</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Predictor.iter_batches"><code class="docutils literal notranslate"><span class="pre">Predictor.iter_batches()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Predictor.predict"><code class="docutils literal notranslate"><span class="pre">Predictor.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Trainer"><code class="docutils literal notranslate"><span class="pre">Trainer</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.Trainer.train"><code class="docutils literal notranslate"><span class="pre">Trainer.train()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/tklearn.nn.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+
+
+          </div>
+          <footer class="bd-footer-content">
+
+          </footer>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+
+    <div class="footer-items__start">
+
+        <div class="footer-item">
+
+  <p class="copyright">
+
+      © Copyright 2025, Yasas Senarath.
+      <br/>
+
+  </p>
+</div>
+
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+
+    </div>
+
+
+
+    <div class="footer-items__end">
+
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+
+    </div>
+
+</div>
+
+  </footer>
+  </body>
+</html>

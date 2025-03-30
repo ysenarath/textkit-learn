@@ -1,0 +1,1690 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>tklearn.metrics package &#8212; TextKit Learn</title>
+
+
+
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/tklearn.metrics';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="tklearn.nn package" href="tklearn.nn.html" />
+    <link rel="prev" title="tklearn.embeddings package" href="tklearn.embeddings.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+
+
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+
+
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  <div id="pst-scroll-pixel-helper"></div>
+
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+
+  <dialog id="pst-search-dialog">
+
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+
+
+  <div class="col-lg-3 navbar-header-items__start">
+
+      <div class="navbar-item">
+
+
+
+
+
+<a class="navbar-brand logo" href="../index.html">
+
+
+
+
+
+
+    <p class="title logo__title">TextKit Learn</p>
+
+</a></div>
+
+  </div>
+
+  <div class="col-lg-9 navbar-header-items">
+
+    <div class="me-auto navbar-header-items__center">
+
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api_docs.html">
+    API
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples/index.html">
+    Examples
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+
+    </div>
+
+
+    <div class="navbar-header-items__end">
+
+        <div class="navbar-item navbar-persistent--container">
+
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+
+
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+
+    </div>
+
+  </div>
+
+
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+
+
+
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+
+</div>
+
+    </header>
+
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+
+
+
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+
+
+
+  <div class="sidebar-header-items sidebar-primary__section">
+
+
+      <div class="sidebar-header-items__center">
+
+
+
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api_docs.html">
+    API
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples/index.html">
+    Examples
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+
+
+      </div>
+
+
+
+      <div class="sidebar-header-items__end">
+
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+
+      </div>
+
+  </div>
+
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="tklearn.html">tklearn package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="tklearn.embeddings.html">tklearn.embeddings package</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">tklearn.metrics package</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tklearn.nn.html">tklearn.nn package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html">tklearn.nn.base package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.calibration.html">tklearn.nn.calibration package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html">tklearn.nn.callbacks package</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="tklearn.nn.models.html">tklearn.nn.models package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.html">tklearn.nn.models.backbone package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.multiclass.html">tklearn.nn.models.multiclass package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.utils.html">tklearn.nn.utils package</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.utils.html">tklearn.utils package</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+
+
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+
+      <main id="main-content" class="bd-main" role="main">
+
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+
+    <div class="header-article-items__start">
+
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+
+    <li class="breadcrumb-item"><a href="../api_docs.html" class="nav-link">API</a></li>
+
+
+    <li class="breadcrumb-item"><a href="tklearn.html" class="nav-link">tklearn package</a></li>
+
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">tklearn.metrics package</span></li>
+  </ul>
+</nav>
+</div>
+
+    </div>
+
+
+</div>
+</div>
+
+
+
+
+<div id="searchbox"></div>
+                <article class="bd-article">
+
+  <section id="tklearn-metrics-package">
+<h1>tklearn.metrics package<a class="headerlink" href="#tklearn-metrics-package" title="Link to this heading">#</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
+</section>
+<section id="module-tklearn.metrics.base">
+<span id="tklearn-metrics-base-module"></span><h2>tklearn.metrics.base module<a class="headerlink" href="#module-tklearn.metrics.base" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.base.MetricBase">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.base.</span></span><span class="sig-name descname"><span class="pre">MetricBase</span></span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.base.MetricBase" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.base.MetricBase.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricBase.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.base.MetricBase.copy" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.base.MetricBase.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricBase.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.base.MetricBase.reset" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.base.MetricBase.result">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricBase.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.base.MetricBase.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.base.MetricBase.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricBase.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.base.MetricBase.update" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.base.MetricState">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.base.</span></span><span class="sig-name descname"><span class="pre">MetricState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.base.MetricState" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>]]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.base.MetricState.add_metric">
+<span class="sig-name descname"><span class="pre">add_metric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metric</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricState.add_metric"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.base.MetricState.add_metric" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.base.MetricState.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricState.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.base.MetricState.reset" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.base.MetricState.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricState.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.base.MetricState.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.base.MetricState.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricState.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.base.MetricState.update" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.base.MetricVariable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.base.</span></span><span class="sig-name descname"><span class="pre">MetricVariable</span></span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricVariable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.base.MetricVariable" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">T</span></code>]</p>
+</dd></dl>
+
+</section>
+<section id="module-tklearn.metrics.classification">
+<span id="tklearn-metrics-classification-module"></span><h2>tklearn.metrics.classification module<a class="headerlink" href="#module-tklearn.metrics.classification" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.AUC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.classification.</span></span><span class="sig-name descname"><span class="pre">AUC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">average</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'macro'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_fpr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multi_class</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'raise'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#AUC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.AUC" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.AUC.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#AUC.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.AUC.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.AUC.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.AUC.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.AUC.y_score">
+<span class="sig-name descname"><span class="pre">y_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_score',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.AUC.y_score" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.AUC.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.AUC.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Accuracy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.classification.</span></span><span class="sig-name descname"><span class="pre">Accuracy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">balanced</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjusted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#Accuracy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.Accuracy" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Accuracy.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#Accuracy.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.Accuracy.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Accuracy.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.Accuracy.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Accuracy.y_pred">
+<span class="sig-name descname"><span class="pre">y_pred</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_pred',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.Accuracy.y_pred" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Accuracy.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.Accuracy.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.F1">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.classification.</span></span><span class="sig-name descname"><span class="pre">F1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">average</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'binary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_division</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#F1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.F1" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.F1.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#F1.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.F1.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.F1.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.F1.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.F1.y_pred">
+<span class="sig-name descname"><span class="pre">y_pred</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_pred',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.F1.y_pred" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.F1.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.F1.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalAUCThreshold">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.classification.</span></span><span class="sig-name descname"><span class="pre">OptimalAUCThreshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_intermediate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalAUCThreshold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.OptimalAUCThreshold" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalAUCThreshold.PR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PR</span></span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalAUCThreshold.PR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PlotData</span></span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalAUCThreshold.PR.PlotData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData.fpr">
+<span class="sig-name descname"><span class="pre">fpr</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData.fpr" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData.optimal">
+<span class="sig-name descname"><span class="pre">optimal</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData.optimal" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData.thresholds">
+<span class="sig-name descname"><span class="pre">thresholds</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData.thresholds" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData.tpr">
+<span class="sig-name descname"><span class="pre">tpr</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData.tpr" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalAUCThreshold.PR.data">
+<span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List[PlotData]</span></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.data" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalAUCThreshold.PR.threshold">
+<span class="sig-name descname"><span class="pre">threshold</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.threshold" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalAUCThreshold.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalAUCThreshold.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.OptimalAUCThreshold.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">List[PR]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalAUCThreshold.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalAUCThreshold.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalAUCThreshold.y_score">
+<span class="sig-name descname"><span class="pre">y_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_score',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalAUCThreshold.y_score" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalAUCThreshold.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalAUCThreshold.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.classification.</span></span><span class="sig-name descname"><span class="pre">OptimalPRThreshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_intermediate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_division</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalPRThreshold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold.PR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PR</span></span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalPRThreshold.PR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold.PR" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PlotData</span></span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalPRThreshold.PR.PlotData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.f1">
+<span class="sig-name descname"><span class="pre">f1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.f1" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.optimal">
+<span class="sig-name descname"><span class="pre">optimal</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.optimal" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.precision">
+<span class="sig-name descname"><span class="pre">precision</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.precision" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.recall">
+<span class="sig-name descname"><span class="pre">recall</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.recall" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.thresholds">
+<span class="sig-name descname"><span class="pre">thresholds</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.thresholds" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold.PR.data">
+<span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List[PlotData]</span></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.data" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold.PR.threshold">
+<span class="sig-name descname"><span class="pre">threshold</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.threshold" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalPRThreshold.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">PR</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold.y_score">
+<span class="sig-name descname"><span class="pre">y_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_score',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold.y_score" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.OptimalPRThreshold.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.OptimalPRThreshold.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Precision">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.classification.</span></span><span class="sig-name descname"><span class="pre">Precision</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">average</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'binary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_division</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#Precision"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.Precision" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Precision.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#Precision.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.Precision.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Precision.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.Precision.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Precision.y_pred">
+<span class="sig-name descname"><span class="pre">y_pred</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_pred',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.Precision.y_pred" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Precision.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.Precision.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Recall">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.classification.</span></span><span class="sig-name descname"><span class="pre">Recall</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">average</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'binary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_division</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#Recall"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.Recall" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Recall.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#Recall.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.classification.Recall.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Recall.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.Recall.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Recall.y_pred">
+<span class="sig-name descname"><span class="pre">y_pred</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_pred',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.Recall.y_pred" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.classification.Recall.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.classification.Recall.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tklearn.metrics.helpers">
+<span id="tklearn-metrics-helpers-module"></span><h2>tklearn.metrics.helpers module<a class="headerlink" href="#module-tklearn.metrics.helpers" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.helpers.ArrayAccum">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.helpers.</span></span><span class="sig-name descname"><span class="pre">ArrayAccum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'y_true'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'y_pred'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'sample_weight'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'y_score'</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#ArrayAccum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.helpers.ArrayAccum" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.helpers.ArrayAccum.array">
+<span class="sig-name descname"><span class="pre">array</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#tklearn.metrics.base.MetricVariable" title="tklearn.metrics.base.MetricVariable"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricVariable</span></code></a><span class="pre">[</span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code><span class="pre">[</span><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code><span class="pre">(</span><code class="docutils literal notranslate"><span class="pre">_ScalarType_co</span></code><span class="pre">,</span> <span class="pre">bound=</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">generic</span></code><span class="pre">,</span> <span class="pre">covariant=True)]]]]</span></em><a class="headerlink" href="#tklearn.metrics.helpers.ArrayAccum.array" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.helpers.ArrayAccum.axis">
+<span class="sig-name descname"><span class="pre">axis</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></em><a class="headerlink" href="#tklearn.metrics.helpers.ArrayAccum.axis" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.helpers.ArrayAccum.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><a class="headerlink" href="#tklearn.metrics.helpers.ArrayAccum.name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.helpers.ArrayAccum.num_updates">
+<span class="sig-name descname"><span class="pre">num_updates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#tklearn.metrics.base.MetricVariable" title="tklearn.metrics.base.MetricVariable"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricVariable</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]</span></em><a class="headerlink" href="#tklearn.metrics.helpers.ArrayAccum.num_updates" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.helpers.ArrayAccum.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#ArrayAccum.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.helpers.ArrayAccum.reset" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.helpers.ArrayAccum.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#ArrayAccum.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.helpers.ArrayAccum.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code>(<code class="docutils literal notranslate"><span class="pre">_ScalarType_co</span></code>, bound= <code class="xref py py-class docutils literal notranslate"><span class="pre">generic</span></code>, covariant=True)]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.helpers.ArrayAccum.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#ArrayAccum.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.helpers.ArrayAccum.update" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.helpers.StepsCounter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.helpers.</span></span><span class="sig-name descname"><span class="pre">StepsCounter</span></span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#StepsCounter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.helpers.StepsCounter" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.helpers.StepsCounter.count">
+<span class="sig-name descname"><span class="pre">count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#tklearn.metrics.base.MetricVariable" title="tklearn.metrics.base.MetricVariable"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricVariable</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]</span></em><a class="headerlink" href="#tklearn.metrics.helpers.StepsCounter.count" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.helpers.StepsCounter.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#StepsCounter.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.helpers.StepsCounter.reset" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.helpers.StepsCounter.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#StepsCounter.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.helpers.StepsCounter.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.helpers.StepsCounter.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#StepsCounter.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.helpers.StepsCounter.update" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-tklearn.metrics">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-tklearn.metrics" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.AUC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.</span></span><span class="sig-name descname"><span class="pre">AUC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">average</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'macro'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_fpr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multi_class</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'raise'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#AUC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.AUC" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.AUC.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#AUC.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.AUC.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.AUC.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.AUC.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.AUC.y_score">
+<span class="sig-name descname"><span class="pre">y_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_score',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.AUC.y_score" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.AUC.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.AUC.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.Accuracy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.</span></span><span class="sig-name descname"><span class="pre">Accuracy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">balanced</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adjusted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#Accuracy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.Accuracy" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.Accuracy.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#Accuracy.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.Accuracy.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.Accuracy.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.Accuracy.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.Accuracy.y_pred">
+<span class="sig-name descname"><span class="pre">y_pred</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_pred',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.Accuracy.y_pred" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.Accuracy.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.Accuracy.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.ArrayAccum">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.</span></span><span class="sig-name descname"><span class="pre">ArrayAccum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'y_true'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'y_pred'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'sample_weight'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'y_score'</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#ArrayAccum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.ArrayAccum" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.ArrayAccum.array">
+<span class="sig-name descname"><span class="pre">array</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#tklearn.metrics.base.MetricVariable" title="tklearn.metrics.base.MetricVariable"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricVariable</span></code></a><span class="pre">[</span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code><span class="pre">[</span><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code><span class="pre">(</span><code class="docutils literal notranslate"><span class="pre">_ScalarType_co</span></code><span class="pre">,</span> <span class="pre">bound=</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">generic</span></code><span class="pre">,</span> <span class="pre">covariant=True)]]]]</span></em><a class="headerlink" href="#tklearn.metrics.ArrayAccum.array" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.ArrayAccum.axis">
+<span class="sig-name descname"><span class="pre">axis</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></em><a class="headerlink" href="#tklearn.metrics.ArrayAccum.axis" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.ArrayAccum.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><a class="headerlink" href="#tklearn.metrics.ArrayAccum.name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.ArrayAccum.num_updates">
+<span class="sig-name descname"><span class="pre">num_updates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#tklearn.metrics.base.MetricVariable" title="tklearn.metrics.base.MetricVariable"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricVariable</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]</span></em><a class="headerlink" href="#tklearn.metrics.ArrayAccum.num_updates" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.ArrayAccum.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#ArrayAccum.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.ArrayAccum.reset" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.ArrayAccum.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#ArrayAccum.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.ArrayAccum.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code>(<code class="docutils literal notranslate"><span class="pre">_ScalarType_co</span></code>, bound= <code class="xref py py-class docutils literal notranslate"><span class="pre">generic</span></code>, covariant=True)]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.ArrayAccum.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_true</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_pred</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#ArrayAccum.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.ArrayAccum.update" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.F1">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.</span></span><span class="sig-name descname"><span class="pre">F1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">average</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'binary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_division</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#F1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.F1" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.F1.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#F1.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.F1.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.F1.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.F1.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.F1.y_pred">
+<span class="sig-name descname"><span class="pre">y_pred</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_pred',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.F1.y_pred" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.F1.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.F1.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.MetricBase">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.</span></span><span class="sig-name descname"><span class="pre">MetricBase</span></span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricBase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.MetricBase" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.MetricBase.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricBase.copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.MetricBase.copy" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.MetricBase.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricBase.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.MetricBase.reset" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.MetricBase.result">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricBase.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.MetricBase.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.MetricBase.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricBase.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.MetricBase.update" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.MetricState">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.</span></span><span class="sig-name descname"><span class="pre">MetricState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.MetricState" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>]]</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.MetricState.add_metric">
+<span class="sig-name descname"><span class="pre">add_metric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metric</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricState.add_metric"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.MetricState.add_metric" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.MetricState.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricState.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.MetricState.reset" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.MetricState.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricState.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.MetricState.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.MetricState.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/base.html#MetricState.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.MetricState.update" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalAUCThreshold">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.</span></span><span class="sig-name descname"><span class="pre">OptimalAUCThreshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_intermediate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalAUCThreshold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.OptimalAUCThreshold" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalAUCThreshold.PR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PR</span></span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalAUCThreshold.PR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.OptimalAUCThreshold.PR" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalAUCThreshold.PR.PlotData">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PlotData</span></span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalAUCThreshold.PR.PlotData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.OptimalAUCThreshold.PR.PlotData" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalAUCThreshold.PR.PlotData.fpr">
+<span class="sig-name descname"><span class="pre">fpr</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.OptimalAUCThreshold.PR.PlotData.fpr" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalAUCThreshold.PR.PlotData.optimal">
+<span class="sig-name descname"><span class="pre">optimal</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></em><a class="headerlink" href="#tklearn.metrics.OptimalAUCThreshold.PR.PlotData.optimal" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalAUCThreshold.PR.PlotData.thresholds">
+<span class="sig-name descname"><span class="pre">thresholds</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.OptimalAUCThreshold.PR.PlotData.thresholds" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalAUCThreshold.PR.PlotData.tpr">
+<span class="sig-name descname"><span class="pre">tpr</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.OptimalAUCThreshold.PR.PlotData.tpr" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalAUCThreshold.PR.data">
+<span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List[PlotData]</span></em><a class="headerlink" href="#tklearn.metrics.OptimalAUCThreshold.PR.data" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalAUCThreshold.PR.threshold">
+<span class="sig-name descname"><span class="pre">threshold</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#tklearn.metrics.OptimalAUCThreshold.PR.threshold" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalAUCThreshold.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalAUCThreshold.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.OptimalAUCThreshold.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">List[PR]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalAUCThreshold.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.OptimalAUCThreshold.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalAUCThreshold.y_score">
+<span class="sig-name descname"><span class="pre">y_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_score',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.OptimalAUCThreshold.y_score" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalAUCThreshold.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.OptimalAUCThreshold.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.</span></span><span class="sig-name descname"><span class="pre">OptimalPRThreshold</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_intermediate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_division</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalPRThreshold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold.PR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PR</span></span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalPRThreshold.PR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold.PR" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold.PR.PlotData">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PlotData</span></span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalPRThreshold.PR.PlotData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold.PR.PlotData" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold.PR.PlotData.f1">
+<span class="sig-name descname"><span class="pre">f1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold.PR.PlotData.f1" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold.PR.PlotData.optimal">
+<span class="sig-name descname"><span class="pre">optimal</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></em><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold.PR.PlotData.optimal" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold.PR.PlotData.precision">
+<span class="sig-name descname"><span class="pre">precision</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold.PR.PlotData.precision" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold.PR.PlotData.recall">
+<span class="sig-name descname"><span class="pre">recall</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold.PR.PlotData.recall" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold.PR.PlotData.thresholds">
+<span class="sig-name descname"><span class="pre">thresholds</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></em><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold.PR.PlotData.thresholds" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold.PR.data">
+<span class="sig-name descname"><span class="pre">data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List[PlotData]</span></em><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold.PR.data" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold.PR.threshold">
+<span class="sig-name descname"><span class="pre">threshold</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></em><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold.PR.threshold" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#OptimalPRThreshold.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type">PR</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold.y_score">
+<span class="sig-name descname"><span class="pre">y_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_score',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold.y_score" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.OptimalPRThreshold.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.OptimalPRThreshold.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.Precision">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.</span></span><span class="sig-name descname"><span class="pre">Precision</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">average</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'binary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_division</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#Precision"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.Precision" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.Precision.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#Precision.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.Precision.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.Precision.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.Precision.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.Precision.y_pred">
+<span class="sig-name descname"><span class="pre">y_pred</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_pred',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.Precision.y_pred" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.Precision.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.Precision.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.Recall">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.</span></span><span class="sig-name descname"><span class="pre">Recall</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">average</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'binary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos_label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_division</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#Recall"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.Recall" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.Recall.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/classification.html#Recall.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.Recall.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.Recall.sample_weight">
+<span class="sig-name descname"><span class="pre">sample_weight</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='sample_weight',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.Recall.sample_weight" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.Recall.y_pred">
+<span class="sig-name descname"><span class="pre">y_pred</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_pred',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.Recall.y_pred" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.Recall.y_true">
+<span class="sig-name descname"><span class="pre">y_true</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">ArrayAccum(name='y_true',</span> <span class="pre">axis=0)</span></em><a class="headerlink" href="#tklearn.metrics.Recall.y_true" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.metrics.StepsCounter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.metrics.</span></span><span class="sig-name descname"><span class="pre">StepsCounter</span></span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#StepsCounter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.StepsCounter" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.metrics.base.MetricBase" title="tklearn.metrics.base.MetricBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricBase</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.metrics.StepsCounter.count">
+<span class="sig-name descname"><span class="pre">count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#tklearn.metrics.base.MetricVariable" title="tklearn.metrics.base.MetricVariable"><code class="xref py py-class docutils literal notranslate"><span class="pre">MetricVariable</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]</span></em><a class="headerlink" href="#tklearn.metrics.StepsCounter.count" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.StepsCounter.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#StepsCounter.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.StepsCounter.reset" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.StepsCounter.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#StepsCounter.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.StepsCounter.result" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.metrics.StepsCounter.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/metrics/helpers.html#StepsCounter.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.metrics.StepsCounter.update" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+
+
+
+
+
+                <footer class="prev-next-footer d-print-none">
+
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="tklearn.embeddings.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">tklearn.embeddings package</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="tklearn.nn.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">tklearn.nn package</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+
+            </div>
+
+
+
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submodules">Submodules</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.metrics.base">tklearn.metrics.base module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.base.MetricBase"><code class="docutils literal notranslate"><span class="pre">MetricBase</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.base.MetricBase.copy"><code class="docutils literal notranslate"><span class="pre">MetricBase.copy()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.base.MetricBase.reset"><code class="docutils literal notranslate"><span class="pre">MetricBase.reset()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.base.MetricBase.result"><code class="docutils literal notranslate"><span class="pre">MetricBase.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.base.MetricBase.update"><code class="docutils literal notranslate"><span class="pre">MetricBase.update()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.base.MetricState"><code class="docutils literal notranslate"><span class="pre">MetricState</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.base.MetricState.add_metric"><code class="docutils literal notranslate"><span class="pre">MetricState.add_metric()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.base.MetricState.reset"><code class="docutils literal notranslate"><span class="pre">MetricState.reset()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.base.MetricState.result"><code class="docutils literal notranslate"><span class="pre">MetricState.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.base.MetricState.update"><code class="docutils literal notranslate"><span class="pre">MetricState.update()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.base.MetricVariable"><code class="docutils literal notranslate"><span class="pre">MetricVariable</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.metrics.classification">tklearn.metrics.classification module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.AUC"><code class="docutils literal notranslate"><span class="pre">AUC</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.AUC.result"><code class="docutils literal notranslate"><span class="pre">AUC.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.AUC.sample_weight"><code class="docutils literal notranslate"><span class="pre">AUC.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.AUC.y_score"><code class="docutils literal notranslate"><span class="pre">AUC.y_score</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.AUC.y_true"><code class="docutils literal notranslate"><span class="pre">AUC.y_true</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Accuracy"><code class="docutils literal notranslate"><span class="pre">Accuracy</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Accuracy.result"><code class="docutils literal notranslate"><span class="pre">Accuracy.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Accuracy.sample_weight"><code class="docutils literal notranslate"><span class="pre">Accuracy.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Accuracy.y_pred"><code class="docutils literal notranslate"><span class="pre">Accuracy.y_pred</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Accuracy.y_true"><code class="docutils literal notranslate"><span class="pre">Accuracy.y_true</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.F1"><code class="docutils literal notranslate"><span class="pre">F1</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.F1.result"><code class="docutils literal notranslate"><span class="pre">F1.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.F1.sample_weight"><code class="docutils literal notranslate"><span class="pre">F1.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.F1.y_pred"><code class="docutils literal notranslate"><span class="pre">F1.y_pred</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.F1.y_true"><code class="docutils literal notranslate"><span class="pre">F1.y_true</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalAUCThreshold"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.PlotData</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData.fpr"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.PlotData.fpr</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData.optimal"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.PlotData.optimal</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData.thresholds"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.PlotData.thresholds</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.PlotData.tpr"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.PlotData.tpr</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.data"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.data</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalAUCThreshold.PR.threshold"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.threshold</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalAUCThreshold.result"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalAUCThreshold.sample_weight"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalAUCThreshold.y_score"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.y_score</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalAUCThreshold.y_true"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.y_true</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold.PR"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.PlotData</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.f1"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.PlotData.f1</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.optimal"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.PlotData.optimal</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.precision"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.PlotData.precision</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.recall"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.PlotData.recall</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.PlotData.thresholds"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.PlotData.thresholds</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.data"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.data</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold.PR.threshold"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.threshold</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold.result"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold.sample_weight"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold.y_score"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.y_score</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.OptimalPRThreshold.y_true"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.y_true</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Precision"><code class="docutils literal notranslate"><span class="pre">Precision</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Precision.result"><code class="docutils literal notranslate"><span class="pre">Precision.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Precision.sample_weight"><code class="docutils literal notranslate"><span class="pre">Precision.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Precision.y_pred"><code class="docutils literal notranslate"><span class="pre">Precision.y_pred</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Precision.y_true"><code class="docutils literal notranslate"><span class="pre">Precision.y_true</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Recall"><code class="docutils literal notranslate"><span class="pre">Recall</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Recall.result"><code class="docutils literal notranslate"><span class="pre">Recall.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Recall.sample_weight"><code class="docutils literal notranslate"><span class="pre">Recall.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Recall.y_pred"><code class="docutils literal notranslate"><span class="pre">Recall.y_pred</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.classification.Recall.y_true"><code class="docutils literal notranslate"><span class="pre">Recall.y_true</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.metrics.helpers">tklearn.metrics.helpers module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.helpers.ArrayAccum"><code class="docutils literal notranslate"><span class="pre">ArrayAccum</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.helpers.ArrayAccum.array"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.array</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.helpers.ArrayAccum.axis"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.axis</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.helpers.ArrayAccum.name"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.helpers.ArrayAccum.num_updates"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.num_updates</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.helpers.ArrayAccum.reset"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.reset()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.helpers.ArrayAccum.result"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.helpers.ArrayAccum.update"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.update()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.helpers.StepsCounter"><code class="docutils literal notranslate"><span class="pre">StepsCounter</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.helpers.StepsCounter.count"><code class="docutils literal notranslate"><span class="pre">StepsCounter.count</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.helpers.StepsCounter.reset"><code class="docutils literal notranslate"><span class="pre">StepsCounter.reset()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.helpers.StepsCounter.result"><code class="docutils literal notranslate"><span class="pre">StepsCounter.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.helpers.StepsCounter.update"><code class="docutils literal notranslate"><span class="pre">StepsCounter.update()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.metrics">Module contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.AUC"><code class="docutils literal notranslate"><span class="pre">AUC</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.AUC.result"><code class="docutils literal notranslate"><span class="pre">AUC.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.AUC.sample_weight"><code class="docutils literal notranslate"><span class="pre">AUC.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.AUC.y_score"><code class="docutils literal notranslate"><span class="pre">AUC.y_score</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.AUC.y_true"><code class="docutils literal notranslate"><span class="pre">AUC.y_true</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Accuracy"><code class="docutils literal notranslate"><span class="pre">Accuracy</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Accuracy.result"><code class="docutils literal notranslate"><span class="pre">Accuracy.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Accuracy.sample_weight"><code class="docutils literal notranslate"><span class="pre">Accuracy.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Accuracy.y_pred"><code class="docutils literal notranslate"><span class="pre">Accuracy.y_pred</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Accuracy.y_true"><code class="docutils literal notranslate"><span class="pre">Accuracy.y_true</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.ArrayAccum"><code class="docutils literal notranslate"><span class="pre">ArrayAccum</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.ArrayAccum.array"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.array</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.ArrayAccum.axis"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.axis</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.ArrayAccum.name"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.ArrayAccum.num_updates"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.num_updates</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.ArrayAccum.reset"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.reset()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.ArrayAccum.result"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.ArrayAccum.update"><code class="docutils literal notranslate"><span class="pre">ArrayAccum.update()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.F1"><code class="docutils literal notranslate"><span class="pre">F1</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.F1.result"><code class="docutils literal notranslate"><span class="pre">F1.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.F1.sample_weight"><code class="docutils literal notranslate"><span class="pre">F1.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.F1.y_pred"><code class="docutils literal notranslate"><span class="pre">F1.y_pred</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.F1.y_true"><code class="docutils literal notranslate"><span class="pre">F1.y_true</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.MetricBase"><code class="docutils literal notranslate"><span class="pre">MetricBase</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.MetricBase.copy"><code class="docutils literal notranslate"><span class="pre">MetricBase.copy()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.MetricBase.reset"><code class="docutils literal notranslate"><span class="pre">MetricBase.reset()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.MetricBase.result"><code class="docutils literal notranslate"><span class="pre">MetricBase.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.MetricBase.update"><code class="docutils literal notranslate"><span class="pre">MetricBase.update()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.MetricState"><code class="docutils literal notranslate"><span class="pre">MetricState</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.MetricState.add_metric"><code class="docutils literal notranslate"><span class="pre">MetricState.add_metric()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.MetricState.reset"><code class="docutils literal notranslate"><span class="pre">MetricState.reset()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.MetricState.result"><code class="docutils literal notranslate"><span class="pre">MetricState.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.MetricState.update"><code class="docutils literal notranslate"><span class="pre">MetricState.update()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalAUCThreshold"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalAUCThreshold.PR"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalAUCThreshold.PR.PlotData"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.PlotData</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalAUCThreshold.PR.PlotData.fpr"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.PlotData.fpr</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalAUCThreshold.PR.PlotData.optimal"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.PlotData.optimal</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalAUCThreshold.PR.PlotData.thresholds"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.PlotData.thresholds</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalAUCThreshold.PR.PlotData.tpr"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.PlotData.tpr</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalAUCThreshold.PR.data"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.data</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalAUCThreshold.PR.threshold"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.PR.threshold</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalAUCThreshold.result"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalAUCThreshold.sample_weight"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalAUCThreshold.y_score"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.y_score</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalAUCThreshold.y_true"><code class="docutils literal notranslate"><span class="pre">OptimalAUCThreshold.y_true</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold.PR"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold.PR.PlotData"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.PlotData</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold.PR.PlotData.f1"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.PlotData.f1</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold.PR.PlotData.optimal"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.PlotData.optimal</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold.PR.PlotData.precision"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.PlotData.precision</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold.PR.PlotData.recall"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.PlotData.recall</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold.PR.PlotData.thresholds"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.PlotData.thresholds</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold.PR.data"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.data</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold.PR.threshold"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.PR.threshold</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold.result"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold.sample_weight"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold.y_score"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.y_score</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.OptimalPRThreshold.y_true"><code class="docutils literal notranslate"><span class="pre">OptimalPRThreshold.y_true</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Precision"><code class="docutils literal notranslate"><span class="pre">Precision</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Precision.result"><code class="docutils literal notranslate"><span class="pre">Precision.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Precision.sample_weight"><code class="docutils literal notranslate"><span class="pre">Precision.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Precision.y_pred"><code class="docutils literal notranslate"><span class="pre">Precision.y_pred</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Precision.y_true"><code class="docutils literal notranslate"><span class="pre">Precision.y_true</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Recall"><code class="docutils literal notranslate"><span class="pre">Recall</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Recall.result"><code class="docutils literal notranslate"><span class="pre">Recall.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Recall.sample_weight"><code class="docutils literal notranslate"><span class="pre">Recall.sample_weight</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Recall.y_pred"><code class="docutils literal notranslate"><span class="pre">Recall.y_pred</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.Recall.y_true"><code class="docutils literal notranslate"><span class="pre">Recall.y_true</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.StepsCounter"><code class="docutils literal notranslate"><span class="pre">StepsCounter</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.StepsCounter.count"><code class="docutils literal notranslate"><span class="pre">StepsCounter.count</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.StepsCounter.reset"><code class="docutils literal notranslate"><span class="pre">StepsCounter.reset()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.StepsCounter.result"><code class="docutils literal notranslate"><span class="pre">StepsCounter.result()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.metrics.StepsCounter.update"><code class="docutils literal notranslate"><span class="pre">StepsCounter.update()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/api/tklearn.metrics.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+
+
+          </div>
+          <footer class="bd-footer-content">
+
+          </footer>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+
+    <div class="footer-items__start">
+
+        <div class="footer-item">
+
+  <p class="copyright">
+
+      © Copyright 2025, Yasas Senarath.
+      <br/>
+
+  </p>
+</div>
+
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.7.
+    <br/>
+  </p>
+</div>
+
+    </div>
+
+
+
+    <div class="footer-items__end">
+
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+
+    </div>
+
+</div>
+
+  </footer>
+  </body>
+</html>
