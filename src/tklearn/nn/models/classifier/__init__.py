@@ -1,5 +1,4 @@
-from tklearn.nn.models.base import AutoModel, ModelConfig
-from tklearn.nn.models.classifier import (
+from tklearn.nn.models.classifier.multiclass import (
     LinearLayerMulticlassClassifier,
     LinearLayerMulticlassClassifierConfig,
     PrototypeBasedMulticlassClassifier,
@@ -7,8 +6,6 @@ from tklearn.nn.models.classifier import (
 )
 
 __all__ = [
-    "AutoModel",
-    "ModelConfig",
     "LinearLayerMulticlassClassifier",
     "LinearLayerMulticlassClassifierConfig",
     "PrototypeBasedMulticlassClassifier",

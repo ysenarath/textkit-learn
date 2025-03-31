@@ -7,7 +7,7 @@ from typing_extensions import Literal, Protocol
 
 from tklearn.nn.loss import TargetBasedLoss
 from tklearn.nn.models.base import Model, ModelConfig
-from tklearn.nn.models.multiclass.helpers import (
+from tklearn.nn.models.classifier.helpers import (
     BatchPrototypeLoss,
     CosineSimilarity,
     SequenceClassifierOutputWithPooling,

@@ -5,7 +5,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 from tklearn.nn.base.module import Module
-from tklearn.nn.models.multiclass.classifier import (
+from tklearn.nn.models.classifier.multiclass import (
     LinearLayerMulticlassClassifier,
 )
 from tklearn.utils.array import move_to_device

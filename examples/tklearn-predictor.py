@@ -12,7 +12,6 @@ model = AutoModel({
     "num_labels": 2,
 })
 
-
 # Load the dataset
 dataset = load_dataset("imdb", split="test").select(range(100))
 
@@ -22,17 +21,19 @@ dataset = dataset.map(
     batched=True,
     remove_columns=dataset.column_names,
 )
+
+# Set the format to torch
 dataset.set_format(type="torch")
 
-
-collate_fn = DataCollatorWithPadding(model.tokenizer, pad_to_multiple_of=8)
-
-
+# Create a dataloader
 dataloader = DataLoader(
-    dataset, batch_size=32, shuffle=False, collate_fn=collate_fn
+    dataset,
+    batch_size=32,
+    shuffle=False,
+    collate_fn=DataCollatorWithPadding(model.tokenizer, pad_to_multiple_of=8),
 )
 
 # Create a predictor
 logits = Predictor(model, dataloader=dataloader).predict()
 
-print(logits)
+assert logits.shape[1] == 2
