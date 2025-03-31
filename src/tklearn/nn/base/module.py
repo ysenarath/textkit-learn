@@ -17,11 +17,11 @@ import torch.nn as nn
 from torch import Tensor
 from typing_extensions import Generic, Self
 
-I = TypeVar("I")  # noqa: E741
-R = TypeVar("R")
+K = TypeVar("K")
+V = TypeVar("V")
 
 
-class Module(nn.Module, Generic[I, R]):
+class Module(nn.Module, Generic[K, V]):
     @property
     def device(self) -> torch.device:
         return next(self.parameters()).device
@@ -102,31 +102,31 @@ class Module(nn.Module, Generic[I, R]):
         return frozen_params
 
     def validation_step(
-        self, batch: I, batch_idx: int, dataloader_idx: Optional[int] = None
+        self, batch: K, batch_idx: int, dataloader_idx: Optional[int] = None
     ) -> Union[Tensor, Mapping[str, Any], None]:
         raise NotImplementedError
 
     def test_step(
-        self, batch: I, batch_idx: int, dataloader_idx: Optional[int] = None
+        self, batch: K, batch_idx: int, dataloader_idx: Optional[int] = None
     ) -> Union[Tensor, Mapping[str, Any], None]:
         raise NotImplementedError
 
     def training_step(
-        self, batch: I, batch_idx: int, dataloader_idx: Optional[int] = None
+        self, batch: K, batch_idx: int, dataloader_idx: Optional[int] = None
     ) -> Union[Tensor, Mapping[str, Any], None]:
         raise NotImplementedError
 
     def predict_step(
-        self, batch: I, batch_idx: int, dataloader_idx: Optional[int] = None
-    ) -> R:
+        self, batch: K, batch_idx: int, dataloader_idx: Optional[int] = None
+    ) -> V:
         raise NotImplementedError
 
     def compute_loss(
-        self, batch: I, output: R, **kwargs
+        self, batch: K, output: V, **kwargs
     ) -> Union[Tensor, Mapping[str, Any], None]:
         raise NotImplementedError
 
     def compute_metric_inputs(
-        self, batch: I, output: R, **kwargs
+        self, batch: K, output: V, **kwargs
     ) -> Dict[str, Any]:
         raise NotImplementedError
