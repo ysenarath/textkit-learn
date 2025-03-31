@@ -1,13 +1,13 @@
 from tklearn.nn.models.classifier.multiclass import (
-    LinearLayerMulticlassClassifier,
-    LinearLayerMulticlassClassifierConfig,
-    PrototypeBasedMulticlassClassifier,
-    PrototypeBasedMulticlassClassifierConfig,
+    LinearMulticlassClassifier,
+    LinearMulticlassClassifierConfig,
+    PrototypeMulticlassClassifier,
+    PrototypeMulticlassClassifierConfig,
 )
 
 __all__ = [
-    "LinearLayerMulticlassClassifier",
-    "LinearLayerMulticlassClassifierConfig",
-    "PrototypeBasedMulticlassClassifier",
-    "PrototypeBasedMulticlassClassifierConfig",
+    "LinearMulticlassClassifier",
+    "LinearMulticlassClassifierConfig",
+    "PrototypeMulticlassClassifier",
+    "PrototypeMulticlassClassifierConfig",
 ]

@@ -15,10 +15,10 @@ from tklearn.nn.models.classifier.helpers import (
 from tklearn.nn.utils.preprocessing import preprocess_input, preprocess_target
 
 __all__ = [
-    "LinearLayerMulticlassClassifier",
-    "LinearLayerMulticlassClassifierConfig",
-    "PrototypeBasedMulticlassClassifier",
-    "PrototypeBasedMulticlassClassifierConfig",
+    "LinearMulticlassClassifier",
+    "LinearMulticlassClassifierConfig",
+    "PrototypeMulticlassClassifier",
+    "PrototypeMulticlassClassifierConfig",
 ]
 
 
@@ -44,14 +44,14 @@ class LinearClassifierLayer(nn.Module):
         return x, pooler_output
 
 
-class LinearLayerMulticlassClassifierConfig(ModelConfig):
+class LinearMulticlassClassifierConfig(ModelConfig):
     type: ClassVar[str] = "linear"
     output_dropout: float = 0.2
     num_labels: int = 0
 
 
-class LinearLayerMulticlassClassifier(Model):
-    config: LinearLayerMulticlassClassifierConfig
+class LinearMulticlassClassifier(Model):
+    config: LinearMulticlassClassifierConfig
 
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -143,12 +143,12 @@ class LinearLayerMulticlassClassifier(Model):
         }
 
 
-class PrototypeBasedMulticlassClassifierConfig(ModelConfig):
+class PrototypeMulticlassClassifierConfig(ModelConfig):
     type: ClassVar[str] = "prototype"
 
 
-class PrototypeBasedMulticlassClassifier(Model):
-    config: PrototypeBasedMulticlassClassifierConfig
+class PrototypeMulticlassClassifier(Model):
+    config: PrototypeMulticlassClassifierConfig
 
     def __post_init__(self) -> None:
         super().__post_init__()

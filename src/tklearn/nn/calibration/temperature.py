@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 from tklearn.nn.base.module import Module
 from tklearn.nn.models.classifier.multiclass import (
-    LinearLayerMulticlassClassifier,
+    LinearMulticlassClassifier,
 )
 from tklearn.utils.array import move_to_device
 
@@ -94,7 +94,7 @@ class CalibratedModule(Module):
 
     def __init__(
         self,
-        base_model: LinearLayerMulticlassClassifier,
+        base_model: LinearMulticlassClassifier,
         temperature_model: TemperatureScaling,
         info: Dict[str, Any],
     ):
