@@ -32,99 +32,6 @@ DataCollator = NewType(
 )
 
 
-class DataCollatorMixin:
-    def __call__(self, features, return_tensors=None):
-        if return_tensors is None:
-            return_tensors = self.return_tensors
-        elif return_tensors == "pt":
-            return self.torch_call(features)
-        else:
-            msg = f"Framework '{return_tensors}' not recognized!"
-            raise ValueError(msg)
-
-
-def pad_without_fast_tokenizer_warning(tokenizer, *pad_args, **pad_kwargs):
-    """
-    Pads without triggering the warning about how using the pad function is sub-optimal when using a fast tokenizer.
-    """
-
-    # To avoid errors when using Feature extractors
-    if not hasattr(tokenizer, "deprecation_warnings"):
-        return tokenizer.pad(*pad_args, **pad_kwargs)
-
-    # Save the state of the warning, then disable it
-    warning_state = tokenizer.deprecation_warnings.get(
-        "Asking-to-pad-a-fast-tokenizer", False
-    )
-    tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
-
-    try:
-        padded = tokenizer.pad(*pad_args, **pad_kwargs)
-    finally:
-        # Restore the state of the warning.
-        tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = (
-            warning_state
-        )
-
-    return padded
-
-
-def default_data_collator(
-    features: list[InputDataClass], return_tensors="pt"
-) -> dict[str, Any]:
-    """
-    Very simple data collator that simply collates batches of dict-like objects and performs special handling for
-    potential keys named:
-
-        - `label`: handles a single value (int or float) per object
-        - `label_ids`: handles a list of values per object
-
-    Does not do any additional preprocessing: property names of the input object will be used as corresponding inputs
-    to the model. See glue and ner for example of how it's useful.
-    """
-
-    # In this function we'll make the assumption that all `features` in the batch
-    # have the same attributes.
-    # So we will look at the first element as a proxy for what attributes exist
-    # on the whole batch.
-
-    if return_tensors == "pt":
-        return torch_default_data_collator(features)
-    raise ValueError(
-        f"return_tensors should be ''pt', but got {return_tensors}"
-    )
-
-
-@dataclass
-class DefaultDataCollator(DataCollatorMixin):
-    """
-    Very simple data collator that simply collates batches of dict-like objects and performs special handling for
-    potential keys named:
-
-        - `label`: handles a single value (int or float) per object
-        - `label_ids`: handles a list of values per object
-
-    Does not do any additional preprocessing: property names of the input object will be used as corresponding inputs
-    to the model. See glue and ner for example of how it's useful.
-
-    This is an object (like other data collators) rather than a pure function like default_data_collator. This can be
-    helpful if you need to set a return_tensors value at initialization.
-
-    Args:
-        return_tensors (`str`, *optional*, defaults to `"pt"`):
-            The type of Tensor to return. Allowable values are "np", "pt" and "tf".
-    """
-
-    return_tensors: str = "pt"
-
-    def __call__(
-        self, features: list[dict[str, Any]], return_tensors=None
-    ) -> dict[str, Any]:
-        if return_tensors is None:
-            return_tensors = self.return_tensors
-        return default_data_collator(features, return_tensors)
-
-
 def torch_default_data_collator(
     features: list[InputDataClass],
 ) -> dict[str, Any]:
@@ -179,6 +86,110 @@ def torch_default_data_collator(
     return batch
 
 
+def default_data_collator(
+    features: list[InputDataClass], return_tensors="pt"
+) -> dict[str, Any]:
+    """
+    Very simple data collator that simply collates batches of dict-like objects and performs special handling for
+    potential keys named:
+
+        - `label`: handles a single value (int or float) per object
+        - `label_ids`: handles a list of values per object
+
+    Does not do any additional preprocessing: property names of the input object will be used as corresponding inputs
+    to the model. See glue and ner for example of how it's useful.
+    """
+
+    # In this function we'll make the assumption that all `features` in the batch
+    # have the same attributes.
+    # So we will look at the first element as a proxy for what attributes exist
+    # on the whole batch.
+
+    if return_tensors == "pt":
+        return torch_default_data_collator(features)
+    raise ValueError(
+        f"return_tensors should be ''pt', but got {return_tensors}"
+    )
+
+
+def pad_without_fast_tokenizer_warning(tokenizer, *pad_args, **pad_kwargs):
+    """
+    Pads without triggering the warning about how using the pad function is sub-optimal when using a fast tokenizer.
+    """
+
+    # To avoid errors when using Feature extractors
+    if not hasattr(tokenizer, "deprecation_warnings"):
+        return tokenizer.pad(*pad_args, **pad_kwargs)
+
+    # Save the state of the warning, then disable it
+    warning_state = tokenizer.deprecation_warnings.get(
+        "Asking-to-pad-a-fast-tokenizer", False
+    )
+    tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = True
+
+    try:
+        padded = tokenizer.pad(*pad_args, **pad_kwargs)
+    finally:
+        # Restore the state of the warning.
+        tokenizer.deprecation_warnings["Asking-to-pad-a-fast-tokenizer"] = (
+            warning_state
+        )
+
+    return padded
+
+
+class DataCollatorMixin:
+    def __call__(self, features, return_tensors=None):
+        if return_tensors is None:
+            return_tensors = self.return_tensors
+        elif return_tensors == "pt":
+            return self.torch_call(features)
+        else:
+            msg = f"Framework '{return_tensors}' not recognized!"
+            raise ValueError(msg)
+
+
+@dataclass
+class DefaultDataCollator(DataCollatorMixin):
+    """
+    Very simple data collator that simply collates batches of dict-like objects and performs special handling for
+    potential keys named:
+
+        - `label`: handles a single value (int or float) per object
+        - `label_ids`: handles a list of values per object
+
+    Does not do any additional preprocessing: property names of the input object will be used as corresponding inputs
+    to the model. See glue and ner for example of how it's useful.
+
+    This is an object (like other data collators) rather than a pure function like default_data_collator. This can be
+    helpful if you need to set a return_tensors value at initialization.
+
+    Args:
+        return_tensors (`str`, *optional*, defaults to `"pt"`):
+            The type of Tensor to return. Allowable values are "np", "pt" and "tf".
+    """
+
+    return_tensors: str = "pt"
+
+    def __call__(
+        self, features: list[dict[str, Any]], return_tensors=None
+    ) -> dict[str, Any]:
+        if return_tensors is None:
+            return_tensors = self.return_tensors
+        return default_data_collator(features, return_tensors)
+
+
+def get_labels(features: dict[str, Any]) -> Any:
+    if "labels" in features:
+        return features["labels"]
+    elif "label" in features:
+        return features["label"]
+    elif "label_ids" in features:
+        return features["label_ids"]
+    msg = "unable to find a label in the input features"
+    raise ValueError(msg)
+
+
 @dataclass
 class DataCollatorWithPadding:
     tokenizer: PreTrainedTokenizerBase
@@ -204,14 +215,8 @@ class DataCollatorWithPadding:
             pad_to_multiple_of=self.pad_to_multiple_of,
             return_tensors=self.return_tensors,
         )
-        if "label" in batch:
-            batch["labels"] = batch["label"]
-            del batch["label"]
-        if "label_ids" in batch:
-            batch["labels"] = batch["label_ids"]
-            del batch["label_ids"]
-        if "labels" in batch:
-            labels_tensor = [feature["labels"] for feature in features]
+        try:
+            labels_tensor = [get_labels(feature) for feature in features]
             # convert to tensor if necessary
             labels_tensor = np.array(labels_tensor)
             if self.return_tensors == "pt":
@@ -230,4 +235,6 @@ class DataCollatorWithPadding:
                 )
                 raise ValueError(msg)
             batch["labels"] = labels_tensor
+        except ValueError:
+            pass
         return batch
