@@ -8,11 +8,12 @@ from tklearn.nn import Evaluator, Trainer
 from tklearn.nn.calibration.temperature import calibrate_model
 from tklearn.nn.callbacks import EarlyStopping, ProgbarLogger
 from tklearn.nn.models import AutoModel, ModelConfig
+from tklearn.nn.utils.collators import DataCollatorWithPadding
 
 MODEL_NAME_OR_PATH = "google-bert/bert-base-uncased"
 DATASET = "yelp_review_full"
 NUM_EPOCHS = 3
-TRAIN_DATASET_SIZE = 100000
+TRAIN_DATASET_SIZE = 1000
 EVAL_DATASET_SIZE = 1000
 
 METRICS = {
@@ -25,15 +26,18 @@ METRICS = {
 
 dataset = load_dataset(DATASET)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH)
+collator = DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8)
 
 
 def tokenize_function(examples):
-    return tokenizer(examples["text"], padding="max_length", truncation=True)
+    return tokenizer(examples["text"], truncation=True)
 
 
-tokenized_datasets = dataset.map(tokenize_function, batched=True)
-tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
-tokenized_datasets.set_format("torch")
+dataset = dataset.rename_column("label", "labels")
+tokenized_datasets = dataset.map(
+    tokenize_function, batched=True, remove_columns=["text"]
+)
+del dataset
 
 small_train_dataset = (
     tokenized_datasets["train"]
@@ -45,8 +49,12 @@ small_eval_dataset = (
     .shuffle(seed=42)
     .select(range(EVAL_DATASET_SIZE))
 )
-train_dataloader = DataLoader(small_train_dataset, shuffle=True, batch_size=16)
-valid_dataloader = DataLoader(small_eval_dataset, batch_size=32)
+train_dataloader = DataLoader(
+    small_train_dataset, shuffle=True, batch_size=16, collate_fn=collator
+)
+valid_dataloader = DataLoader(
+    small_eval_dataset, batch_size=32, collate_fn=collator
+)
 
 model_config = ModelConfig.from_dict({
     "type": "linear",
@@ -66,10 +74,7 @@ if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
 
 model.to(auto_device)
 
-optimizer = AdamW(
-    model.parameters(),
-    lr=5e-5,
-)
+optimizer = AdamW(model.parameters(), lr=5e-5)
 
 evaluator = Evaluator(
     model,
