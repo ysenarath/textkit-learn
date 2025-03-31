@@ -120,19 +120,16 @@ class LinearMulticlassClassifier(Model):
             return super().compute_loss(batch, output, **kwargs)
         targets, logits = batch["labels"], output["logits"]
         y_true = preprocess_target(
-            "multiclass",
-            targets,
-            num_labels=self.num_labels,
+            "multiclass", targets, num_labels=self.num_labels
         )
         return self.loss_func(logits, y_true)
 
     def compute_metric_inputs(self, batch, output, **kwargs) -> dict:
         targets, logits = batch["labels"], output["logits"]
-        target_type, num_labels = (
-            "multiclass",
-            self.num_labels,
+        target_type = "multiclass"
+        y_true = preprocess_target(
+            target_type, targets, num_labels=self.num_labels
         )
-        y_true = preprocess_target(target_type, targets, num_labels=num_labels)
         y_pred, y_score = preprocess_input(target_type, logits)
         pooler_output = output.get("pooler_output")
         return {
