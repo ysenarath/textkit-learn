@@ -53,6 +53,8 @@ dependencies = [
     "mlflow>=2.20.1",
     "gensim>=4.3.3",
     "fasttext @ git+https://github.com/facebookresearch/fastText.git@1142dc4c4ecbc19cc16eee5cdd28472e689267e6",
+    "rich>=14.0.0",
+    "unibreak>=0.2.0",
 ]
 dynamic = ["version"]
 
