@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import field
 from typing import ClassVar
 
@@ -26,14 +27,19 @@ class ModelConfig(BaseConfig, dispatch=["type"]):
 
 
 class AutoModel(AutoModule):
-    def __new__(cls, config: ModelConfig) -> Model:
-        approach = super().__new__(cls, config)
-        if not isinstance(approach, Model):
-            msg = (
-                f"expected {Model.__name__}, got {approach.__class__.__name__}"
-            )
+    def __new__(cls, config: ModelConfig | Mapping) -> Model:
+        if not isinstance(config, ModelConfig):
+            if isinstance(config, Mapping):
+                config = ModelConfig.from_dict(config)
+            else:
+                raise TypeError(
+                    f"expected {ModelConfig.__name__}, got {config.__class__.__name__}"
+                )
+        model = super().__new__(cls, config)
+        if not isinstance(model, Model):
+            msg = f"expected {Model.__name__}, got {model.__class__.__name__}"
             raise TypeError(msg)
-        return approach
+        return model
 
 
 class Model(BaseModule, Module):
