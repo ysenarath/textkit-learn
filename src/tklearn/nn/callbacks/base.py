@@ -3,15 +3,8 @@ from __future__ import annotations
 import functools
 import warnings
 from collections import UserList
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Type,
-)
+from collections.abc import Iterable, Iterator, Sequence
+from typing import TYPE_CHECKING, Any
 
 from torch.optim.optimizer import Optimizer
 from typing_extensions import Self
@@ -394,13 +387,13 @@ def is_callback(name: str) -> bool:
 
 
 class CallbackList(Callback, Sequence[Callback]):
-    def __init__(self, callbacks: Optional[List[Callback]] = None):
+    def __init__(self, callbacks: list[Callback] | None = None):
         super().__init__()
-        self._callbacks: List[Callback] = []
+        self._callbacks: list[Callback] = []
         self.extend(callbacks)
 
     def extend(
-        self, callbacks: List[Callback], /, inplace: bool = True
+        self, callbacks: list[Callback], /, inplace: bool = True
     ) -> Self:
         inst = self if inplace else self.copy()
         if callbacks is None:
@@ -421,7 +414,7 @@ class CallbackList(Callback, Sequence[Callback]):
             raise TypeError(msg)
         self._callbacks.append(callback)
 
-    def remove(self, callback: Callback | Type[Callback]) -> None:
+    def remove(self, callback: Callback | type[Callback]) -> None:
         if isinstance(callback, type):
             callbacks = []
             for cb in self._callbacks:
@@ -432,7 +425,7 @@ class CallbackList(Callback, Sequence[Callback]):
         else:
             self._callbacks.remove(callback)
 
-    def __getitem__(self, item: Callback | Type[Callback]) -> Callback:
+    def __getitem__(self, item: Callback | type[Callback]) -> Callback:
         if isinstance(item, type):
             for callback in self._callbacks:
                 if isinstance(callback, item):
@@ -442,9 +435,9 @@ class CallbackList(Callback, Sequence[Callback]):
 
     def get(
         self,
-        callback: Callback | Type[Callback],
-        default: Optional[Callback] = None,
-    ) -> Optional[Callback]:
+        callback: Callback | type[Callback],
+        default: Callback | None = None,
+    ) -> Callback | None:
         try:
             return self[callback]
         except KeyError:
@@ -462,7 +455,7 @@ class CallbackList(Callback, Sequence[Callback]):
         else:
             return super().__getattribute__(__name)
 
-    def __contains__(self, item: Callback | Type[Callback]) -> bool:
+    def __contains__(self, item: Callback | type[Callback]) -> bool:
         if isinstance(item, type):
             return any(isinstance(cb, item) for cb in self._callbacks)
         return item in self._callbacks
@@ -495,3 +488,17 @@ class CallbackList(Callback, Sequence[Callback]):
                 outputs.errors[-1] = e
             outputs.append(output)
         return outputs
+
+
+class CallbacksMixin:
+    @property
+    def callbacks(self) -> CallbackList:
+        return self._callbacks
+
+    @callbacks.setter
+    def callbacks(
+        self, value: CallbackList | Iterable[Callback] | None
+    ) -> None:
+        if not isinstance(value, Sequence):
+            value = [value]
+        self._callbacks = CallbackList(value)
