@@ -499,6 +499,8 @@ class CallbacksMixin:
     def callbacks(
         self, value: CallbackList | Iterable[Callback] | None
     ) -> None:
-        if not isinstance(value, Sequence):
+        if value is None:
+            value = []
+        elif not isinstance(value, Sequence):
             value = [value]
         self._callbacks = CallbackList(value)
