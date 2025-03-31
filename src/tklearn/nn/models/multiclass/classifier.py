@@ -116,6 +116,8 @@ class LinearLayerMulticlassClassifier(Model):
         return output
 
     def compute_loss(self, batch, output, **kwargs) -> torch.Tensor:
+        if "labels" not in batch:
+            return super().compute_loss(batch, output, **kwargs)
         targets, logits = batch["labels"], output["logits"]
         y_true = preprocess_target(
             "multiclass",
@@ -158,6 +160,8 @@ class PrototypeBasedMulticlassClassifier(Model):
         return self.backbone(batch)
 
     def compute_loss(self, batch, output, **kwargs) -> torch.Tensor:
+        if "labels" not in batch:
+            return super().compute_loss(batch, output, **kwargs)
         targets, pooler_output = batch["labels"], output["pooler_output"]
         # dynamic number of labels therefore do not pass num_labels
         y_true = preprocess_target("multiclass", targets)
