@@ -68,15 +68,12 @@ class Trainer(CallbacksMixin, Generic[K, V]):
                     batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
                 )
             except NotImplementedError:
-                try:
-                    batch_output = self.model.predict_step(
-                        batch,
-                        batch_idx=batch_idx,
-                        dataloader_idx=dataloader_idx,
-                    )
-                    batch_loss = self.model.compute_loss(batch, batch_output)
-                except NotImplementedError:
-                    batch_loss = None
+                batch_output = self.model.predict_step(
+                    batch,
+                    batch_idx=batch_idx,
+                    dataloader_idx=dataloader_idx,
+                )
+                batch_loss = self.model.compute_loss(batch, batch_output)
         else:
             # if the loss is provided externally, use that instead with the
             # predict_step method
@@ -84,6 +81,7 @@ class Trainer(CallbacksMixin, Generic[K, V]):
                 batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
             )
             batch_loss = self.loss(batch, batch_output)
+
         if not isinstance(batch_loss, LossDict):
             batch_loss = LossDict(batch_loss)
 
