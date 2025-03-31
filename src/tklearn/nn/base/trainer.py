@@ -13,7 +13,7 @@ from tklearn.nn.base.module import Module
 from tklearn.nn.callbacks.base import Callback, CallbackList, CallbacksMixin
 from tklearn.nn.callbacks.history import History
 from tklearn.nn.loss import LossDict
-from tklearn.nn.optim import LRSchedulerConfig, get_scheduler
+from tklearn.nn.optim import get_scheduler
 from tklearn.utils.array import move_to_device
 
 K = TypeVar("K")
@@ -29,7 +29,7 @@ class Trainer(CallbacksMixin, Generic[K, V]):
         optimizer: Optimizer,
         loss: Callable[[K, V], L] | None = None,
         epochs: int = 1,
-        lr_scheduler: LRScheduler | LRSchedulerConfig | str | None = None,
+        lr_scheduler: LRScheduler | str | None = None,
         lr_scheduler_kwargs: Mapping[str, Any] | None = None,
         clip_grad_norm: (
             int
