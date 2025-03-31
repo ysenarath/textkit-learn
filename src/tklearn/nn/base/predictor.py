@@ -24,10 +24,21 @@ class Predictor(CallbacksMixin, Generic[K, V]):
         loss: Callable[[K, V], L] | None = None,
         callbacks: CallbackList | Iterable[Callback] | None = None,
     ) -> None:
+        super().__init__()
         self.model = model
         self.dataloader = dataloader
         self.callbacks = callbacks
         self.loss = loss
+
+    def compute_loss(self, batch: K, output: V) -> LossDict:
+        if self.loss is None:
+            try:
+                batch_loss = self.model.compute_loss(batch, output)
+            except NotImplementedError:
+                batch_loss = None
+        else:
+            batch_loss = self.loss(batch, output)
+        return LossDict(batch_loss)
 
     @torch.no_grad()
     def iter_batches(
@@ -35,8 +46,8 @@ class Predictor(CallbacksMixin, Generic[K, V]):
     ) -> Generator[tuple[int, K, V, LossDict], None, None]:
         if self.model.training:
             self.model.eval()
-        # set the callback params
 
+        # set the callback params
         callback_params = {}
         if self.callbacks.params is not None:
             callback_params.update(self.callbacks.params)
@@ -55,31 +66,18 @@ class Predictor(CallbacksMixin, Generic[K, V]):
             output = self.model.predict_step(
                 batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
             )
-
-            if self.loss is None:
-                try:
-                    batch_loss = self.model.compute_loss(batch, output)
-                except NotImplementedError:
-                    batch_loss = None
-            else:
-                batch_loss = self.loss(batch, output)
-
-            batch_loss = LossDict(batch_loss)
-            batch_logs = {}
-            self.callbacks.on_predict_batch_end(batch_idx, logs=batch_logs)
+            batch_loss = self.compute_loss(batch, output)
+            self.callbacks.on_predict_batch_end(batch_idx, logs={})
             yield batch_idx, batch, output, batch_loss
 
         self.callbacks.on_predict_end()
 
     def predict(self) -> torch.Tensor:
         self.model.eval()
-
         logits = None
         for batch_idx, batch, output, batch_loss in self.iter_batches():
             logits = concat((logits, output["logits"]))
-
         if logits is None:
             msg = "empty prediction results"
             raise ValueError(msg)
-
         return logits
