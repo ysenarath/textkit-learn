@@ -329,13 +329,13 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Generic</span><span class="p">,</span> <span class="n">Self</span>
 
-<span class="n">I</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;I&quot;</span><span class="p">)</span>  <span class="c1"># noqa: E741</span>
-<span class="n">R</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;R&quot;</span><span class="p">)</span>
+<span class="n">K</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">)</span>
+<span class="n">V</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;V&quot;</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Module">
 <a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">Module</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">Generic</span><span class="p">[</span><span class="n">I</span><span class="p">,</span> <span class="n">R</span><span class="p">]):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Module</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">Generic</span><span class="p">[</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="p">]):</span>
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">device</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span><span class="o">.</span><span class="n">device</span>
@@ -424,7 +424,7 @@
 <div class="viewcode-block" id="Module.validation_step">
 <a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.validation_step">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">validation_step</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">I</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">K</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
@@ -432,7 +432,7 @@
 <div class="viewcode-block" id="Module.test_step">
 <a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.test_step">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">test_step</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">I</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">K</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
@@ -440,7 +440,7 @@
 <div class="viewcode-block" id="Module.training_step">
 <a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.training_step">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">training_step</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">I</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">K</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
@@ -448,15 +448,15 @@
 <div class="viewcode-block" id="Module.predict_step">
 <a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.predict_step">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">predict_step</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">I</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">R</span><span class="p">:</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">K</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">V</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
 
 <div class="viewcode-block" id="Module.compute_loss">
 <a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.compute_loss">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">compute_loss</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">I</span><span class="p">,</span> <span class="n">output</span><span class="p">:</span> <span class="n">R</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">K</span><span class="p">,</span> <span class="n">output</span><span class="p">:</span> <span class="n">V</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
@@ -464,7 +464,7 @@
 <div class="viewcode-block" id="Module.compute_metric_inputs">
 <a class="viewcode-back" href="../../../../api/tklearn.nn.base.html#tklearn.nn.base.module.Module.compute_metric_inputs">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">compute_metric_inputs</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">I</span><span class="p">,</span> <span class="n">output</span><span class="p">:</span> <span class="n">R</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">:</span> <span class="n">K</span><span class="p">,</span> <span class="n">output</span><span class="p">:</span> <span class="n">V</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 </div>

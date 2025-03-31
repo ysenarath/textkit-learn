@@ -1,0 +1,29 @@
+## Action Items from Code Review
+
+1. ✅ [NO ACTION NEEDED] Initialize `total_loss` variables to avoid None addition errors
+   - Properly implemented in LossDict class, handles None addition correctly
+
+2. 📝 Add comprehensive docstrings for all classes and methods
+   - Add parameter descriptions
+   - Add return value documentation
+   - Add examples where appropriate
+
+3. ✅ [NO ACTION NEEDED] Implement more robust device management for distributed training
+   - Not needed for current scope
+
+4. 📝 Add more validation checks for input parameters
+   - Validate metric configurations
+   - Add type checking for critical parameters
+   - Improve error messages
+
+5. 🔄 Consider a more detailed logging system beyond just the History callback
+   - Design comprehensive logging strategy
+   - Implement configurable verbosity levels
+   - Add progress tracking features
+
+6. ⚠️ Refactor `_training_step_grad` method into smaller, more focused methods
+   - Separate gradient calculation logic
+   - Extract loss computation
+   - Improve readability of complex operations
+
+7. 🐛 Fix typo in method name `_valiate_or_test` to `_validate_or_test`

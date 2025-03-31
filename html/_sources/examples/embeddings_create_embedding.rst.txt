@@ -2,7 +2,7 @@
 Creating New Embedding Models
 ========================
 
-The ``tklearn.embeddings`` framework allows you to create custom embedding implementations by extending the base ``Embedding`` class. This guide explains how to implement your own embedding model integrations.
+The ``tklearn.embeddings`` module allows you to create custom embedding implementations by extending the base ``Embedding`` class. This guide explains how to implement your own embedding model integrations.
 
 Core Components
 --------------
