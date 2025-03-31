@@ -4,15 +4,16 @@ from collections.abc import Iterable, Mapping
 from typing import Any, Callable, Generic, TypeVar
 
 import torch
+from torch.optim import Optimizer
+from torch.optim.lr_scheduler import _LRScheduler as LRScheduler
 from torch.utils.data import DataLoader
 
 from tklearn.nn.base.evaluator import Evaluator
-from tklearn.nn.base.helpers import get_scheduler
 from tklearn.nn.base.module import Module
 from tklearn.nn.callbacks.base import Callback, CallbackList, CallbacksMixin
 from tklearn.nn.callbacks.history import History
 from tklearn.nn.loss import LossDict
-from tklearn.nn.optim import LRScheduler, LRSchedulerConfig, Optimizer
+from tklearn.nn.optim import LRSchedulerConfig, get_scheduler
 from tklearn.utils.array import move_to_device
 
 K = TypeVar("K")
