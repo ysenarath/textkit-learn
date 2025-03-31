@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Mapping, Union
+from collections.abc import Mapping
+from typing import Any
 
 import torch
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
@@ -8,7 +9,10 @@ from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 from tklearn.nn.utils.collections import TensorDict
 from tklearn.utils.targets import TargetType, type_of_target
 
-__all__ = []
+__all__ = [
+    "LossDict",
+    "TargetBasedLoss",
+]
 
 
 class LossDict(TensorDict):
@@ -19,27 +23,15 @@ class LossDict(TensorDict):
 
 
 class TargetBasedLoss(torch.nn.Module):
-    def __init__(self, target_type: Union[str, TargetType], num_labels: int):
+    def __init__(self, target_type: str | TargetType, num_labels: int):
         super().__init__()
         self.num_labels = num_labels
-        if isinstance(target_type, str):
-            target_type = type_of_target(target_type)
-        self.target_type = target_type
+        self.target_type = type_of_target(target_type)
         self._loss_func = None
 
     def forward(
         self, input: torch.Tensor, target: torch.Tensor
     ) -> torch.Tensor:
-        if self.target_type is None:
-            if self.num_labels == 1:
-                target_type = "continuous"
-            elif self.num_labels > 1 and (
-                target.dtype == torch.long or target.dtype == torch.int
-            ):
-                target_type = "multiclass"
-            else:
-                target_type = "multilabel-indicator"
-            self.target_type = target_type
         if self._loss_func is None:
             if self.target_type.label == "continuous":
                 loss_fct = MSELoss()
@@ -54,9 +46,10 @@ class TargetBasedLoss(torch.nn.Module):
                 # - input and target must have same shape
                 loss_fct = BCEWithLogitsLoss()
             else:
-                raise ValueError(
-                    f"loss function for '{self.target_type.label}' not found"
+                msg = (
+                    f"target type '{self.target_type.label}' is not supported"
                 )
+                raise ValueError(msg)
             self._loss_func = loss_fct
         if isinstance(self._loss_func, MSELoss):
             if self.num_labels == 1:
@@ -80,8 +73,7 @@ class TargetBasedLoss(torch.nn.Module):
             # >>> output = loss(input, target)
             # >>> output.backward()
             loss = self._loss_func(
-                input.view(-1, self.num_labels),
-                target.view(-1),
+                input.view(-1, self.num_labels), target.view(-1)
             )
         else:  # BCEWithLogitsLoss
             # >>> loss = nn.BCEWithLogitsLoss()
