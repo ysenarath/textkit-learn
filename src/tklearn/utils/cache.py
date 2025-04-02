@@ -54,7 +54,7 @@ class FileCache:
 
     def dump(
         self, obj: Any, *, fingerprint: Any = None, exist_ok: bool = False
-    ) -> bool:
+    ) -> str:
         if fingerprint is None:
             fingerprint = hashing.hash(obj)
 
@@ -62,9 +62,10 @@ class FileCache:
 
         if final_path.exists():
             if exist_ok:
-                return False
+                return fingerprint
             else:
-                raise FileExistsError(f"file exists: '{final_path}'")
+                msg = f"file already exists: {final_path}"
+                raise FileExistsError(msg)
 
         uid = uuid.uuid4()
         temp_path = final_path.with_name(f"{final_path.name}.{uid}.tmp")
@@ -80,7 +81,6 @@ class FileCache:
             # this may fail if another process
             #   has already created the file
             os.rename(temp_path, final_path)
-            return True
         except OSError:
             # Another process beat us to it
             try:
@@ -88,7 +88,8 @@ class FileCache:
                 os.unlink(temp_path)
             except OSError:
                 pass
-            return False
+
+        return fingerprint
 
     def load(self, fingerprint: str) -> Any:
         path = self._get_path(fingerprint)
