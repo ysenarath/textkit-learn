@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from typing import Any, Callable, Generic, TypeVar
+from typing import Any, Callable, Generic, TypeVar, Union
 
 import torch
 from torch.utils.data import DataLoader
@@ -15,7 +15,8 @@ from tklearn.utils.array import move_to_device
 
 K = TypeVar("K")
 V = TypeVar("V")
-L = torch.Tensor | Mapping[str, torch.Tensor] | LossDict | None
+# L = torch.Tensor | Mapping[str, torch.Tensor] | LossDict | None
+L = Union[torch.Tensor, Mapping[str, torch.Tensor], LossDict, None]
 
 
 class Evaluator(CallbacksMixin, Generic[K, V]):
