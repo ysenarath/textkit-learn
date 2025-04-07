@@ -191,6 +191,7 @@ class Trainer(CallbacksMixin, Generic[K, V]):
             self.callbacks.on_epoch_begin(epoch_idx)
 
             total_loss, batch_idx = None, 0
+
             dataloader_idx = None
             for batch_idx, batch in enumerate(self.dataloader):
                 batch_loss = self._training_step(
@@ -200,6 +201,7 @@ class Trainer(CallbacksMixin, Generic[K, V]):
                     device=device,
                 )
                 total_loss = batch_loss + total_loss
+
             epoch_logs = {}
             if total_loss is not None:
                 # average the loss (dict)
