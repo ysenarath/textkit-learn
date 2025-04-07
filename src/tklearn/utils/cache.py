@@ -40,14 +40,14 @@ def lru_cache(*args, **kwargs):
 
 
 class FileCache:
-    def __init__(self, *, temp_dir: str | Path | None = None):
-        if temp_dir is None:
-            temp_dir = config.cache_dir / "cache"
-        self.temp_dir = temp_dir
+    def __init__(self, *, cache_dir: str | Path | None = None):
+        if cache_dir is None:
+            cache_dir = config.cache_dir
+        self.cache_dir = cache_dir
 
     def _get_path(self, fingerprint: str) -> Path:
         filename = f"{fingerprint}.pkl"
-        base_path = self.temp_dir
+        base_path = self.cache_dir
         for i in range(3):
             base_path = base_path / fingerprint[i : i + 1]
         return base_path / filename
@@ -112,7 +112,7 @@ class FileCache:
         current_time = time.time()
         cleaned = 0
         # Find all .tmp files recursively
-        for tmp_file in Path(self.temp_dir).rglob("*.tmp"):
+        for tmp_file in Path(self.cache_dir).rglob("*.tmp"):
             try:
                 stats = tmp_file.stat()
                 # Only remove if:

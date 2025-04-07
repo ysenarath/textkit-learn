@@ -38,9 +38,7 @@ class GensimEmbedding(Embedding):
     config: GensimEmbeddingConfig
 
     def __post_init__(self):
-        self.files_dir = (
-            Path(config.resources_dir) / self.config.name / "loader"
-        )
+        self.files_dir = Path(config.assets_dir) / self.config.name / "loader"
         super().__post_init__()
 
     def _fetch_read_embedding(self) -> Dict[str, np.ndarray]:

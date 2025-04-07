@@ -77,7 +77,7 @@ class Embedding(BaseModule, BaseEmbedding):
 
     def __post_init__(self) -> None:
         cache_path = (
-            Path(config.resources_dir)
+            Path(config.assets_dir)
             / self.config.name
             / "data"
             / f"vectors-{self.config.version}.data"
