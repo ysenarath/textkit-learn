@@ -1,3 +1,4 @@
+import torch
 from datasets import load_dataset
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
@@ -76,6 +77,15 @@ auto_device = get_device()
 
 model.to(auto_device)
 
+model_memory_allocated_bytes = (
+    torch.cuda.memory_allocated(auto_device)
+    if auto_device.type == "cuda"
+    else 0
+)
+print(
+    f"Model memory allocated before training: {model_memory_allocated_bytes / (1024 * 1024)} MB"
+)
+
 optimizer = AdamW(model.parameters(), lr=5e-5)
 
 evaluator = Evaluator(
@@ -98,6 +108,12 @@ trainer = Trainer(
 )
 
 trainer.train()
+
+max_gpu_mem = (
+    max(trainer.memory_allocated_bytes) - model_memory_allocated_bytes
+) / (1024 * 1024)
+
+print(f"Max GPU memory allocated during training: {max_gpu_mem} MB")
 
 evaluator = Evaluator(
     model,
