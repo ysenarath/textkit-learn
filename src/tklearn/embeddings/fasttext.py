@@ -14,6 +14,10 @@ from typing_extensions import Self
 from tklearn import config
 from tklearn.embeddings.base import Embedding, EmbeddingConfig, TextEncoder
 
+__all__ = [
+    "FastTextEmbedding",
+]
+
 logger = logging.getLogger(__name__)
 
 
@@ -67,9 +71,7 @@ class FastTextWrapper(TextEncoder):
     def __init__(self, model: fasttext.FastText._FastText):
         self.model = model
 
-    def encode(
-        self, text: str | tuple[int, int], context: str | None = None
-    ) -> np.ndarray:
-        if isinstance(text, tuple):
-            text = " ".join(text)
-        return self.model.get_word_vector(text)
+    def encode(self, texts: str | list[str]) -> np.ndarray:
+        if isinstance(texts, tuple):
+            texts = " ".join(texts)
+        return self.model.get_word_vector(texts)

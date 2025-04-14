@@ -11,7 +11,7 @@ import numpy as np
 from nightjar import AutoModule, BaseConfig, BaseModule
 from numpy.typing import ArrayLike
 
-from tklearn import config
+from tklearn import config, logging
 from tklearn.utils.cache import lru_cache
 
 __all__ = [
@@ -19,6 +19,8 @@ __all__ = [
     "AutoEmbedding",
     "Embedding",
 ]
+
+logger = logging.get_logger(__name__)
 
 
 class EmbeddingConfig(BaseConfig, dispatch="loader"):
@@ -87,19 +89,14 @@ class TextEncoder(Protocol):
     text strings into numerical vector representations (embeddings).
     """
 
-    def encode(
-        self, text: str | tuple[int, int], context: str | None = None
-    ) -> np.ndarray:
+    def encode(self, texts: str | list[str]) -> np.ndarray:
         """Encode a given text string or token span into a vector.
 
         Parameters
         ----------
-        text : str or tuple[int, int]
-            The input text string or a tuple representing a token span
-            (start, end indices) to be encoded.
-        context : str or None, optional
-            Optional context string to aid in encoding, if the model
-            supports context-aware embeddings. Defaults to None.
+        text : str or list[str]
+            The text to be encoded. Can be a single string or a list of
+            strings (e.g., tokens or phrases).
 
         Returns
         -------

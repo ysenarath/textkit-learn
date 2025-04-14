@@ -12,7 +12,7 @@ import numpy as np
 from rich.progress import track
 
 
-class TextEmbeddingIndex(Mapping[str, np.ndarray]):
+class VectorIndex(Mapping[str, np.ndarray]):
     def __init__(self, path: str | Path):
         self.path = Path(path)
         if not self.path.exists():

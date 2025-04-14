@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+import numpy as np
 from numpy.typing import ArrayLike
 from sentence_transformers import SentenceTransformer
 
 from tklearn import logging
-from tklearn.embeddings.base import Embedding, EmbeddingConfig
+from tklearn.embeddings.base import Embedding, EmbeddingConfig, TextEncoder
 
 __all__ = [
     "Embedding",
@@ -31,11 +32,21 @@ class TransformerEmbedding(Embedding):
 
     def get_encoder(self) -> None:
         """Return the model."""
-        self.model = SentenceTransformer(
+        encoder = SentenceTransformer(
             self.config.name, device=self.config.device
         )
         if self.config.verbose:
             logger.info(
                 f"Loading model {self.config.name} on device {self.config.device}"
             )
-        return self.model
+        return TransformerWrapper(encoder)
+
+
+class TransformerWrapper(TextEncoder):
+    def __init__(self, model: SentenceTransformer):
+        self.model = model
+
+    def encode(self, texts: str | list[str]) -> np.ndarray:
+        if isinstance(texts, tuple):
+            texts = " ".join(texts)
+        return self.model.encode(texts, convert_to_numpy=True)
