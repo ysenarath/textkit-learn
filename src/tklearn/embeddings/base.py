@@ -247,6 +247,14 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
         """
         return self.vectors[self.word_to_index[key]]
 
+    def __iter__(self) -> Iterable[str]:
+        """Iterate over the words in the vocabulary."""
+        return iter(self.word_to_index)
+
+    def __len__(self) -> int:
+        """Return the number of words in the vocabulary."""
+        return len(self.word_to_index)
+
     @lru_cache(maxsize=None)
     def get_word_vector(self, word: str) -> np.ndarray:
         """Get the vector for a word, potentially using the model for OOV words.
@@ -266,6 +274,10 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
         np.ndarray
             The vector representation of the word.
         """
+        try:
+            return self[word]
+        except KeyError:
+            pass
         if self.model:
             if " " in word:
                 word = " ".join(word.split())
@@ -274,15 +286,7 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
                     axis=0,
                 )
             return self.model.encode(word)
-        return self[word]
-
-    def __iter__(self) -> Iterable[str]:
-        """Iterate over the words in the vocabulary."""
-        return iter(self.word_to_index)
-
-    def __len__(self) -> int:
-        """Return the number of words in the vocabulary."""
-        return len(self.word_to_index)
+        raise KeyError(word)
 
     @property
     def shape(self) -> tuple[int, int]:
