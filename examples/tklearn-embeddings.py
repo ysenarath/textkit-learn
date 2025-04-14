@@ -30,4 +30,16 @@ assert wv["hello"].shape == (300,)
 print("Sample embedding for 'hello':")
 print(wv["hello"])
 
+# transformers example
+
+wv = AutoEmbedding.from_config({
+    "loader": "transformers",
+    "name": "sentence-transformers/all-MiniLM-L6-v2",
+})
+
+assert wv["hello"].shape == (384,)
+# print sample embedding
+print("Sample embedding for 'hello':")
+print(wv["hello"])
+
 print("All tests passed.")

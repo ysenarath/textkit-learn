@@ -11,7 +11,7 @@ from tklearn.embeddings.base import Embedding, EmbeddingConfig
 
 __all__ = [
     "TransformersEmbeddingConfig",
-    "TransformerEmbedding",
+    "TransformersEmbedding",
 ]
 
 logger = logging.get_logger(__name__)
@@ -24,7 +24,7 @@ class TransformersEmbeddingConfig(EmbeddingConfig):
     verbose: bool | int = 1
 
 
-class TransformerEmbedding(Embedding):
+class TransformersEmbedding(Embedding):
     config: TransformersEmbeddingConfig
 
     def get_vectors(self) -> dict[str, ArrayLike]:
