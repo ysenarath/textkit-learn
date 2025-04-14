@@ -11,8 +11,8 @@ wv = AutoEmbedding.from_config({"name": "glove-twitter-25"})
 assert wv["hello"].shape == (25,)
 
 wv = AutoEmbedding.from_config({
-    "name": "gensim",
-    "version": "glove-twitter-25",
+    "loader": "gensim",
+    "name": "glove-twitter-25",
 })
 
 assert wv["hello"].shape == (25,)
@@ -20,8 +20,8 @@ assert wv["hello"].shape == (25,)
 # FastText
 
 wv = AutoEmbedding.from_config({
-    "name": "fasttext",
-    "version": "cc.en.300.bin",
+    "loader": "fasttext",
+    "name": "cc.en.300.bin",
 })
 
 assert wv["hello"].shape == (300,)
