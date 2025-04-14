@@ -12,12 +12,9 @@ import numpy as np
 from typing_extensions import Self
 
 from tklearn import config
-from tklearn.embeddings.base import Embedding, EmbeddingConfig
+from tklearn.embeddings.base import Embedding, EmbeddingConfig, TextEncoder
 
 logger = logging.getLogger(__name__)
-
-
-URLS = {"fasttext-cc.en.300": None}
 
 
 @contextmanager
@@ -33,8 +30,8 @@ def change_dir(path: str | Path):
 
 
 class FastTextEmbeddingConfig(EmbeddingConfig):
-    name: ClassVar[str] = "fasttext"
-    version: str = "cc.en.300.bin"
+    loader: ClassVar[str] = "fasttext"
+    name: str = "cc.en.300.bin"
 
 
 class FastTextEmbedding(Embedding):
@@ -45,22 +42,34 @@ class FastTextEmbedding(Embedding):
         super().__post_init__()
 
     def _fetch_embedding(self) -> Self:
-        lang_id = self.config.version.split(".")[1]
+        lang_id = self.config.name.split(".")[1]
         with change_dir(self.files_dir):
             fasttext.util.download_model(lang_id, if_exists="ignore")
         return self
 
     def _read_embedding(self) -> Dict[str, np.ndarray]:
-        fn = self.config.version
+        fn = self.config.name
         model = fasttext.load_model(f"{self.files_dir / fn}")
         vectors = {}
         for term in model.get_words():
             vectors[term] = model.get_word_vector(term)
         return vectors
 
-    def load(self) -> Dict[str, np.ndarray]:
+    def get_vectors(self) -> Dict[str, np.ndarray]:
         return self._fetch_embedding()._read_embedding()
 
-    def get_model(self) -> fasttext.FastText:
-        fn = self.config.version
-        return fasttext.load_model(f"{self.files_dir / fn}")
+    def get_encoder(self) -> FastTextWrapper:
+        model = fasttext.load_model(f"{self.files_dir / self.config.name}")
+        return FastTextWrapper(model)
+
+
+class FastTextWrapper(TextEncoder):
+    def __init__(self, model: fasttext.FastText._FastText):
+        self.model = model
+
+    def encode(
+        self, text: str | tuple[int, int], context: str | None = None
+    ) -> np.ndarray:
+        if isinstance(text, tuple):
+            text = " ".join(text)
+        return self.model.get_word_vector(text)

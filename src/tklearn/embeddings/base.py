@@ -3,17 +3,9 @@ from __future__ import annotations
 import abc
 import json
 import warnings
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import (
-    ClassVar,
-    Dict,
-    Iterable,
-    Mapping,
-    Optional,
-    Protocol,
-    Union,
-    runtime_checkable,
-)
+from typing import ClassVar, Protocol, runtime_checkable
 
 import numpy as np
 from nightjar import AutoModule, BaseConfig, BaseModule
@@ -29,10 +21,10 @@ __all__ = [
 ]
 
 
-class EmbeddingConfig(BaseConfig, dispatch="name"):
-    name: ClassVar[str]
-    version: str = "0.0.1"
-    verbose: Union[bool, int] = 1
+class EmbeddingConfig(BaseConfig, dispatch="loader"):
+    loader: ClassVar[str]
+    name: str
+    verbose: bool | int = 1
 
 
 class AutoEmbedding(AutoModule):
@@ -42,59 +34,63 @@ class AutoEmbedding(AutoModule):
     @classmethod
     def from_config(cls, config: EmbeddingConfig | Mapping | str) -> Embedding:
         if isinstance(config, str):
-            config = EmbeddingConfig.from_dict(
-                {"name": "gensim", "version": config},
-            )
+            config = EmbeddingConfig.from_dict({"loader": "gensim"})
         elif not isinstance(config, EmbeddingConfig):
             try:
                 config = EmbeddingConfig.from_dict(config)
             except KeyError:
-                config = {"name": "gensim", "version": config["name"]}
+                config = {"loader": "gensim", **config}
                 config = EmbeddingConfig.from_dict(config)
         return cls(config)
 
 
 @runtime_checkable
-class EmbeddingModel(Protocol):
-    def get_word_vector(self, word: str) -> np.ndarray: ...
+class TextEncoder(Protocol):
+    def encode(
+        self, text: str | tuple[int, int], context: str | None = None
+    ) -> np.ndarray:
+        """Encode text to vector."""
+        ...
 
 
-class BaseEmbedding(Mapping[str, np.ndarray], abc.ABC):
-    def load(self) -> Dict[str, ArrayLike]:
+class EmbeddingBase(abc.ABC):
+    def get_vectors(self) -> dict[str, ArrayLike]:
         """Load resource."""
         raise NotImplementedError
 
-    def get_model(self) -> EmbeddingModel:
+    def get_encoder(self) -> TextEncoder:
         """Return the model."""
         raise NotImplementedError
 
 
-class Embedding(BaseModule, BaseEmbedding):
+class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
     config: EmbeddingConfig
-    word_to_index: Optional[Dict[str, int]] = None
-    vectors: Optional[np.ndarray] = None
-    model: Optional[EmbeddingModel] = None
+    word_to_index: dict[str, int] | None = None
+    vectors: np.ndarray = None
+    model: TextEncoder | None = None
+
+    # assets / self.config.name / [cache | data | loader]
 
     def __post_init__(self) -> None:
         cache_path = (
             Path(config.assets_dir)
-            / self.config.name
+            / self.config.loader
             / "data"
-            / f"vectors-{self.config.version}.data"
+            / f"vectors-{self.config.name}.data"
         )
         # create embedding if not exists
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             self._load(cache_path)
         except FileNotFoundError:
-            mapping = self.load()
+            mapping = self.get_vectors()
             self._from_dict(mapping)
             self._dump(cache_path)
         try:
-            model = self.get_model()
-            if model and not isinstance(model, EmbeddingModel):
+            model = self.get_encoder()
+            if model and not isinstance(model, TextEncoder):
                 warnings.warn(
-                    f"{model!r} is not an instance of EmbeddingModel",
+                    f"{model!r} is not an instance of WordEmbeddingModel",
                     UserWarning,
                 )
                 raise NotImplementedError
@@ -117,7 +113,7 @@ class Embedding(BaseModule, BaseEmbedding):
         self.word_to_index = word_to_index
         self.vectors = vectors
 
-    def _from_dict(self, wv: Dict[str, np.ndarray]) -> Embedding:
+    def _from_dict(self, wv: dict[str, np.ndarray]) -> Embedding:
         word_to_index = {entity: i for i, entity in enumerate(wv.keys())}
         vectors = np.array(list(wv.values()))
         self.word_to_index = word_to_index
@@ -138,10 +134,10 @@ class Embedding(BaseModule, BaseEmbedding):
             if " " in word:
                 word = " ".join(word.split())
                 return np.mean(
-                    [self.model.get_word_vector(w) for w in word.split()],
+                    [self.model.encode(w) for w in word.split()],
                     axis=0,
                 )
-            return self.model.get_word_vector(word)
+            return self.model.encode(word)
         return self[word]
 
     def __iter__(self) -> Iterable[str]:

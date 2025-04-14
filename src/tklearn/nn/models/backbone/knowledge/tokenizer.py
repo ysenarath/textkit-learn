@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from os import PathLike
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Set, Tuple
 
 import numpy as np
 import torch
@@ -11,12 +11,8 @@ from transformers import AutoTokenizer, PreTrainedModel, PreTrainedTokenizer
 from typing_extensions import Self
 
 from tklearn.embeddings import AutoEmbedding, Embedding
-from tklearn.nn.models.backbone.knowledge.lexicon import (
-    DEFAULT_TOP_K,
-    Lexicon,
-    augment,
-    filter_triples,
-)
+from tklearn.kb.lexicon import Lexicon
+from tklearn.nn.models.backbone.knowledge import helpers
 
 __all__ = ["KnowledgeBasedTokenizer"]
 
@@ -38,11 +34,11 @@ class KnowledgeBasedTokenizer:
             pretrained_model_name_or_path
         )
         # has the tokenizer been created?
-        self.embedding = AutoEmbedding.from_config({"identifier": "fasttext"})
+        self.embedding = AutoEmbedding.from_config({"name": "fasttext"})
         return self
 
     def load_triples(self, path: str | Path) -> None:
-        self.lexicon = Lexicon.load(path)
+        self.lexicon = helpers.lexload(path)
 
     def prepare_model(self, model: PreTrainedModel) -> PreTrainedModel:
         new_tokens = set()
@@ -71,10 +67,10 @@ class KnowledgeBasedTokenizer:
                     token_triples[i].add(triple)
         return token_triples
 
-    def analyze(self, text: str, top_k: Optional[int] = DEFAULT_TOP_K):
-        triples = self.lexicon.query(text)
+    def analyze(self, text: str, top_k: int | None = None):
+        triples = self.lexicon.extract(text)
         if top_k:
-            triples = filter_triples(
+            triples = helpers.filter_triples(
                 triples,
                 top_k=top_k,
                 embedding=self.embedding,
@@ -86,17 +82,17 @@ class KnowledgeBasedTokenizer:
         text: str | List[str],
         return_offsets_mapping: bool = False,
         return_tokens: bool = False,
-        top_k: int = DEFAULT_TOP_K,
+        top_k: int | None = None,
     ) -> Dict[str, torch.Tensor | List[List[str]]]:
         texts = [text] if isinstance(text, str) else text
         augmented = ([], [])
         for i, text in enumerate(texts):
-            triples = self.lexicon.query(text)
-            triples = filter_triples(
-                triples, top_k=top_k, embedding=self.embedding
+            triples = helpers.lexquery(self.lexicon, text)
+            triples = helpers.filter_triples(
+                triples, embedding=self.embedding, top_k=top_k
             )
             aug_start = len(text)
-            aug_text, aug_triples = augment(text, triples)
+            aug_text, aug_triples = helpers.augment(text, triples)
             augmented[0].append(aug_text)
             augmented[1].append((aug_start, aug_triples))
         encodings = self.tokenizer(
@@ -144,7 +140,7 @@ class KnowledgeBasedTokenizer:
         text: str | List[str],
         return_offsets_mapping: bool = False,
         return_tokens: bool = False,
-        top_k: int = DEFAULT_TOP_K,
+        top_k: int | None = None,
     ):
         return self.encode(
             text,

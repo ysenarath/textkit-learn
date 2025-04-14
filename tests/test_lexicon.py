@@ -1,6 +1,6 @@
 import unittest
 
-from tklearn.nn.models.backbone.knowledge.lexicon import Lexicon
+from tklearn.kb.lexicon import Lexicon
 
 
 class TestLexicon(unittest.TestCase):

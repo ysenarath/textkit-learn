@@ -30,8 +30,8 @@ def change_dir(path: str | Path):
 
 
 class GensimEmbeddingConfig(EmbeddingConfig):
-    name: ClassVar[str] = "gensim"
-    version: str = "word2vec-google-news-300"
+    loader: ClassVar[str] = "gensim"
+    name: str = "word2vec-google-news-300"
 
 
 class GensimEmbedding(Embedding):
@@ -44,7 +44,7 @@ class GensimEmbedding(Embedding):
     def _fetch_read_embedding(self) -> Dict[str, np.ndarray]:
         model: KeyedVectors
         with change_dir(self.files_dir):
-            model = api.load(self.config.version)
+            model = api.load(self.config.name)
         vectors = {}
         for term in tqdm.tqdm(
             model.index_to_key, disable=not self.config.verbose
@@ -52,8 +52,8 @@ class GensimEmbedding(Embedding):
             vectors[term] = np.array(model[term])
         return vectors
 
-    def load(self) -> Dict[str, np.ndarray]:
+    def get_vectors(self) -> Dict[str, np.ndarray]:
         return self._fetch_read_embedding()
 
-    def get_model(self) -> None:
+    def get_encoder(self) -> None:
         return None
