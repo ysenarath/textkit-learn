@@ -12,7 +12,7 @@ import numpy as np
 from typing_extensions import Self
 
 from tklearn import config
-from tklearn.embeddings.base import Embedding, EmbeddingConfig, TextEncoder
+from tklearn.embeddings.base import Embedding, EmbeddingConfig
 
 __all__ = [
     "FastTextEmbedding",
@@ -67,7 +67,7 @@ class FastTextEmbedding(Embedding):
         return FastTextWrapper(model)
 
 
-class FastTextWrapper(TextEncoder):
+class FastTextWrapper:
     def __init__(self, model: fasttext.FastText._FastText):
         self.model = model
 

@@ -7,7 +7,7 @@ from numpy.typing import ArrayLike
 from sentence_transformers import SentenceTransformer
 
 from tklearn import logging
-from tklearn.embeddings.base import Embedding, EmbeddingConfig, TextEncoder
+from tklearn.embeddings.base import Embedding, EmbeddingConfig
 
 __all__ = [
     "Embedding",
@@ -30,7 +30,7 @@ class TransformerEmbedding(Embedding):
         """Load resource."""
         return {}
 
-    def get_encoder(self) -> None:
+    def get_encoder(self) -> TransformerWrapper:
         """Return the model."""
         encoder = SentenceTransformer(
             self.config.name, device=self.config.device
@@ -42,7 +42,7 @@ class TransformerEmbedding(Embedding):
         return TransformerWrapper(encoder)
 
 
-class TransformerWrapper(TextEncoder):
+class TransformerWrapper:
     def __init__(self, model: SentenceTransformer):
         self.model = model
 
