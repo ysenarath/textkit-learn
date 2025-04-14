@@ -101,7 +101,17 @@ class Encodable(Protocol):
         Returns
         -------
         np.ndarray
-            The numerical vector representation (embedding) of the input text.
+            The numerical vector representation (embedding) of the input texts.
+        """
+        ...
+
+    def get_dimension(self) -> int | None:
+        """Get the size of the embedding vector.
+
+        Returns
+        -------
+        int
+            The dimensionality of the embedding vectors produced by this model.
         """
         ...
 
@@ -170,8 +180,6 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
     vectors: np.ndarray = None
     model: Encodable | None = None
 
-    # assets / self.config.name / [cache | data | loader]
-
     def __post_init__(self) -> None:
         """Initializes the embedding by loading or creating cached data."""
         cache_path = (
@@ -183,37 +191,49 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
         # create embedding if not exists
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         try:
+            model = self.get_encoder()
+            if model and not isinstance(model, Encodable):
+                msg = f"{model!r} is not an instance of WordEmbeddingModel"
+                warnings.warn(msg, UserWarning)
+                raise NotImplementedError
+            self.model = model
+        except NotImplementedError:
+            self.model = None
+        try:
             self._load(cache_path)
         except FileNotFoundError:
             mapping = self.get_vectors()
             self._from_dict(mapping)
             self._dump(cache_path)
-        try:
-            model = self.get_encoder()
-            if model and not isinstance(model, Encodable):
-                warnings.warn(
-                    f"{model!r} is not an instance of WordEmbeddingModel",
-                    UserWarning,
-                )
-                raise NotImplementedError
-            self.model = model
-        except NotImplementedError:
-            self.model = None
+
+    @staticmethod
+    def _get_shape(filename: str | Path) -> tuple[int, int]:
+        with open(filename, "rb") as f:
+            major, minor = np.lib.format.read_magic(f)
+            if major == 1:
+                shape, _, _ = np.lib.format.read_array_header_1_0(f)
+            elif major == 2:
+                shape, _, _ = np.lib.format.read_array_header_2_0(f)
+            else:
+                msg = f"array file format {major}.{minor} not supported"
+                raise ValueError(msg)
+        return shape
 
     def _load(self, path: Path | str) -> Embedding:
         path = Path(path)
         with open(path.with_suffix(".word_to_index.json")) as f:
             word_to_index = json.load(f)
-        vectors: np.ndarray = np.load(path.with_suffix(".vectors.npy"))
+        filename = path.with_suffix(".vectors.npy")
+        shape = self._get_shape(filename)
         # memory-mapped array
-        vectors = np.memmap(
-            path.with_suffix(".vectors.npy"),
-            dtype=np.float32,
-            mode="r",
-            shape=vectors.shape,
-        )
-        self.word_to_index = word_to_index
+        vectors = np.memmap(filename, dtype=np.float32, mode="r", shape=shape)
+        if vectors.ndim != 2 and shape[0] == 0:
+            dim_size = getattr(self.model, "get_dimension", lambda: None)()
+            if dim_size is None:
+                dim_size = 0
+            vectors = np.empty((0, dim_size), dtype=np.float32)
         self.vectors = vectors
+        self.word_to_index = word_to_index
 
     def _from_dict(self, wv: dict[str, np.ndarray]) -> Embedding:
         word_to_index = {entity: i for i, entity in enumerate(wv.keys())}
@@ -227,36 +247,8 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
         with open(path.with_suffix(".word_to_index.json"), "w") as f:
             json.dump(self.word_to_index, f)
 
-    def __getitem__(self, key: str) -> np.ndarray:
-        """Retrieve the vector for a specific word.
-
-        Parameters
-        ----------
-        key : str
-            The word whose vector is requested.
-
-        Returns
-        -------
-        np.ndarray
-            The vector corresponding to the word.
-
-        Raises
-        ------
-        KeyError
-            If the word is not in the vocabulary (`word_to_index`).
-        """
-        return self.vectors[self.word_to_index[key]]
-
-    def __iter__(self) -> Iterable[str]:
-        """Iterate over the words in the vocabulary."""
-        return iter(self.word_to_index)
-
-    def __len__(self) -> int:
-        """Return the number of words in the vocabulary."""
-        return len(self.word_to_index)
-
     @lru_cache(maxsize=None)
-    def get_word_vector(self, word: str) -> np.ndarray:
+    def get_embedding(self, key: str | list[str]) -> np.ndarray:
         """Get the vector for a word, potentially using the model for OOV words.
 
         If an underlying `model` (TextEncoder) is available, it might be used
@@ -266,7 +258,7 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
 
         Parameters
         ----------
-        word : str
+        word : str or list[str]
             The word or phrase to get the vector for.
 
         Returns
@@ -275,18 +267,49 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
             The vector representation of the word.
         """
         try:
-            return self[word]
+            # this will be a 1D array
+            if not isinstance(key, str):
+                # this will be a 2D array
+                raise KeyError(key)
+            return self.vectors[self.word_to_index[key]]
         except KeyError:
             pass
         if self.model:
-            if " " in word:
-                word = " ".join(word.split())
-                return np.mean(
-                    [self.model.encode(w) for w in word.split()],
-                    axis=0,
-                )
-            return self.model.encode(word)
-        raise KeyError(word)
+            vectors = self.model.encode(key)
+            if isinstance(key, str):
+                # this will be a 1D array
+                return vectors[0]
+            # this will be a 2D array
+            return vectors
+        raise KeyError(key)
+
+    def __getitem__(self, key: str) -> np.ndarray:
+        """Retrieve the vector for a specific word.
+
+        Parameters
+        ----------
+        key : str
+            The text whose vector is requested.
+
+        Returns
+        -------
+        np.ndarray
+            The vector corresponding to the provided text.
+
+        Raises
+        ------
+        KeyError
+            If the word is not in the vocabulary (`word_to_index`) and the model is None.
+        """
+        return self.get_embedding(key)
+
+    def __iter__(self) -> Iterable[str]:
+        """Iterate over the words in the vocabulary."""
+        return iter(self.word_to_index)
+
+    def __len__(self) -> int:
+        """Return the number of words in the vocabulary."""
+        return len(self.word_to_index)
 
     @property
     def shape(self) -> tuple[int, int]:

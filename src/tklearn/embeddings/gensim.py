@@ -61,5 +61,45 @@ class GensimEmbedding(Embedding):
     def get_vectors(self) -> Dict[str, np.ndarray]:
         return self._fetch_read_embedding()
 
-    def get_encoder(self) -> None:
-        return None
+    def get_encoder(self) -> GensimModelWrapper:
+        """Returns the encoder for the embedding."""
+        model: KeyedVectors
+        with change_dir(self.files_dir):
+            model = api.load(self.config.name)
+        return GensimModelWrapper(model)
+
+
+class GensimModelWrapper:
+    def __init__(self, model: KeyedVectors):
+        self.model = model
+
+    def encode(self, texts: str | list[str]) -> np.ndarray:
+        """Encode a given text string or token span into a vector.
+
+        Parameters
+        ----------
+        text : str or list[str]
+            The text to be encoded. Can be a single string or a list of
+            strings (e.g., tokens or phrases).
+
+        Returns
+        -------
+        np.ndarray
+            The numerical vector representation (embedding) of the input text.
+        """
+        if isinstance(texts, str):
+            texts = [texts]
+        vectors = []
+        for text in texts:
+            vectors.append(self.model[text])
+        return np.array(vectors)
+
+    def get_dimension(self) -> int | None:
+        """Get the size of the embedding vector.
+
+        Returns
+        -------
+        int
+            The dimensionality of the embedding vectors produced by this model.
+        """
+        return self.model.vector_size

@@ -75,6 +75,14 @@ class FastTextWrapper:
         self.model = model
 
     def encode(self, texts: str | list[str]) -> np.ndarray:
-        if isinstance(texts, tuple):
-            texts = " ".join(texts)
-        return self.model.get_word_vector(texts)
+        """Encode the texts."""
+        if isinstance(texts, str):
+            texts = [texts]
+        vectors = []
+        for text in texts:
+            vectors.append(self.model.get_word_vector(text))
+        return np.array(vectors)
+
+    def get_dimension(self) -> int | None:
+        """Get the embedding size."""
+        return self.model.get_dimension()

@@ -8,6 +8,7 @@ from sentence_transformers import SentenceTransformer
 
 from tklearn import logging
 from tklearn.embeddings.base import Embedding, EmbeddingConfig
+from tklearn.nn.utils import get_device
 
 __all__ = [
     "TransformersEmbeddingConfig",
@@ -33,13 +34,11 @@ class TransformersEmbedding(Embedding):
 
     def get_encoder(self) -> TransformerWrapper:
         """Return the model."""
-        encoder = SentenceTransformer(
-            self.config.name, device=self.config.device
-        )
-        if self.config.verbose:
-            logger.info(
-                f"Loading model {self.config.name} on device {self.config.device}"
-            )
+        if self.config.device == "auto":
+            device = get_device()
+        else:
+            device = self.config.device
+        encoder = SentenceTransformer(self.config.name, device=device)
         return TransformerWrapper(encoder)
 
 
@@ -48,6 +47,11 @@ class TransformerWrapper:
         self.model = model
 
     def encode(self, texts: str | list[str]) -> np.ndarray:
-        if isinstance(texts, tuple):
-            texts = " ".join(texts)
+        """Encode the texts."""
+        if isinstance(texts, str):
+            texts = [texts]
         return self.model.encode(texts, convert_to_numpy=True)
+
+    def get_dimension(self) -> int:
+        """Get the embedding size."""
+        return self.model.get_sentence_embedding_dimension()
