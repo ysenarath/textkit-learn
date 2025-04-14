@@ -18,7 +18,7 @@ ArgNameType = Union[
     Literal["y_true", "y_pred", "sample_weight", "y_score"],
     str,
 ]
-ArrayLike = Union[np.ndarray, torch.Tensor, List]
+ListLike = Union[np.ndarray, torch.Tensor, List]
 
 
 class StepsCounter(MetricBase):
@@ -70,8 +70,8 @@ class ArrayAccum(MetricBase):
 
     def update(
         self,
-        y_true: Optional[ArrayLike] = None,
-        y_pred: Optional[ArrayLike] = None,
+        y_true: Optional[ListLike] = None,
+        y_pred: Optional[ListLike] = None,
         **kwargs: Any,
     ) -> None:
         # update kwargs with y_true and y_pred
