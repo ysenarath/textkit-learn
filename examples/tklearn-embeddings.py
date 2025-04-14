@@ -25,3 +25,9 @@ wv = AutoEmbedding.from_config({
 })
 
 assert wv["hello"].shape == (300,)
+
+# print sample embedding
+print("Sample embedding for 'hello':")
+print(wv["hello"])
+
+print("All tests passed.")
