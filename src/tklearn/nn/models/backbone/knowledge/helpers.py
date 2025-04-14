@@ -42,7 +42,7 @@ def score_triples(
     ndim = embedding.shape[1]
     vectors = np.zeros((len(vocab), ndim))
     for i, term in enumerate(vocab):
-        vectors[i] = embedding.get_word_vector(term)
+        vectors[i] = embedding.get_embedding(term)
     similarity_matrix = 1 - cdist(vectors, vectors, metric="cosine")
     try:
         scores = degree_centrality_scores(similarity_matrix, threshold=0.1)
@@ -76,7 +76,7 @@ def score_triples_v2(
     ndim = embedding.shape[1]
     vectors = np.zeros((len(vocab), ndim))
     for i, term in enumerate(vocab):
-        vectors[i] = embedding.get_word_vector(term)
+        vectors[i] = embedding.get_embedding(term)
     similarity_matrix = 1 - cdist(vectors, vectors, metric="cosine")
     try:
         scores = degree_centrality_scores(
@@ -108,7 +108,7 @@ def score_triples_v3(
     ndim = embedding.shape[1]
     vectors = np.zeros((len(vocab), ndim))
     for i, term in enumerate(vocab):
-        vectors[i] = embedding.get_word_vector(term)
+        vectors[i] = embedding.get_embedding(term)
     similarity_matrix = 1 - cdist(vectors, vectors, metric="cosine")
     try:
         scores = degree_centrality_scores(
