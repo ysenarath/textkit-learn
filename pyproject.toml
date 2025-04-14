@@ -99,7 +99,7 @@ select = ["E4", "E7", "E9", "F", "I"]
 ignore = [
     "F601", # dict key literal ... repeated
     "F841", # local variable ... assigned but never used
-    "F821", # undefined name
+    # "F821", # undefined name
 ]
 
 [tool.ruff.lint.isort]
