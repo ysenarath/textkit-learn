@@ -10,7 +10,8 @@ from tklearn import logging
 from tklearn.embeddings.base import Embedding, EmbeddingConfig
 
 __all__ = [
-    "Embedding",
+    "TransformersEmbeddingConfig",
+    "TransformerEmbedding",
 ]
 
 logger = logging.get_logger(__name__)

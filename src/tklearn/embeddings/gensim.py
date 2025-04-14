@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import os
 from contextlib import contextmanager
 from pathlib import Path
@@ -11,10 +10,15 @@ import numpy as np
 import tqdm
 from gensim.models.keyedvectors import KeyedVectors
 
-from tklearn import config
+from tklearn import config, logging
 from tklearn.embeddings.base import Embedding, EmbeddingConfig
 
-logger = logging.getLogger(__name__)
+__all__ = [
+    "GensimEmbedding",
+    "GensimEmbeddingConfig",
+]
+
+logger = logging.get_logger(__name__)
 
 
 @contextmanager
@@ -38,7 +42,9 @@ class GensimEmbedding(Embedding):
     config: GensimEmbeddingConfig
 
     def __post_init__(self):
-        self.files_dir = Path(config.assets_dir) / self.config.name / "loader"
+        self.files_dir = (
+            Path(config.assets_dir) / self.config.loader / "loader"
+        )
         super().__post_init__()
 
     def _fetch_read_embedding(self) -> Dict[str, np.ndarray]:

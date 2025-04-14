@@ -71,8 +71,8 @@ class AutoEmbedding(AutoModule):
             An instance of the appropriate Embedding subclass.
         """
         if isinstance(config, str):
-            config = EmbeddingConfig.from_dict({"loader": "gensim"})
-        elif not isinstance(config, EmbeddingConfig):
+            config = {"loader": "gensim", "name": config}
+        if not isinstance(config, EmbeddingConfig):
             try:
                 config = EmbeddingConfig.from_dict(config)
             except KeyError:
