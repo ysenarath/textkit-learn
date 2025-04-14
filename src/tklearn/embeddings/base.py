@@ -82,7 +82,7 @@ class AutoEmbedding(AutoModule):
 
 
 @runtime_checkable
-class TextEncoder(Protocol):
+class Encodable(Protocol):
     """Protocol defining the interface for text encoding models.
 
     Classes implementing this protocol should provide a method to convert
@@ -127,7 +127,7 @@ class EmbeddingBase(abc.ABC):
         """
         raise NotImplementedError
 
-    def get_encoder(self) -> TextEncoder:
+    def get_encoder(self) -> Encodable:
         """Get the text encoder associated with these embeddings.
 
         This method should return an object conforming to the TextEncoder
@@ -168,7 +168,7 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
     config: EmbeddingConfig
     word_to_index: dict[str, int] | None = None
     vectors: np.ndarray = None
-    model: TextEncoder | None = None
+    model: Encodable | None = None
 
     # assets / self.config.name / [cache | data | loader]
 
@@ -190,7 +190,7 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
             self._dump(cache_path)
         try:
             model = self.get_encoder()
-            if model and not isinstance(model, TextEncoder):
+            if model and not isinstance(model, Encodable):
                 warnings.warn(
                     f"{model!r} is not an instance of WordEmbeddingModel",
                     UserWarning,
