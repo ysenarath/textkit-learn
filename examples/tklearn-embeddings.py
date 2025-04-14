@@ -36,10 +36,23 @@ wv = AutoEmbedding.from_config({
     "loader": "transformers",
     "name": "sentence-transformers/all-MiniLM-L6-v2",
 })
+print(wv.shape)
 
 assert wv["hello"].shape == (384,)
 # print sample embedding
 print("Sample embedding for 'hello':")
 print(wv["hello"])
+
+
+# full sentence example
+wv = AutoEmbedding.from_config({
+    "loader": "transformers",
+    "name": "sentence-transformers/all-MiniLM-L6-v2",
+})
+print(wv.shape)
+assert wv["hello world"].shape == (384,)
+# print sample embedding
+print("Sample embedding for 'hello world':")
+print(wv["hello world"])
 
 print("All tests passed.")
