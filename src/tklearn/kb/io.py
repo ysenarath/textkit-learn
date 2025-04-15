@@ -1,10 +1,11 @@
 import numpy as np
 from tqdm import auto as tqdm
 
-from .triple_store import TripleStore
-from .wiktionary import Word, parse_jsonl
+from tklearn.embeddings.base import AutoEmbedding
+from tklearn.kb.triple_store import TripleStore
+from tklearn.kb.wiktionary import Word, parse_jsonl
 
-triplet_path = "wiktionary.triples.duckdb"
+triplet_path = "resources/wiktionary/triples.duckdb"
 input_json_path = "/Users/yasas/Documents/Projects/Experiments/wordex/data/raw-wiktextract-data.jsonl"
 total = 9955900
 desc = "Extracting senses from wiktionary"
@@ -29,16 +30,17 @@ for word in tqdm.tqdm(parse_jsonl(input_json_path), total=total, desc=desc):
         senses[word.word].add(gloss_index)
 
 
-def get_embedding(gloss: str) -> np.ndarray:
-    raise NotImplementedError
-
-
 idx2gloss: dict[int, str] = {}
 embeddings: dict[int, np.ndarray] = {}
 
-for gloss, index in gloss2idx.items():
+embedding_model = AutoEmbedding.from_config({
+    "loader": "transformers",
+    "name": "sentence-transformers/all-MiniLM-L6-v2",
+})
+
+for gloss, index in tqdm.tqdm(gloss2idx.items()):
     idx2gloss[index] = gloss
-    embeddings[index] = get_embedding(gloss)
+    embeddings[index] = embedding_model.get_embedding(gloss)
 
 
 def closest_sense(word: str, sense_index: int):
