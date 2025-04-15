@@ -14,7 +14,9 @@ from tklearn.embeddings import AutoEmbedding, Embedding
 from tklearn.kb.lexicon import Lexicon
 from tklearn.nn.models.backbone.knowledge import helpers
 
-__all__ = ["KnowledgeBasedTokenizer"]
+__all__ = [
+    "KnowledgeBasedTokenizer",
+]
 
 
 class KnowledgeBasedTokenizer:

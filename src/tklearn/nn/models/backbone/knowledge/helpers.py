@@ -202,7 +202,7 @@ def lexload(
             k = preprocess(s)
             if k:
                 triplets[k].add((s, p, o))
-    lexicon = Lexicon(case_sensitive)
+    lexicon = Lexicon(case_sensitive=case_sensitive)
     for k in triplets.keys():
         lexicon[k] = triplets[k]
     # build lexicon (no need to build from now on)
