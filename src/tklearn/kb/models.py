@@ -46,40 +46,6 @@ class Candidate:
             raise AttributeError("Candidate is not bound to a Wordex instance")
         return get_wordex()
 
-    @property
-    def hyponyms(self) -> Iterable[tuple[str, int | None]]:
-        for rel in self.wordex.kg.query((
-            (self.word, self.sense_id),
-            "hyponym",
-        )):
-            yield rel.object
-
-    @property
-    def hypernyms(self) -> Iterable[tuple[str, int | None]]:
-        # reverse of hyponym
-        for rel in self.wordex.kg.query((
-            None,
-            "hyponym",
-            (self.word, self.sense_id),
-        )):
-            yield rel.subject
-
-    @property
-    def synonyms(self) -> Iterable[tuple[str, int | None]]:
-        for rel in self.wordex.kg.query((
-            (self.word, self.sense_id),
-            "synonym",
-        )):
-            yield rel.object
-
-    @property
-    def instances(self) -> Iterable[tuple[str, int | None]]:
-        for rel in self.wordex.kg.query((
-            (self.word, self.sense_id),
-            "instance",
-        )):
-            yield rel.object
-
 
 def concept2tuple(concept: str) -> tuple[str, int]:
     if isinstance(concept, str) or concept is None:

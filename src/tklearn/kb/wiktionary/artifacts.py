@@ -18,7 +18,7 @@ from tklearn import config, logging
 from tklearn.embeddings.base import AutoEmbedding
 from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.triple_store import TripleStore
-from tklearn.kb.wiktionary import Word, parse_jsonl
+from tklearn.kb.wiktionary.models import Word, parse_jsonl
 
 logger = logging.get_logger(__name__)
 
@@ -48,7 +48,7 @@ def count_jsonl(path: Path) -> int:
     return int(subprocess.check_output(f"wc -l {path}", shell=True).split()[0])
 
 
-def add_forms(w: Word, lexicon: Lexicon[set[str]]):
+def add_forms(w: Word, lexicon: Lexicon):
     """Stores form mappings in LevelDB using batch writing."""
     word = (w.word or "").strip()
     if not word:
@@ -422,7 +422,7 @@ class WiktionaryArtifacts:
             logger.info("Triplet store created.")
         return TripleStore(self.triplet_path, read_only=True)
 
-    def setup_lexicon(self) -> Lexicon:
+    def setup_lexicon(self) -> Lexicon[set[str]]:
         """Returns the lexicon of forms."""
         try:
             return Lexicon.load(self.forms_lexicon_path)

@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 import functools
 from collections import defaultdict
 from collections.abc import Iterable
 from typing import Any
 
 import nltk
+import numpy as np
 from nltk.corpus import stopwords
+from typing_extensions import Protocol, runtime_checkable
 
 from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.models import Candidate, Mention, Span, Triple
@@ -18,31 +22,39 @@ def get_stopwords(language: str = "english") -> set[str]:
     return set(stopwords.words(language))
 
 
-def build_lexicon() -> Lexicon[set[str]]:
-    """Populate lexicon from LevelDB."""
-    lexicon = Lexicon[set[str]]()
-    data_size = int(self.metadata.get(b"size").decode())
-    for key, _ in track(
-        self._get_prefixed_db("data").iterator(),
-        total=data_size,
-        description="Populating Lexicon",
-    ):
-        key = codec.decode(key)
-        key_form = key[0]
-        key_word = key[1]
-        if key_form.strip() == "":
-            continue
-        if key_form not in lexicon:
-            lexicon[key_form] = set()
-        lexicon[key_form].add(key_word)
-    return lexicon
+@runtime_checkable
+class ArtifactStore(Protocol):
+    lexicon: Lexicon[
+        set[str]
+    ]  # form (str) -> set of words (same form may have different words)
+    triples: TripleStore
+    gloss2idx: dict[str, int]
+    idx2gloss: dict[int, str]
+    senses: dict[str, set[int]]  # word (str) -> set of senses (int)
+    embeddings: dict[int, np.ndarray]
+    attrs: dict[str, set[int]]
 
 
 class KnowledgeBase:
     lexicon: Lexicon[set[str]]
     triples: TripleStore
+    gloss2idx: dict[str, int]
+    idx2gloss: dict[int, str]
+    senses: dict[str, set[int]]
+    embeddings: dict[int, np.ndarray]
+    attrs: dict[str, set[int]]
 
-    def __init__(self, triples: TripleStore):
+    def __init__(self, store: ArtifactStore):
+        self.store = store
+        self.__post_init__()
+
+    def __getattr__(self, name: str) -> Any:
+        try:
+            return getattr(self.store, name)
+        except AttributeError:
+            return super().__getattr__(name)
+
+    def __post_init__(self):
         index_subject = {}
         for triple in self.triples.query():
             if triple.subject not in index_subject:
@@ -52,16 +64,12 @@ class KnowledgeBase:
             index_subject[triple.subject][triple.predicate].add(triple.object)
         self.index_subject = index_subject
 
-    def extract_candidates(self, word: str, k: int = 5) -> Iterable[Candidate]:
+    def extract_candidates(self, word: str) -> Iterable[Candidate]:
         """Get all words and senses for a given form."""
         # get all the senses of the word
-        db = self.triples.prefixed_db(join_key(word))
-        for key, value in db.iterator():
-            word, gloss = codec.decode(key)
-            if len(value) == 0:
-                continue
-            sense_id = int.from_bytes(value, byteorder="big")
-            embedding = None
+        for sense_id in self.senses.get(word, None) or []:
+            gloss = self.idx2gloss[sense_id]
+            embedding = self.embeddings[sense_id]
             yield Candidate(word, gloss, embedding, sense_id).bind(self)
 
     def extract_mentions(
