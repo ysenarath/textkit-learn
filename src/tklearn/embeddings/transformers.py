@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import ClassVar, Union
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -20,9 +20,9 @@ logger = logging.get_logger(__name__)
 
 class TransformersEmbeddingConfig(EmbeddingConfig):
     loader: ClassVar[str] = "transformers"
-    name: str | None = "all-MiniLM-L6-v2"
+    name: str = "all-MiniLM-L6-v2"
     device: str = "auto"
-    verbose: bool | int = 1
+    verbose: Union[bool, int] = 1
 
 
 class TransformersEmbedding(Embedding):
@@ -46,11 +46,15 @@ class TransformerWrapper:
     def __init__(self, model: SentenceTransformer):
         self.model = model
 
-    def encode(self, texts: str | list[str]) -> np.ndarray:
+    def encode(self, texts: str | list[str], **kwargs) -> np.ndarray:
         """Encode the texts."""
         if isinstance(texts, str):
             texts = [texts]
-        return self.model.encode(texts, convert_to_numpy=True)
+        return self.model.encode(
+            texts,
+            convert_to_numpy=True,
+            batch_size=kwargs.get("batch_size", 32),
+        )
 
     def get_dimension(self) -> int:
         """Get the embedding size."""

@@ -5,14 +5,13 @@ import json
 import warnings
 from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import ClassVar, Protocol, runtime_checkable
+from typing import ClassVar, Optional, Protocol, Union, runtime_checkable
 
 import numpy as np
 from nightjar import AutoModule, BaseConfig, BaseModule
 from numpy.typing import ArrayLike
 
 from tklearn import config, logging
-from tklearn.utils.cache import lru_cache
 
 __all__ = [
     "EmbeddingConfig",
@@ -40,7 +39,7 @@ class EmbeddingConfig(BaseConfig, dispatch="loader"):
 
     loader: ClassVar[str]
     name: str
-    verbose: bool | int = 1
+    verbose: Union[bool, int] = 1
 
 
 class AutoEmbedding(AutoModule):
@@ -89,7 +88,7 @@ class Encodable(Protocol):
     text strings into numerical vector representations (embeddings).
     """
 
-    def encode(self, texts: str | list[str]) -> np.ndarray:
+    def encode(self, texts: str | list[str], **kwargs) -> np.ndarray:
         """Encode a given text string or token span into a vector.
 
         Parameters
@@ -97,6 +96,10 @@ class Encodable(Protocol):
         text : str or list[str]
             The text to be encoded. Can be a single string or a list of
             strings (e.g., tokens or phrases).
+        **kwargs
+            Additional keyword arguments for the encoding process.
+            This may include options like batch size or other model-specific
+            parameters.
 
         Returns
         -------
@@ -176,9 +179,9 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
     """
 
     config: EmbeddingConfig
-    word_to_index: dict[str, int] | None = None
+    word_to_index: Optional[dict[str, int]] = None
     vectors: np.ndarray = None
-    model: Encodable | None = None
+    model: Optional[Encodable] = None
 
     def __post_init__(self) -> None:
         """Initializes the embedding by loading or creating cached data."""
@@ -247,8 +250,7 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
         with open(path.with_suffix(".word_to_index.json"), "w") as f:
             json.dump(self.word_to_index, f)
 
-    @lru_cache(maxsize=None)
-    def get_embedding(self, key: str | list[str]) -> np.ndarray:
+    def encode(self, key: str | list[str], **kwargs) -> np.ndarray:
         """Get the vector for a word, potentially using the model for OOV words.
 
         If an underlying `model` (TextEncoder) is available, it might be used
@@ -260,6 +262,8 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
         ----------
         word : str or list[str]
             The word or phrase to get the vector for.
+        **kwargs
+            Additional keyword arguments for the encoder.
 
         Returns
         -------
@@ -275,7 +279,7 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
         except KeyError:
             pass
         if self.model:
-            vectors = self.model.encode(key)
+            vectors = self.model.encode(key, **kwargs)
             if isinstance(key, str):
                 # this will be a 1D array
                 return vectors[0]
@@ -301,7 +305,7 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
         KeyError
             If the word is not in the vocabulary (`word_to_index`) and the model is None.
         """
-        return self.get_embedding(key)
+        return self.encode(key)
 
     def __iter__(self) -> Iterable[str]:
         """Iterate over the words in the vocabulary."""
