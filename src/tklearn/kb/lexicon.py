@@ -10,10 +10,12 @@ trie structure.
 
 from __future__ import annotations
 
+import pickle
 from collections import deque
 from collections.abc import Iterator, MutableMapping
 from dataclasses import dataclass, field
-from typing import Any, Generic, Optional, TypeVar, overload
+from pathlib import Path
+from typing import Any, Generic, Optional, TypeVar, Union, overload
 
 import unibreak
 from typing_extensions import Literal
@@ -69,180 +71,6 @@ class TrieNode(Generic[T]):
     depth: Optional[int] = None
 
 
-class MatchIterator(Generic[T]):
-    """Iterator for finding longest matches in text using the Aho-Corasick algorithm.
-
-    This class implements an iterator that finds the longest matching patterns in text
-    using a trie data structure with failure links (Aho-Corasick algorithm). It processes
-    tokens sequentially and returns matches along with their positions in the original text.
-
-    Parameters
-    ----------
-    trie : TrieNode[T]
-        The root node of the trie containing patterns to match.
-    tokens : list[str]
-        List of tokens to search through.
-    offsets : list[tuple[int, int]]
-        List of token offsets (start, end) positions in the original text.
-
-    Notes
-    -----
-    The iterator implements the Aho-Corasick algorithm with modifications to find
-    the longest matches. When multiple patterns match at a position, it returns
-    the longest one. The algorithm uses failure links in the trie for efficient
-    matching.
-
-    Examples
-    --------
-    >>> # Create a trie with patterns
-    >>> trie = TrieNode[str]()
-    >>> # Add patterns to trie...
-    >>> tokens = ["the", "quick", "brown", "fox"]
-    >>> offsets = [(0, 3), (4, 9), (10, 15), (16, 19)]
-    >>> iterator = MatchIterator(trie, tokens, offsets)
-    >>> for value, start, end in iterator:
-    ...     print(f"Found match: {value} at positions {start}-{end}")
-    """
-
-    def __init__(
-        self,
-        trie: TrieNode[T],
-        tokens: list[str],
-        offsets: list[tuple[int, int]],
-    ):
-        self.trie = trie
-        self.tokens = tokens
-        self.offsets = offsets
-        self.idx = 0
-        self.size = len(self.tokens)
-
-    def next(self) -> Optional[tuple[T, int, int]]:
-        """Get the next match in the text.
-
-        Returns
-        -------
-        Optional[tuple[T, int, int]]
-            A tuple containing (value, start, end) where:
-            - value: The value associated with the matched pattern
-            - start: Starting position in the original text
-            - end: Ending position in the original text
-            Returns None if no more matches are found.
-
-        Notes
-        -----
-        This method implements the core matching logic, finding the longest
-        possible match at the current position using the trie structure
-        and failure links.
-        """
-        if self.idx >= self.size:
-            raise StopIteration
-
-        longest_sequence = None
-        longest_sequence_length = 0
-        first_longest_end = 0
-        traversal_start_idx = self.idx
-        current_idx = self.idx
-
-        node = self.trie
-
-        while current_idx < self.size:
-            end_token_idx = current_idx
-            token = self.tokens[current_idx]
-            current_idx += 1
-
-            if token in node.children:
-                # token found!
-                node = node.children[token]
-                if node.value is UNDEFINED:
-                    pass
-                elif longest_sequence is None:
-                    longest_sequence = (
-                        node.value,
-                        traversal_start_idx,
-                        end_token_idx,
-                    )
-                    longest_sequence_length = (
-                        end_token_idx - traversal_start_idx
-                    )
-                    first_longest_end = end_token_idx
-                else:
-                    sequence_length = end_token_idx - traversal_start_idx
-                    if sequence_length > longest_sequence_length:
-                        longest_sequence = (
-                            node.value,
-                            traversal_start_idx,
-                            end_token_idx,
-                        )
-                        longest_sequence_length = sequence_length
-            elif node.fail is not None and node.fail.depth > 0:
-                if end_token_idx - node.fail.depth > first_longest_end:
-                    break
-                # shift the start to the next possible match
-                node = node.fail
-                current_idx = end_token_idx
-                traversal_start_idx = current_idx - node.depth
-                continue
-            else:
-                # token not found in the node
-                break
-
-        self.idx = traversal_start_idx + 1
-
-        if longest_sequence is None:
-            return
-
-        self.idx = longest_sequence[2] + 1
-
-        return (
-            longest_sequence[0],
-            self.offsets[longest_sequence[1]][0],
-            self.offsets[longest_sequence[2]][1],
-        )
-
-    def __next__(self) -> tuple[T, int, int]:
-        """Get the next match, implementing the iterator protocol.
-
-        Returns
-        -------
-        tuple[T, int, int]
-            A tuple containing (value, start, end) for the next match.
-            - value: The value associated with the matched pattern
-            - start: Starting position in the original text
-            - end: Ending position in the original text
-
-        Raises
-        ------
-        StopIteration
-            When no more matches are found.
-        """
-        result = self.next()
-        while result is None:
-            result = self.next()
-        return result
-
-    def __iter__(self) -> MatchIterator[T]:
-        """Make the class iterable.
-
-        Returns
-        -------
-        MatchIterator[T]
-            Returns self to implement the iterator protocol.
-        """
-        return self
-
-    def __len__(self):
-        """Get the total number of tokens in the input text.
-
-        Returns
-        -------
-        int
-            The total number of tokens in the input text that this iterator
-            is searching through. This represents the size of the search space,
-            not the number of matches that will be found.
-        """
-        return len(self.tokens)
-
-
 class Lexicon(Generic[T], MutableMapping[str, T]):
     """A generic keyword processor using a trie data structure.
 
@@ -296,6 +124,20 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
     # case sensitive should not be updated after the initialization
     _case_sensitive: bool
 
+    def dump(self, path: Union[str, Path]):
+        with open(path, "wb") as f:
+            pickle.dump(dict(self.items()), f)
+
+    @classmethod
+    def load(cls, path: Union[str, Path]) -> Lexicon:
+        with open(path, "rb") as f:
+            data: dict = pickle.load(f)
+        lexicon = cls()
+        for key, value in data.items():
+            lexicon[key] = value
+        lexicon.build()
+        return lexicon
+
     def __init__(self, case_sensitive: bool = False):
         """Initialize a new Lexicon instance.
 
@@ -304,10 +146,10 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
         case_sensitive : bool, default=False
             Whether to perform case-sensitive matching of keywords.
         """
+        self._case_sensitive = case_sensitive
         self._root = TrieNode()
         self._len = 0
         self._updated = False
-        self._case_sensitive = case_sensitive
 
     def tokeinze(self, texts: list[str], return_offsets: bool = False):
         """Tokenize input texts into words with optional position offsets.
@@ -522,7 +364,8 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
             trie = trie.children[token]
 
         if trie == self._root:
-            raise ValueError("only non-empty strings are allowed as keys")
+            msg = f"the keyword '{key}' is empty"
+            raise ValueError(msg)
 
         # Increment len only if the keyword isn't already there
         if trie.value is UNDEFINED:
@@ -722,3 +565,177 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
             else:
                 print("  " * depth + key, child.value)
             self.display(child, depth + 1)
+
+
+class MatchIterator(Generic[T]):
+    """Iterator for finding longest matches in text using the Aho-Corasick algorithm.
+
+    This class implements an iterator that finds the longest matching patterns in text
+    using a trie data structure with failure links (Aho-Corasick algorithm). It processes
+    tokens sequentially and returns matches along with their positions in the original text.
+
+    Parameters
+    ----------
+    trie : TrieNode[T]
+        The root node of the trie containing patterns to match.
+    tokens : list[str]
+        List of tokens to search through.
+    offsets : list[tuple[int, int]]
+        List of token offsets (start, end) positions in the original text.
+
+    Notes
+    -----
+    The iterator implements the Aho-Corasick algorithm with modifications to find
+    the longest matches. When multiple patterns match at a position, it returns
+    the longest one. The algorithm uses failure links in the trie for efficient
+    matching.
+
+    Examples
+    --------
+    >>> # Create a trie with patterns
+    >>> trie = TrieNode[str]()
+    >>> # Add patterns to trie...
+    >>> tokens = ["the", "quick", "brown", "fox"]
+    >>> offsets = [(0, 3), (4, 9), (10, 15), (16, 19)]
+    >>> iterator = MatchIterator(trie, tokens, offsets)
+    >>> for value, start, end in iterator:
+    ...     print(f"Found match: {value} at positions {start}-{end}")
+    """
+
+    def __init__(
+        self,
+        trie: TrieNode[T],
+        tokens: list[str],
+        offsets: list[tuple[int, int]],
+    ):
+        self.trie = trie
+        self.tokens = tokens
+        self.offsets = offsets
+        self.idx = 0
+        self.size = len(self.tokens)
+
+    def next(self) -> Optional[tuple[T, int, int]]:
+        """Get the next match in the text.
+
+        Returns
+        -------
+        Optional[tuple[T, int, int]]
+            A tuple containing (value, start, end) where:
+            - value: The value associated with the matched pattern
+            - start: Starting position in the original text
+            - end: Ending position in the original text
+            Returns None if no more matches are found.
+
+        Notes
+        -----
+        This method implements the core matching logic, finding the longest
+        possible match at the current position using the trie structure
+        and failure links.
+        """
+        if self.idx >= self.size:
+            raise StopIteration
+
+        longest_sequence = None
+        longest_sequence_length = 0
+        first_longest_end = 0
+        traversal_start_idx = self.idx
+        current_idx = self.idx
+
+        node = self.trie
+
+        while current_idx < self.size:
+            end_token_idx = current_idx
+            token = self.tokens[current_idx]
+            current_idx += 1
+
+            if token in node.children:
+                # token found!
+                node = node.children[token]
+                if node.value is UNDEFINED:
+                    pass
+                elif longest_sequence is None:
+                    longest_sequence = (
+                        node.value,
+                        traversal_start_idx,
+                        end_token_idx,
+                    )
+                    longest_sequence_length = (
+                        end_token_idx - traversal_start_idx
+                    )
+                    first_longest_end = end_token_idx
+                else:
+                    sequence_length = end_token_idx - traversal_start_idx
+                    if sequence_length > longest_sequence_length:
+                        longest_sequence = (
+                            node.value,
+                            traversal_start_idx,
+                            end_token_idx,
+                        )
+                        longest_sequence_length = sequence_length
+            elif node.fail is not None and node.fail.depth > 0:
+                if end_token_idx - node.fail.depth > first_longest_end:
+                    break
+                # shift the start to the next possible match
+                node = node.fail
+                current_idx = end_token_idx
+                traversal_start_idx = current_idx - node.depth
+                continue
+            else:
+                # token not found in the node
+                break
+
+        self.idx = traversal_start_idx + 1
+
+        if longest_sequence is None:
+            return
+
+        self.idx = longest_sequence[2] + 1
+
+        return (
+            longest_sequence[0],
+            self.offsets[longest_sequence[1]][0],
+            self.offsets[longest_sequence[2]][1],
+        )
+
+    def __next__(self) -> tuple[T, int, int]:
+        """Get the next match, implementing the iterator protocol.
+
+        Returns
+        -------
+        tuple[T, int, int]
+            A tuple containing (value, start, end) for the next match.
+            - value: The value associated with the matched pattern
+            - start: Starting position in the original text
+            - end: Ending position in the original text
+
+        Raises
+        ------
+        StopIteration
+            When no more matches are found.
+        """
+        result = self.next()
+        while result is None:
+            result = self.next()
+        return result
+
+    def __iter__(self) -> MatchIterator[T]:
+        """Make the class iterable.
+
+        Returns
+        -------
+        MatchIterator[T]
+            Returns self to implement the iterator protocol.
+        """
+        return self
+
+    def __len__(self):
+        """Get the total number of tokens in the input text.
+
+        Returns
+        -------
+        int
+            The total number of tokens in the input text that this iterator
+            is searching through. This represents the size of the search space,
+            not the number of matches that will be found.
+        """
+        return len(self.tokens)
