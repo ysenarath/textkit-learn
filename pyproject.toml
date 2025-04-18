@@ -59,6 +59,7 @@ dependencies = [
     "orjson>=3.10.16",
     "sentence-transformers==3.4.1",
     "faiss-cpu==1.10.0",
+    "setfit>=1.1.2",
 ]
 dynamic = ["version"]
 
