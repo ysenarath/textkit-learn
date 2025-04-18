@@ -67,14 +67,16 @@ def add_forms(w: Word, lexicon: Lexicon):
         lexicon[form_form] = base_forms
 
 
-class WiktionaryArtifacts:
+class WiktionaryArtifactStore:
     def __init__(
         self,
-        repo_id: str,
-        local_dir: Union[str, Path],
+        repo_id: str = "textkit-learn/wiktionary",
+        local_dir: Union[str, Path, None] = None,
         repo_type: str = "dataset",
         private: bool = True,
     ):
+        if local_dir is None:
+            local_dir = Path(config.assets_dir) / "wiktionary"
         # local_dir is the directory where the repo will be downloaded
         self.local_dir = Path(local_dir)
         self.local_dir.mkdir(parents=True, exist_ok=True)
@@ -502,20 +504,3 @@ class WiktionaryArtifacts:
             pickle.dump(attrs, f)
 
         return attrs
-
-
-if __name__ == "__main__":
-    # Example usage
-    local_dir = Path(config.assets_dir) / "wiktionary"
-    artifacts = WiktionaryArtifacts(
-        repo_id="textkit-learn/wiktionary",
-        local_dir=local_dir,
-        private=True,
-    )
-    print("Wiktionary data setup complete.")
-    print(f"Lexicon size: {len(artifacts.lexicon)}")
-    print(f"Triplet store size: {len(artifacts.triples)}")
-    print(f"Gloss2idx size: {len(artifacts.gloss2idx)}")
-    print(f"Idx2gloss size: {len(artifacts.idx2gloss)}")
-    print(f"Senses size: {len(artifacts.senses)}")
-    print(f"Embeddings size: {len(artifacts.embeddings)}")
