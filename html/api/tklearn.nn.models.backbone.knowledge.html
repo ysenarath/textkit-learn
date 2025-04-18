@@ -44,7 +44,7 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/tklearn.nn.models.backbone.knowledge';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="tklearn.nn.models.multiclass package" href="tklearn.nn.models.multiclass.html" />
+    <link rel="next" title="tklearn.nn.models.classifier package" href="tklearn.nn.models.classifier.html" />
     <link rel="prev" title="tklearn.nn.models.backbone package" href="tklearn.nn.models.backbone.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -267,6 +267,10 @@
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="tklearn.html">tklearn package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="tklearn.embeddings.html">tklearn.embeddings package</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tklearn.kb.html">tklearn.kb package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.wiktionary.html">tklearn.kb.wiktionary package</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.metrics.html">tklearn.metrics package</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="tklearn.nn.html">tklearn.nn package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html">tklearn.nn.base package</a></li>
@@ -274,7 +278,7 @@
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html">tklearn.nn.callbacks package</a></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="tklearn.nn.models.html">tklearn.nn.models package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l4 current active"><a class="reference internal" href="tklearn.nn.models.backbone.html">tklearn.nn.models.backbone package</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.multiclass.html">tklearn.nn.models.multiclass package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.classifier.html">tklearn.nn.models.classifier package</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.utils.html">tklearn.nn.utils package</a></li>
@@ -284,6 +288,10 @@
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="tklearn.embeddings.html">tklearn.embeddings package</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tklearn.kb.html">tklearn.kb package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.kb.wiktionary.html">tklearn.kb.wiktionary package</a></li>
+</ul>
+</details></li>
 <li class="toctree-l1"><a class="reference internal" href="tklearn.metrics.html">tklearn.metrics package</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="tklearn.nn.html">tklearn.nn package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="tklearn.nn.base.html">tklearn.nn.base package</a></li>
@@ -294,7 +302,7 @@
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">tklearn.nn.models.backbone.knowledge package</a></li>
 </ul>
 </details></li>
-<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.models.multiclass.html">tklearn.nn.models.multiclass package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.models.classifier.html">tklearn.nn.models.classifier package</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.nn.utils.html">tklearn.nn.utils package</a></li>
@@ -378,17 +386,280 @@
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">#</a></h2>
 </section>
-<section id="tklearn-nn-models-backbone-knowledge-lexicon-module">
-<h2>tklearn.nn.models.backbone.knowledge.lexicon module<a class="headerlink" href="#tklearn-nn-models-backbone-knowledge-lexicon-module" title="Link to this heading">#</a></h2>
+<section id="module-tklearn.nn.models.backbone.knowledge.helpers">
+<span id="tklearn-nn-models-backbone-knowledge-helpers-module"></span><h2>tklearn.nn.models.backbone.knowledge.helpers module<a class="headerlink" href="#module-tklearn.nn.models.backbone.knowledge.helpers" title="Link to this heading">#</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.helpers.augment">
+<span class="sig-prename descclassname"><span class="pre">tklearn.nn.models.backbone.knowledge.helpers.</span></span><span class="sig-name descname"><span class="pre">augment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">triples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/helpers.html#augment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.helpers.augment" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.helpers.filter_triples">
+<span class="sig-prename descclassname"><span class="pre">tklearn.nn.models.backbone.knowledge.helpers.</span></span><span class="sig-name descname"><span class="pre">filter_triples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top_k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/helpers.html#filter_triples"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.helpers.filter_triples" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.helpers.lexload">
+<span class="sig-prename descclassname"><span class="pre">tklearn.nn.models.backbone.knowledge.helpers.</span></span><span class="sig-name descname"><span class="pre">lexload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">case_sensitive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/helpers.html#lexload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.helpers.lexload" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon" title="tklearn.kb.lexicon.Lexicon"><code class="xref py py-class docutils literal notranslate"><span class="pre">Lexicon</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.helpers.lexquery">
+<span class="sig-prename descclassname"><span class="pre">tklearn.nn.models.backbone.knowledge.helpers.</span></span><span class="sig-name descname"><span class="pre">lexquery</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lexicon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/helpers.html#lexquery"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.helpers.lexquery" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.helpers.preprocess">
+<span class="sig-prename descclassname"><span class="pre">tklearn.nn.models.backbone.knowledge.helpers.</span></span><span class="sig-name descname"><span class="pre">preprocess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/helpers.html#preprocess"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.helpers.preprocess" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.helpers.score_triples">
+<span class="sig-prename descclassname"><span class="pre">tklearn.nn.models.backbone.knowledge.helpers.</span></span><span class="sig-name descname"><span class="pre">score_triples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/helpers.html#score_triples"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.helpers.score_triples" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.helpers.score_triples_v2">
+<span class="sig-prename descclassname"><span class="pre">tklearn.nn.models.backbone.knowledge.helpers.</span></span><span class="sig-name descname"><span class="pre">score_triples_v2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/helpers.html#score_triples_v2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.helpers.score_triples_v2" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.helpers.score_triples_v3">
+<span class="sig-prename descclassname"><span class="pre">tklearn.nn.models.backbone.knowledge.helpers.</span></span><span class="sig-name descname"><span class="pre">score_triples_v3</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">triples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/helpers.html#score_triples_v3"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.helpers.score_triples_v3" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
-<section id="tklearn-nn-models-backbone-knowledge-model-module">
-<h2>tklearn.nn.models.backbone.knowledge.model module<a class="headerlink" href="#tklearn-nn-models-backbone-knowledge-model-module" title="Link to this heading">#</a></h2>
+<section id="module-tklearn.nn.models.backbone.knowledge.model">
+<span id="tklearn-nn-models-backbone-knowledge-model-module"></span><h2>tklearn.nn.models.backbone.knowledge.model module<a class="headerlink" href="#module-tklearn.nn.models.backbone.knowledge.model" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.models.backbone.knowledge.model.</span></span><span class="sig-name descname"><span class="pre">AutoKnowledgeBasedModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/model.html#AutoKnowledgeBasedModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.config">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.config" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/model.html#AutoKnowledgeBasedModel.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.from_pretrained">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_pretrained</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained_model_name_or_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/model.html#AutoKnowledgeBasedModel.from_pretrained"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.from_pretrained" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.get_extended_attention_mask">
+<span class="sig-name descname"><span class="pre">get_extended_attention_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attention_mask</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/model.html#AutoKnowledgeBasedModel.get_extended_attention_mask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.get_extended_attention_mask" title="Link to this definition">#</a></dt>
+<dd><p>Makes broadcastable attention and causal masks so that future and masked tokens are ignored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>attention_mask</strong> (<cite>torch.Tensor</cite>) – Mask with ones indicating tokens to attend to, zeros for tokens to ignore.</p></li>
+<li><p><strong>input_shape</strong> (<cite>Tuple[int]</cite>) – The shape of the input to the model.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><cite>torch.Tensor</cite> The extended attention mask, with a the same dtype as <cite>attention_mask.dtype</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.resize_token_embeddings">
+<span class="sig-name descname"><span class="pre">resize_token_embeddings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_num_tokens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pad_to_multiple_of</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/model.html#AutoKnowledgeBasedModel.resize_token_embeddings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.resize_token_embeddings" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
-<section id="tklearn-nn-models-backbone-knowledge-tokenizer-module">
-<h2>tklearn.nn.models.backbone.knowledge.tokenizer module<a class="headerlink" href="#tklearn-nn-models-backbone-knowledge-tokenizer-module" title="Link to this heading">#</a></h2>
+<section id="module-tklearn.nn.models.backbone.knowledge.tokenizer">
+<span id="tklearn-nn-models-backbone-knowledge-tokenizer-module"></span><h2>tklearn.nn.models.backbone.knowledge.tokenizer module<a class="headerlink" href="#module-tklearn.nn.models.backbone.knowledge.tokenizer" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.models.backbone.knowledge.tokenizer.</span></span><span class="sig-name descname"><span class="pre">KnowledgeBasedTokenizer</span></span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/tokenizer.html#KnowledgeBasedTokenizer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.analyze">
+<span class="sig-name descname"><span class="pre">analyze</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top_k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/tokenizer.html#KnowledgeBasedTokenizer.analyze"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.analyze" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.embedding">
+<span class="sig-name descname"><span class="pre">embedding</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.Embedding" title="tklearn.embeddings.base.Embedding"><code class="xref py py-class docutils literal notranslate"><span class="pre">Embedding</span></code></a></em><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.embedding" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.encode">
+<span class="sig-name descname"><span class="pre">encode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_offsets_mapping</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_tokens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top_k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/tokenizer.html#KnowledgeBasedTokenizer.encode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.encode" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.from_pretrained">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_pretrained</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pretrained_model_name_or_path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/tokenizer.html#KnowledgeBasedTokenizer.from_pretrained"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.from_pretrained" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.get_entites_per_token">
+<span class="sig-name descname"><span class="pre">get_entites_per_token</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">offsets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">triples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/tokenizer.html#KnowledgeBasedTokenizer.get_entites_per_token"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.get_entites_per_token" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.lexicon">
+<span class="sig-name descname"><span class="pre">lexicon</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon" title="tklearn.kb.lexicon.Lexicon"><code class="xref py py-class docutils literal notranslate"><span class="pre">Lexicon</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Set</span></code><span class="pre">[</span><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]]]</span></em><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.lexicon" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.load_triples">
+<span class="sig-name descname"><span class="pre">load_triples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/tokenizer.html#KnowledgeBasedTokenizer.load_triples"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.load_triples" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.prepare_model">
+<span class="sig-name descname"><span class="pre">prepare_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge/tokenizer.html#KnowledgeBasedTokenizer.prepare_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.prepare_model" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">PreTrainedModel</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.tokenizer">
+<span class="sig-name descname"><span class="pre">tokenizer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">PreTrainedTokenizer</span></code></em><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.tokenizer" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </section>
-<section id="module-contents">
-<h2>Module contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
+<section id="module-tklearn.nn.models.backbone.knowledge">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-tklearn.nn.models.backbone.knowledge" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.models.backbone.knowledge.</span></span><span class="sig-name descname"><span class="pre">KnowledgeBasedTransformer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge.html#KnowledgeBasedTransformer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformer" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="tklearn.nn.models.backbone.html#tklearn.nn.models.backbone.base.Backbone" title="tklearn.nn.models.backbone.base.Backbone"><code class="xref py py-class docutils literal notranslate"><span class="pre">Backbone</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformer.config">
+<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">KnowledgeBasedTransformerConfig</span></em><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformer.config" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformer.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge.html#KnowledgeBasedTransformer.forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformer.forward" title="Link to this definition">#</a></dt>
+<dd><p>Define the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.
+:rtype: <span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModelOutputWithPooling</span></code></span></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformer.hidden_size">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">hidden_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformer.hidden_size" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformerConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.models.backbone.knowledge.</span></span><span class="sig-name descname"><span class="pre">KnowledgeBasedTransformerConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name_or_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bert-base-uncased'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepare_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/models/backbone/knowledge.html#KnowledgeBasedTransformerConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformerConfig" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="tklearn.nn.models.backbone.html#tklearn.nn.models.backbone.base.BackboneConfig" title="tklearn.nn.models.backbone.base.BackboneConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">BackboneConfig</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformerConfig.model_name_or_path">
+<span class="sig-name descname"><span class="pre">model_name_or_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'bert-base-uncased'</span></em><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformerConfig.model_name_or_path" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformerConfig.prepare_model">
+<span class="sig-name descname"><span class="pre">prepare_model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformerConfig.prepare_model" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformerConfig.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">ClassVar</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'knowledge-based-transformer'</span></em><a class="headerlink" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformerConfig.type" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </section>
 </section>
 
@@ -412,11 +683,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="tklearn.nn.models.multiclass.html"
+       href="tklearn.nn.models.classifier.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">tklearn.nn.models.multiclass package</p>
+        <p class="prev-next-title">tklearn.nn.models.classifier package</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -440,10 +711,58 @@
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submodules">Submodules</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn-nn-models-backbone-knowledge-lexicon-module">tklearn.nn.models.backbone.knowledge.lexicon module</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn-nn-models-backbone-knowledge-model-module">tklearn.nn.models.backbone.knowledge.model module</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn-nn-models-backbone-knowledge-tokenizer-module">tklearn.nn.models.backbone.knowledge.tokenizer module</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module contents</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.models.backbone.knowledge.helpers">tklearn.nn.models.backbone.knowledge.helpers module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.helpers.augment"><code class="docutils literal notranslate"><span class="pre">augment()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.helpers.filter_triples"><code class="docutils literal notranslate"><span class="pre">filter_triples()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.helpers.lexload"><code class="docutils literal notranslate"><span class="pre">lexload()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.helpers.lexquery"><code class="docutils literal notranslate"><span class="pre">lexquery()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.helpers.preprocess"><code class="docutils literal notranslate"><span class="pre">preprocess()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.helpers.score_triples"><code class="docutils literal notranslate"><span class="pre">score_triples()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.helpers.score_triples_v2"><code class="docutils literal notranslate"><span class="pre">score_triples_v2()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.helpers.score_triples_v3"><code class="docutils literal notranslate"><span class="pre">score_triples_v3()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.models.backbone.knowledge.model">tklearn.nn.models.backbone.knowledge.model module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel"><code class="docutils literal notranslate"><span class="pre">AutoKnowledgeBasedModel</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.config"><code class="docutils literal notranslate"><span class="pre">AutoKnowledgeBasedModel.config</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.forward"><code class="docutils literal notranslate"><span class="pre">AutoKnowledgeBasedModel.forward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.from_pretrained"><code class="docutils literal notranslate"><span class="pre">AutoKnowledgeBasedModel.from_pretrained()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.get_extended_attention_mask"><code class="docutils literal notranslate"><span class="pre">AutoKnowledgeBasedModel.get_extended_attention_mask()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.model.AutoKnowledgeBasedModel.resize_token_embeddings"><code class="docutils literal notranslate"><span class="pre">AutoKnowledgeBasedModel.resize_token_embeddings()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.models.backbone.knowledge.tokenizer">tklearn.nn.models.backbone.knowledge.tokenizer module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTokenizer</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.analyze"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTokenizer.analyze()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.embedding"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTokenizer.embedding</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.encode"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTokenizer.encode()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.from_pretrained"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTokenizer.from_pretrained()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.get_entites_per_token"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTokenizer.get_entites_per_token()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.lexicon"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTokenizer.lexicon</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.load_triples"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTokenizer.load_triples()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.prepare_model"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTokenizer.prepare_model()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.tokenizer.KnowledgeBasedTokenizer.tokenizer"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTokenizer.tokenizer</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.models.backbone.knowledge">Module contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformer"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTransformer</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformer.config"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTransformer.config</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformer.forward"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTransformer.forward()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformer.hidden_size"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTransformer.hidden_size</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformerConfig"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTransformerConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformerConfig.model_name_or_path"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTransformerConfig.model_name_or_path</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformerConfig.prepare_model"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTransformerConfig.prepare_model</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.models.backbone.knowledge.KnowledgeBasedTransformerConfig.type"><code class="docutils literal notranslate"><span class="pre">KnowledgeBasedTransformerConfig.type</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
   </nav></div>
 

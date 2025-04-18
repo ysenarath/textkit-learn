@@ -20,6 +20,14 @@ tklearn.utils.cache module
    :undoc-members:
    :show-inheritance:
 
+tklearn.utils.constants module
+------------------------------
+
+.. automodule:: tklearn.utils.constants
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tklearn.utils.copy module
 -------------------------
 
@@ -40,6 +48,14 @@ tklearn.utils.hashing module
 ----------------------------
 
 .. automodule:: tklearn.utils.hashing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tklearn.utils.index module
+--------------------------
+
+.. automodule:: tklearn.utils.index
    :members:
    :undoc-members:
    :show-inheritance:

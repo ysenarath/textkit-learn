@@ -267,6 +267,10 @@
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">tklearn package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.embeddings.html">tklearn.embeddings package</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tklearn.kb.html">tklearn.kb package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.wiktionary.html">tklearn.kb.wiktionary package</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.metrics.html">tklearn.metrics package</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="tklearn.nn.html">tklearn.nn package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html">tklearn.nn.base package</a></li>
@@ -274,7 +278,7 @@
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html">tklearn.nn.callbacks package</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="tklearn.nn.models.html">tklearn.nn.models package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.html">tklearn.nn.models.backbone package</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.multiclass.html">tklearn.nn.models.multiclass package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.classifier.html">tklearn.nn.models.classifier package</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.utils.html">tklearn.nn.utils package</a></li>
@@ -284,6 +288,10 @@
 </ul>
 </details></li>
 <li class="toctree-l1"><a class="reference internal" href="tklearn.embeddings.html">tklearn.embeddings package</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tklearn.kb.html">tklearn.kb package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.kb.wiktionary.html">tklearn.kb.wiktionary package</a></li>
+</ul>
+</details></li>
 <li class="toctree-l1"><a class="reference internal" href="tklearn.metrics.html">tklearn.metrics package</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="tklearn.nn.html">tklearn.nn package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.nn.base.html">tklearn.nn.base package</a></li>
@@ -294,7 +302,7 @@
 <li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.knowledge.html">tklearn.nn.models.backbone.knowledge package</a></li>
 </ul>
 </details></li>
-<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.models.multiclass.html">tklearn.nn.models.multiclass package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.models.classifier.html">tklearn.nn.models.classifier package</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.nn.utils.html">tklearn.nn.utils package</a></li>
@@ -376,17 +384,24 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.Embedding"><code class="docutils literal notranslate"><span class="pre">Embedding</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.Embedding.config"><code class="docutils literal notranslate"><span class="pre">Embedding.config</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.Embedding.get_word_vector"><code class="docutils literal notranslate"><span class="pre">Embedding.get_word_vector()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.Embedding.model"><code class="docutils literal notranslate"><span class="pre">Embedding.model</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.Embedding.shape"><code class="docutils literal notranslate"><span class="pre">Embedding.shape</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.Embedding.vectors"><code class="docutils literal notranslate"><span class="pre">Embedding.vectors</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.Embedding.word_to_index"><code class="docutils literal notranslate"><span class="pre">Embedding.word_to_index</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.Embedding.vectors"><code class="docutils literal notranslate"><span class="pre">Embedding.vectors</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.Embedding.model"><code class="docutils literal notranslate"><span class="pre">Embedding.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#id0"><code class="docutils literal notranslate"><span class="pre">Embedding.config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.Embedding.encode"><code class="docutils literal notranslate"><span class="pre">Embedding.encode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#id1"><code class="docutils literal notranslate"><span class="pre">Embedding.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.Embedding.shape"><code class="docutils literal notranslate"><span class="pre">Embedding.shape</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#id2"><code class="docutils literal notranslate"><span class="pre">Embedding.vectors</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#id3"><code class="docutils literal notranslate"><span class="pre">Embedding.word_to_index</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.EmbeddingConfig"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.EmbeddingConfig.loader"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.loader</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.EmbeddingConfig.name"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.name</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.EmbeddingConfig.verbose"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.verbose</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.base.EmbeddingConfig.version"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.version</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#id4"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.loader</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#id5"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#id6"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.verbose</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -394,31 +409,45 @@
 <li class="toctree-l2"><a class="reference internal" href="tklearn.embeddings.html#module-tklearn.embeddings.fasttext">tklearn.embeddings.fasttext module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.fasttext.FastTextEmbedding"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.fasttext.FastTextEmbedding.config"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.config</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.fasttext.FastTextEmbedding.get_model"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.get_model()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.fasttext.FastTextEmbedding.load"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.fasttext.FastTextEmbedding.get_encoder"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.get_encoder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.fasttext.FastTextEmbedding.get_vectors"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.get_vectors()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.fasttext.FastTextEmbeddingConfig"><code class="docutils literal notranslate"><span class="pre">FastTextEmbeddingConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.loader"><code class="docutils literal notranslate"><span class="pre">FastTextEmbeddingConfig.loader</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.name"><code class="docutils literal notranslate"><span class="pre">FastTextEmbeddingConfig.name</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.version"><code class="docutils literal notranslate"><span class="pre">FastTextEmbeddingConfig.version</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.fasttext.change_dir"><code class="docutils literal notranslate"><span class="pre">change_dir()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.embeddings.html#module-tklearn.embeddings.gensim">tklearn.embeddings.gensim module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.gensim.GensimEmbedding"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.gensim.GensimEmbedding.config"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.config</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.gensim.GensimEmbedding.get_model"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.get_model()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.gensim.GensimEmbedding.load"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.gensim.GensimEmbedding.get_encoder"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.get_encoder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.gensim.GensimEmbedding.get_vectors"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.get_vectors()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.gensim.GensimEmbeddingConfig"><code class="docutils literal notranslate"><span class="pre">GensimEmbeddingConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.gensim.GensimEmbeddingConfig.loader"><code class="docutils literal notranslate"><span class="pre">GensimEmbeddingConfig.loader</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.gensim.GensimEmbeddingConfig.name"><code class="docutils literal notranslate"><span class="pre">GensimEmbeddingConfig.name</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.gensim.GensimEmbeddingConfig.version"><code class="docutils literal notranslate"><span class="pre">GensimEmbeddingConfig.version</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.gensim.change_dir"><code class="docutils literal notranslate"><span class="pre">change_dir()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.embeddings.html#module-tklearn.embeddings.transformers">tklearn.embeddings.transformers module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.transformers.TransformersEmbedding"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.transformers.TransformersEmbedding.config"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding.config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.transformers.TransformersEmbedding.get_encoder"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding.get_encoder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.transformers.TransformersEmbedding.get_vectors"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding.get_vectors()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.transformers.TransformersEmbeddingConfig"><code class="docutils literal notranslate"><span class="pre">TransformersEmbeddingConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.transformers.TransformersEmbeddingConfig.device"><code class="docutils literal notranslate"><span class="pre">TransformersEmbeddingConfig.device</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.transformers.TransformersEmbeddingConfig.loader"><code class="docutils literal notranslate"><span class="pre">TransformersEmbeddingConfig.loader</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.transformers.TransformersEmbeddingConfig.name"><code class="docutils literal notranslate"><span class="pre">TransformersEmbeddingConfig.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.transformers.TransformersEmbeddingConfig.verbose"><code class="docutils literal notranslate"><span class="pre">TransformersEmbeddingConfig.verbose</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.embeddings.html#module-tklearn.embeddings">Module contents</a><ul>
@@ -428,27 +457,155 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.Embedding"><code class="docutils literal notranslate"><span class="pre">Embedding</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.Embedding.config"><code class="docutils literal notranslate"><span class="pre">Embedding.config</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.Embedding.get_word_vector"><code class="docutils literal notranslate"><span class="pre">Embedding.get_word_vector()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.Embedding.model"><code class="docutils literal notranslate"><span class="pre">Embedding.model</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.Embedding.shape"><code class="docutils literal notranslate"><span class="pre">Embedding.shape</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.Embedding.vectors"><code class="docutils literal notranslate"><span class="pre">Embedding.vectors</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.Embedding.word_to_index"><code class="docutils literal notranslate"><span class="pre">Embedding.word_to_index</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.Embedding.vectors"><code class="docutils literal notranslate"><span class="pre">Embedding.vectors</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.Embedding.model"><code class="docutils literal notranslate"><span class="pre">Embedding.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#id7"><code class="docutils literal notranslate"><span class="pre">Embedding.config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.Embedding.encode"><code class="docutils literal notranslate"><span class="pre">Embedding.encode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#id8"><code class="docutils literal notranslate"><span class="pre">Embedding.model</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.Embedding.shape"><code class="docutils literal notranslate"><span class="pre">Embedding.shape</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#id9"><code class="docutils literal notranslate"><span class="pre">Embedding.vectors</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#id10"><code class="docutils literal notranslate"><span class="pre">Embedding.word_to_index</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.FastTextEmbedding"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.FastTextEmbedding.config"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.config</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.FastTextEmbedding.get_model"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.get_model()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.FastTextEmbedding.load"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.FastTextEmbedding.get_encoder"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.get_encoder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.FastTextEmbedding.get_vectors"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.get_vectors()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.GensimEmbedding"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.GensimEmbedding.config"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.config</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.GensimEmbedding.get_model"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.get_model()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.GensimEmbedding.load"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.GensimEmbedding.get_encoder"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.get_encoder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.GensimEmbedding.get_vectors"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.get_vectors()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.TransformersEmbedding"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.TransformersEmbedding.config"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding.config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.TransformersEmbedding.get_encoder"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding.get_encoder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.embeddings.html#tklearn.embeddings.TransformersEmbedding.get_vectors"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding.get_vectors()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tklearn.kb.html">tklearn.kb package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.kb.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.wiktionary.html">tklearn.kb.wiktionary package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.wiktionary.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.wiktionary.html#module-tklearn.kb.wiktionary.models">tklearn.kb.wiktionary.models module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.wiktionary.html#module-tklearn.kb.wiktionary.store">tklearn.kb.wiktionary.store module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.wiktionary.html#module-tklearn.kb.wiktionary">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.kb.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.kb.html#module-tklearn.kb.base">tklearn.kb.base module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.ArtifactStore"><code class="docutils literal notranslate"><span class="pre">ArtifactStore</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.ArtifactStore.attrs"><code class="docutils literal notranslate"><span class="pre">ArtifactStore.attrs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.ArtifactStore.embeddings"><code class="docutils literal notranslate"><span class="pre">ArtifactStore.embeddings</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.ArtifactStore.gloss2idx"><code class="docutils literal notranslate"><span class="pre">ArtifactStore.gloss2idx</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.ArtifactStore.idx2gloss"><code class="docutils literal notranslate"><span class="pre">ArtifactStore.idx2gloss</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.ArtifactStore.lexicon"><code class="docutils literal notranslate"><span class="pre">ArtifactStore.lexicon</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.ArtifactStore.senses"><code class="docutils literal notranslate"><span class="pre">ArtifactStore.senses</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.ArtifactStore.triples"><code class="docutils literal notranslate"><span class="pre">ArtifactStore.triples</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.KnowledgeBase"><code class="docutils literal notranslate"><span class="pre">KnowledgeBase</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.KnowledgeBase.attrs"><code class="docutils literal notranslate"><span class="pre">KnowledgeBase.attrs</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.KnowledgeBase.augment"><code class="docutils literal notranslate"><span class="pre">KnowledgeBase.augment()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.KnowledgeBase.embeddings"><code class="docutils literal notranslate"><span class="pre">KnowledgeBase.embeddings</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.KnowledgeBase.extract_candidates"><code class="docutils literal notranslate"><span class="pre">KnowledgeBase.extract_candidates()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.KnowledgeBase.extract_mentions"><code class="docutils literal notranslate"><span class="pre">KnowledgeBase.extract_mentions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.KnowledgeBase.gloss2idx"><code class="docutils literal notranslate"><span class="pre">KnowledgeBase.gloss2idx</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.KnowledgeBase.idx2gloss"><code class="docutils literal notranslate"><span class="pre">KnowledgeBase.idx2gloss</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.KnowledgeBase.lexicon"><code class="docutils literal notranslate"><span class="pre">KnowledgeBase.lexicon</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.KnowledgeBase.senses"><code class="docutils literal notranslate"><span class="pre">KnowledgeBase.senses</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.KnowledgeBase.triples"><code class="docutils literal notranslate"><span class="pre">KnowledgeBase.triples</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.get_stopwords"><code class="docutils literal notranslate"><span class="pre">get_stopwords()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.kb.html#module-tklearn.kb.helpers">tklearn.kb.helpers module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.kb.html#module-tklearn.kb.lexicon">tklearn.kb.lexicon module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon"><code class="docutils literal notranslate"><span class="pre">Lexicon</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon._root"><code class="docutils literal notranslate"><span class="pre">Lexicon._root</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon._len"><code class="docutils literal notranslate"><span class="pre">Lexicon._len</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon._updated"><code class="docutils literal notranslate"><span class="pre">Lexicon._updated</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon._case_sensitive"><code class="docutils literal notranslate"><span class="pre">Lexicon._case_sensitive</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon.build"><code class="docutils literal notranslate"><span class="pre">Lexicon.build()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon.display"><code class="docutils literal notranslate"><span class="pre">Lexicon.display()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon.dump"><code class="docutils literal notranslate"><span class="pre">Lexicon.dump()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon.extract"><code class="docutils literal notranslate"><span class="pre">Lexicon.extract()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon.keys"><code class="docutils literal notranslate"><span class="pre">Lexicon.keys()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon.load"><code class="docutils literal notranslate"><span class="pre">Lexicon.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon.tokeinze"><code class="docutils literal notranslate"><span class="pre">Lexicon.tokeinze()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.MatchIterator"><code class="docutils literal notranslate"><span class="pre">MatchIterator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.MatchIterator.next"><code class="docutils literal notranslate"><span class="pre">MatchIterator.next()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.TrieNode"><code class="docutils literal notranslate"><span class="pre">TrieNode</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.TrieNode.value"><code class="docutils literal notranslate"><span class="pre">TrieNode.value</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.TrieNode.children"><code class="docutils literal notranslate"><span class="pre">TrieNode.children</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.TrieNode.fail"><code class="docutils literal notranslate"><span class="pre">TrieNode.fail</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.TrieNode.depth"><code class="docutils literal notranslate"><span class="pre">TrieNode.depth</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#id0"><code class="docutils literal notranslate"><span class="pre">TrieNode.children</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#id1"><code class="docutils literal notranslate"><span class="pre">TrieNode.depth</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#id2"><code class="docutils literal notranslate"><span class="pre">TrieNode.fail</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#id3"><code class="docutils literal notranslate"><span class="pre">TrieNode.value</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.kb.html#module-tklearn.kb.models">tklearn.kb.models module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Candidate"><code class="docutils literal notranslate"><span class="pre">Candidate</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Candidate.bind"><code class="docutils literal notranslate"><span class="pre">Candidate.bind()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Candidate.definition"><code class="docutils literal notranslate"><span class="pre">Candidate.definition</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Candidate.embedding"><code class="docutils literal notranslate"><span class="pre">Candidate.embedding</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Candidate.sense_id"><code class="docutils literal notranslate"><span class="pre">Candidate.sense_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Candidate.word"><code class="docutils literal notranslate"><span class="pre">Candidate.word</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Candidate.wordex"><code class="docutils literal notranslate"><span class="pre">Candidate.wordex</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Mention"><code class="docutils literal notranslate"><span class="pre">Mention</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Mention.candidates"><code class="docutils literal notranslate"><span class="pre">Mention.candidates</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Mention.form"><code class="docutils literal notranslate"><span class="pre">Mention.form</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Mention.span"><code class="docutils literal notranslate"><span class="pre">Mention.span</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Span"><code class="docutils literal notranslate"><span class="pre">Span</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Span.end"><code class="docutils literal notranslate"><span class="pre">Span.end</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Span.start"><code class="docutils literal notranslate"><span class="pre">Span.start</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Triple"><code class="docutils literal notranslate"><span class="pre">Triple</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Triple.from_tuple"><code class="docutils literal notranslate"><span class="pre">Triple.from_tuple()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Triple.object"><code class="docutils literal notranslate"><span class="pre">Triple.object</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Triple.predicate"><code class="docutils literal notranslate"><span class="pre">Triple.predicate</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Triple.subject"><code class="docutils literal notranslate"><span class="pre">Triple.subject</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.Triple.to_tuple"><code class="docutils literal notranslate"><span class="pre">Triple.to_tuple()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.models.concept2tuple"><code class="docutils literal notranslate"><span class="pre">concept2tuple()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.kb.html#module-tklearn.kb.triple_store">tklearn.kb.triple_store module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.triple_store.TripleStore"><code class="docutils literal notranslate"><span class="pre">TripleStore</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.triple_store.TripleStore.close"><code class="docutils literal notranslate"><span class="pre">TripleStore.close()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.triple_store.TripleStore.create_table"><code class="docutils literal notranslate"><span class="pre">TripleStore.create_table()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.triple_store.TripleStore.insert"><code class="docutils literal notranslate"><span class="pre">TripleStore.insert()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.triple_store.TripleStore.query"><code class="docutils literal notranslate"><span class="pre">TripleStore.query()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.kb.html#tklearn.kb.triple_store.TripleStore.to_networkx"><code class="docutils literal notranslate"><span class="pre">TripleStore.to_networkx()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.kb.html#module-tklearn.kb">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tklearn.metrics.html">tklearn.metrics package</a><ul>
@@ -636,15 +793,18 @@
 <li class="toctree-l2"><a class="reference internal" href="tklearn.nn.html#subpackages">Subpackages</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html">tklearn.nn.base package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#tklearn-nn-base-helpers-module">tklearn.nn.base.helpers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#module-tklearn.nn.base.evaluator">tklearn.nn.base.evaluator module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#module-tklearn.nn.base.module">tklearn.nn.base.module module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#module-contents">Module contents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#module-tklearn.nn.base.optim">tklearn.nn.base.optim module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#module-tklearn.nn.base.predictor">tklearn.nn.base.predictor module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#module-tklearn.nn.base.trainer">tklearn.nn.base.trainer module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.base.html#module-tklearn.nn.base">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.calibration.html">tklearn.nn.calibration package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.nn.calibration.html#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.calibration.html#tklearn-nn-calibration-temperature-module">tklearn.nn.calibration.temperature module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.calibration.html#module-contents">Module contents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.calibration.html#module-tklearn.nn.calibration.temperature">tklearn.nn.calibration.temperature module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.calibration.html#module-tklearn.nn.calibration">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html">tklearn.nn.callbacks package</a><ul>
@@ -652,33 +812,75 @@
 <li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.base">tklearn.nn.callbacks.base module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.checkpoint">tklearn.nn.callbacks.checkpoint module</a></li>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.early_stopping">tklearn.nn.callbacks.early_stopping module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn-nn-callbacks-history-module">tklearn.nn.callbacks.history module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn-nn-callbacks-plateau-early-stopping-module">tklearn.nn.callbacks.plateau_early_stopping module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn-nn-callbacks-progbar-logger-module">tklearn.nn.callbacks.progbar_logger module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#tklearn-nn-callbacks-tracking-module">tklearn.nn.callbacks.tracking module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#module-contents">Module contents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.history">tklearn.nn.callbacks.history module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.plateau_early_stopping">tklearn.nn.callbacks.plateau_early_stopping module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.progbar_logger">tklearn.nn.callbacks.progbar_logger module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks.tracking">tklearn.nn.callbacks.tracking module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.callbacks.html#module-tklearn.nn.callbacks">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.models.html">tklearn.nn.models package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.html#subpackages">Subpackages</a></li>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.html#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.html#tklearn-nn-models-base-module">tklearn.nn.models.base module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.html#module-contents">Module contents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.html#module-tklearn.nn.models.base">tklearn.nn.models.base module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.html#module-tklearn.nn.models">Module contents</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.utils.html">tklearn.nn.utils package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#tklearn-nn-utils-collections-module">tklearn.nn.utils.collections module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#tklearn-nn-utils-preprocessing-module">tklearn.nn.utils.preprocessing module</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#module-contents">Module contents</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#module-tklearn.nn.utils.collators">tklearn.nn.utils.collators module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#module-tklearn.nn.utils.collections">tklearn.nn.utils.collections module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#module-tklearn.nn.utils.devices">tklearn.nn.utils.devices module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#module-tklearn.nn.utils.preprocessing">tklearn.nn.utils.preprocessing module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.utils.html#module-tklearn.nn.utils">Module contents</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.nn.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.html#tklearn-nn-loss-module">tklearn.nn.loss module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.html#tklearn-nn-optim-module">tklearn.nn.optim module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.html#module-contents">Module contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.html#module-tklearn.nn.loss">tklearn.nn.loss module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.loss.LossDict"><code class="docutils literal notranslate"><span class="pre">LossDict</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.loss.TargetBasedLoss"><code class="docutils literal notranslate"><span class="pre">TargetBasedLoss</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.loss.TargetBasedLoss.forward"><code class="docutils literal notranslate"><span class="pre">TargetBasedLoss.forward()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.html#module-tklearn.nn.optim">tklearn.nn.optim module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.optim.get_scheduler"><code class="docutils literal notranslate"><span class="pre">get_scheduler()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.nn.html#module-tklearn.nn">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Evaluator"><code class="docutils literal notranslate"><span class="pre">Evaluator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Evaluator.evaluate"><code class="docutils literal notranslate"><span class="pre">Evaluator.evaluate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Evaluator.test"><code class="docutils literal notranslate"><span class="pre">Evaluator.test()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Evaluator.validate"><code class="docutils literal notranslate"><span class="pre">Evaluator.validate()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Module"><code class="docutils literal notranslate"><span class="pre">Module</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Module.compile"><code class="docutils literal notranslate"><span class="pre">Module.compile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Module.compute_loss"><code class="docutils literal notranslate"><span class="pre">Module.compute_loss()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Module.compute_metric_inputs"><code class="docutils literal notranslate"><span class="pre">Module.compute_metric_inputs()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Module.device"><code class="docutils literal notranslate"><span class="pre">Module.device</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Module.freeze_layers"><code class="docutils literal notranslate"><span class="pre">Module.freeze_layers()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Module.predict_step"><code class="docutils literal notranslate"><span class="pre">Module.predict_step()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Module.test_step"><code class="docutils literal notranslate"><span class="pre">Module.test_step()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Module.training_step"><code class="docutils literal notranslate"><span class="pre">Module.training_step()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Module.validation_step"><code class="docutils literal notranslate"><span class="pre">Module.validation_step()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Predictor"><code class="docutils literal notranslate"><span class="pre">Predictor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Predictor.compute_loss"><code class="docutils literal notranslate"><span class="pre">Predictor.compute_loss()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Predictor.iter_batches"><code class="docutils literal notranslate"><span class="pre">Predictor.iter_batches()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Predictor.predict"><code class="docutils literal notranslate"><span class="pre">Predictor.predict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Trainer"><code class="docutils literal notranslate"><span class="pre">Trainer</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.html#tklearn.nn.Trainer.train"><code class="docutils literal notranslate"><span class="pre">Trainer.train()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tklearn.utils.html">tklearn.utils package</a><ul>
@@ -700,6 +902,7 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.utils.html#module-tklearn.utils.constants">tklearn.utils.constants module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.utils.html#module-tklearn.utils.copy">tklearn.utils.copy module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.utils.html#tklearn.utils.copy.deepcopy"><code class="docutils literal notranslate"><span class="pre">deepcopy()</span></code></a></li>
 </ul>
@@ -716,6 +919,21 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.utils.html#module-tklearn.utils.hashing">tklearn.utils.hashing module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.utils.html#tklearn.utils.hashing.get_content_hash"><code class="docutils literal notranslate"><span class="pre">get_content_hash()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.utils.html#module-tklearn.utils.index">tklearn.utils.index module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.utils.html#tklearn.utils.index.VectorIndex"><code class="docutils literal notranslate"><span class="pre">VectorIndex</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.utils.html#tklearn.utils.index.VectorIndex.get_index"><code class="docutils literal notranslate"><span class="pre">VectorIndex.get_index()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.utils.html#tklearn.utils.index.VectorIndex.index"><code class="docutils literal notranslate"><span class="pre">VectorIndex.index</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.utils.html#tklearn.utils.index.VectorIndex.index2str"><code class="docutils literal notranslate"><span class="pre">VectorIndex.index2str</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.utils.html#tklearn.utils.index.VectorIndex.keys"><code class="docutils literal notranslate"><span class="pre">VectorIndex.keys()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.utils.html#tklearn.utils.index.VectorIndex.load"><code class="docutils literal notranslate"><span class="pre">VectorIndex.load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.utils.html#tklearn.utils.index.VectorIndex.reset"><code class="docutils literal notranslate"><span class="pre">VectorIndex.reset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.utils.html#tklearn.utils.index.VectorIndex.save"><code class="docutils literal notranslate"><span class="pre">VectorIndex.save()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.utils.html#tklearn.utils.index.VectorIndex.search"><code class="docutils literal notranslate"><span class="pre">VectorIndex.search()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.utils.html#tklearn.utils.index.VectorIndex.values"><code class="docutils literal notranslate"><span class="pre">VectorIndex.values()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.utils.html#module-tklearn.utils.lexrank">tklearn.utils.lexrank module</a><ul>
@@ -810,21 +1028,26 @@
 <span id="tklearn-config-module"></span><h2>tklearn.config module<a class="headerlink" href="#module-tklearn.config" title="Link to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="tklearn.config.Config">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.config.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'${oc.env:TKLEARN_CACHE,/Users/yasas/.cache/tklearn}'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'${cache_dir}/temp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resources_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'${cache_dir}/resources'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/config.html#Config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.config.Config" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.config.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'${oc.env:TKLEARN_CACHE,/Users/yasas/.cache/tklearn}'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'${base_dir}/cache'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'${base_dir}/temp'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assets_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'${base_dir}/assets'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/config.html#Config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.config.Config" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.config.Config.cache_dir">
-<span class="sig-name descname"><span class="pre">cache_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'${oc.env:TKLEARN_CACHE,/Users/yasas/.cache/tklearn}'</span></em><a class="headerlink" href="#tklearn.config.Config.cache_dir" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="tklearn.config.Config.assets_dir">
+<span class="sig-name descname"><span class="pre">assets_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'${base_dir}/assets'</span></em><a class="headerlink" href="#tklearn.config.Config.assets_dir" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.config.Config.resources_dir">
-<span class="sig-name descname"><span class="pre">resources_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'${cache_dir}/resources'</span></em><a class="headerlink" href="#tklearn.config.Config.resources_dir" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="tklearn.config.Config.base_dir">
+<span class="sig-name descname"><span class="pre">base_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'${oc.env:TKLEARN_CACHE,/Users/yasas/.cache/tklearn}'</span></em><a class="headerlink" href="#tklearn.config.Config.base_dir" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.config.Config.cache_dir">
+<span class="sig-name descname"><span class="pre">cache_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'${base_dir}/cache'</span></em><a class="headerlink" href="#tklearn.config.Config.cache_dir" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="tklearn.config.Config.temp_dir">
-<span class="sig-name descname"><span class="pre">temp_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'${cache_dir}/temp'</span></em><a class="headerlink" href="#tklearn.config.Config.temp_dir" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">temp_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'${base_dir}/temp'</span></em><a class="headerlink" href="#tklearn.config.Config.temp_dir" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -902,8 +1125,9 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submodules">Submodules</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.config">tklearn.config module</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.config.Config"><code class="docutils literal notranslate"><span class="pre">Config</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.config.Config.assets_dir"><code class="docutils literal notranslate"><span class="pre">Config.assets_dir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.config.Config.base_dir"><code class="docutils literal notranslate"><span class="pre">Config.base_dir</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.config.Config.cache_dir"><code class="docutils literal notranslate"><span class="pre">Config.cache_dir</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.config.Config.resources_dir"><code class="docutils literal notranslate"><span class="pre">Config.resources_dir</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.config.Config.temp_dir"><code class="docutils literal notranslate"><span class="pre">Config.temp_dir</span></code></a></li>
 </ul>
 </li>

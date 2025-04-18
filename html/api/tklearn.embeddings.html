@@ -44,7 +44,7 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/tklearn.embeddings';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="tklearn.metrics package" href="tklearn.metrics.html" />
+    <link rel="next" title="tklearn.kb package" href="tklearn.kb.html" />
     <link rel="prev" title="tklearn package" href="tklearn.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -267,6 +267,10 @@
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="tklearn.html">tklearn package</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">tklearn.embeddings package</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="tklearn.kb.html">tklearn.kb package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.kb.wiktionary.html">tklearn.kb.wiktionary package</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.metrics.html">tklearn.metrics package</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="tklearn.nn.html">tklearn.nn package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.base.html">tklearn.nn.base package</a></li>
@@ -274,7 +278,7 @@
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.callbacks.html">tklearn.nn.callbacks package</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="tklearn.nn.models.html">tklearn.nn.models package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.html">tklearn.nn.models.backbone package</a></li>
-<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.multiclass.html">tklearn.nn.models.multiclass package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.classifier.html">tklearn.nn.models.classifier package</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3"><a class="reference internal" href="tklearn.nn.utils.html">tklearn.nn.utils package</a></li>
@@ -284,6 +288,10 @@
 </ul>
 </details></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">tklearn.embeddings package</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tklearn.kb.html">tklearn.kb package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="tklearn.kb.wiktionary.html">tklearn.kb.wiktionary package</a></li>
+</ul>
+</details></li>
 <li class="toctree-l1"><a class="reference internal" href="tklearn.metrics.html">tklearn.metrics package</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="tklearn.nn.html">tklearn.nn package</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.nn.base.html">tklearn.nn.base package</a></li>
@@ -294,7 +302,7 @@
 <li class="toctree-l4"><a class="reference internal" href="tklearn.nn.models.backbone.knowledge.html">tklearn.nn.models.backbone.knowledge package</a></li>
 </ul>
 </details></li>
-<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.models.multiclass.html">tklearn.nn.models.multiclass package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tklearn.nn.models.classifier.html">tklearn.nn.models.classifier package</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="tklearn.nn.utils.html">tklearn.nn.utils package</a></li>
@@ -375,12 +383,25 @@
 <dt class="sig sig-object py" id="tklearn.embeddings.base.AutoEmbedding">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.base.</span></span><span class="sig-name descname"><span class="pre">AutoEmbedding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#AutoEmbedding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.base.AutoEmbedding" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">AutoModule</span></code></p>
+<p>Factory class for creating Embedding instances based on configuration.</p>
+<p>Uses the ‘loader’ field in the EmbeddingConfig to dispatch to the
+appropriate Embedding subclass.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.embeddings.base.AutoEmbedding.from_config">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#AutoEmbedding.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.base.AutoEmbedding.from_config" title="Link to this definition">#</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Instantiate an Embedding from a configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig"><em>EmbeddingConfig</em></a><em> or </em><em>Mapping</em><em> or </em><em>str</em>) – The configuration object, dictionary, or string identifier.
+If a string is provided, it’s assumed to be the name, and
+‘gensim’ loader is used by default. If a Mapping is provided,
+it’s converted to an EmbeddingConfig.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An instance of the appropriate Embedding subclass.</p>
+</dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#tklearn.embeddings.base.Embedding" title="tklearn.embeddings.base.Embedding"><code class="xref py py-class docutils literal notranslate"><span class="pre">Embedding</span></code></a></span></p>
+<dd class="field-odd"><p><a class="reference internal" href="#tklearn.embeddings.base.Embedding" title="tklearn.embeddings.base.Embedding">Embedding</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -390,61 +411,164 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="tklearn.embeddings.base.Embedding">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.base.</span></span><span class="sig-name descname"><span class="pre">Embedding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#Embedding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.base.Embedding" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModule</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseEmbedding</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModule</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">EmbeddingBase</span></code></p>
+<p>Represents a loaded set of word embeddings.</p>
+<p>Provides access to word vectors via a mapping interface and potentially
+an underlying text encoding model. Handles caching of processed vectors.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="tklearn.embeddings.base.Embedding.config">
-<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmbeddingConfig</span></code></a></em><a class="headerlink" href="#tklearn.embeddings.base.Embedding.config" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">config</span></span><a class="headerlink" href="#tklearn.embeddings.base.Embedding.config" title="Link to this definition">#</a></dt>
+<dd><p>The configuration used to load these embeddings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig">EmbeddingConfig</a></p>
+</dd>
+</dl>
+</dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.base.Embedding.get_word_vector">
-<span class="sig-name descname"><span class="pre">get_word_vector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">word</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#Embedding.get_word_vector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.base.Embedding.get_word_vector" title="Link to this definition">#</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.embeddings.base.Embedding.word_to_index">
+<span class="sig-name descname"><span class="pre">word_to_index</span></span><a class="headerlink" href="#tklearn.embeddings.base.Embedding.word_to_index" title="Link to this definition">#</a></dt>
+<dd><p>A mapping from words (vocabulary) to their integer index in the
+<cite>vectors</cite> array. Initialized during loading.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, int] or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.embeddings.base.Embedding.vectors">
+<span class="sig-name descname"><span class="pre">vectors</span></span><a class="headerlink" href="#tklearn.embeddings.base.Embedding.vectors" title="Link to this definition">#</a></dt>
+<dd><p>A 2D NumPy array where each row corresponds to a word vector,
+ordered according to <cite>word_to_index</cite>. Initialized during loading.
+May be a memory-mapped array for efficiency.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray or None</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="tklearn.embeddings.base.Embedding.model">
-<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">EmbeddingModel</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#tklearn.embeddings.base.Embedding.model" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">model</span></span><a class="headerlink" href="#tklearn.embeddings.base.Embedding.model" title="Link to this definition">#</a></dt>
+<dd><p>An optional underlying text encoding model (conforming to TextEncoder)
+that might be used for generating vectors for out-of-vocabulary words
+or for more complex encoding tasks. Initialized during loading.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>TextEncoder or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmbeddingConfig</span></code></a></em><a class="headerlink" href="#id0" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.embeddings.base.Embedding.encode">
+<span class="sig-name descname"><span class="pre">encode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#Embedding.encode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.base.Embedding.encode" title="Link to this definition">#</a></dt>
+<dd><p>Get the vector for a word, potentially using the model for OOV words.</p>
+<p>If an underlying <cite>model</cite> (TextEncoder) is available, it might be used
+to generate vectors for words not directly in the <cite>vectors</cite> table or
+to handle multi-word expressions by averaging sub-word vectors.
+Otherwise, it falls back to <cite>__getitem__</cite>. Results are cached.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>word</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>]</em>) – The word or phrase to get the vector for.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments for the encoder.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The vector representation of the word.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Encodable</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id1" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="tklearn.embeddings.base.Embedding.shape">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#tklearn.embeddings.base.Embedding.shape" title="Link to this definition">#</a></dt>
+<dd><p>Return the shape of the underlying vector matrix (vocabulary size, dimension).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">vectors</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id2" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.embeddings.base.Embedding.vectors">
-<span class="sig-name descname"><span class="pre">vectors</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#tklearn.embeddings.base.Embedding.vectors" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.embeddings.base.Embedding.word_to_index">
-<span class="sig-name descname"><span class="pre">word_to_index</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#tklearn.embeddings.base.Embedding.word_to_index" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">word_to_index</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id3" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="tklearn.embeddings.base.EmbeddingConfig">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.base.</span></span><span class="sig-name descname"><span class="pre">EmbeddingConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'0.0.1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#EmbeddingConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.base.EmbeddingConfig" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.base.</span></span><span class="sig-name descname"><span class="pre">EmbeddingConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#EmbeddingConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.base.EmbeddingConfig" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseConfig</span></code></p>
+<p>Configuration for loading and managing embeddings.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.embeddings.base.EmbeddingConfig.loader">
+<span class="sig-name descname"><span class="pre">loader</span></span><a class="headerlink" href="#tklearn.embeddings.base.EmbeddingConfig.loader" title="Link to this definition">#</a></dt>
+<dd><p>The identifier for the embedding loader module to use.
+This is a ClassVar and also the dispatch key for AutoModule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="tklearn.embeddings.base.EmbeddingConfig.name">
-<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">ClassVar</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]</span></em><a class="headerlink" href="#tklearn.embeddings.base.EmbeddingConfig.name" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#tklearn.embeddings.base.EmbeddingConfig.name" title="Link to this definition">#</a></dt>
+<dd><p>A unique name identifying the specific embedding set (e.g., ‘glove-wiki-gigaword-100’).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="tklearn.embeddings.base.EmbeddingConfig.verbose">
-<span class="sig-name descname"><span class="pre">verbose</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#tklearn.embeddings.base.EmbeddingConfig.verbose" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">verbose</span></span><a class="headerlink" href="#tklearn.embeddings.base.EmbeddingConfig.verbose" title="Link to this definition">#</a></dt>
+<dd><p>Controls the verbosity of loading and processing messages.
+Defaults to 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool or int, optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id4">
+<span class="sig-name descname"><span class="pre">loader</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">ClassVar</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]</span></em><a class="headerlink" href="#id4" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.embeddings.base.EmbeddingConfig.version">
-<span class="sig-name descname"><span class="pre">version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'0.0.1'</span></em><a class="headerlink" href="#tklearn.embeddings.base.EmbeddingConfig.version" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="id5">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><a class="headerlink" href="#id5" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id6">
+<span class="sig-name descname"><span class="pre">verbose</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#id6" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -462,18 +586,35 @@
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbedding.get_model">
-<span class="sig-name descname"><span class="pre">get_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbedding.get_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbedding.get_model" title="Link to this definition">#</a></dt>
-<dd><p>Return the model.</p>
+<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbedding.get_encoder">
+<span class="sig-name descname"><span class="pre">get_encoder</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbedding.get_encoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbedding.get_encoder" title="Link to this definition">#</a></dt>
+<dd><p>Get the text encoder associated with these embeddings.</p>
+<p>This method should return an object conforming to the TextEncoder
+protocol, capable of encoding arbitrary text based on the loaded
+embedding model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>An object that can encode text into vectors.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>TextEncoder</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbedding.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbedding.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbedding.load" title="Link to this definition">#</a></dt>
-<dd><p>Load resource.</p>
+<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbedding.get_vectors">
+<span class="sig-name descname"><span class="pre">get_vectors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbedding.get_vectors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbedding.get_vectors" title="Link to this definition">#</a></dt>
+<dd><p>Load or compute the word-to-vector mapping.</p>
+<p>This method should handle the retrieval or generation of the
+embedding vectors from the source (e.g., file, model).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</span></p>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary mapping words (or entities) to their corresponding
+numerical vector representations.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, ArrayLike]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -482,24 +623,19 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbeddingConfig">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.fasttext.</span></span><span class="sig-name descname"><span class="pre">FastTextEmbeddingConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cc.en.300.bin'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbeddingConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.fasttext.</span></span><span class="sig-name descname"><span class="pre">FastTextEmbeddingConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cc.en.300.bin'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbeddingConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmbeddingConfig</span></code></a></p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbeddingConfig.name">
-<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[str]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'fasttext'</span></em><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.name" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbeddingConfig.loader">
+<span class="sig-name descname"><span class="pre">loader</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[str]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'fasttext'</span></em><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.loader" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbeddingConfig.version">
-<span class="sig-name descname"><span class="pre">version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'cc.en.300.bin'</span></em><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.version" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.FastTextEmbeddingConfig.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'cc.en.300.bin'</span></em><a class="headerlink" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.name" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="tklearn.embeddings.fasttext.change_dir">
-<span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.fasttext.</span></span><span class="sig-name descname"><span class="pre">change_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#change_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.fasttext.change_dir" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
 
 </section>
 <section id="module-tklearn.embeddings.gensim">
@@ -514,23 +650,29 @@
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.gensim.GensimEmbedding.get_model">
-<span class="sig-name descname"><span class="pre">get_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/gensim.html#GensimEmbedding.get_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.gensim.GensimEmbedding.get_model" title="Link to this definition">#</a></dt>
-<dd><p>Return the model.</p>
+<dt class="sig sig-object py" id="tklearn.embeddings.gensim.GensimEmbedding.get_encoder">
+<span class="sig-name descname"><span class="pre">get_encoder</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/gensim.html#GensimEmbedding.get_encoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.gensim.GensimEmbedding.get_encoder" title="Link to this definition">#</a></dt>
+<dd><p>Returns the encoder for the embedding.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">GensimModelWrapper</span></code></span></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.gensim.GensimEmbedding.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/gensim.html#GensimEmbedding.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.gensim.GensimEmbedding.load" title="Link to this definition">#</a></dt>
-<dd><p>Load resource.</p>
+<dt class="sig sig-object py" id="tklearn.embeddings.gensim.GensimEmbedding.get_vectors">
+<span class="sig-name descname"><span class="pre">get_vectors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/gensim.html#GensimEmbedding.get_vectors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.gensim.GensimEmbedding.get_vectors" title="Link to this definition">#</a></dt>
+<dd><p>Load or compute the word-to-vector mapping.</p>
+<p>This method should handle the retrieval or generation of the
+embedding vectors from the source (e.g., file, model).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</span></p>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary mapping words (or entities) to their corresponding
+numerical vector representations.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, ArrayLike]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -539,24 +681,81 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="tklearn.embeddings.gensim.GensimEmbeddingConfig">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.gensim.</span></span><span class="sig-name descname"><span class="pre">GensimEmbeddingConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'word2vec-google-news-300'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/gensim.html#GensimEmbeddingConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.gensim.GensimEmbeddingConfig" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.gensim.</span></span><span class="sig-name descname"><span class="pre">GensimEmbeddingConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'word2vec-google-news-300'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/gensim.html#GensimEmbeddingConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.gensim.GensimEmbeddingConfig" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmbeddingConfig</span></code></a></p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.embeddings.gensim.GensimEmbeddingConfig.name">
-<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[str]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'gensim'</span></em><a class="headerlink" href="#tklearn.embeddings.gensim.GensimEmbeddingConfig.name" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="tklearn.embeddings.gensim.GensimEmbeddingConfig.loader">
+<span class="sig-name descname"><span class="pre">loader</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[str]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'gensim'</span></em><a class="headerlink" href="#tklearn.embeddings.gensim.GensimEmbeddingConfig.loader" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.embeddings.gensim.GensimEmbeddingConfig.version">
-<span class="sig-name descname"><span class="pre">version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'word2vec-google-news-300'</span></em><a class="headerlink" href="#tklearn.embeddings.gensim.GensimEmbeddingConfig.version" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="tklearn.embeddings.gensim.GensimEmbeddingConfig.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'word2vec-google-news-300'</span></em><a class="headerlink" href="#tklearn.embeddings.gensim.GensimEmbeddingConfig.name" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
-<dl class="py function">
-<dt class="sig sig-object py" id="tklearn.embeddings.gensim.change_dir">
-<span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.gensim.</span></span><span class="sig-name descname"><span class="pre">change_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/gensim.html#change_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.gensim.change_dir" title="Link to this definition">#</a></dt>
+</section>
+<section id="module-tklearn.embeddings.transformers">
+<span id="tklearn-embeddings-transformers-module"></span><h2>tklearn.embeddings.transformers module<a class="headerlink" href="#module-tklearn.embeddings.transformers" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.embeddings.transformers.TransformersEmbedding">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.transformers.</span></span><span class="sig-name descname"><span class="pre">TransformersEmbedding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/transformers.html#TransformersEmbedding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.transformers.TransformersEmbedding" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.embeddings.base.Embedding" title="tklearn.embeddings.base.Embedding"><code class="xref py py-class docutils literal notranslate"><span class="pre">Embedding</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.embeddings.transformers.TransformersEmbedding.config">
+<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">TransformersEmbeddingConfig</span></em><a class="headerlink" href="#tklearn.embeddings.transformers.TransformersEmbedding.config" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.embeddings.transformers.TransformersEmbedding.get_encoder">
+<span class="sig-name descname"><span class="pre">get_encoder</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/transformers.html#TransformersEmbedding.get_encoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.transformers.TransformersEmbedding.get_encoder" title="Link to this definition">#</a></dt>
+<dd><p>Return the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">TransformerWrapper</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.embeddings.transformers.TransformersEmbedding.get_vectors">
+<span class="sig-name descname"><span class="pre">get_vectors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/transformers.html#TransformersEmbedding.get_vectors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.transformers.TransformersEmbedding.get_vectors" title="Link to this definition">#</a></dt>
+<dd><p>Load resource.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">_SupportsArray</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">_NestedSequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">_SupportsArray</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]], <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">complex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_NestedSequence</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">complex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>]]]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.embeddings.transformers.TransformersEmbeddingConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.transformers.</span></span><span class="sig-name descname"><span class="pre">TransformersEmbeddingConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all-MiniLM-L6-v2'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/transformers.html#TransformersEmbeddingConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.transformers.TransformersEmbeddingConfig" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmbeddingConfig</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.embeddings.transformers.TransformersEmbeddingConfig.device">
+<span class="sig-name descname"><span class="pre">device</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'auto'</span></em><a class="headerlink" href="#tklearn.embeddings.transformers.TransformersEmbeddingConfig.device" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.embeddings.transformers.TransformersEmbeddingConfig.loader">
+<span class="sig-name descname"><span class="pre">loader</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">ClassVar</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'transformers'</span></em><a class="headerlink" href="#tklearn.embeddings.transformers.TransformersEmbeddingConfig.loader" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.embeddings.transformers.TransformersEmbeddingConfig.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'all-MiniLM-L6-v2'</span></em><a class="headerlink" href="#tklearn.embeddings.transformers.TransformersEmbeddingConfig.name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.embeddings.transformers.TransformersEmbeddingConfig.verbose">
+<span class="sig-name descname"><span class="pre">verbose</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#tklearn.embeddings.transformers.TransformersEmbeddingConfig.verbose" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
 
 </section>
 <section id="module-tklearn.embeddings">
@@ -565,12 +764,25 @@
 <dt class="sig sig-object py" id="tklearn.embeddings.AutoEmbedding">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.</span></span><span class="sig-name descname"><span class="pre">AutoEmbedding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#AutoEmbedding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.AutoEmbedding" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">AutoModule</span></code></p>
+<p>Factory class for creating Embedding instances based on configuration.</p>
+<p>Uses the ‘loader’ field in the EmbeddingConfig to dispatch to the
+appropriate Embedding subclass.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.embeddings.AutoEmbedding.from_config">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#AutoEmbedding.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.AutoEmbedding.from_config" title="Link to this definition">#</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Instantiate an Embedding from a configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig"><em>EmbeddingConfig</em></a><em> or </em><em>Mapping</em><em> or </em><em>str</em>) – The configuration object, dictionary, or string identifier.
+If a string is provided, it’s assumed to be the name, and
+‘gensim’ loader is used by default. If a Mapping is provided,
+it’s converted to an EmbeddingConfig.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An instance of the appropriate Embedding subclass.</p>
+</dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#tklearn.embeddings.base.Embedding" title="tklearn.embeddings.base.Embedding"><code class="xref py py-class docutils literal notranslate"><span class="pre">Embedding</span></code></a></span></p>
+<dd class="field-odd"><p><a class="reference internal" href="#tklearn.embeddings.Embedding" title="tklearn.embeddings.Embedding">Embedding</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -580,40 +792,107 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="tklearn.embeddings.Embedding">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.</span></span><span class="sig-name descname"><span class="pre">Embedding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#Embedding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.Embedding" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModule</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseEmbedding</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModule</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">EmbeddingBase</span></code></p>
+<p>Represents a loaded set of word embeddings.</p>
+<p>Provides access to word vectors via a mapping interface and potentially
+an underlying text encoding model. Handles caching of processed vectors.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="tklearn.embeddings.Embedding.config">
-<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmbeddingConfig</span></code></a></em><a class="headerlink" href="#tklearn.embeddings.Embedding.config" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">config</span></span><a class="headerlink" href="#tklearn.embeddings.Embedding.config" title="Link to this definition">#</a></dt>
+<dd><p>The configuration used to load these embeddings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig">EmbeddingConfig</a></p>
+</dd>
+</dl>
+</dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.Embedding.get_word_vector">
-<span class="sig-name descname"><span class="pre">get_word_vector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">word</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#Embedding.get_word_vector"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.Embedding.get_word_vector" title="Link to this definition">#</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.embeddings.Embedding.word_to_index">
+<span class="sig-name descname"><span class="pre">word_to_index</span></span><a class="headerlink" href="#tklearn.embeddings.Embedding.word_to_index" title="Link to this definition">#</a></dt>
+<dd><p>A mapping from words (vocabulary) to their integer index in the
+<cite>vectors</cite> array. Initialized during loading.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, int] or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.embeddings.Embedding.vectors">
+<span class="sig-name descname"><span class="pre">vectors</span></span><a class="headerlink" href="#tklearn.embeddings.Embedding.vectors" title="Link to this definition">#</a></dt>
+<dd><p>A 2D NumPy array where each row corresponds to a word vector,
+ordered according to <cite>word_to_index</cite>. Initialized during loading.
+May be a memory-mapped array for efficiency.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray or None</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="tklearn.embeddings.Embedding.model">
-<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">EmbeddingModel</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#tklearn.embeddings.Embedding.model" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">model</span></span><a class="headerlink" href="#tklearn.embeddings.Embedding.model" title="Link to this definition">#</a></dt>
+<dd><p>An optional underlying text encoding model (conforming to TextEncoder)
+that might be used for generating vectors for out-of-vocabulary words
+or for more complex encoding tasks. Initialized during loading.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>TextEncoder or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id7">
+<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">EmbeddingConfig</span></code></a></em><a class="headerlink" href="#id7" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.embeddings.Embedding.encode">
+<span class="sig-name descname"><span class="pre">encode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#Embedding.encode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.Embedding.encode" title="Link to this definition">#</a></dt>
+<dd><p>Get the vector for a word, potentially using the model for OOV words.</p>
+<p>If an underlying <cite>model</cite> (TextEncoder) is available, it might be used
+to generate vectors for words not directly in the <cite>vectors</cite> table or
+to handle multi-word expressions by averaging sub-word vectors.
+Otherwise, it falls back to <cite>__getitem__</cite>. Results are cached.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>word</strong> (<em>str</em><em> or </em><em>list</em><em>[</em><em>str</em><em>]</em>) – The word or phrase to get the vector for.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments for the encoder.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The vector representation of the word.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id8">
+<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Encodable</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id8" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="tklearn.embeddings.Embedding.shape">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#tklearn.embeddings.Embedding.shape" title="Link to this definition">#</a></dt>
+<dd><p>Return the shape of the underlying vector matrix (vocabulary size, dimension).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id9">
+<span class="sig-name descname"><span class="pre">vectors</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id9" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.embeddings.Embedding.vectors">
-<span class="sig-name descname"><span class="pre">vectors</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#tklearn.embeddings.Embedding.vectors" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="tklearn.embeddings.Embedding.word_to_index">
-<span class="sig-name descname"><span class="pre">word_to_index</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#tklearn.embeddings.Embedding.word_to_index" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="id10">
+<span class="sig-name descname"><span class="pre">word_to_index</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id10" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -628,18 +907,35 @@
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.FastTextEmbedding.get_model">
-<span class="sig-name descname"><span class="pre">get_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbedding.get_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.FastTextEmbedding.get_model" title="Link to this definition">#</a></dt>
-<dd><p>Return the model.</p>
+<dt class="sig sig-object py" id="tklearn.embeddings.FastTextEmbedding.get_encoder">
+<span class="sig-name descname"><span class="pre">get_encoder</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbedding.get_encoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.FastTextEmbedding.get_encoder" title="Link to this definition">#</a></dt>
+<dd><p>Get the text encoder associated with these embeddings.</p>
+<p>This method should return an object conforming to the TextEncoder
+protocol, capable of encoding arbitrary text based on the loaded
+embedding model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>An object that can encode text into vectors.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>TextEncoder</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.FastTextEmbedding.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbedding.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.FastTextEmbedding.load" title="Link to this definition">#</a></dt>
-<dd><p>Load resource.</p>
+<dt class="sig sig-object py" id="tklearn.embeddings.FastTextEmbedding.get_vectors">
+<span class="sig-name descname"><span class="pre">get_vectors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/fasttext.html#FastTextEmbedding.get_vectors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.FastTextEmbedding.get_vectors" title="Link to this definition">#</a></dt>
+<dd><p>Load or compute the word-to-vector mapping.</p>
+<p>This method should handle the retrieval or generation of the
+embedding vectors from the source (e.g., file, model).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</span></p>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary mapping words (or entities) to their corresponding
+numerical vector representations.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, ArrayLike]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -656,23 +952,62 @@
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.GensimEmbedding.get_model">
-<span class="sig-name descname"><span class="pre">get_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/gensim.html#GensimEmbedding.get_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.GensimEmbedding.get_model" title="Link to this definition">#</a></dt>
-<dd><p>Return the model.</p>
+<dt class="sig sig-object py" id="tklearn.embeddings.GensimEmbedding.get_encoder">
+<span class="sig-name descname"><span class="pre">get_encoder</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/gensim.html#GensimEmbedding.get_encoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.GensimEmbedding.get_encoder" title="Link to this definition">#</a></dt>
+<dd><p>Returns the encoder for the embedding.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">GensimModelWrapper</span></code></span></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.GensimEmbedding.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/gensim.html#GensimEmbedding.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.GensimEmbedding.load" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="tklearn.embeddings.GensimEmbedding.get_vectors">
+<span class="sig-name descname"><span class="pre">get_vectors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/gensim.html#GensimEmbedding.get_vectors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.GensimEmbedding.get_vectors" title="Link to this definition">#</a></dt>
+<dd><p>Load or compute the word-to-vector mapping.</p>
+<p>This method should handle the retrieval or generation of the
+embedding vectors from the source (e.g., file, model).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary mapping words (or entities) to their corresponding
+numerical vector representations.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, ArrayLike]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.embeddings.TransformersEmbedding">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.embeddings.</span></span><span class="sig-name descname"><span class="pre">TransformersEmbedding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/transformers.html#TransformersEmbedding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.TransformersEmbedding" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#tklearn.embeddings.base.Embedding" title="tklearn.embeddings.base.Embedding"><code class="xref py py-class docutils literal notranslate"><span class="pre">Embedding</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.embeddings.TransformersEmbedding.config">
+<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">TransformersEmbeddingConfig</span></em><a class="headerlink" href="#tklearn.embeddings.TransformersEmbedding.config" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.embeddings.TransformersEmbedding.get_encoder">
+<span class="sig-name descname"><span class="pre">get_encoder</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/transformers.html#TransformersEmbedding.get_encoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.TransformersEmbedding.get_encoder" title="Link to this definition">#</a></dt>
+<dd><p>Return the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">TransformerWrapper</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.embeddings.TransformersEmbedding.get_vectors">
+<span class="sig-name descname"><span class="pre">get_vectors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/transformers.html#TransformersEmbedding.get_vectors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.TransformersEmbedding.get_vectors" title="Link to this definition">#</a></dt>
 <dd><p>Load resource.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">_SupportsArray</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">_NestedSequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">_SupportsArray</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]], <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">complex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_NestedSequence</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">complex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>]]]]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -702,11 +1037,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="tklearn.metrics.html"
+       href="tklearn.kb.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">tklearn.metrics package</p>
+        <p class="prev-next-title">tklearn.kb package</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -737,17 +1072,24 @@
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding"><code class="docutils literal notranslate"><span class="pre">Embedding</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding.config"><code class="docutils literal notranslate"><span class="pre">Embedding.config</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding.get_word_vector"><code class="docutils literal notranslate"><span class="pre">Embedding.get_word_vector()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding.model"><code class="docutils literal notranslate"><span class="pre">Embedding.model</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding.shape"><code class="docutils literal notranslate"><span class="pre">Embedding.shape</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding.vectors"><code class="docutils literal notranslate"><span class="pre">Embedding.vectors</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding.word_to_index"><code class="docutils literal notranslate"><span class="pre">Embedding.word_to_index</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding.vectors"><code class="docutils literal notranslate"><span class="pre">Embedding.vectors</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding.model"><code class="docutils literal notranslate"><span class="pre">Embedding.model</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id0"><code class="docutils literal notranslate"><span class="pre">Embedding.config</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding.encode"><code class="docutils literal notranslate"><span class="pre">Embedding.encode()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id1"><code class="docutils literal notranslate"><span class="pre">Embedding.model</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding.shape"><code class="docutils literal notranslate"><span class="pre">Embedding.shape</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id2"><code class="docutils literal notranslate"><span class="pre">Embedding.vectors</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id3"><code class="docutils literal notranslate"><span class="pre">Embedding.word_to_index</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.EmbeddingConfig"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.EmbeddingConfig.loader"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.loader</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.EmbeddingConfig.name"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.name</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.EmbeddingConfig.verbose"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.verbose</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.EmbeddingConfig.version"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.version</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id4"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.loader</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id5"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id6"><code class="docutils literal notranslate"><span class="pre">EmbeddingConfig.verbose</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -755,31 +1097,45 @@
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.embeddings.fasttext">tklearn.embeddings.fasttext module</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbedding"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbedding.config"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.config</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbedding.get_model"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.get_model()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbedding.load"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.load()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbedding.get_encoder"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.get_encoder()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbedding.get_vectors"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.get_vectors()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig"><code class="docutils literal notranslate"><span class="pre">FastTextEmbeddingConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.loader"><code class="docutils literal notranslate"><span class="pre">FastTextEmbeddingConfig.loader</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.name"><code class="docutils literal notranslate"><span class="pre">FastTextEmbeddingConfig.name</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.FastTextEmbeddingConfig.version"><code class="docutils literal notranslate"><span class="pre">FastTextEmbeddingConfig.version</span></code></a></li>
 </ul>
 </li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.fasttext.change_dir"><code class="docutils literal notranslate"><span class="pre">change_dir()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.embeddings.gensim">tklearn.embeddings.gensim module</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.gensim.GensimEmbedding"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.gensim.GensimEmbedding.config"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.config</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.gensim.GensimEmbedding.get_model"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.get_model()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.gensim.GensimEmbedding.load"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.load()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.gensim.GensimEmbedding.get_encoder"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.get_encoder()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.gensim.GensimEmbedding.get_vectors"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.get_vectors()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.gensim.GensimEmbeddingConfig"><code class="docutils literal notranslate"><span class="pre">GensimEmbeddingConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.gensim.GensimEmbeddingConfig.loader"><code class="docutils literal notranslate"><span class="pre">GensimEmbeddingConfig.loader</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.gensim.GensimEmbeddingConfig.name"><code class="docutils literal notranslate"><span class="pre">GensimEmbeddingConfig.name</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.gensim.GensimEmbeddingConfig.version"><code class="docutils literal notranslate"><span class="pre">GensimEmbeddingConfig.version</span></code></a></li>
 </ul>
 </li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.gensim.change_dir"><code class="docutils literal notranslate"><span class="pre">change_dir()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.embeddings.transformers">tklearn.embeddings.transformers module</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.transformers.TransformersEmbedding"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.transformers.TransformersEmbedding.config"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding.config</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.transformers.TransformersEmbedding.get_encoder"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding.get_encoder()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.transformers.TransformersEmbedding.get_vectors"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding.get_vectors()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.transformers.TransformersEmbeddingConfig"><code class="docutils literal notranslate"><span class="pre">TransformersEmbeddingConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.transformers.TransformersEmbeddingConfig.device"><code class="docutils literal notranslate"><span class="pre">TransformersEmbeddingConfig.device</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.transformers.TransformersEmbeddingConfig.loader"><code class="docutils literal notranslate"><span class="pre">TransformersEmbeddingConfig.loader</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.transformers.TransformersEmbeddingConfig.name"><code class="docutils literal notranslate"><span class="pre">TransformersEmbeddingConfig.name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.transformers.TransformersEmbeddingConfig.verbose"><code class="docutils literal notranslate"><span class="pre">TransformersEmbeddingConfig.verbose</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.embeddings">Module contents</a><ul class="nav section-nav flex-column">
@@ -789,23 +1145,33 @@
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding"><code class="docutils literal notranslate"><span class="pre">Embedding</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding.config"><code class="docutils literal notranslate"><span class="pre">Embedding.config</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding.get_word_vector"><code class="docutils literal notranslate"><span class="pre">Embedding.get_word_vector()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding.model"><code class="docutils literal notranslate"><span class="pre">Embedding.model</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding.shape"><code class="docutils literal notranslate"><span class="pre">Embedding.shape</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding.vectors"><code class="docutils literal notranslate"><span class="pre">Embedding.vectors</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding.word_to_index"><code class="docutils literal notranslate"><span class="pre">Embedding.word_to_index</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding.vectors"><code class="docutils literal notranslate"><span class="pre">Embedding.vectors</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding.model"><code class="docutils literal notranslate"><span class="pre">Embedding.model</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id7"><code class="docutils literal notranslate"><span class="pre">Embedding.config</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding.encode"><code class="docutils literal notranslate"><span class="pre">Embedding.encode()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id8"><code class="docutils literal notranslate"><span class="pre">Embedding.model</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding.shape"><code class="docutils literal notranslate"><span class="pre">Embedding.shape</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id9"><code class="docutils literal notranslate"><span class="pre">Embedding.vectors</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id10"><code class="docutils literal notranslate"><span class="pre">Embedding.word_to_index</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.FastTextEmbedding"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.FastTextEmbedding.config"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.config</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.FastTextEmbedding.get_model"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.get_model()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.FastTextEmbedding.load"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.load()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.FastTextEmbedding.get_encoder"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.get_encoder()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.FastTextEmbedding.get_vectors"><code class="docutils literal notranslate"><span class="pre">FastTextEmbedding.get_vectors()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.GensimEmbedding"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.GensimEmbedding.config"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.config</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.GensimEmbedding.get_model"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.get_model()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.GensimEmbedding.load"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.load()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.GensimEmbedding.get_encoder"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.get_encoder()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.GensimEmbedding.get_vectors"><code class="docutils literal notranslate"><span class="pre">GensimEmbedding.get_vectors()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.TransformersEmbedding"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.TransformersEmbedding.config"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding.config</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.TransformersEmbedding.get_encoder"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding.get_encoder()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.TransformersEmbedding.get_vectors"><code class="docutils literal notranslate"><span class="pre">TransformersEmbedding.get_vectors()</span></code></a></li>
 </ul>
 </li>
 </ul>

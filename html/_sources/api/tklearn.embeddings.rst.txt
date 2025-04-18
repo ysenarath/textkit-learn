@@ -28,6 +28,14 @@ tklearn.embeddings.gensim module
    :undoc-members:
    :show-inheritance:
 
+tklearn.embeddings.transformers module
+--------------------------------------
+
+.. automodule:: tklearn.embeddings.transformers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

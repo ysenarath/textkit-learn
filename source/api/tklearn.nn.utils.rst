@@ -4,10 +4,26 @@ tklearn.nn.utils package
 Submodules
 ----------
 
+tklearn.nn.utils.collators module
+---------------------------------
+
+.. automodule:: tklearn.nn.utils.collators
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 tklearn.nn.utils.collections module
 -----------------------------------
 
 .. automodule:: tklearn.nn.utils.collections
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tklearn.nn.utils.devices module
+-------------------------------
+
+.. automodule:: tklearn.nn.utils.devices
    :members:
    :undoc-members:
    :show-inheritance:

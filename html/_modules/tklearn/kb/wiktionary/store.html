@@ -1,0 +1,925 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tklearn.kb.wiktionary.store &#8212; TextKit Learn</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=8f2a1f02" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/tklearn/kb/wiktionary/store';</script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">TextKit Learn</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../examples_docs.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api_docs.html">
+    API
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../examples_docs.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api_docs.html">
+    API
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">tklearn.kb.wiktionary.store</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for tklearn.kb.wiktionary.store</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">gzip</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">HfApi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">setfit</span><span class="w"> </span><span class="kn">import</span> <span class="n">SetFitModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">auto</span> <span class="k">as</span> <span class="n">tqdm</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">tklearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span><span class="p">,</span> <span class="n">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tklearn.embeddings.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoEmbedding</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tklearn.kb.lexicon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Lexicon</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tklearn.kb.triple_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">TripleStore</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tklearn.kb.wiktionary.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Word</span><span class="p">,</span> <span class="n">parse_jsonl</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="n">_WIKTIONARY_URL</span> <span class="o">=</span> <span class="s2">&quot;https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz&quot;</span>
+
+
+<div class="viewcode-block" id="normalize">
+<a class="viewcode-back" href="../../../../api/tklearn.kb.wiktionary.html#tklearn.kb.wiktionary.store.normalize">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">normalize</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="c1"># convert to bottom-up relation if needed</span>
+    <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="s2">&quot;hyponym&quot;</span> <span class="ow">or</span> <span class="n">b</span> <span class="o">==</span> <span class="s2">&quot;instance&quot;</span><span class="p">:</span>
+        <span class="c1"># here the original relation is top-down</span>
+        <span class="c1">#   i.e., c is hyponym of a / c is instance of a</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="s2">&quot;hypernym&quot;</span><span class="p">:</span>
+        <span class="c1"># c is hypernym of a (top-down, i.e., c is at the top)</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="s2">&quot;hyponym&quot;</span>
+        <span class="c1"># a is hyponym of c (bottom-up)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="s2">&quot;synonym&quot;</span> <span class="ow">or</span> <span class="n">b</span> <span class="o">==</span> <span class="s2">&quot;antonym&quot;</span><span class="p">:</span>
+        <span class="c1"># symmetrical (not DAG)</span>
+        <span class="c1"># a is synonym of b == b is synonym of a</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;relation type </span><span class="si">{</span><span class="n">b</span><span class="si">!r}</span><span class="s2"> is not recognized&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="count_jsonl">
+<a class="viewcode-back" href="../../../../api/tklearn.kb.wiktionary.html#tklearn.kb.wiktionary.store.count_jsonl">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">count_jsonl</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;wc -l </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="add_forms">
+<a class="viewcode-back" href="../../../../api/tklearn.kb.wiktionary.html#tklearn.kb.wiktionary.store.add_forms">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_forms</span><span class="p">(</span><span class="n">w</span><span class="p">:</span> <span class="n">Word</span><span class="p">,</span> <span class="n">lexicon</span><span class="p">:</span> <span class="n">Lexicon</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stores form mappings in LevelDB using batch writing.&quot;&quot;&quot;</span>
+    <span class="n">word</span> <span class="o">=</span> <span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">word</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">word</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">base_forms</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="n">lexicon</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="p">{</span><span class="n">word</span><span class="p">})</span>
+    <span class="k">for</span> <span class="n">form_of</span> <span class="ow">in</span> <span class="n">w</span><span class="o">.</span><span class="n">form_of</span> <span class="ow">or</span> <span class="p">[]:</span>
+        <span class="n">form_of_word</span> <span class="o">=</span> <span class="p">(</span><span class="n">form_of</span><span class="o">.</span><span class="n">word</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">base_forms</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">form_of_word</span><span class="p">)</span>
+    <span class="n">lexicon</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="n">base_forms</span>
+    <span class="k">for</span> <span class="n">form</span> <span class="ow">in</span> <span class="n">w</span><span class="o">.</span><span class="n">forms</span> <span class="ow">or</span> <span class="p">[]:</span>
+        <span class="n">form_form</span> <span class="o">=</span> <span class="p">(</span><span class="n">form</span><span class="o">.</span><span class="n">form</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">form_form</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">base_forms</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="n">lexicon</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">form_form</span><span class="p">,</span> <span class="nb">set</span><span class="p">())</span>
+        <span class="n">base_forms</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+        <span class="n">lexicon</span><span class="p">[</span><span class="n">form_form</span><span class="p">]</span> <span class="o">=</span> <span class="n">base_forms</span></div>
+
+
+
+<div class="viewcode-block" id="WiktionaryArtifactStore">
+<a class="viewcode-back" href="../../../../api/tklearn.kb.wiktionary.html#tklearn.kb.wiktionary.store.WiktionaryArtifactStore">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WiktionaryArtifactStore</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">repo_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;textkit-learn/wiktionary&quot;</span><span class="p">,</span>
+        <span class="n">local_dir</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">repo_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;dataset&quot;</span><span class="p">,</span>
+        <span class="n">private</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">local_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">local_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">assets_dir</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;wiktionary&quot;</span>
+        <span class="c1"># local_dir is the directory where the repo will be downloaded</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">local_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">local_dir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">local_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># repo_id is the name of the repo on Hugging Face Hub</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">repo_id</span> <span class="o">=</span> <span class="n">repo_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">repo_type</span> <span class="o">=</span> <span class="n">repo_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">private</span> <span class="o">=</span> <span class="n">private</span>
+        <span class="c1"># must be compatible with wiktextract library (https://kaikki.org)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wiktionary_url</span> <span class="o">=</span> <span class="n">_WIKTIONARY_URL</span>
+        <span class="c1"># Hugging Face Hub API</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span> <span class="o">=</span> <span class="n">HfApi</span><span class="p">()</span>
+        <span class="c1"># config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">predicates</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;synonym&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;antonym&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;hyponym&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;hypernym&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;instance&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lang_code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;en&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__post_init__</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># create the repo if it does not exist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">create_repo</span><span class="p">(</span>
+            <span class="n">repo_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_id</span><span class="p">,</span>
+            <span class="n">private</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">private</span><span class="p">,</span>
+            <span class="n">repo_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_type</span><span class="p">,</span>
+            <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># download the repo to the local directory</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">snapshot_download</span><span class="p">(</span>
+            <span class="n">repo_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_id</span><span class="p">,</span>
+            <span class="n">repo_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_type</span><span class="p">,</span>
+            <span class="n">local_dir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">local_dir</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;wiktionary.jsonl&quot;</span>
+        <span class="n">lang</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lang_code</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">download_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">.gz&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extracted_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_dir</span> <span class="o">/</span> <span class="n">filename</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gloss2idx_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_dir</span> <span class="o">/</span> <span class="s2">&quot;gloss2idx.pkl&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">senses_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_dir</span> <span class="o">/</span> <span class="s2">&quot;senses.pkl&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">idx2gloss_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_dir</span> <span class="o">/</span> <span class="s2">&quot;idx2gloss.pkl&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embeddings_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_dir</span> <span class="o">/</span> <span class="s2">&quot;embeddings.pkl&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">triplet_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_dir</span> <span class="o">/</span> <span class="s2">&quot;triples.duckdb&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attrs_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_dir</span> <span class="o">/</span> <span class="s2">&quot;attrs.pkl&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forms_lexicon_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">local_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;forms-</span><span class="si">{</span><span class="n">lang</span><span class="si">}</span><span class="s2">.pkl&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wiktionary_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">setup_wiktionary</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wiktionary_size</span> <span class="o">=</span> <span class="n">count_jsonl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wiktionary_path</span><span class="p">)</span>
+        <span class="n">gloss2idx</span><span class="p">,</span> <span class="n">idx2gloss</span><span class="p">,</span> <span class="n">senses</span><span class="p">,</span> <span class="n">embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">setup_senses</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gloss2idx</span> <span class="o">=</span> <span class="n">gloss2idx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">idx2gloss</span> <span class="o">=</span> <span class="n">idx2gloss</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">senses</span> <span class="o">=</span> <span class="n">senses</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span> <span class="o">=</span> <span class="n">embeddings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">triples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">setup_triple_store</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lexicon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">setup_lexicon</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">setup_attrs</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="o">.</span><span class="n">upload_folder</span><span class="p">(</span>
+            <span class="n">folder_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">local_dir</span><span class="p">,</span>
+            <span class="n">repo_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_id</span><span class="p">,</span>
+            <span class="n">repo_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">repo_type</span><span class="p">,</span>
+            <span class="n">ignore_patterns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*.jsonl&quot;</span><span class="p">,</span> <span class="s2">&quot;*.jsonl.gz&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="WiktionaryArtifactStore.setup_wiktionary">
+<a class="viewcode-back" href="../../../../api/tklearn.kb.wiktionary.html#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.setup_wiktionary">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup_wiktionary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Downloading wiktionary data.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">extracted_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wiktionary_url</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>  <span class="c1"># Raise an exception for HTTP errors</span>
+            <span class="n">total_size</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;content-length&quot;</span><span class="p">)</span>
+
+            <span class="c1"># remove the file if it exists</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">download_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">download_path</span><span class="p">)</span>
+
+            <span class="c1"># Download the file in chunks</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">download_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">total_size</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># no content length header</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">total_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">total_size</span><span class="p">)</span>
+                    <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span>
+                        <span class="n">total</span><span class="o">=</span><span class="n">total_size</span><span class="p">,</span>
+                        <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;B&quot;</span><span class="p">,</span>
+                        <span class="n">unit_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">desc</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">download_path</span><span class="p">),</span>
+                        <span class="n">ascii</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">iter_content</span><span class="p">(</span><span class="n">chunk_size</span><span class="o">=</span><span class="mi">4096</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">chunk</span><span class="p">:</span>  <span class="c1"># filter out keep-alive chunks</span>
+                            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+                            <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">))</span>
+                    <span class="n">progress_bar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Download complete.&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Extract the gzip file</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Extracting wiktionary data.&quot;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">download_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f_in</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extracted_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f_out</span><span class="p">:</span>
+                    <span class="c1"># Create a progress bar for extraction (can&#39;t know size in advance for gzip)</span>
+                    <span class="n">shutil</span><span class="o">.</span><span class="n">copyfileobj</span><span class="p">(</span><span class="n">f_in</span><span class="p">,</span> <span class="n">f_out</span><span class="p">)</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Extraction complete.&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Optionally, remove the compressed file after extraction</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">download_path</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Wiktionary data already exists.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">extracted_path</span></div>
+
+
+<div class="viewcode-block" id="WiktionaryArtifactStore.setup_senses">
+<a class="viewcode-back" href="../../../../api/tklearn.kb.wiktionary.html#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.setup_senses">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup_senses</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gloss2idx_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">senses_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Gloss2idx and senses already exist.&quot;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gloss2idx_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">gloss2idx</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">senses_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">senses</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">senses</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">gloss2idx</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">add_to_index</span><span class="p">(</span>
+                <span class="n">word</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Word</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">gloss</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">add_to_senses</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">word</span> <span class="o">=</span> <span class="n">word</span><span class="o">.</span><span class="n">word</span>
+                <span class="n">gloss_index</span> <span class="o">=</span> <span class="n">gloss2idx</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">gloss</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">gloss2idx</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">add_to_senses</span><span class="p">:</span>
+                    <span class="n">senses</span><span class="p">[</span><span class="n">word</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">gloss_index</span><span class="p">)</span>
+
+            <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span>
+                <span class="n">total</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">wiktionary_size</span><span class="p">,</span>
+                <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Extracting glosses&quot;</span><span class="p">,</span>
+                <span class="n">leave</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">parse_jsonl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wiktionary_path</span><span class="p">):</span>
+                <span class="c1"># skip non-English words</span>
+                <span class="k">if</span> <span class="n">word</span><span class="o">.</span><span class="n">lang_code</span> <span class="ow">and</span> <span class="n">word</span><span class="o">.</span><span class="n">lang_code</span> <span class="o">!=</span> <span class="s2">&quot;en&quot;</span><span class="p">:</span>
+                    <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="k">for</span> <span class="n">word_sense</span> <span class="ow">in</span> <span class="n">word</span><span class="o">.</span><span class="n">senses</span> <span class="ow">or</span> <span class="p">[]:</span>
+                    <span class="k">if</span> <span class="n">word</span><span class="o">.</span><span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">senses</span><span class="p">:</span>
+                        <span class="n">senses</span><span class="p">[</span><span class="n">word</span><span class="o">.</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+                    <span class="n">word_sense_gloss</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="k">if</span> <span class="n">word_sense</span><span class="o">.</span><span class="n">glosses</span><span class="p">:</span>
+                        <span class="n">word_sense_gloss</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                            <span class="n">word_sense</span><span class="o">.</span><span class="n">glosses</span> <span class="ow">or</span> <span class="p">[]</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="c1"># DO NOT USE raw_glosses since those are either obsolete words</span>
+                    <span class="c1">#   or not properly defined terms</span>
+                    <span class="k">if</span> <span class="n">word_sense_gloss</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">add_to_index</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">word_sense_gloss</span><span class="p">,</span> <span class="n">add_to_senses</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">predicate</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predicates</span><span class="p">:</span>
+                    <span class="c1"># word level relations</span>
+                    <span class="n">relations</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">predicate</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">relation</span> <span class="ow">in</span> <span class="n">relations</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">relation</span><span class="o">.</span><span class="n">word</span><span class="p">:</span>  <span class="c1"># object</span>
+                            <span class="k">continue</span>
+                        <span class="n">relation_sense</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">relation</span><span class="p">,</span> <span class="s2">&quot;sense&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">relation_sense</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                        <span class="n">add_to_index</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">relation_sense</span><span class="p">)</span>
+                    <span class="c1"># sense level relations</span>
+                    <span class="k">for</span> <span class="n">word_sense</span> <span class="ow">in</span> <span class="n">word</span><span class="o">.</span><span class="n">senses</span> <span class="ow">or</span> <span class="p">[]:</span>
+                        <span class="n">relations</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">word_sense</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">predicate</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+                        <span class="k">for</span> <span class="n">relation</span> <span class="ow">in</span> <span class="n">relations</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="ow">not</span> <span class="n">relation</span><span class="o">.</span><span class="n">word</span><span class="p">:</span>  <span class="c1"># object</span>
+                                <span class="k">continue</span>
+                            <span class="n">sense_gloss</span> <span class="o">=</span> <span class="kc">None</span>
+                            <span class="c1"># `relation_sense` this is likely None</span>
+                            <span class="n">relation_sense</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">relation</span><span class="p">,</span> <span class="s2">&quot;sense&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">word_sense</span><span class="o">.</span><span class="n">glosses</span><span class="p">:</span>
+                                <span class="n">sense_gloss</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                                    <span class="n">word_sense</span><span class="o">.</span><span class="n">glosses</span> <span class="ow">or</span> <span class="p">[]</span>
+                                <span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                            <span class="k">elif</span> <span class="n">relation_sense</span><span class="p">:</span>
+                                <span class="n">sense_gloss</span> <span class="o">=</span> <span class="n">relation_sense</span>
+                            <span class="c1"># don&#39;t use `word_sense.raw_glosses` because they are not good ones</span>
+                            <span class="k">if</span> <span class="n">sense_gloss</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="k">continue</span>
+                            <span class="n">add_to_index</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">sense_gloss</span><span class="p">)</span>
+
+                <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">progress_bar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gloss2idx_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">gloss2idx</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">senses_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">senses</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Gloss2idx and senses created.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx2gloss_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">embeddings_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Idx2gloss and embeddings already exist.&quot;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx2gloss_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">idx2gloss</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embeddings_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">embeddings</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Creating idx2gloss and embeddings.&quot;</span><span class="p">)</span>
+
+            <span class="n">idx2gloss</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">embeddings</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="n">model</span> <span class="o">=</span> <span class="n">AutoEmbedding</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span>
+                <span class="s2">&quot;loader&quot;</span><span class="p">:</span> <span class="s2">&quot;transformers&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;sentence-transformers/all-MiniLM-L6-v2&quot;</span><span class="p">,</span>
+            <span class="p">})</span>
+
+            <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span>
+                <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">gloss2idx</span><span class="p">),</span>
+                <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Creating idx2gloss and embeddings&quot;</span><span class="p">,</span>
+                <span class="n">leave</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">buffer</span> <span class="o">=</span> <span class="p">([],</span> <span class="p">[])</span>
+
+            <span class="k">for</span> <span class="n">gloss</span><span class="p">,</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">gloss2idx</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">buffer</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+                <span class="n">buffer</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gloss</span><span class="p">)</span>
+
+                <span class="n">idx2gloss</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">gloss</span>
+
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">buffer</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">512</span><span class="p">:</span>
+                    <span class="n">ex</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">buffer</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span>
+                    <span class="n">embeddings</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">buffer</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ex</span><span class="p">)))</span>
+                    <span class="n">buffer</span> <span class="o">=</span> <span class="p">([],</span> <span class="p">[])</span>
+
+                <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">buffer</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">ex</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">buffer</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span>
+                <span class="n">embeddings</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">buffer</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ex</span><span class="p">)))</span>
+                <span class="n">buffer</span> <span class="o">=</span> <span class="p">([],</span> <span class="p">[])</span>
+
+            <span class="n">progress_bar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx2gloss_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">idx2gloss</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embeddings_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">embeddings</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Idx2gloss and embeddings created.&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">gloss2idx</span><span class="p">,</span> <span class="n">idx2gloss</span><span class="p">,</span> <span class="n">senses</span><span class="p">,</span> <span class="n">embeddings</span></div>
+
+
+<div class="viewcode-block" id="WiktionaryArtifactStore.closest_sense">
+<a class="viewcode-back" href="../../../../api/tklearn.kb.wiktionary.html#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.closest_sense">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">closest_sense</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sense_gloss</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">senses</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">word_sense_indexes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">senses</span><span class="p">[</span><span class="n">word</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">word_sense_indexes</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">sense_index</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gloss2idx</span><span class="p">[</span><span class="n">sense_gloss</span><span class="p">]</span> <span class="k">if</span> <span class="n">sense_gloss</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">sense_index</span> <span class="ow">in</span> <span class="n">word_sense_indexes</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sense_index</span>
+        <span class="n">sense_embeddings</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">word_sense_indexes</span>
+        <span class="p">])</span>
+        <span class="k">if</span> <span class="n">sense_index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sense_embedding</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">sense_embeddings</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)])</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sense_index</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">sense_embedding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span><span class="p">[</span><span class="n">sense_index</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sense_index must be int or None&quot;</span><span class="p">)</span>
+        <span class="n">distances</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">sense_embeddings</span> <span class="o">-</span> <span class="n">sense_embedding</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">word_sense_indexes</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">distances</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="WiktionaryArtifactStore.get_relations">
+<a class="viewcode-back" href="../../../../api/tklearn.kb.wiktionary.html#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.get_relations">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_relations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">word</span><span class="p">:</span> <span class="n">Word</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">predicate</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">predicates</span><span class="p">:</span>
+            <span class="n">relations</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">predicate</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">relation</span> <span class="ow">in</span> <span class="n">relations</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">relation</span><span class="o">.</span><span class="n">word</span><span class="p">:</span>  <span class="c1"># object</span>
+                    <span class="k">continue</span>
+                <span class="n">relation_sense</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">relation</span><span class="p">,</span> <span class="s2">&quot;sense&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">relation_sense</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">subject</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">word</span><span class="o">.</span><span class="n">word</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">closest_sense</span><span class="p">(</span><span class="n">word</span><span class="o">.</span><span class="n">word</span><span class="p">,</span> <span class="n">relation_sense</span><span class="p">),</span>
+                <span class="p">)</span>
+                <span class="n">object_</span> <span class="o">=</span> <span class="p">(</span><span class="n">relation</span><span class="o">.</span><span class="n">word</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="n">normalize</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span> <span class="n">predicate</span><span class="p">,</span> <span class="n">object_</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">word_sense</span> <span class="ow">in</span> <span class="n">word</span><span class="o">.</span><span class="n">senses</span> <span class="ow">or</span> <span class="p">[]:</span>
+                <span class="n">relations</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">word_sense</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">predicate</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">relation</span> <span class="ow">in</span> <span class="n">relations</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">relation</span><span class="o">.</span><span class="n">word</span><span class="p">:</span>  <span class="c1"># object</span>
+                        <span class="k">continue</span>
+                    <span class="n">sense_gloss</span> <span class="o">=</span> <span class="kc">None</span>
+                    <span class="c1"># `relation_sense` this is likely None</span>
+                    <span class="n">relation_sense</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">relation</span><span class="p">,</span> <span class="s2">&quot;sense&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">word_sense</span><span class="o">.</span><span class="n">glosses</span><span class="p">:</span>
+                        <span class="n">sense_gloss</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                            <span class="n">word_sense</span><span class="o">.</span><span class="n">glosses</span> <span class="ow">or</span> <span class="p">[]</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">elif</span> <span class="n">relation_sense</span><span class="p">:</span>
+                        <span class="n">sense_gloss</span> <span class="o">=</span> <span class="n">relation_sense</span>
+                    <span class="c1"># don&#39;t use `word_sense.raw_glosses` because they are not good ones</span>
+                    <span class="n">subject</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">word</span><span class="o">.</span><span class="n">word</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">closest_sense</span><span class="p">(</span><span class="n">word</span><span class="o">.</span><span class="n">word</span><span class="p">,</span> <span class="n">sense_gloss</span><span class="p">),</span>
+                    <span class="p">)</span>
+                    <span class="n">object_</span> <span class="o">=</span> <span class="p">(</span><span class="n">relation</span><span class="o">.</span><span class="n">word</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                    <span class="k">yield</span> <span class="n">normalize</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span> <span class="n">predicate</span><span class="p">,</span> <span class="n">object_</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WiktionaryArtifactStore.setup_triple_store">
+<a class="viewcode-back" href="../../../../api/tklearn.kb.wiktionary.html#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.setup_triple_store">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup_triple_store</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">triplet_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Creating triplet store.&quot;</span><span class="p">)</span>
+            <span class="n">triples</span> <span class="o">=</span> <span class="n">TripleStore</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triplet_path</span><span class="p">,</span> <span class="n">read_only</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span>
+                <span class="n">total</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">wiktionary_size</span><span class="p">,</span>
+                <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Processing Wiktionary&quot;</span><span class="p">,</span>
+                <span class="n">leave</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">parse_jsonl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wiktionary_path</span><span class="p">):</span>
+                <span class="c1"># skip non-English words</span>
+                <span class="k">if</span> <span class="n">word</span><span class="o">.</span><span class="n">lang_code</span> <span class="ow">and</span> <span class="n">word</span><span class="o">.</span><span class="n">lang_code</span> <span class="o">!=</span> <span class="s2">&quot;en&quot;</span><span class="p">:</span>
+                    <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="k">continue</span>
+
+                <span class="k">for</span> <span class="n">relation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_relations</span><span class="p">(</span><span class="n">word</span><span class="p">):</span>
+                    <span class="n">subject</span><span class="p">,</span> <span class="n">predicate</span><span class="p">,</span> <span class="n">object_</span> <span class="o">=</span> <span class="n">relation</span>
+                    <span class="n">subj_word</span><span class="p">,</span> <span class="n">subj_sense</span> <span class="o">=</span> <span class="n">subject</span>
+                    <span class="k">if</span> <span class="n">subj_sense</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">triple</span> <span class="o">=</span> <span class="p">((</span><span class="n">subj_word</span><span class="p">,</span> <span class="n">subj_sense</span><span class="p">),</span> <span class="n">predicate</span><span class="p">,</span> <span class="n">object_</span><span class="p">)</span>
+                    <span class="n">triples</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">triple</span><span class="p">)</span>
+
+                <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">progress_bar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+            <span class="n">triples</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Triplet store created.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">TripleStore</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triplet_path</span><span class="p">,</span> <span class="n">read_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WiktionaryArtifactStore.setup_lexicon">
+<a class="viewcode-back" href="../../../../api/tklearn.kb.wiktionary.html#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.setup_lexicon">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup_lexicon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Lexicon</span><span class="p">[</span><span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the lexicon of forms.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Lexicon</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forms_lexicon_path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="n">lexicon</span> <span class="o">=</span> <span class="n">Lexicon</span><span class="p">()</span>
+        <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span>
+            <span class="n">total</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">wiktionary_size</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Adding forms&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;word&quot;</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">parse_jsonl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wiktionary_path</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">([</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lang_code</span> <span class="o">==</span> <span class="p">(</span><span class="n">word</span><span class="o">.</span><span class="n">lang_code</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lang_code</span> <span class="o">==</span> <span class="p">(</span><span class="n">word</span><span class="o">.</span><span class="n">lang</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+            <span class="p">]):</span>
+                <span class="n">add_forms</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">lexicon</span><span class="o">=</span><span class="n">lexicon</span><span class="p">)</span>
+            <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">progress_bar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">lexicon</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forms_lexicon_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">lexicon</span></div>
+
+
+<div class="viewcode-block" id="WiktionaryArtifactStore.setup_attrs">
+<a class="viewcode-back" href="../../../../api/tklearn.kb.wiktionary.html#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.setup_attrs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup_attrs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">attrs_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attrs_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">attrs</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">attrs</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">attr_key</span> <span class="o">=</span> <span class="s2">&quot;hate_related&quot;</span>
+        <span class="k">if</span> <span class="n">attr_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
+            <span class="n">hate_related_senses</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="n">batch</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="c1"># Download from the 🤗 Hub</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">SetFitModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+                <span class="s2">&quot;ysenarath/all-MiniLM-L6-v2-hateful-definitions-full-bin-v1&quot;</span>
+            <span class="p">)</span>
+
+            <span class="n">progress_bar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="o">.</span><span class="n">tqdm</span><span class="p">(</span>
+                <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">idx2gloss</span><span class="p">),</span>
+                <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Detecting hate-related definitions&quot;</span><span class="p">,</span>
+                <span class="n">leave</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">gloss</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">idx2gloss</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">batch</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">idx</span><span class="p">,</span> <span class="n">gloss</span><span class="p">))</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1000</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">keys</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">)</span>
+                <span class="n">labels</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+                <span class="n">hate_related_senses</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="p">(</span>
+                        <span class="n">idx</span>
+                        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">label</span> <span class="o">!=</span> <span class="s2">&quot;normal&quot;</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">))</span>
+                <span class="n">batch</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">if</span> <span class="n">batch</span><span class="p">:</span>
+                <span class="n">keys</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">)</span>
+                <span class="n">labels</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+                <span class="n">hate_related_senses</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="p">(</span>
+                        <span class="n">idx</span>
+                        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">label</span> <span class="o">!=</span> <span class="s2">&quot;normal&quot;</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="n">progress_bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">))</span>
+
+            <span class="n">progress_bar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+            <span class="n">attrs</span><span class="p">[</span><span class="n">attr_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">hate_related_senses</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attrs_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">attrs</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">attrs</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, Yasas Senarath.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

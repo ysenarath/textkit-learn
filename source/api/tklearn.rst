@@ -8,6 +8,7 @@ Subpackages
    :maxdepth: 4
 
    tklearn.embeddings
+   tklearn.kb
    tklearn.metrics
    tklearn.nn
    tklearn.utils

@@ -4,10 +4,10 @@ tklearn.nn.models.backbone.knowledge package
 Submodules
 ----------
 
-tklearn.nn.models.backbone.knowledge.lexicon module
+tklearn.nn.models.backbone.knowledge.helpers module
 ---------------------------------------------------
 
-.. automodule:: tklearn.nn.models.backbone.knowledge.lexicon
+.. automodule:: tklearn.nn.models.backbone.knowledge.helpers
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,6 +1,6 @@
-===============
-Using Embeddings
-===============
+=========================
+Using Existing Embeddings
+=========================
 
 The ``AutoEmbedding`` class from ``tklearn.embeddings`` provides a unified interface for loading and using word embedding models like GloVe and FastText.
 
@@ -27,6 +27,11 @@ FastText Models
 You can use any of the pre-trained word vectors for 157 languages from
 `FastText's Crawl Vectors <https://fasttext.cc/docs/en/crawl-vectors.html#models>`_,
 which include 300-dimensional word vectors trained on Common Crawl and Wikipedia.
+
+Transformers Models
+~~~~~~~~~~~~~~~~
+The library also supports models from the `Sentence Transformers <https://www.sbert.net/>`_ library.
+These models are designed for sentence and text embeddings, but they can also be used for word embeddings.
 
 Loading Embedding Models
 -----------------------
@@ -60,15 +65,15 @@ With name and version parameters for explicit model selection:
 
     # GloVe from Gensim 
     wv = AutoEmbedding.from_config({
-        "name": "gensim",
-        "version": "glove-twitter-25",
+        "loader": "gensim",
+        "name": "glove-twitter-25",
     })
     assert wv["hello"].shape == (25,)
     
     # FastText model
     wv = AutoEmbedding.from_config({
-        "name": "fasttext",
-        "version": "cc.en.300.bin",
+        "loader": "fasttext",
+        "name": "cc.en.300.bin",
     })
     assert wv["hello"].shape == (300,)
 

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Using Embeddings &#8212; TextKit Learn</title>
+    <title>Using Existing Embeddings &#8212; TextKit Learn</title>
   
   
   
@@ -44,7 +44,7 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'examples/embeddings_using_embeddings';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Creating New Embedding Models" href="embeddings_create_embedding.html" />
+    <link rel="next" title="Creating Embedding Models" href="embeddings_create_embedding.html" />
     <link rel="prev" title="Examples" href="../examples_docs.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -265,8 +265,8 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Using Embeddings</a></li>
-<li class="toctree-l1"><a class="reference internal" href="embeddings_create_embedding.html">Creating New Embedding Models</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Using Existing Embeddings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="embeddings_create_embedding.html">Creating Embedding Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="metrics_using_metrics.html">Using Metrics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="metrics_creating_metrics.html">Creating New Metrics</a></li>
 </ul>
@@ -312,7 +312,7 @@
     
     <li class="breadcrumb-item"><a href="../examples_docs.html" class="nav-link">Examples</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Using Embeddings</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Using Existing Embeddings</span></li>
   </ul>
 </nav>
 </div>
@@ -329,8 +329,8 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="using-embeddings">
-<h1>Using Embeddings<a class="headerlink" href="#using-embeddings" title="Link to this heading">#</a></h1>
+  <section id="using-existing-embeddings">
+<h1>Using Existing Embeddings<a class="headerlink" href="#using-existing-embeddings" title="Link to this heading">#</a></h1>
 <p>The <code class="docutils literal notranslate"><span class="pre">AutoEmbedding</span></code> class from <code class="docutils literal notranslate"><span class="pre">tklearn.embeddings</span></code> provides a unified interface for loading and using word embedding models like GloVe and FastText.</p>
 <section id="getting-started">
 <h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading">#</a></h2>
@@ -352,6 +352,11 @@ including popular ones like GloVe, Word2Vec, and FastText.</p>
 <p>You can use any of the pre-trained word vectors for 157 languages from
 <a class="reference external" href="https://fasttext.cc/docs/en/crawl-vectors.html#models">FastText’s Crawl Vectors</a>,
 which include 300-dimensional word vectors trained on Common Crawl and Wikipedia.</p>
+</section>
+<section id="transformers-models">
+<h3>Transformers Models<a class="headerlink" href="#transformers-models" title="Link to this heading">#</a></h3>
+<p>The library also supports models from the <a class="reference external" href="https://www.sbert.net/">Sentence Transformers</a> library.
+These models are designed for sentence and text embeddings, but they can also be used for word embeddings.</p>
 </section>
 </section>
 <section id="loading-embedding-models">
@@ -376,15 +381,15 @@ which include 300-dimensional word vectors trained on Common Crawl and Wikipedia
 <p>With name and version parameters for explicit model selection:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># GloVe from Gensim</span>
 <span class="n">wv</span> <span class="o">=</span> <span class="n">AutoEmbedding</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span>
-    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;gensim&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;glove-twitter-25&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;loader&quot;</span><span class="p">:</span> <span class="s2">&quot;gensim&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;glove-twitter-25&quot;</span><span class="p">,</span>
 <span class="p">})</span>
 <span class="k">assert</span> <span class="n">wv</span><span class="p">[</span><span class="s2">&quot;hello&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">25</span><span class="p">,)</span>
 
 <span class="c1"># FastText model</span>
 <span class="n">wv</span> <span class="o">=</span> <span class="n">AutoEmbedding</span><span class="o">.</span><span class="n">from_config</span><span class="p">({</span>
-    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;fasttext&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;cc.en.300.bin&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;loader&quot;</span><span class="p">:</span> <span class="s2">&quot;fasttext&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;cc.en.300.bin&quot;</span><span class="p">,</span>
 <span class="p">})</span>
 <span class="k">assert</span> <span class="n">wv</span><span class="p">[</span><span class="s2">&quot;hello&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">300</span><span class="p">,)</span>
 </pre></div>
@@ -430,7 +435,7 @@ which include 300-dimensional word vectors trained on Common Crawl and Wikipedia
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Creating New Embedding Models</p>
+        <p class="prev-next-title">Creating Embedding Models</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -457,6 +462,7 @@ which include 300-dimensional word vectors trained on Common Crawl and Wikipedia
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#available-embedding-models">Available Embedding Models</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gensim-models">Gensim Models</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fasttext-models">FastText Models</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#transformers-models">Transformers Models</a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#loading-embedding-models">Loading Embedding Models</a><ul class="nav section-nav flex-column">

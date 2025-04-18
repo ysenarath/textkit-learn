@@ -322,9 +322,13 @@
 <a class="viewcode-back" href="../../api/tklearn.html#tklearn.config.Config">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Config</span><span class="p">:</span>
-    <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;$</span><span class="se">{{</span><span class="s2">oc.env:TKLEARN_CACHE,</span><span class="si">{</span><span class="n">DEFAULT_CACHE_PATH</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span>
-    <span class="n">temp_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="s2">&quot;$</span><span class="si">{cache_dir}</span><span class="s2">/temp&quot;</span>
-    <span class="n">resources_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="s2">&quot;$</span><span class="si">{cache_dir}</span><span class="s2">/resources&quot;</span></div>
+    <span class="n">base_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;$</span><span class="se">{{</span><span class="s2">oc.env:TKLEARN_CACHE,</span><span class="si">{</span><span class="n">DEFAULT_CACHE_PATH</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span>
+    <span class="c1"># for cache files only (see utils.cache)</span>
+    <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="s2">&quot;$</span><span class="si">{base_dir}</span><span class="s2">/cache&quot;</span>
+    <span class="c1"># for temp files only (e.g. use with tempfile)</span>
+    <span class="n">temp_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="s2">&quot;$</span><span class="si">{base_dir}</span><span class="s2">/temp&quot;</span>
+    <span class="c1"># for resources files only (e.g. use with open)</span>
+    <span class="n">assets_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="s2">&quot;$</span><span class="si">{base_dir}</span><span class="s2">/assets&quot;</span></div>
 
 
 

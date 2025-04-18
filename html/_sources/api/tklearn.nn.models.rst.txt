@@ -8,7 +8,7 @@ Subpackages
    :maxdepth: 4
 
    tklearn.nn.models.backbone
-   tklearn.nn.models.multiclass
+   tklearn.nn.models.classifier
 
 Submodules
 ----------

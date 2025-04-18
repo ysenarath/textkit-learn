@@ -132,7 +132,7 @@ Create a configuration class that specifies the parameters for your embedding:
 .. code-block:: python
 
     class YourEmbeddingConfig(EmbeddingConfig):
-        loader: ClassVar[str] = "your_embedding_name"
+        loader: ClassVar[str] = "your_library_name"
         name: str = "your_embedding_name"
 
 
@@ -191,6 +191,6 @@ Your embedding will be automatically registered through the ``EmbeddingConfig`` 
     
     # Users can now load your embedding like this:
     embedding = AutoEmbedding.from_config({
+        "loader": "your_library_name",
         "name": "your_embedding_name",
-        "version": "your_version"
     })
