@@ -24,8 +24,8 @@ from transformers.utils import PaddingStrategy
 InputDataClass = NewType("InputDataClass", Any)
 
 """
-A DataCollator is a function that takes a list of samples from a Dataset and collate them into a batch, as a dictionary
-of PyTorch/TensorFlow tensors or NumPy arrays.
+A DataCollator is a function that takes a list of samples from a Dataset and collate
+them into a batch, as a dictionar of PyTorch/TensorFlow tensors or NumPy arrays.
 """
 DataCollator = NewType(
     "DataCollator", Callable[[list[InputDataClass]], dict[str, Any]]
@@ -90,13 +90,14 @@ def default_data_collator(
     features: list[InputDataClass], return_tensors="pt"
 ) -> dict[str, Any]:
     """
-    Very simple data collator that simply collates batches of dict-like objects and performs special handling for
-    potential keys named:
+    Very simple data collator that simply collates batches of dict-like objects
+    and performs special handling for potential keys named:
 
         - `label`: handles a single value (int or float) per object
         - `label_ids`: handles a list of values per object
 
-    Does not do any additional preprocessing: property names of the input object will be used as corresponding inputs
+    Does not do any additional preprocessing: property names of the input object
+    will be used as corresponding inputs
     to the model. See glue and ner for example of how it's useful.
     """
 
@@ -114,7 +115,8 @@ def default_data_collator(
 
 def pad_without_fast_tokenizer_warning(tokenizer, *pad_args, **pad_kwargs):
     """
-    Pads without triggering the warning about how using the pad function is sub-optimal when using a fast tokenizer.
+    Pads without triggering the warning about how using the pad function
+    is sub-optimal when using a fast tokenizer.
     """
 
     # To avoid errors when using Feature extractors
@@ -152,17 +154,19 @@ class DataCollatorMixin:
 @dataclass
 class DefaultDataCollator(DataCollatorMixin):
     """
-    Very simple data collator that simply collates batches of dict-like objects and performs special handling for
-    potential keys named:
+    Very simple data collator that simply collates batches of dict-like objects
+    and performs special handling for potential keys named:
 
         - `label`: handles a single value (int or float) per object
         - `label_ids`: handles a list of values per object
 
-    Does not do any additional preprocessing: property names of the input object will be used as corresponding inputs
-    to the model. See glue and ner for example of how it's useful.
+    Does not do any additional preprocessing: property names of the input object
+    will be used as corresponding inputs to the model. See glue and ner for example
+    of how it's useful.
 
-    This is an object (like other data collators) rather than a pure function like default_data_collator. This can be
-    helpful if you need to set a return_tensors value at initialization.
+    This is an object (like other data collators) rather than a pure function like
+    default_data_collator. This can be helpful if you need to set a return_tensors
+    value at initialization.
 
     Args:
         return_tensors (`str`, *optional*, defaults to `"pt"`):
@@ -179,24 +183,29 @@ class DefaultDataCollator(DataCollatorMixin):
         return default_data_collator(features, return_tensors)
 
 
-def get_labels(features: dict[str, Any]) -> Any:
-    if "labels" in features:
-        return features["labels"]
-    elif "label" in features:
-        return features["label"]
-    elif "label_ids" in features:
-        return features["label_ids"]
-    msg = "unable to find a label in the input features"
-    raise ValueError(msg)
-
-
 @dataclass
 class DataCollatorWithPadding:
     tokenizer: PreTrainedTokenizerBase
     padding: Union[bool, str, PaddingStrategy] = True
     max_length: Optional[int] = None
     pad_to_multiple_of: Optional[int] = None
+    labels_column: Optional[str] = None
     return_tensors: str = "pt"
+
+    def get_labels(self, features: dict[str, Any]) -> Any:
+        if self.labels_column is not None:
+            if self.labels_column not in features:
+                msg = f"labels column '{self.labels_column}' not found in features"
+                raise ValueError(msg)
+            return features[self.labels_column]
+        elif "labels" in features:
+            return features["labels"]
+        elif "label_ids" in features:
+            return features["label_ids"]
+        elif "label" in features:
+            return features["label"]
+        msg = "unable to find a label in the input features"
+        raise ValueError(msg)
 
     def __call__(self, features: list[dict[str, Any]]) -> dict[str, Any]:
         no_labels_features = [
@@ -216,15 +225,13 @@ class DataCollatorWithPadding:
             return_tensors=self.return_tensors,
         )
         try:
-            labels_tensor = [get_labels(feature) for feature in features]
+            labels_tensor = [self.get_labels(feature) for feature in features]
             # convert to tensor if necessary
             labels_tensor = np.array(labels_tensor)
             if self.return_tensors == "pt":
-                label_dtype = (
-                    torch.float32
-                    if len(labels_tensor.shape) > 1
-                    else torch.long
-                )
+                label_dtype = torch.long
+                if len(labels_tensor.shape) > 1:
+                    label_dtype = torch.float32
                 labels_tensor = torch.as_tensor(
                     labels_tensor, dtype=label_dtype
                 )
