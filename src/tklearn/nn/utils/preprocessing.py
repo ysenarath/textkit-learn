@@ -22,7 +22,7 @@ CT = Union[BertConfig, DistilBertConfig, RobertaConfig]
 
 __all__ = [
     "preprocess_target",
-    "preprocess_input",
+    "preprocess_logits",
 ]
 
 
@@ -142,21 +142,21 @@ def _(
 
 
 @singledispatch
-def preprocess_input(
+def preprocess_logits(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     msg = f"unsupported target type: {arg.__class__.__name__}"
     raise NotImplementedError(msg)
 
 
-@preprocess_input.register(str)
+@preprocess_logits.register(str)
 def _(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    return preprocess_input(type_of_target(arg), logits, threshold)
+    return preprocess_logits(type_of_target(arg), logits, threshold)
 
 
-@preprocess_input.register(ContinuousTargetType)
+@preprocess_logits.register(ContinuousTargetType)
 def _(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -168,7 +168,7 @@ def _(
     return y_pred, y_pred
 
 
-@preprocess_input.register(ContinuousMultioutputTargetType)
+@preprocess_logits.register(ContinuousMultioutputTargetType)
 def _(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -179,7 +179,7 @@ def _(
     return logits, logits
 
 
-@preprocess_input.register(BinaryTargetType)
+@preprocess_logits.register(BinaryTargetType)
 def _(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -203,7 +203,7 @@ def _(
     return y_pred, y_score
 
 
-@preprocess_input.register(MulticlassTargetType)
+@preprocess_logits.register(MulticlassTargetType)
 def _(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -216,7 +216,7 @@ def _(
     return y_pred, y_score
 
 
-@preprocess_input.register(MultilabelIndicatorTargetType)
+@preprocess_logits.register(MultilabelIndicatorTargetType)
 def _(
     arg, logits: torch.Tensor, threshold: float = 0.5
 ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -229,7 +229,7 @@ def _(
     return y_pred, y_score
 
 
-@preprocess_input.register(MulticlassMultioutputTargetType)
+@preprocess_logits.register(MulticlassMultioutputTargetType)
 def _(
     arg, logits: Tuple[torch.Tensor, ...], threshold: float = 0.5
 ) -> Tuple[Tuple[torch.Tensor, ...], Tuple[torch.Tensor, ...]]:
