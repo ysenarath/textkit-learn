@@ -2,7 +2,7 @@ import unittest
 
 import torch
 
-from tklearn.nn.utils.preprocessing import preprocess_input, preprocess_target
+from tklearn.nn.utils.preprocessing import preprocess_logits, preprocess_target
 
 
 class TestPreprocessInput(unittest.TestCase):
@@ -95,37 +95,37 @@ class TestPreprocessInput(unittest.TestCase):
 class TestPreprocessTarget(unittest.TestCase):
     def test_continuous(self):
         logits = torch.tensor([[1.0], [2.0], [3.0]])
-        y_pred, y_score = preprocess_input("continuous", logits)
+        y_pred, y_score = preprocess_logits("continuous", logits)
         self.assertTrue(torch.allclose(y_pred, torch.tensor([1.0, 2.0, 3.0])))
         self.assertTrue(torch.allclose(y_score, torch.tensor([1.0, 2.0, 3.0])))
 
     def test_continuous_multioutput(self):
         logits = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
-        y_pred, y_score = preprocess_input("continuous-multioutput", logits)
+        y_pred, y_score = preprocess_logits("continuous-multioutput", logits)
         self.assertTrue(torch.allclose(y_pred, logits))
         self.assertTrue(torch.allclose(y_score, logits))
 
     def test_binary(self):
         logits = torch.tensor([-1.0, 0.0, 1.0])
-        y_pred, y_score = preprocess_input("binary", logits)
+        y_pred, y_score = preprocess_logits("binary", logits)
         self.assertTrue(torch.allclose(y_pred, torch.tensor([0, 0, 1])))
         self.assertTrue(torch.allclose(y_score, torch.sigmoid(logits)))
 
     def test_binary_2d(self):
         logits = torch.tensor([[-1.0, 1.0], [1.0, -1.0]])
-        y_pred, y_score = preprocess_input("binary", logits)
+        y_pred, y_score = preprocess_logits("binary", logits)
         self.assertTrue(torch.allclose(y_pred, torch.tensor([1, 0])))
         self.assertTrue(torch.allclose(y_score, torch.sigmoid(logits[:, 1])))
 
     def test_multiclass(self):
         logits = torch.tensor([[1.0, 2.0, 0.0], [0.0, 5.0, 1.0]])
-        y_pred, y_score = preprocess_input("multiclass", logits)
+        y_pred, y_score = preprocess_logits("multiclass", logits)
         self.assertTrue(torch.allclose(y_pred, torch.tensor([1, 1])))
         self.assertTrue(torch.allclose(y_score, torch.softmax(logits, dim=-1)))
 
     def test_multilabel_indicator(self):
         logits = torch.tensor([[-0.1, -1.0, 2.0], [-0.5, 1.5, 0.0]])
-        y_pred, y_score = preprocess_input("multilabel-indicator", logits)
+        y_pred, y_score = preprocess_logits("multilabel-indicator", logits)
         expected_pred = torch.tensor([[0, 0, 1], [0, 1, 0]])
         self.assertTrue(torch.allclose(y_pred, expected_pred))
         self.assertTrue(torch.allclose(y_score, torch.sigmoid(logits)))
@@ -135,7 +135,7 @@ class TestPreprocessTarget(unittest.TestCase):
             torch.tensor([[1.0, 2.0], [0.0, 5.0]]),
             torch.tensor([[0.0, 3.0], [2.0, 1.0]]),
         )
-        y_pred, y_score = preprocess_input("multiclass-multioutput", logits)
+        y_pred, y_score = preprocess_logits("multiclass-multioutput", logits)
         self.assertTrue(torch.allclose(y_pred[0], torch.tensor([1, 1])))
         self.assertTrue(torch.allclose(y_pred[1], torch.tensor([1, 0])))
         self.assertTrue(
@@ -168,12 +168,12 @@ class TestPreprocessTarget(unittest.TestCase):
                 else:  # multiclass-multioutput
                     logits = torch.tensor([1.0, 2.0, 3.0])
                 with self.assertRaises(ValueError):
-                    print(preprocess_input(target_type, logits))
+                    print(preprocess_logits(target_type, logits))
 
     def test_unsupported_target_type(self):
         logits = torch.tensor([1.0, 2.0, 3.0])
         with self.assertRaises(NotImplementedError):
-            preprocess_input("anything", logits)
+            preprocess_logits("anything", logits)
 
 
 if __name__ == "__main__":
