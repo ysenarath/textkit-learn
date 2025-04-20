@@ -60,6 +60,7 @@ dependencies = [
     "sentence-transformers==3.4.1",
     "faiss-cpu==1.10.0",
     "setfit>=1.1.2",
+    "umap-learn>=0.5.7",
 ]
 dynamic = ["version"]
 
