@@ -12,7 +12,7 @@ from tklearn.nn.models.classifier.helpers import (
     CosineSimilarity,
     SequenceClassifierOutputWithPooling,
 )
-from tklearn.nn.utils.preprocessing import preprocess_input, preprocess_target
+from tklearn.nn.utils.preprocessing import preprocess_logits, preprocess_target
 
 __all__ = [
     "LinearMulticlassClassifier",
@@ -130,7 +130,7 @@ class LinearMulticlassClassifier(Model):
         y_true = preprocess_target(
             target_type, targets, num_labels=self.num_labels
         )
-        y_pred, y_score = preprocess_input(target_type, logits)
+        y_pred, y_score = preprocess_logits(target_type, logits)
         pooler_output = output.get("pooler_output")
         return {
             "y_true": y_true,
@@ -170,7 +170,7 @@ class PrototypeMulticlassClassifier(Model):
         logits = self.similarity(pooler_output, self.prototypes)
         target_type = "multiclass"
         y_true = preprocess_target(target_type, targets)
-        y_pred, y_score = preprocess_input(target_type, logits)
+        y_pred, y_score = preprocess_logits(target_type, logits)
         return {
             "y_true": y_true,
             "y_pred": y_pred,
