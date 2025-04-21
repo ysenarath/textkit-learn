@@ -480,7 +480,7 @@ class CallbackList(Callback, Sequence[Callback]):
             except Exception as e:
                 warnings.warn(
                     f"An exception occurred while applying callback '{__name}' on "
-                    f"callback '{callback.__class__.__name__} with message: {e!s}",
+                    f"callback '{callback.__class__.__name__} with message '{e!s}'",
                     RuntimeWarning,
                     stacklevel=0,
                     source=e,
