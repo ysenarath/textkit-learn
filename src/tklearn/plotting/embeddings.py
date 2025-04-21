@@ -49,9 +49,12 @@ def embed2d(X: np.ndarray, dim_reducer: str = "umap") -> np.ndarray:  # noqa: N8
     dim_reducer = dim_reducer.lower()  # Convert embedder name to lowercase
     if dim_reducer == "umap" and UMAP is not None:
         # Use UMAP if available and requested
-        X_embedded = UMAP(n_components=2, random_state=42).fit_transform(
-            X
-        )  # Added random_state for reproducibility
+        # supress warnings from UMAP
+        with warnings.catch_warnings():
+            # Perform UMAP embedding
+            umap = UMAP(n_components=2, random_state=42)
+            # Added random_state for reproducibility
+            X_embedded = umap.fit_transform(X)
     elif dim_reducer in {"tsne", "t-sne", "umap"}:
         # Use t-SNE if requested, or if UMAP was requested but not installed
         if dim_reducer == "umap":
@@ -59,7 +62,11 @@ def embed2d(X: np.ndarray, dim_reducer: str = "umap") -> np.ndarray:  # noqa: N8
             warnings.warn(msg, stacklevel=1)
         # Use t-SNE
         X_embedded = TSNE(
-            n_components=2, init="pca", learning_rate="auto", random_state=42
+            n_components=2,
+            init="pca",
+            learning_rate="auto",
+            random_state=42,
+            n_jobs=1,
         ).fit_transform(X)  # Added common parameters
     else:
         # Raise error for unsupported embedder
