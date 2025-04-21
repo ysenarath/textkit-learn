@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, NewType, Optional, Union
 
 import numpy as np
@@ -191,34 +191,36 @@ class DataCollatorWithPadding:
     pad_to_multiple_of: Optional[int] = None
     labels_column: Optional[str] = None
     return_tensors: str = "pt"
+    features: Union[list[str], dict[str, Any]] = field(default_factory=list)
 
-    def get_labels(self, features: dict[str, Any]) -> Any:
+    def get_labels(self, instance: dict[str, Any]) -> Any:
         if self.labels_column is not None:
-            if self.labels_column not in features:
+            if self.labels_column not in instance:
                 msg = f"labels column '{self.labels_column}' not found in features"
                 raise ValueError(msg)
-            return features[self.labels_column]
-        elif "labels" in features:
-            return features["labels"]
-        elif "label_ids" in features:
-            return features["label_ids"]
-        elif "label" in features:
-            return features["label"]
-        msg = "unable to find a label in the input features"
+            return instance[self.labels_column]
+        elif "labels" in instance:
+            return instance["labels"]
+        elif "label_ids" in instance:
+            return instance["label_ids"]
+        elif "label" in instance:
+            return instance["label"]
+        msg = f"unable to find a label in the input features: \n{instance}"
         raise ValueError(msg)
 
     def __call__(self, features: list[dict[str, Any]]) -> dict[str, Any]:
-        no_labels_features = [
+        tokenized_batch = [
             {
                 k: v
-                for k, v in feature.items()
-                if k not in {"label", "label_ids", "labels"}
+                for k, v in instance.items()
+                if (k not in {"label", "label_ids", "labels"})
+                and (self.features is None or k in self.features)
             }
-            for feature in features
+            for instance in features
         ]
         batch = pad_without_fast_tokenizer_warning(
             self.tokenizer,
-            no_labels_features,
+            tokenized_batch,
             padding=self.padding,
             max_length=self.max_length,
             pad_to_multiple_of=self.pad_to_multiple_of,
