@@ -33,87 +33,72 @@ def get_performance_report(logs, exclude=None, epoch=None) -> Dict[str, str]:
     return row
 
 
-def progress_display() -> Progress:
-    return Progress(
-        SpinnerColumn(),
-        *Progress.get_default_columns(),
-        TimeElapsedColumn(),
-    )
-
-
 class ProgbarLogger(Callback):
+    table: Table
+    progress: Progress
+    live: Live
+
     def __init__(self, exclude: Optional[list] = None):
         super().__init__()
         self.exclude = exclude
-        self.progress = None
-        self.table: Table = None
-        self.live: Live = None
-        self.epoch_tracker = None
-        self.batch_tracker_train = None
-        self.batch_tracker_valid = None
+        self.live = Live(
+            Group(
+                Table(),
+                Progress(
+                    SpinnerColumn(),
+                    *Progress.get_default_columns(),
+                    TimeElapsedColumn(),
+                ),
+            ),
+            vertical_overflow="visible",
+        )
+        group: Group = self.live.renderable
+        self.table, self.progress = group.renderables
+        self.training = False
+        self.train_epoch_tracker = None
+        self.train_batch_tracker = None
+        self.pred_batch_tracker = None
         self._zero_based_epoch = False
         self._zero_based_step = False
-        self._started_by_predict = False
 
     def on_train_begin(self, logs=None):
-        """
-        Called at the beginning of training.
-
-        Parameters
-        ----------
-        logs : dict, optional
-            Dictionary of logs. Default is None.
-        """
-        self.progress = progress_display()
-        self.table = Table()
-        layout = Group(self.table, self.progress)
+        self.training = True
         num_epochs = self.params["epochs"]
         num_steps = self.params["steps"]
-        self.live = Live(layout, vertical_overflow="visible")
-        self.epoch_tracker = self.progress.add_task("Epoch", total=num_epochs)
-        self.batch_tracker_train = self.progress.add_task(
+        self.train_epoch_tracker = self.progress.add_task(
+            "Epoch", total=num_epochs
+        )
+        self.train_batch_tracker = self.progress.add_task(
             "Batch[Train]", total=num_steps
         )
         self.live.start()
-
-    def on_train_batch_end(self, batch, logs=None):
-        """
-        Called at the end of each training batch.
-
-        Parameters
-        ----------
-        batch : int
-            The batch index.
-        logs : dict, optional
-            Dictionary of logs. Default is None.
-        """
-        if batch == 0:
-            self._zero_based_step = True
-        if self.batch_tracker_train is None:
-            return
-        # update by 1 or to batch
-        self.progress.update(self.batch_tracker_train, advance=1)
+        self.progress.update(self.train_epoch_tracker, completed=0)
         self.live.refresh()
 
-    def on_epoch_end(self, epoch, logs=None):
-        """
-        Called at the end of each epoch.
+    def on_train_batch_begin(self, batch, logs=None):
+        if batch == 0:
+            self._zero_based_step = True
 
-        Parameters
-        ----------
-        epoch : int
-            The epoch index.
-        logs : dict, optional
-            Dictionary of logs. Default is None.
-        """
+    def on_train_batch_end(self, batch, logs=None):
+        if self.train_batch_tracker is None:
+            return
+        # update by 1 or to batch
+        self.progress.update(self.train_batch_tracker, advance=1)
+        self.live.refresh()
+
+    def on_epoch_begin(self, epoch, logs=None):
         if epoch == 0:
             self._zero_based_epoch = True
-        if self.epoch_tracker is None:
-            return
+
+    def on_epoch_end(self, epoch, logs=None):
+        if self._zero_based_epoch:
+            natural_epoch = epoch + 1
+        else:
+            natural_epoch = epoch
         report = get_performance_report(
             logs,
             exclude=self.exclude,
-            epoch=epoch + 1 if self._zero_based_epoch else epoch,
+            epoch=natural_epoch,
         )
         if not self.table.columns:
             for column in sorted(report.keys()):
@@ -124,55 +109,41 @@ class ProgbarLogger(Callback):
                 for column in self.table.columns
             ],
         )
-        self.progress.update(self.epoch_tracker, advance=1)
+
+        if self.train_epoch_tracker is not None:
+            self.progress.update(self.train_epoch_tracker, advance=1)
+
+        if self.train_batch_tracker:
+            self.progress.update(self.train_batch_tracker, completed=0)
+
         self.live.refresh()
-
-    def on_train_end(self, logs=None):
-        """
-        Called at the end of training.
-
-        Parameters
-        ----------
-        logs : dict, optional
-            Dictionary of logs. Default is None.
-        """
-        if self.batch_tracker_train is not None:
-            self.progress.remove_task(self.batch_tracker_train)
-        if self.live is None:
-            return
-        self.live.stop()
-        self.progress = None
-        self.live = None
 
     def on_predict_begin(self, logs=None):
         if "pred_steps" not in self.params:
             return
-        if self.progress is None:
-            self.progress = progress_display()
-            layout = Group(self.progress)
-            self.live = Live(layout, vertical_overflow="visible")
-            self.live.start()
-            self._started_by_predict = True
-        self.batch_tracker_valid = self.progress.add_task(
+        self.pred_batch_tracker = self.progress.add_task(
             "Batch[Valid]", total=self.params["pred_steps"]
         )
 
     def on_predict_batch_end(self, batch, logs=None):
-        if self.batch_tracker_valid is None:
+        if self.pred_batch_tracker is None:
             return
-        self.progress.update(self.batch_tracker_valid, advance=1)
+        self.progress.update(self.pred_batch_tracker, advance=1)
         self.live.refresh()
 
     def on_predict_end(self, logs=None):
-        if self.batch_tracker_valid is None:
+        if self.pred_batch_tracker is not None:
+            self.progress.remove_task(self.pred_batch_tracker)
+            self.pred_batch_tracker = None
+        if self.live is None or self.training:
             return
-        self.progress.remove_task(self.batch_tracker_valid)
-        self.batch_tracker_valid = None
-        if not self._started_by_predict:
-            return
+        self.live.stop()
+
+    def on_train_end(self, logs=None):
+        if self.train_batch_tracker is not None:
+            self.progress.remove_task(self.train_batch_tracker)
+            self.train_batch_tracker = None
         if self.live is None:
             return
         self.live.stop()
-        self.progress = None
-        self.live = None
-        self._started_by_predict = False
+        self.training = False
