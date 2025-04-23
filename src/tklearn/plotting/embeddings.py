@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Tuple
+from typing import Any, Union
 
 import numpy as np
 import pandas as pd
+from datasets import Dataset
 from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
 
@@ -51,6 +52,7 @@ def embed2d(X: np.ndarray, dim_reducer: str = "umap") -> np.ndarray:  # noqa: N8
         # Use UMAP if available and requested
         # supress warnings from UMAP
         with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
             # Perform UMAP embedding
             umap = UMAP(n_components=2, random_state=42)
             # Added random_state for reproducibility
@@ -58,7 +60,7 @@ def embed2d(X: np.ndarray, dim_reducer: str = "umap") -> np.ndarray:  # noqa: N8
     elif dim_reducer in {"tsne", "t-sne", "umap"}:
         # Use t-SNE if requested, or if UMAP was requested but not installed
         if dim_reducer == "umap":
-            msg = "umap-learn is not installed, falling back to scikit-learn's t-SNE."
+            msg = "umap-learn is not installed, falling back to scikit-learn's t-SNE"
             warnings.warn(msg, stacklevel=1)
         # Use t-SNE
         X_embedded = TSNE(
@@ -71,20 +73,20 @@ def embed2d(X: np.ndarray, dim_reducer: str = "umap") -> np.ndarray:  # noqa: N8
     else:
         # Raise error for unsupported embedder
         msg = (
-            f"Embedder '{dim_reducer}' not supported. Choose 'umap' or 'tsne'."
+            f"embedder '{dim_reducer}' not supported. Choose 'umap' or 't-sne'"
         )
         raise ValueError(msg)
     return X_embedded
 
 
 def plot_embedding(
-    data: pd.DataFrame,
+    data: Union[pd.DataFrame, Dataset],
     x: str = "embedding",
     y: str = "label",
     style: Any = "seaborn",
     cmap: Any = "rainbow",
     alpha: float = 0.5,
-    figsize: Tuple[int, int] = (8, 6),  # Adjusted default figsize
+    figsize: tuple[int, int] = (8, 6),  # Adjusted default figsize
     dim_reducer: str = "umap",
     dpi: float = 100,
     legend_max_ncols: int = 5,
@@ -140,19 +142,24 @@ def plot_embedding(
     x_col, y_col = x, y  # Assign column names
 
     # --- Input Validation ---
-    if x_col not in data.columns:
-        raise ValueError(f"Column '{x_col}' not found in DataFrame.")
-    if y_col not in data.columns:
-        raise ValueError(f"Column '{y_col}' not found in DataFrame.")
+    if isinstance(data, Dataset):
+        # Convert Dataset to DataFrame if needed
+        data = data.select_columns([x_col, y_col]).to_pandas()
+    elif x_col not in data.columns:
+        msg = f"column '{x_col}' not found in DataFrame."
+        raise ValueError(msg)
+    elif y_col not in data.columns:
+        err = f"column '{y_col}' not found in DataFrame."
+        raise ValueError(err)
+
     if not data[x_col].apply(lambda item: hasattr(item, "__iter__")).all():
-        raise TypeError(
-            f"Column '{x_col}' must contain iterable embedding vectors (like lists or numpy arrays)."
-        )
+        err = f"column '{x_col}' must contain iterable objects"
+        raise TypeError(err)
 
     # Convert embedding column to a NumPy array
     # Use np.vstack for robust handling of list/array types
     try:
-        X_high_dim = np.vstack(data[x_col].values)  # Use vstack for safety
+        X_high_dim = np.vstack(data[x_col].values)
     except ValueError as e:
         raise ValueError(
             f"Could not stack embedding vectors from column '{x_col}'. Ensure all embeddings have the same dimension."
@@ -195,9 +202,8 @@ def plot_embedding(
         handles = []  # List to store handles for the legend
         # Iterate through each unique label to plot its points
         for label_id, label in enumerate(labels.cat.categories):
-            idx = np.where(labels == label)[
-                0
-            ]  # Find indices for the current label
+            # Find indices for the current label
+            idx = np.where(labels == label)[0]
             coords = X_embedded[idx]  # Get the 2D coordinates for these points
             color = cmap_obj(
                 label_id / (num_classes - 1) if num_classes > 1 else 0.5
