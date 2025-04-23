@@ -1,4 +1,4 @@
-from tklearn.kb.base import KnowledgeBase
+from tklearn.kb import KnowledgeBase
 from tklearn.kb.models import Triple
 
 kb = KnowledgeBase("wiktionary")
