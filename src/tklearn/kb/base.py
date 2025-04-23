@@ -3,12 +3,12 @@ from __future__ import annotations
 import functools
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, ClassVar
 
 import nltk
 import numpy as np
+from nightjar import AutoModule, BaseConfig, BaseModule
 from nltk.corpus import stopwords
-from typing_extensions import Protocol, runtime_checkable
 
 from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.models import Candidate, Mention, Span, Triple
@@ -22,17 +22,32 @@ def get_stopwords(language: str = "english") -> set[str]:
     return set(stopwords.words(language))
 
 
-@runtime_checkable
-class ArtifactStore(Protocol):
-    lexicon: Lexicon[
-        set[str]
-    ]  # form (str) -> set of words (same form may have different words)
+class ArtifactStoreConfig(BaseConfig, dispatch="name"):
+    name: ClassVar[ArtifactStore]
+
+
+class ArtifactStore(BaseModule):
+    config: ArtifactStoreConfig
+    # form (str) -> set of words (same form may have different words)
+    lexicon: Lexicon[set[str]]
     triples: TripleStore
     gloss2idx: dict[str, int]
     idx2gloss: dict[int, str]
-    senses: dict[str, set[int]]  # word (str) -> set of senses (int)
+    # word (str) -> set of senses (int)
+    senses: dict[str, set[int]]
     embeddings: dict[int, np.ndarray]
     attrs: dict[str, set[int]]
+
+
+class AutoArtifactStore(AutoModule):
+    def __new__(cls, config: Any) -> ArtifactStore:
+        if isinstance(config, ArtifactStore):
+            return config
+        if isinstance(config, str):
+            config = {"name": config}
+        if not isinstance(config, ArtifactStoreConfig):
+            config = ArtifactStoreConfig.from_dict(config)
+        return super().__new__(cls, config)
 
 
 class KnowledgeBase:
@@ -44,17 +59,8 @@ class KnowledgeBase:
     embeddings: dict[int, np.ndarray]
     attrs: dict[str, set[int]]
 
-    def __init__(self, store: ArtifactStore):
-        self.store = store
-        self.__post_init__()
-
-    def __getattr__(self, name: str) -> Any:
-        try:
-            return getattr(self.store, name)
-        except AttributeError:
-            return super().__getattr__(name)
-
-    def __post_init__(self):
+    def __init__(self, config: Any):
+        self.store = AutoArtifactStore(config)
         index_subject = {}
         for triple in self.triples.query():
             if triple.subject not in index_subject:
@@ -63,6 +69,12 @@ class KnowledgeBase:
                 index_subject[triple.subject][triple.predicate] = set()
             index_subject[triple.subject][triple.predicate].add(triple.object)
         self.index_subject = index_subject
+
+    def __getattr__(self, name: str) -> Any:
+        try:
+            return getattr(self.store, name)
+        except AttributeError:
+            return super().__getattr__(name)
 
     def extract_candidates(self, word: str) -> Iterable[Candidate]:
         """Get all words and senses for a given form."""

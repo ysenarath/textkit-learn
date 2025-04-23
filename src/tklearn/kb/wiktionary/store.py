@@ -6,7 +6,7 @@ import pickle
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Union
+from typing import ClassVar, Union
 
 import numpy as np
 import requests
@@ -16,6 +16,7 @@ from tqdm import auto as tqdm
 
 from tklearn import config, logging
 from tklearn.embeddings.base import AutoEmbedding
+from tklearn.kb.base import ArtifactStore, ArtifactStoreConfig
 from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.triple_store import TripleStore
 from tklearn.kb.wiktionary.models import Word, parse_jsonl
@@ -67,23 +68,24 @@ def add_forms(w: Word, lexicon: Lexicon):
         lexicon[form_form] = base_forms
 
 
-class WiktionaryArtifactStore:
-    def __init__(
-        self,
-        repo_id: str = "textkit-learn/wiktionary",
-        local_dir: Union[str, Path, None] = None,
-        repo_type: str = "dataset",
-        private: bool = True,
-    ):
-        if local_dir is None:
-            local_dir = Path(config.assets_dir) / "wiktionary"
+class WiktionaryArtifactStoreConfig(ArtifactStoreConfig):
+    name: ClassVar[str] = "wiktionary"
+    repo_id: str = "textkit-learn/wiktionary"
+    repo_type: str = "dataset"
+    private: bool = True
+
+
+class WiktionaryArtifactStore(ArtifactStore):
+    config: WiktionaryArtifactStoreConfig
+
+    def __post_init__(self):
         # local_dir is the directory where the repo will be downloaded
-        self.local_dir = Path(local_dir)
+        self.local_dir = Path(config.assets_dir) / "wiktionary"
         self.local_dir.mkdir(parents=True, exist_ok=True)
         # repo_id is the name of the repo on Hugging Face Hub
-        self.repo_id = repo_id
-        self.repo_type = repo_type
-        self.private = private
+        self.repo_id = self.config.repo_id
+        self.repo_type = self.config.repo_type
+        self.private = self.config.private
         # must be compatible with wiktextract library (https://kaikki.org)
         self.wiktionary_url = _WIKTIONARY_URL
         # Hugging Face Hub API
@@ -97,9 +99,6 @@ class WiktionaryArtifactStore:
             "instance",
         ]
         self.lang_code: str = "en"
-        self.__post_init__()
-
-    def __post_init__(self):
         # create the repo if it does not exist
         self.api.create_repo(
             repo_id=self.repo_id,
