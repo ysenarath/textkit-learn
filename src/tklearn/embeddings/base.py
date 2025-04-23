@@ -49,11 +49,7 @@ class AutoEmbedding(AutoModule):
     appropriate Embedding subclass.
     """
 
-    def __new__(cls, config: EmbeddingConfig) -> Embedding:
-        return super().__new__(cls, config)
-
-    @classmethod
-    def from_config(cls, config: EmbeddingConfig | Mapping | str) -> Embedding:
+    def __new__(cls, config: EmbeddingConfig | Mapping | str) -> Embedding:
         """Instantiate an Embedding from a configuration.
 
         Parameters
@@ -77,7 +73,7 @@ class AutoEmbedding(AutoModule):
             except KeyError:
                 config = {"loader": "gensim", **config}
                 config = EmbeddingConfig.from_dict(config)
-        return cls(config)
+        return super().__new__(cls, config)
 
 
 @runtime_checkable
