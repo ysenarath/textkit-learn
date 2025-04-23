@@ -1,18 +1,15 @@
 from tklearn.kb.base import KnowledgeBase
 from tklearn.kb.models import Triple
-from tklearn.kb.wiktionary import WiktionaryArtifactStore
 
-store = WiktionaryArtifactStore()
+kb = KnowledgeBase("wiktionary")
 
 print("Wiktionary data setup complete.")
-print(f"Lexicon size: {len(store.lexicon)}")
-print(f"Triplet store size: {len(store.triples)}")
-print(f"Gloss2idx size: {len(store.gloss2idx)}")
-print(f"Idx2gloss size: {len(store.idx2gloss)}")
-print(f"Senses size: {len(store.senses)}")
-print(f"Embeddings size: {len(store.embeddings)}")
-
-kb = KnowledgeBase(store)
+print(f"Lexicon size: {len(kb.lexicon)}")
+print(f"Triplet store size: {len(kb.triples)}")
+print(f"Gloss2idx size: {len(kb.gloss2idx)}")
+print(f"Idx2gloss size: {len(kb.idx2gloss)}")
+print(f"Senses size: {len(kb.senses)}")
+print(f"Embeddings size: {len(kb.embeddings)}")
 
 
 def filter_func(item: Triple):
