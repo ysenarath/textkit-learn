@@ -23,7 +23,7 @@ auto_device = get_device()
 
 model.to(auto_device)
 
-dataset = load_dataset(DATASET, split="train")
+dataset = load_dataset(DATASET, split="train").select(range(1000))
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH)
 
@@ -44,12 +44,12 @@ dataloader = DataLoader(
     pin_memory=True,
 )
 
-evaluator = Encoder(
+encoder = Encoder(
     model,
     dataloader=dataloader,
     callbacks=[ProgbarLogger()],
 )
 
-encoded = evaluator.encode()
+encoded = encoder.encode()
 
 print(encoded)
