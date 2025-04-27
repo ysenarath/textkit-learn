@@ -23,19 +23,25 @@ def get_stopwords(language: str = "english") -> set[str]:
 
 
 class ArtifactStoreConfig(BaseConfig, dispatch="name"):
-    name: ClassVar[ArtifactStore]
+    name: ClassVar[str]
 
 
 class ArtifactStore(BaseModule):
     config: ArtifactStoreConfig
-    # form (str) -> set of words (same form may have different words)
+
+    # form (str) -> set of words (set[str])
     lexicon: Lexicon[set[str]]
+    # subject (str, int) -> predicate (str) -> object (str, int)
     triples: TripleStore
+    # gloss (str) -> index (int)
     gloss2idx: dict[str, int]
+    # index (int) -> gloss (str)
     idx2gloss: dict[int, str]
-    # word (str) -> set of senses (int)
+    # word (str) -> set of senses (set[int])
     senses: dict[str, set[int]]
+    # sense (int) -> embedding (np.ndarray)
     embeddings: dict[int, np.ndarray]
+    # attribute (str) -> set of senses (set[int])
     attrs: dict[str, set[int]]
 
 
@@ -61,14 +67,13 @@ class KnowledgeBase:
 
     def __init__(self, config: Any):
         self.store = AutoArtifactStore(config)
-        index_subject = {}
-        for triple in self.triples.query():
-            if triple.subject not in index_subject:
-                index_subject[triple.subject] = {}
-            if triple.predicate not in index_subject[triple.subject]:
-                index_subject[triple.subject][triple.predicate] = set()
-            index_subject[triple.subject][triple.predicate].add(triple.object)
-        self.index_subject = index_subject
+
+    def __reduce__(self):
+        return (self.__class__, (self.store.config,))
+
+    def __repr__(self) -> str:
+        p = str(self.store.config.to_dict()).replace("\n", " ")
+        return f"KnowledgeBase({p})"
 
     def __getattr__(self, name: str) -> Any:
         try:
@@ -108,10 +113,11 @@ class KnowledgeBase:
             yield Mention(form, Span(start, end), candidates)
 
     def augment(
-        self, text: str, mentions=None, filter_func=None
+        self, text: str, mentions=None, relation_filter=None
     ) -> Iterable[dict[str, Any]]:
         """Augment text by replacing words with synonyms, hyponyms, and hypernyms."""
-        filter_func = filter_func or (lambda x: True)
+        relation_filter = relation_filter or (lambda x: True)
+        # not augmented
         yield {
             "text": text,
             "original": text,
@@ -129,12 +135,10 @@ class KnowledgeBase:
             for candidate in mention.candidates:
                 subject = (candidate.word, candidate.sense_id)
                 for predicate in ["synonym", "hyponym", "instance"]:
-                    objects = self.index_subject.get(subject, {}).get(
-                        predicate, []
-                    )
+                    objects = self.triples.get(subject, {}).get(predicate, [])
                     for object_ in objects:
                         rel = Triple(subject, predicate, object_)
-                        if not filter_func(rel):
+                        if not relation_filter(rel):
                             continue
                         aug_words[rel.object[0]].add(rel.to_tuple())
             for word, relations in aug_words.items():
