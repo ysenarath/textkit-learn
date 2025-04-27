@@ -161,7 +161,7 @@ class WiktionaryArtifactStore(ArtifactStore):
                         total=total_size,
                         unit="B",
                         unit_scale=True,
-                        desc=os.path.basename(self.download_path),
+                        desc=f"Downloading {os.path.basename(self.download_path)}",
                         ascii=True,
                     )
                     for chunk in response.iter_content(chunk_size=4096):
