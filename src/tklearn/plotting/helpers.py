@@ -1,5 +1,7 @@
 # Dictionary to map style names to available Matplotlib styles
 # Ensures that 'seaborn' maps to a specific seaborn style
+from __future__ import annotations
+
 import warnings
 
 import matplotlib
