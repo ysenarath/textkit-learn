@@ -122,8 +122,11 @@ class ProgbarLogger(Callback):
         if "pred_steps" not in self.params:
             return
         self.pred_batch_tracker = self.progress.add_task(
-            "Batch[Valid]", total=self.params["pred_steps"]
+            "Batch[Predict]", total=self.params["pred_steps"]
         )
+        self.live.start()
+        self.progress.update(self.pred_batch_tracker, completed=0)
+        self.live.refresh()
 
     def on_predict_batch_end(self, batch, logs=None):
         if self.pred_batch_tracker is None:
