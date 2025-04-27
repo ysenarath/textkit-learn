@@ -191,7 +191,7 @@ class DataCollatorWithPadding:
     pad_to_multiple_of: Optional[int] = None
     labels_column: Optional[str] = None
     return_tensors: str = "pt"
-    features: Iterable[str] = field(default_factory=list)
+    features: Optional[Iterable[str]] = field(default_factory=lambda: None)
 
     def get_labels(self, instance: dict[str, Any]) -> Any:
         if self.labels_column is not None:
