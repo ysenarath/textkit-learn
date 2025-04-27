@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Callable, NewType, Optional, Union
 
@@ -191,7 +191,7 @@ class DataCollatorWithPadding:
     pad_to_multiple_of: Optional[int] = None
     labels_column: Optional[str] = None
     return_tensors: str = "pt"
-    features: Union[list[str], dict[str, Any]] = field(default_factory=list)
+    features: Iterable[str] = field(default_factory=list)
 
     def get_labels(self, instance: dict[str, Any]) -> Any:
         if self.labels_column is not None:
@@ -234,9 +234,12 @@ class DataCollatorWithPadding:
                 label_dtype = torch.long
                 if len(labels_tensor.shape) > 1:
                     label_dtype = torch.float32
-                labels_tensor = torch.as_tensor(
-                    labels_tensor, dtype=label_dtype
-                )
+                try:
+                    labels_tensor = torch.as_tensor(
+                        labels_tensor, dtype=label_dtype
+                    )
+                except TypeError as e:
+                    raise ValueError(str(e))
             elif self.return_tensors != "np":
                 msg = (
                     f"return_tensors should be 'np' or 'pt' for"
