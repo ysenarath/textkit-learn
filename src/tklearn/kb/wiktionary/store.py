@@ -451,6 +451,8 @@ class WiktionaryArtifactStore(ArtifactStore):
         else:
             attrs = {}
 
+        updated = False
+
         attr_key = "hate_related"
         if attr_key not in attrs:
             hate_related_senses = set()
@@ -464,7 +466,7 @@ class WiktionaryArtifactStore(ArtifactStore):
             progress_bar = tqdm.tqdm(
                 total=len(self.idx2gloss),
                 desc="Detecting hate-related definitions",
-                leave=True,
+                leave=False,
             )
 
             for idx, gloss in self.idx2gloss.items():
@@ -498,8 +500,10 @@ class WiktionaryArtifactStore(ArtifactStore):
             progress_bar.close()
 
             attrs[attr_key] = hate_related_senses
+            updated = True
 
-        with open(self.attrs_path, "wb") as f:
-            pickle.dump(attrs, f)
+        if updated:
+            with open(self.attrs_path, "wb") as f:
+                pickle.dump(attrs, f)
 
         return attrs
