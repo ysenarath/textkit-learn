@@ -46,8 +46,18 @@ class ProgbarLogger(Callback):
     Uses tqdm for progress visualization.
     """
 
-    def __init__(self, exclude: Optional[list] = None):
+    def __init__(
+        self,
+        exclude: Optional[list] = None,
+        epoch_desc: str = "Epoch",
+        pred_desc: str = "Predicting",
+        batch_desc: str = "Batch",
+    ):
         super().__init__()
+        self.pred_desc = pred_desc
+        self.epoch_desc = epoch_desc
+        self.batch_desc = batch_desc
+
         self.exclude = exclude
 
         self.training = False
@@ -80,7 +90,7 @@ class ProgbarLogger(Callback):
             # initialize the progress bar for training epochs
             self.epoch_progress_bar = tqdm.tqdm(
                 total=self.train_epochs,
-                desc="Epochs",
+                desc=self.epoch_desc,
                 unit="epoch",
                 leave=True,  # Keep the bar after completion
             )
@@ -98,7 +108,7 @@ class ProgbarLogger(Callback):
             if self.train_steps is not None:
                 self.batch_progress_bar = tqdm.tqdm(
                     total=self.train_steps,
-                    desc=f"Epochs {self.current_epoch + 1} Batches",  # Assuming current_epoch is available from base Callback
+                    desc=self.batch_desc,
                     unit="batch",
                     leave=False,  # Remove the bar after completion of the epoch
                 )
@@ -167,7 +177,7 @@ class ProgbarLogger(Callback):
         # initialize the progress bar for prediction steps
         self.predict_progress_bar = tqdm.tqdm(
             total=total,
-            desc="Predicting",
+            desc=self.pred_desc,
             unit="step",
             leave=True,  # Keep the bar after completion
         )
