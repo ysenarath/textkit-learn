@@ -109,12 +109,6 @@ trainer = Trainer(
 
 trainer.train()
 
-max_gpu_mem = (
-    max(trainer.memory_allocated_bytes) - model_memory_allocated_bytes
-) / (1024 * 1024)
-
-print(f"Max GPU memory allocated during training: {max_gpu_mem} MB")
-
 evaluator = Evaluator(
     model,
     valid_dataloader,
