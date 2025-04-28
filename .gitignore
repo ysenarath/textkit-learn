@@ -129,6 +129,7 @@ dmypy.json
 .pyre/
 
 .idea/
+.ruff_cache/
 .DS_Store
 .env/bin/sync.sh
 .env/bin/sync2.sh
