@@ -77,10 +77,7 @@ class EarlyStopping(Callback):
     @mode.setter
     def mode(self, mode):
         if mode not in {"auto", "min", "max"}:
-            msg = (
-                f"mode '{mode}' is unknown, "
-                'expected one of ("auto", "min", "max")'
-            )
+            msg = f'mode \'{mode}\' is unknown, expected one of ("auto", "min", "max")'
             raise ValueError(msg)
         self._mode = mode
         self._monitor_op = None
@@ -145,7 +142,8 @@ class EarlyStopping(Callback):
             self.stopped_epoch = epoch
             if self.restore_best_weights and self.best_weights is not None:
                 if self.verbose > 0:
-                    pass
+                    msg = f"Restoring model weights from the end of the best epoch {self.best_epoch}."
+                    logger.debug(msg)
                 self.model.load_state_dict(self.best_weights, strict=True)
             self.model.stop_training = True
 

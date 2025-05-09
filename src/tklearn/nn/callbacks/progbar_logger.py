@@ -156,15 +156,13 @@ class ProgbarLogger(Callback):
             exclude=self.exclude,
             epoch=natural_epoch,
         )
+
         self.history.append(report)
 
         # Use print directly as tqdm manages console output
+        df = pd.DataFrame(self.history)
         tqdm.tqdm.write(
-            "\n{}\n".format(
-                tabulate(
-                    pd.DataFrame(self.history), headers="keys", tablefmt="pipe"
-                )
-            )
+            "\n{}\n".format(tabulate(df, headers="keys", tablefmt="pipe"))
         )
 
     def on_predict_begin(self, logs=None):
