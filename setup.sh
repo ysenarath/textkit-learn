@@ -20,4 +20,4 @@ uv pip install jupyter ipykernel
 echo "Adding kernel: $KERNEL_NAME"
 uv run python -m ipykernel install --user --name "$KERNEL_NAME" --display-name "Python ($KERNEL_NAME)"
 
-echo "Kernel setup complete! You can now use it in Jupyter. Run: jupyter notebook"
+echo "Kernel setup complete! You can now use it in Jupyter. Run: `jupyter lab`"
