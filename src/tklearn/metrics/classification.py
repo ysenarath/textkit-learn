@@ -98,6 +98,21 @@ class AUC(MetricBase):
         y_true = self.y_true.result()
         y_score = self.y_score.result()
         sample_weight = self.sample_weight.result()
+        is_multiclass = y_score.shape[1] > 1
+        if (
+            is_multiclass
+            and self.multi_class == "ovr"
+            and self.average == "macro"
+        ):
+            # more than 2 classes
+            return self._auc_roc_score_multiclass_ovr_macro(y_true, y_score)
+        if (
+            is_multiclass
+            and self.multi_class == "ovr"
+            and self.average is None
+        ):
+            # more than 2 classes
+            return self._auc_roc_score_multiclass_ovr_none(y_true, y_score)
         return roc_auc_score(
             y_true,
             y_score,
@@ -107,6 +122,32 @@ class AUC(MetricBase):
             multi_class=self.multi_class,
             labels=self.labels,
         ).item()
+
+    @staticmethod
+    def _auc_roc_score_multiclass_ovr_macro(y_true, y_score) -> float:
+        per_class_auc = []
+        for cls in np.unique(y_true):
+            y_true_binary = (y_true == cls).astype(int)
+            y_score_class = y_score[:, cls]  # Directly index by class label
+            if len(np.unique(y_true_binary)) != 2:
+                # found a class that has no positive samples (skip)
+                continue
+            auc = roc_auc_score(y_true_binary, y_score_class)
+            per_class_auc.append(auc)
+        return np.mean(per_class_auc)
+
+    @staticmethod
+    def _auc_roc_score_multiclass_ovr_none(y_true, y_score) -> np.ndarray:
+        per_class_auc = []
+        for cls in range(y_score.shape[1]):
+            y_true_binary = (y_true == cls).astype(int)
+            y_score_class = y_score[:, cls]
+            if len(np.unique(y_true_binary)) != 2:
+                per_class_auc.append(np.nan)
+                continue
+            auc = roc_auc_score(y_true_binary, y_score_class)
+            per_class_auc.append(auc)
+        return np.array(per_class_auc)
 
 
 class Precision(MetricBase):
