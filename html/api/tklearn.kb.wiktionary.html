@@ -2169,16 +2169,51 @@
 <span id="tklearn-kb-wiktionary-store-module"></span><h2>tklearn.kb.wiktionary.store module<a class="headerlink" href="#module-tklearn.kb.wiktionary.store" title="Link to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStore">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.kb.wiktionary.store.</span></span><span class="sig-name descname"><span class="pre">WiktionaryArtifactStore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">repo_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'textkit-learn/wiktionary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repo_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dataset'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">private</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/kb/wiktionary/store.html#WiktionaryArtifactStore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.kb.wiktionary.store.</span></span><span class="sig-name descname"><span class="pre">WiktionaryArtifactStore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/kb/wiktionary/store.html#WiktionaryArtifactStore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.ArtifactStore" title="tklearn.kb.base.ArtifactStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArtifactStore</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStore.attrs">
+<span class="sig-name descname"><span class="pre">attrs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]]</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.attrs" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStore.closest_sense">
 <span class="sig-name descname"><span class="pre">closest_sense</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">word</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sense_gloss</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/kb/wiktionary/store.html#WiktionaryArtifactStore.closest_sense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.closest_sense" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStore.config">
+<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig" title="tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">WiktionaryArtifactStoreConfig</span></code></a></em><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.config" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStore.embeddings">
+<span class="sig-name descname"><span class="pre">embeddings</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code><span class="pre">]</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.embeddings" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStore.get_relations">
 <span class="sig-name descname"><span class="pre">get_relations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">word</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/kb/wiktionary/store.html#WiktionaryArtifactStore.get_relations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.get_relations" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStore.gloss2idx">
+<span class="sig-name descname"><span class="pre">gloss2idx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.gloss2idx" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStore.idx2gloss">
+<span class="sig-name descname"><span class="pre">idx2gloss</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.idx2gloss" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStore.lexicon">
+<span class="sig-name descname"><span class="pre">lexicon</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon" title="tklearn.kb.lexicon.Lexicon"><code class="xref py py-class docutils literal notranslate"><span class="pre">Lexicon</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]]</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.lexicon" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStore.senses">
+<span class="sig-name descname"><span class="pre">senses</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]]</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.senses" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -2222,6 +2257,37 @@
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStore.triples">
+<span class="sig-name descname"><span class="pre">triples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="tklearn.kb.html#tklearn.kb.triple_store.TripleStore" title="tklearn.kb.triple_store.TripleStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">TripleStore</span></code></a></em><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.triples" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.kb.wiktionary.store.</span></span><span class="sig-name descname"><span class="pre">WiktionaryArtifactStoreConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">repo_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'textkit-learn/wiktionary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repo_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dataset'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">private</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/kb/wiktionary/store.html#WiktionaryArtifactStoreConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.ArtifactStoreConfig" title="tklearn.kb.base.ArtifactStoreConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArtifactStoreConfig</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">ClassVar</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'wiktionary'</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig.name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig.private">
+<span class="sig-name descname"><span class="pre">private</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig.private" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig.repo_id">
+<span class="sig-name descname"><span class="pre">repo_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'textkit-learn/wiktionary'</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig.repo_id" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig.repo_type">
+<span class="sig-name descname"><span class="pre">repo_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'dataset'</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig.repo_type" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
@@ -2255,16 +2321,51 @@
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-tklearn.kb.wiktionary" title="Link to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="tklearn.kb.wiktionary.WiktionaryArtifactStore">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.kb.wiktionary.</span></span><span class="sig-name descname"><span class="pre">WiktionaryArtifactStore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">repo_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'textkit-learn/wiktionary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repo_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dataset'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">private</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/kb/wiktionary/store.html#WiktionaryArtifactStore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.kb.wiktionary.</span></span><span class="sig-name descname"><span class="pre">WiktionaryArtifactStore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/kb/wiktionary/store.html#WiktionaryArtifactStore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="tklearn.kb.html#tklearn.kb.base.ArtifactStore" title="tklearn.kb.base.ArtifactStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArtifactStore</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.WiktionaryArtifactStore.attrs">
+<span class="sig-name descname"><span class="pre">attrs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]]</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.attrs" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.kb.wiktionary.WiktionaryArtifactStore.closest_sense">
 <span class="sig-name descname"><span class="pre">closest_sense</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">word</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sense_gloss</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/kb/wiktionary/store.html#WiktionaryArtifactStore.closest_sense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.closest_sense" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.WiktionaryArtifactStore.config">
+<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig" title="tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">WiktionaryArtifactStoreConfig</span></code></a></em><a class="headerlink" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.config" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.WiktionaryArtifactStore.embeddings">
+<span class="sig-name descname"><span class="pre">embeddings</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code><span class="pre">]</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.embeddings" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.kb.wiktionary.WiktionaryArtifactStore.get_relations">
 <span class="sig-name descname"><span class="pre">get_relations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">word</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/kb/wiktionary/store.html#WiktionaryArtifactStore.get_relations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.get_relations" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.WiktionaryArtifactStore.gloss2idx">
+<span class="sig-name descname"><span class="pre">gloss2idx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.gloss2idx" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.WiktionaryArtifactStore.idx2gloss">
+<span class="sig-name descname"><span class="pre">idx2gloss</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.idx2gloss" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.WiktionaryArtifactStore.lexicon">
+<span class="sig-name descname"><span class="pre">lexicon</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="tklearn.kb.html#tklearn.kb.lexicon.Lexicon" title="tklearn.kb.lexicon.Lexicon"><code class="xref py py-class docutils literal notranslate"><span class="pre">Lexicon</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]]</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.lexicon" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.WiktionaryArtifactStore.senses">
+<span class="sig-name descname"><span class="pre">senses</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">,</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]]</span></em><a class="headerlink" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.senses" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -2307,6 +2408,11 @@
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.kb.wiktionary.WiktionaryArtifactStore.triples">
+<span class="sig-name descname"><span class="pre">triples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="tklearn.kb.html#tklearn.kb.triple_store.TripleStore" title="tklearn.kb.triple_store.TripleStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">TripleStore</span></code></a></em><a class="headerlink" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.triples" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -2768,13 +2874,28 @@
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.kb.wiktionary.store">tklearn.kb.wiktionary.store module</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.attrs"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.attrs</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.closest_sense"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.closest_sense()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.config"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.config</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.embeddings"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.embeddings</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.get_relations"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.get_relations()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.gloss2idx"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.gloss2idx</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.idx2gloss"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.idx2gloss</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.lexicon"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.lexicon</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.senses"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.senses</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.setup_attrs"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.setup_attrs()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.setup_lexicon"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.setup_lexicon()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.setup_senses"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.setup_senses()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.setup_triple_store"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.setup_triple_store()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.setup_wiktionary"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.setup_wiktionary()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStore.triples"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.triples</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStoreConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig.name"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStoreConfig.name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig.private"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStoreConfig.private</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig.repo_id"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStoreConfig.repo_id</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.WiktionaryArtifactStoreConfig.repo_type"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStoreConfig.repo_type</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.store.add_forms"><code class="docutils literal notranslate"><span class="pre">add_forms()</span></code></a></li>
@@ -2784,13 +2905,21 @@
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.kb.wiktionary">Module contents</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.attrs"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.attrs</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.closest_sense"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.closest_sense()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.config"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.config</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.embeddings"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.embeddings</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.get_relations"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.get_relations()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.gloss2idx"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.gloss2idx</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.idx2gloss"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.idx2gloss</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.lexicon"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.lexicon</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.senses"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.senses</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.setup_attrs"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.setup_attrs()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.setup_lexicon"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.setup_lexicon()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.setup_senses"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.setup_senses()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.setup_triple_store"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.setup_triple_store()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.setup_wiktionary"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.setup_wiktionary()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.kb.wiktionary.WiktionaryArtifactStore.triples"><code class="docutils literal notranslate"><span class="pre">WiktionaryArtifactStore.triples</span></code></a></li>
 </ul>
 </li>
 </ul>

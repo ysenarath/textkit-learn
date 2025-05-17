@@ -420,6 +420,21 @@
         <span class="n">y_true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_true</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
         <span class="n">y_score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_score</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
         <span class="n">sample_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_weight</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+        <span class="n">is_multiclass</span> <span class="o">=</span> <span class="n">y_score</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">is_multiclass</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">multi_class</span> <span class="o">==</span> <span class="s2">&quot;ovr&quot;</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">average</span> <span class="o">==</span> <span class="s2">&quot;macro&quot;</span>
+        <span class="p">):</span>
+            <span class="c1"># more than 2 classes</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auc_roc_score_multiclass_ovr_macro</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_score</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">is_multiclass</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">multi_class</span> <span class="o">==</span> <span class="s2">&quot;ovr&quot;</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">average</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="p">):</span>
+            <span class="c1"># more than 2 classes</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_auc_roc_score_multiclass_ovr_none</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_score</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">roc_auc_score</span><span class="p">(</span>
             <span class="n">y_true</span><span class="p">,</span>
             <span class="n">y_score</span><span class="p">,</span>
@@ -429,7 +444,33 @@
             <span class="n">multi_class</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">multi_class</span><span class="p">,</span>
             <span class="n">labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span>
         <span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span></div>
-</div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_auc_roc_score_multiclass_ovr_macro</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_score</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="n">per_class_auc</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">y_true</span><span class="p">):</span>
+            <span class="n">y_true_binary</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_true</span> <span class="o">==</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">y_score_class</span> <span class="o">=</span> <span class="n">y_score</span><span class="p">[:,</span> <span class="bp">cls</span><span class="p">]</span>  <span class="c1"># Directly index by class label</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">y_true_binary</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="c1"># found a class that has no positive samples (skip)</span>
+                <span class="k">continue</span>
+            <span class="n">auc</span> <span class="o">=</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y_true_binary</span><span class="p">,</span> <span class="n">y_score_class</span><span class="p">)</span>
+            <span class="n">per_class_auc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">auc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">per_class_auc</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_auc_roc_score_multiclass_ovr_none</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_score</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">per_class_auc</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">y_score</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">y_true_binary</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_true</span> <span class="o">==</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">y_score_class</span> <span class="o">=</span> <span class="n">y_score</span><span class="p">[:,</span> <span class="bp">cls</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">y_true_binary</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">per_class_auc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">auc</span> <span class="o">=</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y_true_binary</span><span class="p">,</span> <span class="n">y_score_class</span><span class="p">)</span>
+            <span class="n">per_class_auc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">auc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">per_class_auc</span><span class="p">)</span></div>
 
 
 

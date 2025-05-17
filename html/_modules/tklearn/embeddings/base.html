@@ -366,13 +366,7 @@
 <span class="sd">    appropriate Embedding subclass.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EmbeddingConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Embedding</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
-
-<div class="viewcode-block" id="AutoEmbedding.from_config">
-<a class="viewcode-back" href="../../../api/tklearn.embeddings.html#tklearn.embeddings.base.AutoEmbedding.from_config">[docs]</a>
-    <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EmbeddingConfig</span> <span class="o">|</span> <span class="n">Mapping</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Embedding</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EmbeddingConfig</span> <span class="o">|</span> <span class="n">Mapping</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Embedding</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Instantiate an Embedding from a configuration.</span>
 
 <span class="sd">        Parameters</span>
@@ -396,8 +390,7 @@
             <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
                 <span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;loader&quot;</span><span class="p">:</span> <span class="s2">&quot;gensim&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">config</span><span class="p">}</span>
                 <span class="n">config</span> <span class="o">=</span> <span class="n">EmbeddingConfig</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="p">)</span></div>
-</div>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span></div>
 
 
 

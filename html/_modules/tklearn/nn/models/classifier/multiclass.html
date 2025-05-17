@@ -324,7 +324,7 @@
     <span class="n">CosineSimilarity</span><span class="p">,</span>
     <span class="n">SequenceClassifierOutputWithPooling</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">tklearn.nn.utils.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">preprocess_input</span><span class="p">,</span> <span class="n">preprocess_target</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tklearn.nn.utils.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">preprocess_logits</span><span class="p">,</span> <span class="n">preprocess_target</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;LinearMulticlassClassifier&quot;</span><span class="p">,</span>
@@ -455,7 +455,7 @@
         <span class="n">y_true</span> <span class="o">=</span> <span class="n">preprocess_target</span><span class="p">(</span>
             <span class="n">target_type</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">num_labels</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_labels</span>
         <span class="p">)</span>
-        <span class="n">y_pred</span><span class="p">,</span> <span class="n">y_score</span> <span class="o">=</span> <span class="n">preprocess_input</span><span class="p">(</span><span class="n">target_type</span><span class="p">,</span> <span class="n">logits</span><span class="p">)</span>
+        <span class="n">y_pred</span><span class="p">,</span> <span class="n">y_score</span> <span class="o">=</span> <span class="n">preprocess_logits</span><span class="p">(</span><span class="n">target_type</span><span class="p">,</span> <span class="n">logits</span><span class="p">)</span>
         <span class="n">pooler_output</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pooler_output&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;y_true&quot;</span><span class="p">:</span> <span class="n">y_true</span><span class="p">,</span>
@@ -510,7 +510,7 @@
         <span class="n">logits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">similarity</span><span class="p">(</span><span class="n">pooler_output</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prototypes</span><span class="p">)</span>
         <span class="n">target_type</span> <span class="o">=</span> <span class="s2">&quot;multiclass&quot;</span>
         <span class="n">y_true</span> <span class="o">=</span> <span class="n">preprocess_target</span><span class="p">(</span><span class="n">target_type</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
-        <span class="n">y_pred</span><span class="p">,</span> <span class="n">y_score</span> <span class="o">=</span> <span class="n">preprocess_input</span><span class="p">(</span><span class="n">target_type</span><span class="p">,</span> <span class="n">logits</span><span class="p">)</span>
+        <span class="n">y_pred</span><span class="p">,</span> <span class="n">y_score</span> <span class="o">=</span> <span class="n">preprocess_logits</span><span class="p">(</span><span class="n">target_type</span><span class="p">,</span> <span class="n">logits</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;y_true&quot;</span><span class="p">:</span> <span class="n">y_true</span><span class="p">,</span>
             <span class="s2">&quot;y_pred&quot;</span><span class="p">:</span> <span class="n">y_pred</span><span class="p">,</span>

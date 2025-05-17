@@ -386,26 +386,6 @@
 <p>Factory class for creating Embedding instances based on configuration.</p>
 <p>Uses the ‘loader’ field in the EmbeddingConfig to dispatch to the
 appropriate Embedding subclass.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.base.AutoEmbedding.from_config">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#AutoEmbedding.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.base.AutoEmbedding.from_config" title="Link to this definition">#</a></dt>
-<dd><p>Instantiate an Embedding from a configuration.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig"><em>EmbeddingConfig</em></a><em> or </em><em>Mapping</em><em> or </em><em>str</em>) – The configuration object, dictionary, or string identifier.
-If a string is provided, it’s assumed to be the name, and
-‘gensim’ loader is used by default. If a Mapping is provided,
-it’s converted to an EmbeddingConfig.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>An instance of the appropriate Embedding subclass.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#tklearn.embeddings.base.Embedding" title="tklearn.embeddings.base.Embedding">Embedding</a></p>
-</dd>
-</dl>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
@@ -767,26 +747,6 @@ numerical vector representations.</p>
 <p>Factory class for creating Embedding instances based on configuration.</p>
 <p>Uses the ‘loader’ field in the EmbeddingConfig to dispatch to the
 appropriate Embedding subclass.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="tklearn.embeddings.AutoEmbedding.from_config">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/embeddings/base.html#AutoEmbedding.from_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.embeddings.AutoEmbedding.from_config" title="Link to this definition">#</a></dt>
-<dd><p>Instantiate an Embedding from a configuration.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>config</strong> (<a class="reference internal" href="#tklearn.embeddings.base.EmbeddingConfig" title="tklearn.embeddings.base.EmbeddingConfig"><em>EmbeddingConfig</em></a><em> or </em><em>Mapping</em><em> or </em><em>str</em>) – The configuration object, dictionary, or string identifier.
-If a string is provided, it’s assumed to be the name, and
-‘gensim’ loader is used by default. If a Mapping is provided,
-it’s converted to an EmbeddingConfig.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>An instance of the appropriate Embedding subclass.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#tklearn.embeddings.Embedding" title="tklearn.embeddings.Embedding">Embedding</a></p>
-</dd>
-</dl>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
@@ -1066,10 +1026,7 @@ numerical vector representations.</p>
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#submodules">Submodules</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.embeddings.base">tklearn.embeddings.base module</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.AutoEmbedding"><code class="docutils literal notranslate"><span class="pre">AutoEmbedding</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.AutoEmbedding.from_config"><code class="docutils literal notranslate"><span class="pre">AutoEmbedding.from_config()</span></code></a></li>
-</ul>
-</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.AutoEmbedding"><code class="docutils literal notranslate"><span class="pre">AutoEmbedding</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding"><code class="docutils literal notranslate"><span class="pre">Embedding</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding.config"><code class="docutils literal notranslate"><span class="pre">Embedding.config</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.base.Embedding.word_to_index"><code class="docutils literal notranslate"><span class="pre">Embedding.word_to_index</span></code></a></li>
@@ -1139,10 +1096,7 @@ numerical vector representations.</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.embeddings">Module contents</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.AutoEmbedding"><code class="docutils literal notranslate"><span class="pre">AutoEmbedding</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.AutoEmbedding.from_config"><code class="docutils literal notranslate"><span class="pre">AutoEmbedding.from_config()</span></code></a></li>
-</ul>
-</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.AutoEmbedding"><code class="docutils literal notranslate"><span class="pre">AutoEmbedding</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding"><code class="docutils literal notranslate"><span class="pre">Embedding</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding.config"><code class="docutils literal notranslate"><span class="pre">Embedding.config</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.embeddings.Embedding.word_to_index"><code class="docutils literal notranslate"><span class="pre">Embedding.word_to_index</span></code></a></li>

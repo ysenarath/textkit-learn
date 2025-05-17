@@ -390,8 +390,28 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="tklearn.nn.utils.collators.DataCollatorWithPadding">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.utils.collators.</span></span><span class="sig-name descname"><span class="pre">DataCollatorWithPadding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pad_to_multiple_of</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_tensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pt'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/utils/collators.html#DataCollatorWithPadding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.utils.collators.DataCollatorWithPadding" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.utils.collators.</span></span><span class="sig-name descname"><span class="pre">DataCollatorWithPadding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pad_to_multiple_of=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels_column=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_tensors='pt'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features=&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/utils/collators.html#DataCollatorWithPadding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.utils.collators.DataCollatorWithPadding" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.nn.utils.collators.DataCollatorWithPadding.features">
+<span class="sig-name descname"><span class="pre">features</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]]</span></em><a class="headerlink" href="#tklearn.nn.utils.collators.DataCollatorWithPadding.features" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.utils.collators.DataCollatorWithPadding.get_labels">
+<span class="sig-name descname"><span class="pre">get_labels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/utils/collators.html#DataCollatorWithPadding.get_labels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.utils.collators.DataCollatorWithPadding.get_labels" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="tklearn.nn.utils.collators.DataCollatorWithPadding.labels_column">
+<span class="sig-name descname"><span class="pre">labels_column</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#tklearn.nn.utils.collators.DataCollatorWithPadding.labels_column" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="tklearn.nn.utils.collators.DataCollatorWithPadding.max_length">
 <span class="sig-name descname"><span class="pre">max_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#tklearn.nn.utils.collators.DataCollatorWithPadding.max_length" title="Link to this definition">#</a></dt>
@@ -423,18 +443,20 @@
 <dt class="sig sig-object py" id="tklearn.nn.utils.collators.DefaultDataCollator">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.utils.collators.</span></span><span class="sig-name descname"><span class="pre">DefaultDataCollator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">return_tensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pt'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/utils/collators.html#DefaultDataCollator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.utils.collators.DefaultDataCollator" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#tklearn.nn.utils.collators.DataCollatorMixin" title="tklearn.nn.utils.collators.DataCollatorMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataCollatorMixin</span></code></a></p>
-<p>Very simple data collator that simply collates batches of dict-like objects and performs special handling for
-potential keys named:</p>
+<p>Very simple data collator that simply collates batches of dict-like objects
+and performs special handling for potential keys named:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p><cite>label</cite>: handles a single value (int or float) per object</p></li>
 <li><p><cite>label_ids</cite>: handles a list of values per object</p></li>
 </ul>
 </div></blockquote>
-<p>Does not do any additional preprocessing: property names of the input object will be used as corresponding inputs
-to the model. See glue and ner for example of how it’s useful.</p>
-<p>This is an object (like other data collators) rather than a pure function like default_data_collator. This can be
-helpful if you need to set a return_tensors value at initialization.</p>
+<p>Does not do any additional preprocessing: property names of the input object
+will be used as corresponding inputs to the model. See glue and ner for example
+of how it’s useful.</p>
+<p>This is an object (like other data collators) rather than a pure function like
+default_data_collator. This can be helpful if you need to set a return_tensors
+value at initialization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>return_tensors</strong> (<cite>str</cite>, <em>optional</em>, defaults to <cite>“pt”</cite>) – The type of Tensor to return. Allowable values are “np”, “pt” and “tf”.</p>
@@ -450,16 +472,16 @@ helpful if you need to set a return_tensors value at initialization.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="tklearn.nn.utils.collators.InputDataClass">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.utils.collators.</span></span><span class="sig-name descname"><span class="pre">InputDataClass</span></span><a class="headerlink" href="#tklearn.nn.utils.collators.InputDataClass" title="Link to this definition">#</a></dt>
-<dd><p>A DataCollator is a function that takes a list of samples from a Dataset and collate them into a batch, as a dictionary
-of PyTorch/TensorFlow tensors or NumPy arrays.</p>
+<dd><p>A DataCollator is a function that takes a list of samples from a Dataset and collate
+them into a batch, as a dictionar of PyTorch/TensorFlow tensors or NumPy arrays.</p>
 <p>alias of <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code></p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="tklearn.nn.utils.collators.default_data_collator">
 <span class="sig-prename descclassname"><span class="pre">tklearn.nn.utils.collators.</span></span><span class="sig-name descname"><span class="pre">default_data_collator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_tensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pt'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/utils/collators.html#default_data_collator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.utils.collators.default_data_collator" title="Link to this definition">#</a></dt>
-<dd><p>Very simple data collator that simply collates batches of dict-like objects and performs special handling for
-potential keys named:
+<dd><p>Very simple data collator that simply collates batches of dict-like objects
+and performs special handling for potential keys named:
 :rtype: <span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</span></p>
 <blockquote>
 <div><ul class="simple">
@@ -467,24 +489,16 @@ potential keys named:
 <li><p><cite>label_ids</cite>: handles a list of values per object</p></li>
 </ul>
 </div></blockquote>
-<p>Does not do any additional preprocessing: property names of the input object will be used as corresponding inputs
+<p>Does not do any additional preprocessing: property names of the input object
+will be used as corresponding inputs
 to the model. See glue and ner for example of how it’s useful.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="tklearn.nn.utils.collators.get_labels">
-<span class="sig-prename descclassname"><span class="pre">tklearn.nn.utils.collators.</span></span><span class="sig-name descname"><span class="pre">get_labels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/utils/collators.html#get_labels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.utils.collators.get_labels" title="Link to this definition">#</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></span></p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="tklearn.nn.utils.collators.pad_without_fast_tokenizer_warning">
 <span class="sig-prename descclassname"><span class="pre">tklearn.nn.utils.collators.</span></span><span class="sig-name descname"><span class="pre">pad_without_fast_tokenizer_warning</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tokenizer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">pad_args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pad_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/utils/collators.html#pad_without_fast_tokenizer_warning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.utils.collators.pad_without_fast_tokenizer_warning" title="Link to this definition">#</a></dt>
-<dd><p>Pads without triggering the warning about how using the pad function is sub-optimal when using a fast tokenizer.</p>
+<dd><p>Pads without triggering the warning about how using the pad function
+is sub-optimal when using a fast tokenizer.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -598,8 +612,8 @@ to the model. See glue and ner for example of how it’s useful.</p>
 <section id="module-tklearn.nn.utils.preprocessing">
 <span id="tklearn-nn-utils-preprocessing-module"></span><h2>tklearn.nn.utils.preprocessing module<a class="headerlink" href="#module-tklearn.nn.utils.preprocessing" title="Link to this heading">#</a></h2>
 <dl class="py function">
-<dt class="sig sig-object py" id="tklearn.nn.utils.preprocessing.preprocess_input">
-<span class="sig-prename descclassname"><span class="pre">tklearn.nn.utils.preprocessing.</span></span><span class="sig-name descname"><span class="pre">preprocess_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tklearn.nn.utils.preprocessing.preprocess_input" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="tklearn.nn.utils.preprocessing.preprocess_logits">
+<span class="sig-prename descclassname"><span class="pre">tklearn.nn.utils.preprocessing.</span></span><span class="sig-name descname"><span class="pre">preprocess_logits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#tklearn.nn.utils.preprocessing.preprocess_logits" title="Link to this definition">#</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]</span></p>
@@ -684,6 +698,9 @@ to the model. See glue and ner for example of how it’s useful.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.utils.collators">tklearn.nn.utils.collators module</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.collators.DataCollatorMixin"><code class="docutils literal notranslate"><span class="pre">DataCollatorMixin</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.collators.DataCollatorWithPadding"><code class="docutils literal notranslate"><span class="pre">DataCollatorWithPadding</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.collators.DataCollatorWithPadding.features"><code class="docutils literal notranslate"><span class="pre">DataCollatorWithPadding.features</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.collators.DataCollatorWithPadding.get_labels"><code class="docutils literal notranslate"><span class="pre">DataCollatorWithPadding.get_labels()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.collators.DataCollatorWithPadding.labels_column"><code class="docutils literal notranslate"><span class="pre">DataCollatorWithPadding.labels_column</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.collators.DataCollatorWithPadding.max_length"><code class="docutils literal notranslate"><span class="pre">DataCollatorWithPadding.max_length</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.collators.DataCollatorWithPadding.pad_to_multiple_of"><code class="docutils literal notranslate"><span class="pre">DataCollatorWithPadding.pad_to_multiple_of</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.collators.DataCollatorWithPadding.padding"><code class="docutils literal notranslate"><span class="pre">DataCollatorWithPadding.padding</span></code></a></li>
@@ -697,7 +714,6 @@ to the model. See glue and ner for example of how it’s useful.</p>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.collators.InputDataClass"><code class="docutils literal notranslate"><span class="pre">InputDataClass</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.collators.default_data_collator"><code class="docutils literal notranslate"><span class="pre">default_data_collator()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.collators.get_labels"><code class="docutils literal notranslate"><span class="pre">get_labels()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.collators.pad_without_fast_tokenizer_warning"><code class="docutils literal notranslate"><span class="pre">pad_without_fast_tokenizer_warning()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.collators.torch_default_data_collator"><code class="docutils literal notranslate"><span class="pre">torch_default_data_collator()</span></code></a></li>
 </ul>
@@ -720,7 +736,7 @@ to the model. See glue and ner for example of how it’s useful.</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.utils.preprocessing">tklearn.nn.utils.preprocessing module</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.preprocessing.preprocess_input"><code class="docutils literal notranslate"><span class="pre">preprocess_input()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.preprocessing.preprocess_logits"><code class="docutils literal notranslate"><span class="pre">preprocess_logits()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.utils.preprocessing.preprocess_target"><code class="docutils literal notranslate"><span class="pre">preprocess_target()</span></code></a></li>
 </ul>
 </li>

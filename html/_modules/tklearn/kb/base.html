@@ -315,12 +315,12 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ClassVar</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">nltk</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nightjar</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoModule</span><span class="p">,</span> <span class="n">BaseConfig</span><span class="p">,</span> <span class="n">BaseModule</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">nltk.corpus</span><span class="w"> </span><span class="kn">import</span> <span class="n">stopwords</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">tklearn.kb.lexicon</span><span class="w"> </span><span class="kn">import</span> <span class="n">Lexicon</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tklearn.kb.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Candidate</span><span class="p">,</span> <span class="n">Mention</span><span class="p">,</span> <span class="n">Span</span><span class="p">,</span> <span class="n">Triple</span>
@@ -337,19 +337,46 @@
 
 
 
+<div class="viewcode-block" id="ArtifactStoreConfig">
+<a class="viewcode-back" href="../../../api/tklearn.kb.html#tklearn.kb.base.ArtifactStoreConfig">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ArtifactStoreConfig</span><span class="p">(</span><span class="n">BaseConfig</span><span class="p">,</span> <span class="n">dispatch</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">):</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></div>
+
+
+
 <div class="viewcode-block" id="ArtifactStore">
 <a class="viewcode-back" href="../../../api/tklearn.kb.html#tklearn.kb.base.ArtifactStore">[docs]</a>
-<span class="nd">@runtime_checkable</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">ArtifactStore</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-    <span class="n">lexicon</span><span class="p">:</span> <span class="n">Lexicon</span><span class="p">[</span>
-        <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-    <span class="p">]</span>  <span class="c1"># form (str) -&gt; set of words (same form may have different words)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ArtifactStore</span><span class="p">(</span><span class="n">BaseModule</span><span class="p">):</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">ArtifactStoreConfig</span>
+
+    <span class="c1"># form (str) -&gt; set of words (set[str])</span>
+    <span class="n">lexicon</span><span class="p">:</span> <span class="n">Lexicon</span><span class="p">[</span><span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+    <span class="c1"># subject (str, int) -&gt; predicate (str) -&gt; object (str, int)</span>
     <span class="n">triples</span><span class="p">:</span> <span class="n">TripleStore</span>
+    <span class="c1"># gloss (str) -&gt; index (int)</span>
     <span class="n">gloss2idx</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+    <span class="c1"># index (int) -&gt; gloss (str)</span>
     <span class="n">idx2gloss</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
-    <span class="n">senses</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>  <span class="c1"># word (str) -&gt; set of senses (int)</span>
+    <span class="c1"># word (str) -&gt; set of senses (set[int])</span>
+    <span class="n">senses</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
+    <span class="c1"># sense (int) -&gt; embedding (np.ndarray)</span>
     <span class="n">embeddings</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+    <span class="c1"># attribute (str) -&gt; set of senses (set[int])</span>
     <span class="n">attrs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span></div>
+
+
+
+<div class="viewcode-block" id="AutoArtifactStore">
+<a class="viewcode-back" href="../../../api/tklearn.kb.html#tklearn.kb.base.AutoArtifactStore">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AutoArtifactStore</span><span class="p">(</span><span class="n">AutoModule</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ArtifactStore</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">ArtifactStore</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">config</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">config</span><span class="p">}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">ArtifactStoreConfig</span><span class="p">):</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">ArtifactStoreConfig</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span></div>
 
 
 
@@ -364,25 +391,21 @@
     <span class="n">embeddings</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
     <span class="n">attrs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">ArtifactStore</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">store</span> <span class="o">=</span> <span class="n">store</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__post_init__</span><span class="p">()</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">store</span> <span class="o">=</span> <span class="n">AutoArtifactStore</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__reduce__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">config</span><span class="p">,))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;KnowledgeBase(</span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">)&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getattr__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">index_subject</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">triple</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">triples</span><span class="o">.</span><span class="n">query</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">triple</span><span class="o">.</span><span class="n">subject</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">index_subject</span><span class="p">:</span>
-                <span class="n">index_subject</span><span class="p">[</span><span class="n">triple</span><span class="o">.</span><span class="n">subject</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">if</span> <span class="n">triple</span><span class="o">.</span><span class="n">predicate</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">index_subject</span><span class="p">[</span><span class="n">triple</span><span class="o">.</span><span class="n">subject</span><span class="p">]:</span>
-                <span class="n">index_subject</span><span class="p">[</span><span class="n">triple</span><span class="o">.</span><span class="n">subject</span><span class="p">][</span><span class="n">triple</span><span class="o">.</span><span class="n">predicate</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-            <span class="n">index_subject</span><span class="p">[</span><span class="n">triple</span><span class="o">.</span><span class="n">subject</span><span class="p">][</span><span class="n">triple</span><span class="o">.</span><span class="n">predicate</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">triple</span><span class="o">.</span><span class="n">object</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">index_subject</span> <span class="o">=</span> <span class="n">index_subject</span>
 
 <div class="viewcode-block" id="KnowledgeBase.extract_candidates">
 <a class="viewcode-back" href="../../../api/tklearn.kb.html#tklearn.kb.base.KnowledgeBase.extract_candidates">[docs]</a>
@@ -424,10 +447,11 @@
 <div class="viewcode-block" id="KnowledgeBase.augment">
 <a class="viewcode-back" href="../../../api/tklearn.kb.html#tklearn.kb.base.KnowledgeBase.augment">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">augment</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mentions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filter_func</span><span class="o">=</span><span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mentions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">relation_filter</span><span class="o">=</span><span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Augment text by replacing words with synonyms, hyponyms, and hypernyms.&quot;&quot;&quot;</span>
-        <span class="n">filter_func</span> <span class="o">=</span> <span class="n">filter_func</span> <span class="ow">or</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">relation_filter</span> <span class="o">=</span> <span class="n">relation_filter</span> <span class="ow">or</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># not augmented</span>
         <span class="k">yield</span> <span class="p">{</span>
             <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
             <span class="s2">&quot;original&quot;</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
@@ -445,12 +469,10 @@
             <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="n">mention</span><span class="o">.</span><span class="n">candidates</span><span class="p">:</span>
                 <span class="n">subject</span> <span class="o">=</span> <span class="p">(</span><span class="n">candidate</span><span class="o">.</span><span class="n">word</span><span class="p">,</span> <span class="n">candidate</span><span class="o">.</span><span class="n">sense_id</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">predicate</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;synonym&quot;</span><span class="p">,</span> <span class="s2">&quot;hyponym&quot;</span><span class="p">,</span> <span class="s2">&quot;instance&quot;</span><span class="p">]:</span>
-                    <span class="n">objects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_subject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                        <span class="n">predicate</span><span class="p">,</span> <span class="p">[]</span>
-                    <span class="p">)</span>
+                    <span class="n">objects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">triples</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">predicate</span><span class="p">,</span> <span class="p">[])</span>
                     <span class="k">for</span> <span class="n">object_</span> <span class="ow">in</span> <span class="n">objects</span><span class="p">:</span>
                         <span class="n">rel</span> <span class="o">=</span> <span class="n">Triple</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span> <span class="n">predicate</span><span class="p">,</span> <span class="n">object_</span><span class="p">)</span>
-                        <span class="k">if</span> <span class="ow">not</span> <span class="n">filter_func</span><span class="p">(</span><span class="n">rel</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">relation_filter</span><span class="p">(</span><span class="n">rel</span><span class="p">):</span>
                             <span class="k">continue</span>
                         <span class="n">aug_words</span><span class="p">[</span><span class="n">rel</span><span class="o">.</span><span class="n">object</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rel</span><span class="o">.</span><span class="n">to_tuple</span><span class="p">())</span>
             <span class="k">for</span> <span class="n">word</span><span class="p">,</span> <span class="n">relations</span> <span class="ow">in</span> <span class="n">aug_words</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>

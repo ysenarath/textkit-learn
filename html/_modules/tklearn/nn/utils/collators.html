@@ -324,8 +324,8 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">NewType</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -336,8 +336,8 @@
 <span class="n">InputDataClass</span> <span class="o">=</span> <span class="n">NewType</span><span class="p">(</span><span class="s2">&quot;InputDataClass&quot;</span><span class="p">,</span> <span class="n">Any</span><span class="p">)</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">A DataCollator is a function that takes a list of samples from a Dataset and collate them into a batch, as a dictionary</span>
-<span class="sd">of PyTorch/TensorFlow tensors or NumPy arrays.</span>
+<span class="sd">A DataCollator is a function that takes a list of samples from a Dataset and collate</span>
+<span class="sd">them into a batch, as a dictionar of PyTorch/TensorFlow tensors or NumPy arrays.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="n">DataCollator</span> <span class="o">=</span> <span class="n">NewType</span><span class="p">(</span>
     <span class="s2">&quot;DataCollator&quot;</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">list</span><span class="p">[</span><span class="n">InputDataClass</span><span class="p">]],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
@@ -407,13 +407,14 @@
     <span class="n">features</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">InputDataClass</span><span class="p">],</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Very simple data collator that simply collates batches of dict-like objects and performs special handling for</span>
-<span class="sd">    potential keys named:</span>
+<span class="sd">    Very simple data collator that simply collates batches of dict-like objects</span>
+<span class="sd">    and performs special handling for potential keys named:</span>
 
 <span class="sd">        - `label`: handles a single value (int or float) per object</span>
 <span class="sd">        - `label_ids`: handles a list of values per object</span>
 
-<span class="sd">    Does not do any additional preprocessing: property names of the input object will be used as corresponding inputs</span>
+<span class="sd">    Does not do any additional preprocessing: property names of the input object</span>
+<span class="sd">    will be used as corresponding inputs</span>
 <span class="sd">    to the model. See glue and ner for example of how it&#39;s useful.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -434,7 +435,8 @@
 <a class="viewcode-back" href="../../../../api/tklearn.nn.utils.html#tklearn.nn.utils.collators.pad_without_fast_tokenizer_warning">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">pad_without_fast_tokenizer_warning</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="o">*</span><span class="n">pad_args</span><span class="p">,</span> <span class="o">**</span><span class="n">pad_kwargs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Pads without triggering the warning about how using the pad function is sub-optimal when using a fast tokenizer.</span>
+<span class="sd">    Pads without triggering the warning about how using the pad function</span>
+<span class="sd">    is sub-optimal when using a fast tokenizer.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># To avoid errors when using Feature extractors</span>
@@ -478,17 +480,19 @@
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">DefaultDataCollator</span><span class="p">(</span><span class="n">DataCollatorMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Very simple data collator that simply collates batches of dict-like objects and performs special handling for</span>
-<span class="sd">    potential keys named:</span>
+<span class="sd">    Very simple data collator that simply collates batches of dict-like objects</span>
+<span class="sd">    and performs special handling for potential keys named:</span>
 
 <span class="sd">        - `label`: handles a single value (int or float) per object</span>
 <span class="sd">        - `label_ids`: handles a list of values per object</span>
 
-<span class="sd">    Does not do any additional preprocessing: property names of the input object will be used as corresponding inputs</span>
-<span class="sd">    to the model. See glue and ner for example of how it&#39;s useful.</span>
+<span class="sd">    Does not do any additional preprocessing: property names of the input object</span>
+<span class="sd">    will be used as corresponding inputs to the model. See glue and ner for example</span>
+<span class="sd">    of how it&#39;s useful.</span>
 
-<span class="sd">    This is an object (like other data collators) rather than a pure function like default_data_collator. This can be</span>
-<span class="sd">    helpful if you need to set a return_tensors value at initialization.</span>
+<span class="sd">    This is an object (like other data collators) rather than a pure function like</span>
+<span class="sd">    default_data_collator. This can be helpful if you need to set a return_tensors</span>
+<span class="sd">    value at initialization.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        return_tensors (`str`, *optional*, defaults to `&quot;pt&quot;`):</span>
@@ -506,20 +510,6 @@
 
 
 
-<div class="viewcode-block" id="get_labels">
-<a class="viewcode-back" href="../../../../api/tklearn.nn.utils.html#tklearn.nn.utils.collators.get_labels">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_labels</span><span class="p">(</span><span class="n">features</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-    <span class="k">if</span> <span class="s2">&quot;labels&quot;</span> <span class="ow">in</span> <span class="n">features</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">]</span>
-    <span class="k">elif</span> <span class="s2">&quot;label&quot;</span> <span class="ow">in</span> <span class="n">features</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
-    <span class="k">elif</span> <span class="s2">&quot;label_ids&quot;</span> <span class="ow">in</span> <span class="n">features</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">features</span><span class="p">[</span><span class="s2">&quot;label_ids&quot;</span><span class="p">]</span>
-    <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;unable to find a label in the input features&quot;</span>
-    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
-
-
-
 <div class="viewcode-block" id="DataCollatorWithPadding">
 <a class="viewcode-back" href="../../../../api/tklearn.nn.utils.html#tklearn.nn.utils.collators.DataCollatorWithPadding">[docs]</a>
 <span class="nd">@dataclass</span>
@@ -528,38 +518,60 @@
     <span class="n">padding</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">PaddingStrategy</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">max_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">pad_to_multiple_of</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">labels_column</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">return_tensors</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;pt&quot;</span>
+    <span class="n">features</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DataCollatorWithPadding.get_labels">
+<a class="viewcode-back" href="../../../../api/tklearn.nn.utils.html#tklearn.nn.utils.collators.DataCollatorWithPadding.get_labels">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_column</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels_column</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">instance</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;labels column &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">labels_column</span><span class="si">}</span><span class="s2">&#39; not found in features&quot;</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">instance</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">labels_column</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s2">&quot;labels&quot;</span> <span class="ow">in</span> <span class="n">instance</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">instance</span><span class="p">[</span><span class="s2">&quot;labels&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s2">&quot;label_ids&quot;</span> <span class="ow">in</span> <span class="n">instance</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">instance</span><span class="p">[</span><span class="s2">&quot;label_ids&quot;</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="s2">&quot;label&quot;</span> <span class="ow">in</span> <span class="n">instance</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">instance</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;unable to find a label in the input features: </span><span class="se">\n</span><span class="si">{</span><span class="n">instance</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">features</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="n">no_labels_features</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">tokenized_batch</span> <span class="o">=</span> <span class="p">[</span>
             <span class="p">{</span>
                 <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
-                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">feature</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="s2">&quot;label_ids&quot;</span><span class="p">,</span> <span class="s2">&quot;labels&quot;</span><span class="p">}</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">instance</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="s2">&quot;label_ids&quot;</span><span class="p">,</span> <span class="s2">&quot;labels&quot;</span><span class="p">})</span>
+                <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">)</span>
             <span class="p">}</span>
-            <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">features</span>
+            <span class="k">for</span> <span class="n">instance</span> <span class="ow">in</span> <span class="n">features</span>
         <span class="p">]</span>
         <span class="n">batch</span> <span class="o">=</span> <span class="n">pad_without_fast_tokenizer_warning</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">,</span>
-            <span class="n">no_labels_features</span><span class="p">,</span>
+            <span class="n">tokenized_batch</span><span class="p">,</span>
             <span class="n">padding</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">padding</span><span class="p">,</span>
             <span class="n">max_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_length</span><span class="p">,</span>
             <span class="n">pad_to_multiple_of</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pad_to_multiple_of</span><span class="p">,</span>
             <span class="n">return_tensors</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">return_tensors</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">labels_tensor</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_labels</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span> <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">features</span><span class="p">]</span>
+            <span class="n">labels_tensor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_labels</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span> <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">features</span><span class="p">]</span>
             <span class="c1"># convert to tensor if necessary</span>
             <span class="n">labels_tensor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">labels_tensor</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_tensors</span> <span class="o">==</span> <span class="s2">&quot;pt&quot;</span><span class="p">:</span>
-                <span class="n">label_dtype</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">torch</span><span class="o">.</span><span class="n">float32</span>
-                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels_tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
-                    <span class="k">else</span> <span class="n">torch</span><span class="o">.</span><span class="n">long</span>
-                <span class="p">)</span>
-                <span class="n">labels_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span>
-                    <span class="n">labels_tensor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">label_dtype</span>
-                <span class="p">)</span>
+                <span class="n">label_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">long</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels_tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">label_dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">float32</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">labels_tensor</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">as_tensor</span><span class="p">(</span>
+                        <span class="n">labels_tensor</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">label_dtype</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_tensors</span> <span class="o">!=</span> <span class="s2">&quot;np&quot;</span><span class="p">:</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;return_tensors should be &#39;np&#39; or &#39;pt&#39; for&quot;</span>

@@ -1031,100 +1031,69 @@ but that may change in the future.</p>
 <span id="tklearn-nn-callbacks-progbar-logger-module"></span><h2>tklearn.nn.callbacks.progbar_logger module<a class="headerlink" href="#module-tklearn.nn.callbacks.progbar_logger" title="Link to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.progbar_logger.</span></span><span class="sig-name descname"><span class="pre">ProgbarLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exclude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.progbar_logger.</span></span><span class="sig-name descname"><span class="pre">ProgbarLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exclude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch_desc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Epoch'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_desc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Predicting'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_desc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Batch'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a></p>
+<p>Callback to display progress bars and performance reports during training and prediction.
+Uses tqdm for progress visualization.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_epoch_begin">
+<span class="sig-name descname"><span class="pre">on_epoch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_epoch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_epoch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Notes if epoch indexing is zero-based.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_epoch_end">
 <span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_epoch_end" title="Link to this definition">#</a></dt>
-<dd><p>Called at the end of each epoch.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>epoch</strong> (<em>int</em>) – The epoch index.</p></li>
-<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p></li>
-</ul>
-</dd>
-</dl>
+<dd><p>Finalizes the progress bar for the current epoch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_batch_begin">
+<span class="sig-name descname"><span class="pre">on_predict_batch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_batch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_batch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Notes if prediction batch indexing is zero-based.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_batch_end">
 <span class="sig-name descname"><span class="pre">on_predict_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_batch_end" title="Link to this definition">#</a></dt>
-<dd><p>Called at the end of a batch in <cite>predict</cite> methods.</p>
-<p>Subclasses should override for any actions to run.</p>
-<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
-<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
-<cite>N</cite> batches.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
-<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Aggregated metric results up until this batch.</p></li>
-</ul>
-</dd>
-</dl>
+<dd><p>Updates the prediction step progress bar.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_begin">
 <span class="sig-name descname"><span class="pre">on_predict_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_begin" title="Link to this definition">#</a></dt>
-<dd><p>Called at the beginning of prediction.</p>
-<p>Subclasses should override for any actions to run.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
-that may change in the future.</p>
-</dd>
-</dl>
+<dd><p>Initializes the progress bar for prediction steps.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_end">
 <span class="sig-name descname"><span class="pre">on_predict_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_end" title="Link to this definition">#</a></dt>
-<dd><p>Called at the end of prediction.</p>
-<p>Subclasses should override for any actions to run.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
-that may change in the future.</p>
-</dd>
-</dl>
+<dd><p>Finalizes the prediction progress bar.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_batch_begin">
+<span class="sig-name descname"><span class="pre">on_train_batch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_batch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_batch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Notes if batch indexing is zero-based.
+Initializes batch progress bar at the start of each epoch’s first batch.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_batch_end">
 <span class="sig-name descname"><span class="pre">on_train_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_batch_end" title="Link to this definition">#</a></dt>
-<dd><p>Called at the end of each training batch.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>batch</strong> (<em>int</em>) – The batch index.</p></li>
-<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p></li>
-</ul>
-</dd>
-</dl>
+<dd><p>Updates the training step progress bar with current batch logs.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_begin">
 <span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_begin" title="Link to this definition">#</a></dt>
-<dd><p>Called at the beginning of training.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p>
-</dd>
-</dl>
+<dd><p>Initializes the progress bar for training epochs.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_end">
 <span class="sig-name descname"><span class="pre">on_train_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_end" title="Link to this definition">#</a></dt>
-<dd><p>Called at the end of training.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p>
-</dd>
-</dl>
+<dd><p>Finalizes the training epoch progress bar.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1712,100 +1681,69 @@ but that may change in the future.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.</span></span><span class="sig-name descname"><span class="pre">ProgbarLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exclude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tklearn.nn.callbacks.</span></span><span class="sig-name descname"><span class="pre">ProgbarLogger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">exclude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch_desc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Epoch'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_desc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Predicting'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_desc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Batch'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#tklearn.nn.callbacks.base.Callback" title="tklearn.nn.callbacks.base.Callback"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callback</span></code></a></p>
+<p>Callback to display progress bars and performance reports during training and prediction.
+Uses tqdm for progress visualization.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_epoch_begin">
+<span class="sig-name descname"><span class="pre">on_epoch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_epoch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_epoch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Notes if epoch indexing is zero-based.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_epoch_end">
 <span class="sig-name descname"><span class="pre">on_epoch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epoch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_epoch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_epoch_end" title="Link to this definition">#</a></dt>
-<dd><p>Called at the end of each epoch.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>epoch</strong> (<em>int</em>) – The epoch index.</p></li>
-<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p></li>
-</ul>
-</dd>
-</dl>
+<dd><p>Finalizes the progress bar for the current epoch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_predict_batch_begin">
+<span class="sig-name descname"><span class="pre">on_predict_batch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_batch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_batch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Notes if prediction batch indexing is zero-based.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_predict_batch_end">
 <span class="sig-name descname"><span class="pre">on_predict_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_batch_end" title="Link to this definition">#</a></dt>
-<dd><p>Called at the end of a batch in <cite>predict</cite> methods.</p>
-<p>Subclasses should override for any actions to run.</p>
-<p>Note that if the <cite>steps_per_execution</cite> argument to <cite>compile</cite> in
-<cite>Model</cite> is set to <cite>N</cite>, this method will only be called every
-<cite>N</cite> batches.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>batch</strong> (<em>int</em>) – Index of batch within the current epoch.</p></li>
-<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Aggregated metric results up until this batch.</p></li>
-</ul>
-</dd>
-</dl>
+<dd><p>Updates the prediction step progress bar.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_predict_begin">
 <span class="sig-name descname"><span class="pre">on_predict_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_begin" title="Link to this definition">#</a></dt>
-<dd><p>Called at the beginning of prediction.</p>
-<p>Subclasses should override for any actions to run.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
-that may change in the future.</p>
-</dd>
-</dl>
+<dd><p>Initializes the progress bar for prediction steps.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_predict_end">
 <span class="sig-name descname"><span class="pre">on_predict_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_predict_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_end" title="Link to this definition">#</a></dt>
-<dd><p>Called at the end of prediction.</p>
-<p>Subclasses should override for any actions to run.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Currently no data is passed to this argument for this method but
-that may change in the future.</p>
-</dd>
-</dl>
+<dd><p>Finalizes the prediction progress bar.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_train_batch_begin">
+<span class="sig-name descname"><span class="pre">on_train_batch_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_batch_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_batch_begin" title="Link to this definition">#</a></dt>
+<dd><p>Notes if batch indexing is zero-based.
+Initializes batch progress bar at the start of each epoch’s first batch.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_train_batch_end">
 <span class="sig-name descname"><span class="pre">on_train_batch_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_batch_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_batch_end" title="Link to this definition">#</a></dt>
-<dd><p>Called at the end of each training batch.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>batch</strong> (<em>int</em>) – The batch index.</p></li>
-<li><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p></li>
-</ul>
-</dd>
-</dl>
+<dd><p>Updates the training step progress bar with current batch logs.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_train_begin">
 <span class="sig-name descname"><span class="pre">on_train_begin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_begin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_begin" title="Link to this definition">#</a></dt>
-<dd><p>Called at the beginning of training.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p>
-</dd>
-</dl>
+<dd><p>Initializes the progress bar for training epochs.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="tklearn.nn.callbacks.ProgbarLogger.on_train_end">
 <span class="sig-name descname"><span class="pre">on_train_end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tklearn/nn/callbacks/progbar_logger.html#ProgbarLogger.on_train_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_end" title="Link to this definition">#</a></dt>
-<dd><p>Called at the end of training.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>logs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Dictionary of logs. Default is None.</p>
-</dd>
-</dl>
+<dd><p>Finalizes the training epoch progress bar.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1984,10 +1922,13 @@ Example: <cite>{‘loss’: 0.2, ‘accuracy’: 0.7}</cite>.</p></li>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-tklearn.nn.callbacks.progbar_logger">tklearn.nn.callbacks.progbar_logger module</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_epoch_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_epoch_begin()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_epoch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_batch_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_batch_begin()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_batch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_batch_end()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_begin()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_predict_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_batch_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_batch_begin()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_batch_end()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_begin()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.progbar_logger.ProgbarLogger.on_train_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_end()</span></code></a></li>
@@ -2059,10 +2000,13 @@ Example: <cite>{‘loss’: 0.2, ‘accuracy’: 0.7}</cite>.</p></li>
 </ul>
 </li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_epoch_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_epoch_begin()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_epoch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_epoch_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_batch_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_batch_begin()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_batch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_batch_end()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_begin()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_predict_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_predict_end()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_batch_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_batch_begin()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_batch_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_batch_end()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_begin"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_begin()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#tklearn.nn.callbacks.ProgbarLogger.on_train_end"><code class="docutils literal notranslate"><span class="pre">ProgbarLogger.on_train_end()</span></code></a></li>
