@@ -107,6 +107,7 @@ class KnowledgeBase:
                 continue
             for word in words:
                 for cc in self.extract_candidates(word):
+                    # TODO: remove comment below if not needed
                     if cc.word.lower() != form.lower():
                         continue
                     candidates.append(cc)
