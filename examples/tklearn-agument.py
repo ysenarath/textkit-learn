@@ -1,25 +1,15 @@
 from tklearn.kb import KnowledgeBase
-from tklearn.kb.models import Triple
 
 kb = KnowledgeBase("wiktionary")
 
-print("Wiktionary data setup complete.")
-print(f"Lexicon size: {len(kb.lexicon)}")
-print(f"Triplet store size: {len(kb.triples)}")
-print(f"Gloss2idx size: {len(kb.gloss2idx)}")
-print(f"Idx2gloss size: {len(kb.idx2gloss)}")
-print(f"Senses size: {len(kb.senses)}")
-print(f"Embeddings size: {len(kb.embeddings)}")
-
-
-def filter_func(item: Triple):
-    subject_sense = item.subject[1]
-    if subject_sense in kb.attrs["hate_related"]:
-        return True
-    return False
-
-
 text = "She's a pure Oreo. You know, like the cookie, black outside and white inside."
 
-for item in kb.augment(text, filter_func=filter_func):
-    print(item)
+for mention in kb.extract_mentions(text):
+    start, end = mention.span
+    mention_text = text[start:end]
+    start_tag = "<m>"
+    end_tag = "</m>"
+    text_annotated = (
+        text[:start] + start_tag + mention_text + end_tag + text[end:]
+    )
+    print(text_annotated)
