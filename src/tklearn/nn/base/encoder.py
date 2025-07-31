@@ -64,7 +64,7 @@ class Encoder(CallbacksMixin, Generic[K, V]):
     def encode(self) -> torch.Tensor:
         self.model.eval()
 
-        encoding = None
+        encodings = []
 
         for batch_idx, batch, output, batch_loss in self.iter_batches():
             pooler_output = output["pooler_output"]  # tensor in device
@@ -72,11 +72,10 @@ class Encoder(CallbacksMixin, Generic[K, V]):
                 pooler_output = move_to_device(
                     pooler_output.detach(), device="cpu"
                 )
-            encoding = concat((encoding, pooler_output))
+            encodings.append(pooler_output)
             del pooler_output
 
-        if encoding is None:
-            msg = "unexpected output from model, encoding is None"
-            raise ValueError(msg)
+        if not encodings:
+            raise ValueError("no encodings were generated")
 
-        return encoding
+        return concat(encodings, axis=0)
