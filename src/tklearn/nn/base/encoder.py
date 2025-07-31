@@ -61,21 +61,27 @@ class Encoder(CallbacksMixin, Generic[K, V]):
 
         self.callbacks.on_predict_end()
 
-    def encode(self) -> torch.Tensor:
+    def encode(
+        self,
+        return_tensors: str = "pt",
+        return_list: bool = False,
+    ) -> torch.Tensor:
         self.model.eval()
 
         encodings = []
 
-        for batch_idx, batch, output, batch_loss in self.iter_batches():
+        for _, _, output, _ in self.iter_batches():
             pooler_output = output["pooler_output"]  # tensor in device
             if isinstance(pooler_output, torch.Tensor):
                 pooler_output = move_to_device(
                     pooler_output.detach(), device="cpu"
                 )
+            if return_tensors == "np":
+                pooler_output = pooler_output.numpy()
             encodings.append(pooler_output)
             del pooler_output
 
-        if not encodings:
-            raise ValueError("no encodings were generated")
+        if return_list:
+            return encodings
 
         return concat(encodings, axis=0)

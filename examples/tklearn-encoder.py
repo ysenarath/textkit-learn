@@ -50,6 +50,9 @@ encoder = Encoder(
     callbacks=[ProgbarLogger()],
 )
 
-encoded_output = encoder.encode()
+encoded_output = encoder.encode(
+    return_tensors="np",
+    return_list=True,
+)
 
-print("Encoded output shape:", encoded_output.shape)
+print("Encoded output shape:", len(encoded_output))
