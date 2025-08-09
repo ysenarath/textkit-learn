@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from typing import Generator, Generic, TypeVar, Union
+from typing import Generator, Generic, TypeVar, Union, overload
 
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
+from typing_extensions import Literal
 
 from tklearn.nn.base.module import Module
 from tklearn.nn.callbacks.base import Callback, CallbackList, CallbacksMixin
 from tklearn.nn.loss import LossDict
-from tklearn.utils.array import concat, move_to_device
+from tklearn.utils.array import move_to_device
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -61,11 +63,48 @@ class Encoder(CallbacksMixin, Generic[K, V]):
 
         self.callbacks.on_predict_end()
 
+    @overload
     def encode(
         self,
-        return_tensors: str = "pt",
+        return_tensors: Literal["pt"] | None,
+        return_list: Literal[False],
+    ) -> torch.Tensor: ...
+    @overload
+    def encode(
+        self,
+        return_tensors: Literal["np"],
+        return_list: Literal[False],
+    ) -> np.ndarray: ...
+    @overload
+    def encode(
+        self,
+        return_tensors: Literal["pt"],
+        return_list: Literal[True],
+    ) -> list[torch.Tensor]: ...
+    @overload
+    def encode(
+        self,
+        return_tensors: Literal["np"],
+        return_list: Literal[True],
+    ) -> list[np.ndarray]: ...
+    @overload
+    def encode(
+        self,
+        return_tensors: None,
+        return_list: Literal[True],
+    ) -> list[list[float]]: ...
+    def encode(
+        self,
+        return_tensors: str | None = "pt",
         return_list: bool = False,
-    ) -> torch.Tensor:
+    ) -> torch.Tensor | np.ndarray | list[torch.Tensor | np.ndarray]:
+        if return_tensors is None:
+            if not return_list:
+                return_tensors = "pt"
+        elif return_tensors not in {"pt", "np"}:
+            ERR = f"return_tensors must be either 'pt' or 'np', got {return_tensors}."
+            raise ValueError(ERR)
+
         self.model.eval()
 
         encodings = []
@@ -78,10 +117,16 @@ class Encoder(CallbacksMixin, Generic[K, V]):
                 )
             if return_tensors == "np":
                 pooler_output = pooler_output.numpy()
-            encodings.append(pooler_output)
+            elif return_tensors is None:
+                pooler_output = pooler_output.tolist()
+            encodings.append(pooler_output[0])
             del pooler_output
 
         if return_list:
-            return encodings
+            pass  # do not convert to tensor or numpy array
+        elif return_tensors == "np":
+            encodings = np.asarray(encodings)
+        elif return_tensors == "pt":
+            encodings = torch.stack(encodings)
 
-        return concat(encodings, axis=0)
+        return encodings
