@@ -23,7 +23,7 @@ auto_device = get_device()
 
 model.to(auto_device)
 
-dataset = load_dataset(DATASET, split="train").select(range(1000))
+dataset = load_dataset(DATASET, split="train").select(range(8))
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH)
 
@@ -51,8 +51,19 @@ encoder = Encoder(
 )
 
 encoded_output = encoder.encode(
-    return_tensors="np",
-    return_list=True,
+    return_tensors="pt",
+    return_list=False,
 )
 
-print("Encoded output shape:", len(encoded_output))
+MSG = "Encoded output type: "
+print(MSG, type(encoded_output))
+
+if hasattr(encoded_output, "shape"):
+    MSG = "Encoded output is a tensor with shape: "
+    print(MSG, encoded_output.shape)
+else:
+    MSG = "Encoded output is a list of tensors of type: "
+    print(MSG, type(encoded_output[0]))
+
+MSG = "Encoded output is a list of tensors with shape: "
+print(MSG, encoded_output[0].shape)
