@@ -119,7 +119,7 @@ class Encoder(CallbacksMixin, Generic[K, V]):
                 pooler_output = pooler_output.numpy()
             elif return_tensors is None:
                 pooler_output = pooler_output.tolist()
-            encodings.append(pooler_output[0])
+            encodings.extend(pooler_output)
             del pooler_output
 
         if return_list:
