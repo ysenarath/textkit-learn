@@ -112,13 +112,29 @@ class Encoder(CallbacksMixin, Generic[K, V]):
         for _, _, output, _ in self.iter_batches():
             pooler_output = output["pooler_output"]  # tensor in device
             if isinstance(pooler_output, torch.Tensor):
-                pooler_output = move_to_device(
-                    pooler_output.detach(), device="cpu"
+                pooler_output = pooler_output.detach()
+                pooler_output = move_to_device(pooler_output, device="cpu")
+                if return_tensors == "np":
+                    pooler_output = pooler_output.numpy()
+                elif return_tensors is None:
+                    pooler_output = pooler_output.tolist()
+            elif isinstance(pooler_output, np.ndarray):
+                if return_tensors == "pt":
+                    pooler_output = torch.from_numpy(pooler_output)
+                elif return_tensors is None:
+                    pooler_output = pooler_output.tolist()
+            elif isinstance(pooler_output, list):
+                if return_tensors == "pt":
+                    pooler_output = torch.from_numpy(pooler_output)
+                elif return_tensors == "np":
+                    pooler_output = np.asarray(pooler_output)
+            else:
+                ERR = "expected '{k}' to be a `{e}`, got `{t}` instead".format(
+                    k="pooler_output",
+                    e=torch.Tensor.__name__,
+                    t=type(pooler_output).__name__,
                 )
-            if return_tensors == "np":
-                pooler_output = pooler_output.numpy()
-            elif return_tensors is None:
-                pooler_output = pooler_output.tolist()
+                raise TypeError(ERR)
             encodings.extend(pooler_output)
             del pooler_output
 
