@@ -1,9 +1,23 @@
 from __future__ import annotations
 
-from typing import Any, ClassVar, List, Protocol, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    List,
+    Protocol,
+    runtime_checkable,
+)
 
 import torch
 from nightjar import AutoModule, BaseConfig, BaseModule
+
+if TYPE_CHECKING:
+    from transformers.modeling_utils import PreTrainedModel
+    from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+else:
+    PreTrainedModel = Any
+    PreTrainedTokenizerBase = Any
 
 
 class BackboneConfig(BaseConfig, dispatch=["type"]):
@@ -30,8 +44,8 @@ class Tokenizer(Protocol):
 
 class Backbone(BaseModule, torch.nn.Module):
     config: BackboneConfig
-    model: torch.nn.Module
-    tokenizer: Tokenizer
+    model: torch.nn.Module | PreTrainedModel
+    tokenizer: Tokenizer | PreTrainedTokenizerBase
 
     @property
     def hidden_size(self) -> int:
