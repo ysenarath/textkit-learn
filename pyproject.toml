@@ -61,6 +61,7 @@ dependencies = [
     "faiss-cpu==1.10.0",
     "setfit>=1.1.2",
     "umap-learn>=0.5.7",
+    "dill>=0.3.8",
 ]
 dynamic = ["version"]
 
