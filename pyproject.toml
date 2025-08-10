@@ -36,7 +36,7 @@ dependencies = [
     "werkzeug",
     "pyarrow",
     "transformers~=4.45.2",
-    "datasets",
+    "datasets>=3.0.0,<4.0.0",
     "evaluate",
     "accelerate",
     "nltk",
