@@ -88,16 +88,16 @@ extend-include = ["*.ipynb"]
 target-version = "py38"
 line-length = 79
 indent-width = 4
-preview = true # preview features & checks, use with caution
-extend-select = [ # features in preview
-    "W292", # missing-newline-at-end-of-file
-]
+preview = true                                                               # preview features & checks, use with caution
 include = ["src/**/*.py", "src/**/*.pyi", "tests/**/*.py", "tests/**/*.pyi"]
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 # Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
 # McCabe complexity (`C901`) by default.
+extend-select = [ # features in preview
+    "W292", # missing-newline-at-end-of-file
+]
 select = ["E4", "E7", "E9", "F", "I"]
 ignore = [
     "F601", # dict key literal ... repeated
@@ -135,6 +135,8 @@ fasttext = { git = "https://github.com/facebookresearch/fastText", rev = "1142dc
 
 [dependency-groups]
 dev = [
+    "jupyter>=1.1.1",
+    "jupyterlab>=4.4.6",
     "pydata-sphinx-theme>=0.16.1",
     "sphinx>=7.4.7",
     "sphinx-autodoc-typehints>=2.3.0",
