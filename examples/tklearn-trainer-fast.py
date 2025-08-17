@@ -1,3 +1,4 @@
+import torch
 from datasets import load_dataset
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
@@ -130,3 +131,8 @@ evaluator = Evaluator(
 valid_final_reslts = evaluator.evaluate()
 
 print(valid_final_reslts)
+
+
+# save the model (pytorch format)
+PATH = "yelp_review_full_model.pth"
+torch.save(model.state_dict(), PATH)
