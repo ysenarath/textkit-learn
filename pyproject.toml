@@ -62,6 +62,7 @@ dependencies = [
     "setfit>=1.1.2",
     "umap-learn>=0.5.7",
     "dill>=0.3.8",
+    "shap>=0.48.0",
 ]
 dynamic = ["version"]
 
