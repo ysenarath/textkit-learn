@@ -152,3 +152,4 @@ notebooks/benchmark_key_only/*
 examples/outputs/*
 requirements.txt
 requirements-dev.txt
+agentic_examples/*
