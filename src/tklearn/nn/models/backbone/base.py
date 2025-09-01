@@ -6,6 +6,7 @@ from typing import (
     ClassVar,
     List,
     Protocol,
+    Union,
     runtime_checkable,
 )
 
@@ -28,10 +29,7 @@ class AutoBackbone(AutoModule):
     def __new__(cls, config: BackboneConfig) -> Backbone:
         approach = super().__new__(cls, config)
         if not isinstance(approach, Backbone):
-            msg = (
-                f"expected {Backbone.__name__}, "
-                f"got {approach.__class__.__name__}"
-            )
+            msg = f"expected {Backbone.__name__}, got {approach.__class__.__name__}"
             raise TypeError(msg)
         return approach
 
@@ -44,8 +42,9 @@ class Tokenizer(Protocol):
 
 class Backbone(BaseModule, torch.nn.Module):
     config: BackboneConfig
-    model: torch.nn.Module | PreTrainedModel
-    tokenizer: Tokenizer | PreTrainedTokenizerBase
+
+    model: Union[torch.nn.Module, PreTrainedModel]
+    tokenizer: Union[Tokenizer, PreTrainedTokenizerBase]
 
     @property
     def hidden_size(self) -> int:
