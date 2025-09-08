@@ -2,20 +2,35 @@ from __future__ import annotations
 
 import functools
 import tempfile
+from collections.abc import Callable, Hashable
 from pathlib import Path
-from typing import Any, Callable, Dict, Generator, List, Union
+from typing import Any, Generator, Union
 
 import pandas as pd
-from datasets import Dataset, DatasetDict, IterableDataset, IterableDatasetDict
+from datasets import (
+    Dataset,
+    DatasetDict,
+    IterableDataset,
+    IterableDatasetDict,
+    concatenate_datasets,
+)
 from datasets import load_dataset as hf_load_dataset
 from tqdm import auto as tqdm
 
 from tklearn.config import config
 
-T_BI = Dict[str, List[Any]]
-T_BO = Union[Dict[str, List[Any]], List[Dict[str, Any]], pd.DataFrame]
-T_I = Dict[str, Any]
-T_O = Dict[str, Any]
+T_BI = dict[str, list[Any]]
+T_BO = Union[dict[str, list[Any]], list[dict[str, Any]], pd.DataFrame]
+T_I = dict[str, Any]
+T_O = dict[str, Any]
+
+__all__ = [
+    "DatasetMapper",
+    "load_dataset",
+    "islice",
+    "map_dataset",
+    "GroupBy",
+]
 
 
 class DatasetMapper:
@@ -153,3 +168,47 @@ def map_dataset(
         verbose=verbose,
         func_kwargs=func_kwargs,
     )
+
+
+def create_groups_indices(
+    keys: list[Hashable], idxs: list[int], groups: dict[Hashable, list[int]]
+):
+    for key, i in zip(keys, idxs):
+        groups[key].append(i)
+
+
+class GroupBy:
+    def __init__(self, dataset: Dataset, by: str):
+        self._ds = dataset
+        self._by = by
+        self.__post_init__()
+
+    def __post_init__(self):
+        groups = {key: [] for key in self._ds.unique(self._by)}
+        self._ds.map(
+            create_groups_indices,
+            with_indices=True,
+            input_columns=self._by,
+            fn_kwargs={"groups": groups},
+            batched=True,
+        )
+        self._groups = {
+            key: self._ds.select(indices) for key, indices in groups.items()
+        }
+        self._column_names = self._ds.column_names
+
+    def agg(self, func: Callable, **kwargs) -> Dataset:
+        result = None
+        for dataset_group in self._groups.values():
+            ds = dataset_group.map(
+                func,
+                batched=True,
+                batch_size=len(dataset_group),
+                remove_columns=self._column_names,
+                fn_kwargs=kwargs,
+            )
+            if result is None:
+                result = ds
+            else:
+                result = concatenate_datasets([result, ds])
+        return result
