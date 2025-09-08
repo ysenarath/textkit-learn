@@ -195,16 +195,16 @@ class GroupBy:
         self._groups = {
             key: self._ds.select(indices) for key, indices in groups.items()
         }
-        self._column_names = self._ds.column_names
 
     def agg(self, func: Callable, **kwargs) -> Dataset:
         result = None
+        remove_columns = self._ds.column_names
         for dataset_group in self._groups.values():
             ds = dataset_group.map(
                 func,
                 batched=True,
                 batch_size=len(dataset_group),
-                remove_columns=self._column_names,
+                remove_columns=remove_columns,
                 fn_kwargs=kwargs,
             )
             if result is None:
