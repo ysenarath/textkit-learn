@@ -17,7 +17,7 @@ from datasets import (
 from datasets import load_dataset as hf_load_dataset
 from tqdm import auto as tqdm
 
-from tklearn.config import config
+from tklearn.config import DEFAULT_BATCH_SIZE, config
 
 T_BI = dict[str, list[Any]]
 T_BO = Union[dict[str, list[Any]], list[dict[str, Any]], pd.DataFrame]
@@ -178,9 +178,17 @@ def create_groups_indices(
 
 
 class GroupBy:
-    def __init__(self, dataset: Dataset, by: str):
+    def __init__(
+        self,
+        dataset: Dataset,
+        by: str,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+        verbose: int = 0,
+    ):
         self._ds = dataset
         self._by = by
+        self.verbose = verbose
+        self.batch_size: int = batch_size
         self.__post_init__()
 
     def __post_init__(self):
@@ -192,23 +200,97 @@ class GroupBy:
             fn_kwargs={"groups": groups},
             batched=True,
         )
-        self._groups = {
-            key: self._ds.select(indices) for key, indices in groups.items()
-        }
+        self._groups = {key: indices for key, indices in groups.items()}
+        self._column_names = self._ds.column_names
 
     def agg(self, func: Callable, **kwargs) -> Dataset:
-        result = None
-        remove_columns = self._ds.column_names
-        for dataset_group in self._groups.values():
-            ds = dataset_group.map(
-                func,
-                batched=True,
-                batch_size=len(dataset_group),
-                remove_columns=remove_columns,
-                fn_kwargs=kwargs,
+        group_items = list(self._groups.items())
+
+        if self.verbose > 0:
+            group_items = tqdm.tqdm(
+                group_items,
+                total=len(group_items),
+                desc="Aggregating groups",
             )
-            if result is None:
-                result = ds
-            else:
-                result = concatenate_datasets([result, ds])
-        return result
+
+        results = []
+
+        current_batch = []
+        current_item_count = 0
+
+        for group_key, indices in group_items:
+            group_size = len(indices)
+
+            # If adding this group would exceed the batch size, process current batch
+            if (
+                current_batch
+                and current_item_count + group_size > self.batch_size
+            ):
+                results.append(
+                    _process_batch(
+                        dataset=self._ds,
+                        batch=current_batch,
+                        by=self._by,
+                        func=func,
+                        fn_kwargs=kwargs,
+                    )
+                )
+
+                # Reset for next batch
+                current_batch = []
+                current_item_count = 0
+
+            # Add current group to batch
+            current_batch.append((group_key, indices))
+            current_item_count += group_size
+
+        # Process any remaining groups in the final batch
+        if current_batch:
+            results.append(
+                _process_batch(
+                    dataset=self._ds,
+                    batch=current_batch,
+                    by=self._by,
+                    func=func,
+                    fn_kwargs=kwargs,
+                )
+            )
+
+        return concatenate_datasets(results)
+
+
+def _process_batch(
+    dataset: Dataset,
+    batch: list[tuple],
+    by: str,
+    func: Callable,
+    fn_kwargs: dict,
+) -> Dataset:
+    """Process a batch of groups and return the aggregated dataset."""
+    all_indices = sum((group_indices for _, group_indices in batch), [])
+    return Dataset.from_generator(
+        _apply_func_to_groups,
+        gen_kwargs={
+            "data": dataset.select(all_indices).to_pandas(),
+            "by": by,
+            "func": func,
+            "fn_kwargs": fn_kwargs,
+        },
+    )
+
+
+def _apply_func_to_groups(
+    data: pd.DataFrame, by: str, func: Callable, fn_kwargs: dict
+) -> Generator[dict, None, None]:
+    for _, df in data.groupby(by):
+        result = func(df, **fn_kwargs)
+        if isinstance(result, pd.DataFrame):
+            for record in result.to_dict(orient="records"):
+                yield record
+        elif isinstance(result, dict):
+            yield result
+        elif isinstance(result, list):
+            yield from result
+        else:
+            msg = f"expected output to be of type dict or pd.DataFrame, got {type(result)}"
+            raise ValueError(msg)
