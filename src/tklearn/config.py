@@ -4,6 +4,7 @@ from pathlib import Path
 from omegaconf import OmegaConf
 
 DEFAULT_CACHE_PATH: str = str((Path.home() / ".cache" / "tklearn").absolute())
+DEFAULT_BATCH_SIZE: int = 16
 
 
 @dataclass
