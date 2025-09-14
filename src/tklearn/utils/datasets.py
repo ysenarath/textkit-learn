@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import functools
+import gc
+import logging
 import tempfile
 from collections.abc import Callable, Hashable
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Generator, Union
 
 import pandas as pd
+import torch
 from datasets import (
     Dataset,
     DatasetDict,
@@ -15,6 +19,7 @@ from datasets import (
     concatenate_datasets,
 )
 from datasets import load_dataset as hf_load_dataset
+from datasets.utils.logging import disable_progress_bar, enable_progress_bar
 from tqdm import auto as tqdm
 
 from tklearn.config import config
@@ -31,6 +36,15 @@ __all__ = [
     "map_dataset",
     "GroupBy",
 ]
+
+
+@contextmanager
+def without_progress_bar():
+    logging.getLogger("datasets").setLevel(logging.ERROR)
+    disable_progress_bar()
+    yield
+    enable_progress_bar()
+    logging.getLogger("datasets").setLevel(logging.INFO)
 
 
 class DatasetMapper:
@@ -213,10 +227,10 @@ class GroupBy:
                 desc="Aggregating groups",
             )
 
-        results = []
-
         current_batch = []
         current_item_count = 0
+
+        res = None
 
         for group_key, indices in group_items:
             group_size = len(indices)
@@ -226,19 +240,21 @@ class GroupBy:
                 current_batch
                 and current_item_count + group_size > self.batch_size
             ):
-                results.append(
-                    _process_batch(
-                        dataset=self._ds,
-                        batch=current_batch,
-                        by=self._by,
-                        func=func,
-                        fn_kwargs=kwargs,
-                    )
+                ds = _process_batch(
+                    dataset=self._ds,
+                    batch=current_batch,
+                    by=self._by,
+                    func=func,
+                    fn_kwargs=kwargs,
                 )
+                res = concatenate_datasets([res, ds]) if res else ds
 
                 # Reset for next batch
                 current_batch = []
                 current_item_count = 0
+                # garbage collect
+                gc.collect()
+                torch.cuda.empty_cache()
 
                 if self.verbose > 0:
                     log_mem_usage()
@@ -249,17 +265,16 @@ class GroupBy:
 
         # Process any remaining groups in the final batch
         if current_batch:
-            results.append(
-                _process_batch(
-                    dataset=self._ds,
-                    batch=current_batch,
-                    by=self._by,
-                    func=func,
-                    fn_kwargs=kwargs,
-                )
+            ds = _process_batch(
+                dataset=self._ds,
+                batch=current_batch,
+                by=self._by,
+                func=func,
+                fn_kwargs=kwargs,
             )
+            res = concatenate_datasets([res, ds]) if res else ds
 
-        return concatenate_datasets(results)
+        return ds
 
 
 def _process_batch(
@@ -271,19 +286,18 @@ def _process_batch(
 ) -> Dataset:
     """Process a batch of groups and return the aggregated dataset."""
     all_indices = sum((group_indices for _, group_indices in batch), [])
-    print(
-        f"Processing batch with {len(batch)} groups, total {len(all_indices)} items"
-    )
-    return Dataset.from_generator(
-        _apply_func_to_groups,
-        gen_kwargs={
-            "data": dataset.select(all_indices),
-            "by": by,
-            "func": func,
-            "fn_kwargs": fn_kwargs,
-        },
-        num_proc=1,
-    )
+    # print(f"Processing batch with {len(batch)} groups, total {len(all_indices)} items")
+    with without_progress_bar():
+        return Dataset.from_generator(
+            _apply_func_to_groups,
+            gen_kwargs={
+                "data": dataset.select(all_indices),
+                "by": by,
+                "func": func,
+                "fn_kwargs": fn_kwargs,
+            },
+            num_proc=1,
+        )
 
 
 def _apply_func_to_groups(
