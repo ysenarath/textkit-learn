@@ -4,7 +4,7 @@ from pathlib import Path
 from omegaconf import OmegaConf
 
 DEFAULT_CACHE_PATH: str = str((Path.home() / ".cache" / "tklearn").absolute())
-DEFAULT_BATCH_SIZE: int = 16
+DEFAULT_DATASET_BATCH_SIZE: int = 1000
 
 
 @dataclass
@@ -16,6 +16,8 @@ class Config:
     temp_dir: Path = "${base_dir}/temp"
     # for resources files only (e.g. use with open)
     assets_dir: Path = "${base_dir}/assets"
+    # for dataset files only (e.g. use with datasets)
+    dataset_batch_size: int = DEFAULT_DATASET_BATCH_SIZE
 
 
 config: Config = OmegaConf.structured(Config)

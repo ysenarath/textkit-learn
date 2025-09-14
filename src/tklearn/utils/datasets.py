@@ -17,7 +17,7 @@ from datasets import (
 from datasets import load_dataset as hf_load_dataset
 from tqdm import auto as tqdm
 
-from tklearn.config import DEFAULT_BATCH_SIZE, config
+from tklearn.config import config
 
 T_BI = dict[str, list[Any]]
 T_BO = Union[dict[str, list[Any]], list[dict[str, Any]], pd.DataFrame]
@@ -182,7 +182,7 @@ class GroupBy:
         self,
         dataset: Dataset,
         by: str,
-        batch_size: int = DEFAULT_BATCH_SIZE,
+        batch_size: int = config.dataset_batch_size,
         verbose: int = 0,
     ):
         self._ds = dataset
@@ -240,6 +240,9 @@ class GroupBy:
                 current_batch = []
                 current_item_count = 0
 
+                if self.verbose > 0:
+                    log_mem_usage()
+
             # Add current group to batch
             current_batch.append((group_key, indices))
             current_item_count += group_size
@@ -268,22 +271,27 @@ def _process_batch(
 ) -> Dataset:
     """Process a batch of groups and return the aggregated dataset."""
     all_indices = sum((group_indices for _, group_indices in batch), [])
+    print(
+        f"Processing batch with {len(batch)} groups, total {len(all_indices)} items"
+    )
     return Dataset.from_generator(
         _apply_func_to_groups,
         gen_kwargs={
-            "data": dataset.select(all_indices).to_pandas(),
+            "data": dataset.select(all_indices),
             "by": by,
             "func": func,
             "fn_kwargs": fn_kwargs,
         },
+        num_proc=1,
     )
 
 
 def _apply_func_to_groups(
-    data: pd.DataFrame, by: str, func: Callable, fn_kwargs: dict
+    data: Dataset, by: str, func: Callable, fn_kwargs: dict
 ) -> Generator[dict, None, None]:
-    for _, df in data.groupby(by):
-        result = func(df, **fn_kwargs)
+    items = data.to_list()
+    for _, group in pd.DataFrame.from_records(items).groupby(by):
+        result = func(group, **fn_kwargs)
         if isinstance(result, pd.DataFrame):
             for record in result.to_dict(orient="records"):
                 yield record
@@ -294,3 +302,15 @@ def _apply_func_to_groups(
         else:
             msg = f"expected output to be of type dict or pd.DataFrame, got {type(result)}"
             raise ValueError(msg)
+
+
+def log_mem_usage():
+    try:
+        import psutil
+
+        process = psutil.Process()
+        mem_info = process.memory_info()
+        rss_in_mb = mem_info.rss / (1024 * 1024)
+        print(f"Current memory usage: {rss_in_mb:.2f} MB")
+    except ImportError:
+        pass
