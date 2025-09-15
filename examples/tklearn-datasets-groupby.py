@@ -15,25 +15,15 @@ def create_groups_indices(
 def join(examples, prerix=None):
     if prerix is None:
         prerix = ""
-    return {"text": [prerix + " ".join(examples["text"])]}
+    return [{"text": prerix + e["text"]} for e in examples]
 
 
 def test_group_by():
-    ds = Dataset.from_dict({
-        "id": [0, 1, 2, 3, 4, 5],
-        "text": [
-            "Hello world",
-            "How are you?",
-            "Fine, thanks.",
-            "Goodbye!",
-            "See you later.",
-            "Take care.",
-        ],
-        "label": [0, 0, 0, 1, 1, 1],
-    })
-    grouped_ds = GroupBy(ds, "label").agg(join, prerix=">> ")
-    print(grouped_ds[:])
-    assert grouped_ds.num_rows == 2
+    ds = Dataset.from_list([
+        {"label": i % 10, "text": f"sample {i}"} for i in range(10000)
+    ])
+    grouped_ds = GroupBy(ds, "label", batch_size=1000).agg(join, prerix=">> ")
+    assert grouped_ds.num_rows == 10000, grouped_ds.num_rows
 
 
 if __name__ == "__main__":

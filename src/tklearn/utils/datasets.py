@@ -252,6 +252,7 @@ class GroupBy:
                 # Reset for next batch
                 current_batch = []
                 current_item_count = 0
+
                 # garbage collect
                 gc.collect()
                 torch.cuda.empty_cache()
@@ -274,7 +275,7 @@ class GroupBy:
             )
             res = concatenate_datasets([res, ds]) if res else ds
 
-        return ds
+        return res
 
 
 def _process_batch(
@@ -286,7 +287,6 @@ def _process_batch(
 ) -> Dataset:
     """Process a batch of groups and return the aggregated dataset."""
     all_indices = sum((group_indices for _, group_indices in batch), [])
-    # print(f"Processing batch with {len(batch)} groups, total {len(all_indices)} items")
     with without_progress_bar():
         return Dataset.from_generator(
             _apply_func_to_groups,
@@ -303,19 +303,27 @@ def _process_batch(
 def _apply_func_to_groups(
     data: Dataset, by: str, func: Callable, fn_kwargs: dict
 ) -> Generator[dict, None, None]:
-    items = data.to_list()
-    for _, group in pd.DataFrame.from_records(items).groupby(by):
+    for group in _get_groups(data, by):
         result = func(group, **fn_kwargs)
-        if isinstance(result, pd.DataFrame):
+        if isinstance(result, list):
+            yield from result
+        elif isinstance(result, pd.DataFrame):
             for record in result.to_dict(orient="records"):
                 yield record
         elif isinstance(result, dict):
             yield result
-        elif isinstance(result, list):
-            yield from result
         else:
             msg = f"expected output to be of type dict or pd.DataFrame, got {type(result)}"
             raise ValueError(msg)
+
+
+def _get_groups(dataset: Dataset, by: str) -> Generator[Dataset, None, None]:
+    """Yield groups from the dataset based on the specified column."""
+    groups = {key: [] for key in dataset.unique(by)}
+    for item in dataset:
+        groups[item[by]].append(item)
+    for items in groups.values():
+        yield items
 
 
 def log_mem_usage():
