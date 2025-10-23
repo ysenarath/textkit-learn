@@ -45,6 +45,7 @@ encoded_dataset = encode(
     pin_memory=True,
     desc="Encoding dataset",
     encode_batch_size=32,
+    collate_fn=None,
 )
 
 print(encoded_dataset)
