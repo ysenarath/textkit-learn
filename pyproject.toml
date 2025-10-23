@@ -138,6 +138,10 @@ fasttext = { git = "https://github.com/facebookresearch/fastText", rev = "1142dc
 dev = [
     "jupyter>=1.1.1",
     "jupyterlab>=4.4.6",
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.6.22",
+    "mkdocstrings>=0.30.1",
+    "mkdocstrings-python>=1.18.2",
     "nbconvert>=7.16.6",
     "pydata-sphinx-theme>=0.16.1",
     "sphinx>=7.4.7",
