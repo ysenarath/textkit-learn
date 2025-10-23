@@ -1,4 +1,4 @@
-from tklearn.nn.base.encoder import Encoder
+from tklearn.nn.base.encoder import Encoder, encode
 from tklearn.nn.base.evaluator import Evaluator
 from tklearn.nn.base.module import Module
 from tklearn.nn.base.predictor import Predictor
@@ -10,4 +10,5 @@ __all__ = [
     "Predictor",
     "Evaluator",
     "Trainer",
+    "encode",
 ]
