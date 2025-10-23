@@ -31,7 +31,9 @@ def tokenize_function(examples):
 
 
 dataset = dataset.rename_column("label", "labels").map(
-    tokenize_function, batched=True, remove_columns=["text"]
+    tokenize_function,
+    batched=True,
+    # , remove_columns=["text"]
 )
 
 print(dataset)
@@ -46,6 +48,7 @@ encoded_dataset = encode(
     desc="Encoding dataset",
     encode_batch_size=32,
     collate_fn=None,
+    output_column_name="encodings",
 )
 
 print(encoded_dataset)
