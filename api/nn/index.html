@@ -2576,7 +2576,7 @@
 
 
 <h4 id="tklearn.nn.base.encoder.encode" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">encode</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">DEFAULT_BATCH_SIZE</span><span class="p">,</span> <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Encoding dataset&#39;</span><span class="p">,</span> <span class="n">encode_batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">collate_fn</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <code class="highlight language-python"><span class="n">encode</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">DEFAULT_BATCH_SIZE</span><span class="p">,</span> <span class="n">pin_memory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Encoding dataset&#39;</span><span class="p">,</span> <span class="n">encode_batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">collate_fn</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_column_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
 </h4>
 
@@ -2714,6 +2714,22 @@ configurations to optimize the encoding process.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
+                <code>output_column_name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The name of the column to store the encoded embeddings, by default "embedding".</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
                 <code>**kwargs</code>
             </td>
             <td>
@@ -2756,8 +2772,7 @@ configurations to optimize the encoding process.</p>
 
             <details class="quote">
               <summary>Source code in <code>src/tklearn/nn/base/encoder.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-216">216</a></span>
-<span class="normal"><a href="#__codelineno-0-217">217</a></span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-217">217</a></span>
 <span class="normal"><a href="#__codelineno-0-218">218</a></span>
 <span class="normal"><a href="#__codelineno-0-219">219</a></span>
 <span class="normal"><a href="#__codelineno-0-220">220</a></span>
@@ -2813,64 +2828,77 @@ configurations to optimize the encoding process.</p>
 <span class="normal"><a href="#__codelineno-0-270">270</a></span>
 <span class="normal"><a href="#__codelineno-0-271">271</a></span>
 <span class="normal"><a href="#__codelineno-0-272">272</a></span>
-<span class="normal"><a href="#__codelineno-0-273">273</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="k">def</span><span class="w"> </span><span class="nf">encode</span><span class="p">(</span>
-<a id="__codelineno-0-217" name="__codelineno-0-217"></a>    <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">,</span>
-<a id="__codelineno-0-218" name="__codelineno-0-218"></a>    <span class="n">model</span><span class="p">:</span> <span class="n">Module</span><span class="p">,</span>
-<a id="__codelineno-0-219" name="__codelineno-0-219"></a>    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_BATCH_SIZE</span><span class="p">,</span>
-<a id="__codelineno-0-220" name="__codelineno-0-220"></a>    <span class="n">pin_memory</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-221" name="__codelineno-0-221"></a>    <span class="n">desc</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Encoding dataset&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-222" name="__codelineno-0-222"></a>    <span class="n">encode_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
-<a id="__codelineno-0-223" name="__codelineno-0-223"></a>    <span class="n">collate_fn</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-224" name="__codelineno-0-224"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dataset</span><span class="p">:</span>
-<a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="sd">    Encodes a dataset using a given model.</span>
-<a id="__codelineno-0-228" name="__codelineno-0-228"></a>
-<a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">    This function processes a dataset in chunks, encoding each chunk using the</span>
-<a id="__codelineno-0-230" name="__codelineno-0-230"></a><span class="sd">    provided model. It supports batching, custom collation functions, and other</span>
-<a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">    configurations to optimize the encoding process.</span>
-<a id="__codelineno-0-232" name="__codelineno-0-232"></a>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="sd">    Parameters</span>
-<a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">    ----------</span>
-<a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="sd">    dataset : Dataset</span>
-<a id="__codelineno-0-236" name="__codelineno-0-236"></a><span class="sd">        The dataset to be encoded.</span>
-<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    model : Module</span>
-<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">        The model used for encoding the dataset.</span>
-<a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    batch_size : int, optional</span>
-<a id="__codelineno-0-240" name="__codelineno-0-240"></a><span class="sd">        The size of the batches to process the dataset, by default DEFAULT_BATCH_SIZE.</span>
-<a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    pin_memory : bool, optional</span>
-<a id="__codelineno-0-242" name="__codelineno-0-242"></a><span class="sd">        If True, the data loader will copy tensors into CUDA pinned memory, by default True.</span>
-<a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="sd">    desc : str, optional</span>
-<a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="sd">        A description for the progress bar, by default &quot;Encoding dataset&quot;.</span>
-<a id="__codelineno-0-245" name="__codelineno-0-245"></a><span class="sd">    encode_batch_size : int, optional</span>
-<a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">        The batch size used for encoding within each chunk, by default 32.</span>
-<a id="__codelineno-0-247" name="__codelineno-0-247"></a><span class="sd">    collate_fn : Callable or None, optional</span>
-<a id="__codelineno-0-248" name="__codelineno-0-248"></a><span class="sd">        A function to merge a list of samples into a batch, by default None.</span>
-<a id="__codelineno-0-249" name="__codelineno-0-249"></a><span class="sd">    **kwargs</span>
-<a id="__codelineno-0-250" name="__codelineno-0-250"></a><span class="sd">        Additional keyword arguments passed to the dataset&#39;s `map` function.</span>
-<a id="__codelineno-0-251" name="__codelineno-0-251"></a>
-<a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="sd">    Returns</span>
-<a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="sd">    -------</span>
-<a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">    Dataset</span>
-<a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="sd">        The encoded dataset.</span>
-<a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-257" name="__codelineno-0-257"></a>    <span class="k">if</span> <span class="n">collate_fn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-258" name="__codelineno-0-258"></a>        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;collate_fn&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">collate_fn</span>
-<a id="__codelineno-0-259" name="__codelineno-0-259"></a>    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
-<a id="__codelineno-0-260" name="__codelineno-0-260"></a>    <span class="n">encoded_dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
-<a id="__codelineno-0-261" name="__codelineno-0-261"></a>        <span class="n">partial</span><span class="p">(</span>
-<a id="__codelineno-0-262" name="__codelineno-0-262"></a>            <span class="n">_encode_chunk</span><span class="p">,</span>
-<a id="__codelineno-0-263" name="__codelineno-0-263"></a>            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-<a id="__codelineno-0-264" name="__codelineno-0-264"></a>            <span class="n">batch_size</span><span class="o">=</span><span class="n">encode_batch_size</span><span class="p">,</span>
-<a id="__codelineno-0-265" name="__codelineno-0-265"></a>            <span class="n">pin_memory</span><span class="o">=</span><span class="n">pin_memory</span><span class="p">,</span>
-<a id="__codelineno-0-266" name="__codelineno-0-266"></a>            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-<a id="__codelineno-0-267" name="__codelineno-0-267"></a>        <span class="p">),</span>
-<a id="__codelineno-0-268" name="__codelineno-0-268"></a>        <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-269" name="__codelineno-0-269"></a>        <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
-<a id="__codelineno-0-270" name="__codelineno-0-270"></a>        <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span>
-<a id="__codelineno-0-271" name="__codelineno-0-271"></a>        <span class="n">with_indices</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<a id="__codelineno-0-272" name="__codelineno-0-272"></a>    <span class="p">)</span>
-<a id="__codelineno-0-273" name="__codelineno-0-273"></a>    <span class="k">return</span> <span class="n">encoded_dataset</span>
+<span class="normal"><a href="#__codelineno-0-273">273</a></span>
+<span class="normal"><a href="#__codelineno-0-274">274</a></span>
+<span class="normal"><a href="#__codelineno-0-275">275</a></span>
+<span class="normal"><a href="#__codelineno-0-276">276</a></span>
+<span class="normal"><a href="#__codelineno-0-277">277</a></span>
+<span class="normal"><a href="#__codelineno-0-278">278</a></span>
+<span class="normal"><a href="#__codelineno-0-279">279</a></span>
+<span class="normal"><a href="#__codelineno-0-280">280</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-217" name="__codelineno-0-217"></a><span class="k">def</span><span class="w"> </span><span class="nf">encode</span><span class="p">(</span>
+<a id="__codelineno-0-218" name="__codelineno-0-218"></a>    <span class="n">dataset</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">,</span>
+<a id="__codelineno-0-219" name="__codelineno-0-219"></a>    <span class="n">model</span><span class="p">:</span> <span class="n">Module</span><span class="p">,</span>
+<a id="__codelineno-0-220" name="__codelineno-0-220"></a>    <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_BATCH_SIZE</span><span class="p">,</span>
+<a id="__codelineno-0-221" name="__codelineno-0-221"></a>    <span class="n">pin_memory</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-222" name="__codelineno-0-222"></a>    <span class="n">desc</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Encoding dataset&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-223" name="__codelineno-0-223"></a>    <span class="n">encode_batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
+<a id="__codelineno-0-224" name="__codelineno-0-224"></a>    <span class="n">collate_fn</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-225" name="__codelineno-0-225"></a>    <span class="n">output_column_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-226" name="__codelineno-0-226"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dataset</span><span class="p">:</span>
+<a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">    Encodes a dataset using a given model.</span>
+<a id="__codelineno-0-230" name="__codelineno-0-230"></a>
+<a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">    This function processes a dataset in chunks, encoding each chunk using the</span>
+<a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">    provided model. It supports batching, custom collation functions, and other</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="sd">    configurations to optimize the encoding process.</span>
+<a id="__codelineno-0-234" name="__codelineno-0-234"></a>
+<a id="__codelineno-0-235" name="__codelineno-0-235"></a><span class="sd">    Parameters</span>
+<a id="__codelineno-0-236" name="__codelineno-0-236"></a><span class="sd">    ----------</span>
+<a id="__codelineno-0-237" name="__codelineno-0-237"></a><span class="sd">    dataset : Dataset</span>
+<a id="__codelineno-0-238" name="__codelineno-0-238"></a><span class="sd">        The dataset to be encoded.</span>
+<a id="__codelineno-0-239" name="__codelineno-0-239"></a><span class="sd">    model : Module</span>
+<a id="__codelineno-0-240" name="__codelineno-0-240"></a><span class="sd">        The model used for encoding the dataset.</span>
+<a id="__codelineno-0-241" name="__codelineno-0-241"></a><span class="sd">    batch_size : int, optional</span>
+<a id="__codelineno-0-242" name="__codelineno-0-242"></a><span class="sd">        The size of the batches to process the dataset, by default DEFAULT_BATCH_SIZE.</span>
+<a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="sd">    pin_memory : bool, optional</span>
+<a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="sd">        If True, the data loader will copy tensors into CUDA pinned memory, by default True.</span>
+<a id="__codelineno-0-245" name="__codelineno-0-245"></a><span class="sd">    desc : str, optional</span>
+<a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">        A description for the progress bar, by default &quot;Encoding dataset&quot;.</span>
+<a id="__codelineno-0-247" name="__codelineno-0-247"></a><span class="sd">    encode_batch_size : int, optional</span>
+<a id="__codelineno-0-248" name="__codelineno-0-248"></a><span class="sd">        The batch size used for encoding within each chunk, by default 32.</span>
+<a id="__codelineno-0-249" name="__codelineno-0-249"></a><span class="sd">    collate_fn : Callable or None, optional</span>
+<a id="__codelineno-0-250" name="__codelineno-0-250"></a><span class="sd">        A function to merge a list of samples into a batch, by default None.</span>
+<a id="__codelineno-0-251" name="__codelineno-0-251"></a><span class="sd">    output_column_name : str, optional</span>
+<a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="sd">        The name of the column to store the encoded embeddings, by default &quot;embedding&quot;.</span>
+<a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="sd">    **kwargs</span>
+<a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">        Additional keyword arguments passed to the dataset&#39;s `map` function.</span>
+<a id="__codelineno-0-255" name="__codelineno-0-255"></a>
+<a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="sd">    Returns</span>
+<a id="__codelineno-0-257" name="__codelineno-0-257"></a><span class="sd">    -------</span>
+<a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">    Dataset</span>
+<a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">        The encoded dataset.</span>
+<a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-261" name="__codelineno-0-261"></a>    <span class="k">if</span> <span class="n">collate_fn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-262" name="__codelineno-0-262"></a>        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;collate_fn&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">collate_fn</span>
+<a id="__codelineno-0-263" name="__codelineno-0-263"></a>    <span class="k">if</span> <span class="n">output_column_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-264" name="__codelineno-0-264"></a>        <span class="n">output_column_name</span> <span class="o">=</span> <span class="s2">&quot;embedding&quot;</span>
+<a id="__codelineno-0-265" name="__codelineno-0-265"></a>    <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<a id="__codelineno-0-266" name="__codelineno-0-266"></a>    <span class="n">encoded_dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+<a id="__codelineno-0-267" name="__codelineno-0-267"></a>        <span class="n">partial</span><span class="p">(</span>
+<a id="__codelineno-0-268" name="__codelineno-0-268"></a>            <span class="n">_encode_chunk</span><span class="p">,</span>
+<a id="__codelineno-0-269" name="__codelineno-0-269"></a>            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+<a id="__codelineno-0-270" name="__codelineno-0-270"></a>            <span class="n">batch_size</span><span class="o">=</span><span class="n">encode_batch_size</span><span class="p">,</span>
+<a id="__codelineno-0-271" name="__codelineno-0-271"></a>            <span class="n">pin_memory</span><span class="o">=</span><span class="n">pin_memory</span><span class="p">,</span>
+<a id="__codelineno-0-272" name="__codelineno-0-272"></a>            <span class="n">output_column_name</span><span class="o">=</span><span class="n">output_column_name</span><span class="p">,</span>
+<a id="__codelineno-0-273" name="__codelineno-0-273"></a>            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<a id="__codelineno-0-274" name="__codelineno-0-274"></a>        <span class="p">),</span>
+<a id="__codelineno-0-275" name="__codelineno-0-275"></a>        <span class="n">batched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-276" name="__codelineno-0-276"></a>        <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+<a id="__codelineno-0-277" name="__codelineno-0-277"></a>        <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span>
+<a id="__codelineno-0-278" name="__codelineno-0-278"></a>        <span class="n">with_indices</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-279" name="__codelineno-0-279"></a>    <span class="p">)</span>
+<a id="__codelineno-0-280" name="__codelineno-0-280"></a>    <span class="k">return</span> <span class="n">encoded_dataset</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
