@@ -22,6 +22,31 @@ DEFAULT_BATCH_SIZE = 1000
 
 
 class Encoder(CallbacksMixin, Generic[K, V]):
+    """
+    A class for encoding data using a model and dataloader, with support for callbacks.
+
+    Parameters
+    ----------
+    model : Module[K, V]
+        The model used for encoding.
+    dataloader : DataLoader
+        The dataloader providing batches of data to encode.
+    callbacks : CallbackList | Iterable[Callback] | None, optional
+        A list or iterable of callbacks to use during encoding, by default None.
+
+    Methods
+    -------
+    iter_batches()
+        Iterates over batches of data, yielding batch index, batch data, model output, and loss dictionary.
+    encode(return_tensors="pt", return_list=False)
+        Encodes the data and returns the encodings in the specified format.
+
+    Notes
+    -----
+    - The `iter_batches` method ensures the model is in evaluation mode during batch iteration.
+    - The `encode` method supports multiple output formats, including PyTorch tensors, NumPy arrays, and Python lists.
+    """
+
     def __init__(
         self,
         model: Module[K, V],
@@ -198,6 +223,37 @@ def encode(
     collate_fn: Callable | None = None,
     **kwargs,
 ) -> Dataset:
+    """
+    Encodes a dataset using a given model.
+
+    This function processes a dataset in chunks, encoding each chunk using the
+    provided model. It supports batching, custom collation functions, and other
+    configurations to optimize the encoding process.
+
+    Parameters
+    ----------
+    dataset : Dataset
+        The dataset to be encoded.
+    model : Module
+        The model used for encoding the dataset.
+    batch_size : int, optional
+        The size of the batches to process the dataset, by default DEFAULT_BATCH_SIZE.
+    pin_memory : bool, optional
+        If True, the data loader will copy tensors into CUDA pinned memory, by default True.
+    desc : str, optional
+        A description for the progress bar, by default "Encoding dataset".
+    encode_batch_size : int, optional
+        The batch size used for encoding within each chunk, by default 32.
+    collate_fn : Callable or None, optional
+        A function to merge a list of samples into a batch, by default None.
+    **kwargs
+        Additional keyword arguments passed to the dataset's `map` function.
+
+    Returns
+    -------
+    Dataset
+        The encoded dataset.
+    """
     if collate_fn is not None:
         kwargs["collate_fn"] = collate_fn
     model.eval()
