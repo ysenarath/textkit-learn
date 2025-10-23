@@ -194,6 +194,7 @@ def _encode_chunk(
     model: Module,
     batch_size: int,
     pin_memory: bool,
+    output_column_name: str,
     **kwargs,
 ) -> dict[str, list[torch.Tensor]]:
     batch: BatchDataset = BatchDataset(batch, length=len(indices))
@@ -206,7 +207,7 @@ def _encode_chunk(
     )
     encoder = Encoder(model, dataloader)
     return {
-        "encodings": encoder.encode(
+        output_column_name: encoder.encode(
             return_tensors="pt",
             return_list=True,
         )
@@ -221,6 +222,7 @@ def encode(
     desc: str = "Encoding dataset",
     encode_batch_size: int = 32,
     collate_fn: Callable | None = None,
+    output_column_name: str | None = None,
     **kwargs,
 ) -> Dataset:
     """
@@ -246,6 +248,8 @@ def encode(
         The batch size used for encoding within each chunk, by default 32.
     collate_fn : Callable or None, optional
         A function to merge a list of samples into a batch, by default None.
+    output_column_name : str, optional
+        The name of the column to store the encoded embeddings, by default "embedding".
     **kwargs
         Additional keyword arguments passed to the dataset's `map` function.
 
@@ -256,6 +260,8 @@ def encode(
     """
     if collate_fn is not None:
         kwargs["collate_fn"] = collate_fn
+    if output_column_name is None:
+        output_column_name = "embedding"
     model.eval()
     encoded_dataset = dataset.map(
         partial(
@@ -263,6 +269,7 @@ def encode(
             model=model,
             batch_size=encode_batch_size,
             pin_memory=pin_memory,
+            output_column_name=output_column_name,
             **kwargs,
         ),
         batched=True,
