@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from functools import partial
 from typing import Generator, Generic, TypeVar, Union, overload
 
@@ -169,6 +169,7 @@ def _encode_chunk(
     model: Module,
     batch_size: int,
     pin_memory: bool,
+    **kwargs,
 ) -> dict[str, list[torch.Tensor]]:
     batch: BatchDataset = BatchDataset(batch, length=len(indices))
     dataloader = DataLoader(
@@ -176,6 +177,7 @@ def _encode_chunk(
         batch_size=batch_size,
         shuffle=False,
         pin_memory=pin_memory,
+        **kwargs,
     )
     encoder = Encoder(model, dataloader)
     return {
@@ -193,7 +195,11 @@ def encode(
     pin_memory: bool = True,
     desc: str = "Encoding dataset",
     encode_batch_size: int = 32,
+    collate_fn: Callable | None = None,
+    **kwargs,
 ) -> Dataset:
+    if collate_fn is not None:
+        kwargs["collate_fn"] = collate_fn
     model.eval()
     encoded_dataset = dataset.map(
         partial(
@@ -201,6 +207,7 @@ def encode(
             model=model,
             batch_size=encode_batch_size,
             pin_memory=pin_memory,
+            **kwargs,
         ),
         batched=True,
         batch_size=batch_size,
