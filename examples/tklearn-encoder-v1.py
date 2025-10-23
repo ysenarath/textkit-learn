@@ -23,7 +23,8 @@ auto_device = get_device()
 
 model.to(auto_device)
 
-dataset = load_dataset(DATASET, split="train").select(range(8))
+dataset = load_dataset(DATASET, split="train")
+# .select(range(8))
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH)
 
