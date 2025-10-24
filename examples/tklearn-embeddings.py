@@ -2,15 +2,15 @@ from tklearn.embeddings import AutoEmbedding
 
 # Gensim
 
-wv = AutoEmbedding.from_config("glove-twitter-25")
+wv = AutoEmbedding("glove-twitter-25")
 
 assert wv["hello"].shape == (25,)
 
-wv = AutoEmbedding.from_config({"name": "glove-twitter-25"})
+wv = AutoEmbedding({"name": "glove-twitter-25"})
 
 assert wv["hello"].shape == (25,)
 
-wv = AutoEmbedding.from_config({
+wv = AutoEmbedding({
     "loader": "gensim",
     "name": "glove-twitter-25",
 })
@@ -19,7 +19,7 @@ assert wv["hello"].shape == (25,)
 
 # FastText
 
-wv = AutoEmbedding.from_config({
+wv = AutoEmbedding({
     "loader": "fasttext",
     "name": "cc.en.300.bin",
 })
@@ -32,7 +32,7 @@ print(wv["hello"])
 
 # transformers example
 
-wv = AutoEmbedding.from_config({
+wv = AutoEmbedding({
     "loader": "transformers",
     "name": "sentence-transformers/all-MiniLM-L6-v2",
 })
@@ -45,7 +45,7 @@ print(wv["hello"])
 
 
 # full sentence example
-wv = AutoEmbedding.from_config({
+wv = AutoEmbedding({
     "loader": "transformers",
     "name": "sentence-transformers/all-MiniLM-L6-v2",
 })
