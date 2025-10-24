@@ -89,7 +89,7 @@ class Encodable(Protocol):
 
         Parameters
         ----------
-        text : str or list[str]
+        texts : str or list[str]
             The text to be encoded. Can be a single string or a list of
             strings (e.g., tokens or phrases).
         **kwargs
@@ -109,7 +109,7 @@ class Encodable(Protocol):
 
         Returns
         -------
-        int
+        int or None
             The dimensionality of the embedding vectors produced by this model.
         """
         ...
@@ -139,13 +139,13 @@ class EmbeddingBase(abc.ABC):
     def get_encoder(self) -> Encodable:
         """Get the text encoder associated with these embeddings.
 
-        This method should return an object conforming to the TextEncoder
+        This method should return an object conforming to the Encodable
         protocol, capable of encoding arbitrary text based on the loaded
         embedding model.
 
         Returns
         -------
-        TextEncoder
+        Encodable
             An object that can encode text into vectors.
         """
         raise NotImplementedError
@@ -192,7 +192,7 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
         try:
             model = self.get_encoder()
             if model and not isinstance(model, Encodable):
-                msg = f"{model!r} is not an instance of WordEmbeddingModel"
+                msg = f"{model.__class__.__name__} is not an instance of Encodable"
                 warnings.warn(msg, UserWarning)
                 raise NotImplementedError
             self.model = model
@@ -256,7 +256,7 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
 
         Parameters
         ----------
-        word : str or list[str]
+        key : str or list[str]
             The word or phrase to get the vector for.
         **kwargs
             Additional keyword arguments for the encoder.
