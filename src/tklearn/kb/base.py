@@ -153,3 +153,41 @@ class KnowledgeBase:
                     "relations": list(relations),
                     "support": len(relations),
                 }
+
+    def extract_relations(
+        self, candidate: Candidate, predicates: list[str] | None = None
+    ) -> list[Triple]:
+        if predicates is None:
+            predicates = ["synonym", "hyponym", "instance"]
+        subject = (candidate.word, candidate.sense_id)
+        triples = []
+        for predicate in predicates:
+            objects = self.triples.get(subject, {}).get(predicate, [])
+            for object_ in objects:
+                rel = Triple(subject, predicate, object_)
+                triples.append(rel)
+        return triples
+
+
+def extract_relations(
+    kb: KnowledgeBase,
+    candidate: Candidate,
+    predicates: list[str] | None = None,
+) -> list[Triple]:
+    if predicates is None:
+        predicates = ["synonym", "hyponym", "instance"]
+    subject = (candidate.word, candidate.sense_id)
+    triples = []
+    for predicate in predicates:
+        objects = kb.triples.get(subject, {}).get(predicate, [])
+        for object_ in objects:
+            rel = Triple(subject, predicate, object_)
+            triples.append(rel)
+    return triples
+
+
+def get_candidate(kb: KnowledgeBase, word: str, sense_id: int) -> Candidate:
+    """Retrieve a Candidate object for the given word and sense_id."""
+    gloss = kb.idx2gloss[sense_id]
+    embedding = kb.embeddings[sense_id]
+    return Candidate(word, gloss, embedding, sense_id)
