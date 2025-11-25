@@ -227,6 +227,15 @@ class DataCollatorWithPadding:
             return_tensors=self.return_tensors,
         )
         try:
+            context_tensor = [feature["context"] for feature in features]
+            if self.return_tensors == "pt":
+                context_tensor = torch.stack(context_tensor)
+            elif self.return_tensors == "np":
+                context_tensor = np.array(context_tensor)
+            batch["context"] = context_tensor
+        except KeyError:
+            pass
+        try:
             labels_tensor = [self.get_labels(feature) for feature in features]
             # convert to tensor if necessary
             labels_tensor = np.array(labels_tensor)
