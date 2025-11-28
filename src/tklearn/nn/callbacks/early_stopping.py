@@ -65,10 +65,13 @@ class EarlyStopping(Callback):
         self.history = []
 
     @property
-    def monitor_op(self) -> np.ufunc:
-        if getattr(self, "_monitor_op", None) is None:
-            self._monitor_op = get_monitor_op(self.mode, self.monitor)
-        return self._monitor_op
+    def monitor(self) -> str:
+        return self._monitor
+
+    @monitor.setter
+    def monitor(self, mode):
+        self._monitor = mode
+        self._monitor_op = None
 
     @property
     def mode(self) -> str:
@@ -83,13 +86,10 @@ class EarlyStopping(Callback):
         self._monitor_op = None
 
     @property
-    def monitor(self) -> str:
-        return self._monitor
-
-    @monitor.setter
-    def monitor(self, mode):
-        self._monitor = mode
-        self._monitor_op = None
+    def monitor_op(self) -> np.ufunc:
+        if getattr(self, "_monitor_op", None) is None:
+            self._monitor_op = get_monitor_op(self.mode, self.monitor)
+        return self._monitor_op
 
     def on_train_begin(self, logs=None):
         self.wait = 0
@@ -130,11 +130,10 @@ class EarlyStopping(Callback):
         self.wait += 1
         if self._is_improvement(current, self.best):
             self._update_best(current, epoch)
-            # Only restart wait if we beat both the baseline and our previous
-            # best.
-            if self.baseline is None or self._is_improvement(
-                current, self.baseline
-            ):
+            # Restart wait only if we beat both the baseline and our previous best.
+            if self.baseline is None:
+                self.wait = 0
+            elif self._is_improvement(current, self.baseline):
                 self.wait = 0
             return
 
