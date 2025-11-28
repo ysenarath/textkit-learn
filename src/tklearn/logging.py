@@ -7,12 +7,20 @@ from typing import Callable, Optional, TypeVar, Union, cast, overload
 
 from nightjar import BaseConfig
 
+from tklearn import config
+
 __all__ = [
     "get_logger",
 ]
 _LOGGING_TEMPLATE = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 T = TypeVar("T")
+
+
+def _get_default_log_level() -> str:
+    if config.debug:
+        return "DEBUG"
+    return "INFO"
 
 
 class LoggingFormatterConfig(BaseConfig):
@@ -23,7 +31,7 @@ class LoggingFormatterConfig(BaseConfig):
 
 
 class LoggingConfig(BaseConfig):
-    level: str = "INFO"
+    level: str = field(default_factory=_get_default_log_level)
     fmt: LoggingFormatterConfig = field(default_factory=LoggingFormatterConfig)
 
     def __post_init__(self):
