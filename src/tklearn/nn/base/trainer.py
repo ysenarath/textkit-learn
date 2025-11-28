@@ -212,10 +212,18 @@ class Trainer(CallbacksMixin, Generic[K, V]):
                 eval_results = self.evaluator.evaluate()
                 epoch_logs.update(eval_results)
 
-            # End the epoch and update callbacks
-            self.callbacks.on_epoch_end(epoch_idx, logs=epoch_logs)
+            stop_training = getattr(self.model, "stop_training", False)
 
-            if getattr(self.model, "stop_training", False):
+            # End the epoch and update callbacks
+            self.callbacks.on_epoch_end(
+                epoch_idx,
+                logs={
+                    **epoch_logs,
+                    "stop_training": stop_training,
+                },
+            )
+
+            if stop_training:
                 break
         self.callbacks.on_train_end(epoch_logs)
         return history
