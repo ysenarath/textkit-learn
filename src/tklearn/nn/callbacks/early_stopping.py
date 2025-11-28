@@ -189,7 +189,19 @@ class EarlyStopping(Callback):
         # Stopping logic
         if self.wait >= self.patience and epoch > 0:
             self.stopped_epoch = epoch
-            self.model.stop_training = True
+            try:
+                self.model.stop_training = True
+            except Exception:
+                model_type = type(self.model).__name__
+                logger.warning(
+                    "EarlyStopping: Unable to set 'stop_training' flag on the model. "
+                    f"The model instance ({model_type}) does not support this attribute. "
+                    "Ensure your training loop checks for this flag or implement the attribute."
+                )
+                raise RuntimeError(
+                    "EarlyStopping: Unable to stop training. "
+                    "'stop_training' attribute not found on the model."
+                )
             if self.verbose > 0:
                 logger.debug(
                     f"EarlyStopping: Stopping training at epoch {epoch} "
