@@ -108,6 +108,12 @@ class EarlyStopping(Callback):
         self._verbose = value
 
     def on_train_begin(self, logs=None):
+        if self.verbose:
+            ins_type = type(self.model).__name__
+            logger.debug(
+                "EarlyStopping: Training begins. "
+                f"The model is set to {ins_type} instance."
+            )
         self.wait = 0
         self.stopped_epoch = 0
         self.best = Inf if self.monitor_op == np.less else -Inf
