@@ -2,7 +2,7 @@ from typing import Any, Literal, Optional
 
 import numpy as np
 
-from tklearn import logging
+from tklearn import config, logging
 from tklearn.nn.callbacks.base import Callback
 from tklearn.utils import copy
 
@@ -97,6 +97,16 @@ class EarlyStopping(Callback):
             self._monitor_op = get_monitor_op(self.mode, self.monitor)
         return self._monitor_op
 
+    @property
+    def verbose(self) -> int:
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, value: int):
+        if config.debug:
+            value = max(value, 1)
+        self._verbose = value
+
     def on_train_begin(self, logs=None):
         self.wait = 0
         self.stopped_epoch = 0
@@ -122,11 +132,30 @@ class EarlyStopping(Callback):
             )
 
     def on_epoch_end(self, epoch: int, logs=None):
+        if self.verbose:
+            logger.debug(
+                f"EarlyStopping: At the start of epoch {epoch} the wait "
+                f"counter is at {self.wait} out of {self.patience}. "
+                f"Current best '{self.monitor}' is {self.best:.5f} at "
+                f"epoch {self.best_epoch}."
+            )
+
         current = self.get_monitor_value(logs)
+
+        if self.verbose:
+            logger.debug(
+                f"EarlyStopping: At epoch {epoch} current '{self.monitor}' is {current}."
+            )
 
         # Safety check for missing metrics or warm-up period
         if current is None or epoch < self.start_from_epoch:
             return
+
+        if self.verbose:
+            logger.debug(
+                f"EarlyStopping: Processing epoch {epoch} with current "
+                f"'{self.monitor}' = {current}."
+            )
 
         # Fallback: Save initial weights if best_weights is empty
         # (e.g. if min_delta prevents the first epoch from registering as 'improvement')
@@ -139,26 +168,37 @@ class EarlyStopping(Callback):
 
         # Check if current result is an improvement over previous best
         if self._is_improvement(current, self.best):
+            if self.verbose:
+                logger.debug(
+                    f"EarlyStopping: Improvement detected for '{self.monitor}' "
+                    f"from {self.best:.5f} to {current:.5f}."
+                )
             self._update_best(current, epoch)
-
             # Reset wait counter logic
             if self.baseline is None:
                 self.wait = 0
             elif self._is_improvement(current, self.baseline):
                 self.wait = 0
-            return
 
         # Stopping logic
         if self.wait >= self.patience and epoch > 0:
             self.stopped_epoch = epoch
             self.model.stop_training = True
-
-            if self.restore_best_weights and self.best_weights is not None:
-                if self.verbose > 0:
-                    logger.debug(
-                        f"Restoring model weights from the end of the best epoch {self.best_epoch}."
-                    )
-                self.model.load_state_dict(self.best_weights, strict=True)
+            if self.verbose > 0:
+                logger.debug(
+                    f"EarlyStopping: Stopping training at epoch {epoch} "
+                    f"due to no improvement in '{self.monitor}' for "
+                    f"{self.patience} consecutive epochs."
+                )
+            if not self.restore_best_weights or self.best_weights is None:
+                return
+            if self.verbose > 0:
+                logger.debug(
+                    f"EarlyStopping: Restoring model weights from the end "
+                    f"of the best epoch {self.best_epoch} with "
+                    f"{self.monitor}: {self.best:.5f}."
+                )
+            self.model.load_state_dict(self.best_weights, strict=True)
 
     def get_monitor_value(self, logs: Any):
         val = (logs or {}).get(self.monitor)
