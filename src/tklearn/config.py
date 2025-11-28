@@ -1,10 +1,16 @@
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from omegaconf import OmegaConf
 
 DEFAULT_CACHE_PATH: str = str((Path.home() / ".cache" / "tklearn").absolute())
 DEFAULT_DATASET_BATCH_SIZE: int = 1000
+
+
+def is_debug_enabled() -> bool:
+    value = str(os.getenv("TKLEARN_DEBUG", "0")).lower()
+    return value in ("1", "true", "yes", "on")
 
 
 @dataclass
@@ -18,6 +24,8 @@ class Config:
     assets_dir: Path = "${base_dir}/assets"
     # for dataset files only (e.g. use with datasets)
     dataset_batch_size: int = DEFAULT_DATASET_BATCH_SIZE
+    # whether to enable debug mode
+    debug: bool = field(default_factory=is_debug_enabled)
 
 
 config: Config = OmegaConf.structured(Config)
