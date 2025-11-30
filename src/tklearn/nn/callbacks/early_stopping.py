@@ -120,6 +120,7 @@ class EarlyStopping(Callback):
         self.best_weights = None
         self.best_epoch = 0
         self.history = []
+        self.model.stop_training = False
 
     def _update_best(self, current, epoch):
         if self.verbose > 0:
