@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Generator, Tuple, TypeVar
 
@@ -96,18 +97,38 @@ class TripleStore:
     ) -> dict[str, set[tuple[str, int]]] | T:
         """Return all triples in the store."""
         if getattr(self, "_triples", None) is None:
-            # triple.subject: (str, int)
-            # triple.predicate: str
-            # triple.object: (str, int)
-            spo_dict = {}
-            for triple in self.query():
-                if triple.subject not in spo_dict:
-                    spo_dict[triple.subject] = {}
-                if triple.predicate not in spo_dict[triple.subject]:
-                    spo_dict[triple.subject][triple.predicate] = set()
-                spo_dict[triple.subject][triple.predicate].add(triple.object)
-            self._triples = spo_dict
-        return self._triples.get(subject, default)
+            self._triples = self._build_triples_cache()
+        if isinstance(subject, str):
+            subj_word, subj_sense = subject, None
+        else:
+            subj_word, subj_sense = subject
+        # subj_word = subj_word.lower()
+        senses = self._triples.get(subj_word)
+        if senses is None:
+            return default
+        if subj_sense in senses:
+            relations = defaultdict(set)
+            for predicate, objects in senses[subj_sense].items():
+                relations[predicate].update(objects)
+        elif subj_sense is None:
+            relations = defaultdict(set)
+            for sense_dict in senses.values():
+                for predicate, objects in sense_dict.items():
+                    relations[predicate].update(objects)
+        else:
+            return default
+        return dict(relations)
+
+    def _build_triples_cache(self):
+        # triple.subject: (str, int)
+        # triple.predicate: str
+        # triple.object: (str, int)
+        spo_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(set)))
+        for t in self.query():
+            subj_word, subj_sense = t.subject
+            # subj_word = subj_word.lower()
+            spo_dict[subj_word][subj_sense][t.predicate].add(t.object)
+        return spo_dict
 
     def __len__(self):
         return self.con.execute("SELECT COUNT(*) FROM triples").fetchone()[0]
