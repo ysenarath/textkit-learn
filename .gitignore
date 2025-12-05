@@ -153,3 +153,5 @@ examples/outputs/*
 requirements.txt
 requirements-dev.txt
 agentic_examples/*
+
+/cache
