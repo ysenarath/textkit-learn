@@ -689,7 +689,7 @@ class MatchIterator(Generic[T]):
         if longest_sequence is None:
             return
 
-        self.idx = longest_sequence[2] + 1
+        # self.idx = longest_sequence[2] + 1
 
         return (
             longest_sequence[0],

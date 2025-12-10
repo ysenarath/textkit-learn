@@ -138,6 +138,7 @@ class Instance(BaseModel):
     source: str
     tags: Optional[List[str]] = None
     topics: Optional[List[str]] = None
+    source: Optional[str] = None
 
 
 class CoordinateTerm(BaseModel):
@@ -281,9 +282,12 @@ class Template(BaseModel):
 
 
 class Descendant(BaseModel):
-    depth: int
-    templates: List[Template]
-    text: str
+    # depth: int
+    # templates: List[Template]
+    # text: str
+    depth: Optional[int] = None
+    templates: Optional[List[Template]] = Field(default_factory=list)
+    text: Optional[str] = None
 
 
 class Abbreviation(BaseModel):

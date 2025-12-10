@@ -46,11 +46,11 @@ class ArtifactStore(BaseModule):
 
 
 class AutoArtifactStore(AutoModule):
-    def __new__(cls, config: Any) -> ArtifactStore:
+    def __new__(cls, config: Any, **kwargs) -> ArtifactStore:
         if isinstance(config, ArtifactStore):
             return config
         if isinstance(config, str):
-            config = {"name": config}
+            config = {"name": config, **kwargs}
         if not isinstance(config, ArtifactStoreConfig):
             config = ArtifactStoreConfig.from_dict(config)
         return super().__new__(cls, config)
@@ -65,8 +65,8 @@ class KnowledgeBase:
     embeddings: dict[int, np.ndarray]
     attrs: dict[str, set[int]]
 
-    def __init__(self, config: Any):
-        self.store = AutoArtifactStore(config)
+    def __init__(self, config: Any, **kwargs: Any) -> None:
+        self.store = AutoArtifactStore(config, **kwargs)
 
     def __reduce__(self):
         return (self.__class__, (self.store.config,))
@@ -81,12 +81,22 @@ class KnowledgeBase:
         except AttributeError:
             return super().__getattr__(name)
 
-    def extract_candidates(self, word: str) -> Iterable[Candidate]:
+    def extract_candidates(
+        self, word: str | tuple[str, Any]
+    ) -> Iterable[Candidate]:
         """Get all words and senses for a given form."""
         # get all the senses of the word
+        sense_id = None
+        if isinstance(word, tuple):
+            word, sense_id = word
+        if sense_id is not None:
+            gloss = self.idx2gloss[sense_id]
+            embedding = self.embeddings.get(sense_id, None)
+            yield Candidate(word, gloss, embedding, sense_id).bind(self)
+            return
         for sense_id in self.senses.get(word, None) or []:
             gloss = self.idx2gloss[sense_id]
-            embedding = self.embeddings[sense_id]
+            embedding = self.embeddings.get(sense_id, None)
             yield Candidate(word, gloss, embedding, sense_id).bind(self)
 
     def extract_mentions(
@@ -108,8 +118,8 @@ class KnowledgeBase:
             for word in words:
                 for cc in self.extract_candidates(word):
                     # TODO: remove comment below if not needed
-                    if cc.word.lower() != form.lower():
-                        continue
+                    # if cc.word.lower() != form.lower():
+                    #     continue
                     candidates.append(cc)
             yield Mention(form, Span(start, end), candidates)
 

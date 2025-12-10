@@ -25,7 +25,7 @@ CREATE_INDEX_EXPR = """CREATE UNIQUE INDEX IF NOT EXISTS uk_triples ON triples (
 
 
 class TripleStore:
-    def __init__(self, path: str | Path, read_only: bool = False):
+    def __init__(self, path: str | Path = ":memory:", read_only: bool = False):
         self.path = path
         self.read_only = read_only
         self.con = duckdb.connect(path, read_only=read_only)
@@ -93,7 +93,7 @@ class TripleStore:
             yield Triple.from_tuple(row)
 
     def get(
-        self, subject: tuple[str, int], default: T = None
+        self, subject: str | tuple[str, int], default: T = None
     ) -> dict[str, set[tuple[str, int]]] | T:
         """Return all triples in the store."""
         if getattr(self, "_triples", None) is None:
@@ -106,15 +106,15 @@ class TripleStore:
         senses = self._triples.get(subj_word)
         if senses is None:
             return default
-        if subj_sense in senses:
-            relations = defaultdict(set)
-            for predicate, objects in senses[subj_sense].items():
-                relations[predicate].update(objects)
-        elif subj_sense is None:
+        if subj_sense is None:
             relations = defaultdict(set)
             for sense_dict in senses.values():
                 for predicate, objects in sense_dict.items():
                     relations[predicate].update(objects)
+        elif subj_sense in senses:
+            relations = defaultdict(set)
+            for predicate, objects in senses[subj_sense].items():
+                relations[predicate].update(objects)
         else:
             return default
         return dict(relations)

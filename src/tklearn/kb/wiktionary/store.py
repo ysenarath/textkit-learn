@@ -68,15 +68,15 @@ def add_forms(w: Word, lexicon: Lexicon):
         lexicon[form_form] = base_forms
 
 
-class WiktionaryArtifactStoreConfig(ArtifactStoreConfig):
-    name: ClassVar[str] = "wiktionary"
+class WiktionaryArtifactStoreConfigV1(ArtifactStoreConfig):
+    name: ClassVar[str] = "wiktionary:v0"
     repo_id: str = "textkit-learn/wiktionary"
     repo_type: str = "dataset"
     private: bool = True
 
 
-class WiktionaryArtifactStore(ArtifactStore):
-    config: WiktionaryArtifactStoreConfig
+class WiktionaryArtifactStoreV1(ArtifactStore):
+    config: WiktionaryArtifactStoreConfigV1
 
     def __post_init__(self):
         # local_dir is the directory where the repo will be downloaded
