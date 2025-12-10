@@ -63,6 +63,9 @@ dependencies = [
     "umap-learn>=0.5.7",
     "dill>=0.3.8",
     "shap>=0.48.0",
+    "diskcache>=5.6.3",
+    "openai>=2.9.0",
+    "python-dotenv>=1.2.1",
 ]
 dynamic = ["version"]
 
@@ -104,6 +107,7 @@ ignore = [
     "F601", # dict key literal ... repeated
     "F841", # local variable ... assigned but never used
     # "F821", # undefined name
+    "F403", # 'from module import *' used; unable to detect undefined names
 ]
 
 [tool.ruff.lint.isort]
