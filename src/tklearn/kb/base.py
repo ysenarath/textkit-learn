@@ -22,7 +22,7 @@ class ArtifactStore(BaseModule):
 
     # form (str) -> set of words (set[str])
     lexicon: Lexicon[set[str]]
-    # subject (str, int) -> predicate (str) -> object (str, int)
+    # subject (str, int) -> {predicate (str) -> [object (str, int)]}
     triples: TripleStore
     # gloss (str) -> index (int)
     gloss2idx: dict[str, int]
