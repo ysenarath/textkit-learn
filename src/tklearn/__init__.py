@@ -1,5 +1,8 @@
 import ssl
 import warnings
+from contextlib import suppress
+
+import pydantic
 
 from tklearn.config import config
 
@@ -11,15 +14,14 @@ def basic_setup():
         pass
     else:
         ssl._create_default_https_context = _create_unverified_https_context
-    # Suppress all Pydantic deprecation warnings coming from libraries like MLflow
-    warnings.filterwarnings("ignore", module="pydantic")
-    warnings.filterwarnings("ignore", module="mlflow")
-    # Suppress the specific regex escape warning
-    warnings.filterwarnings(
-        "ignore",
-        category=DeprecationWarning,
-        message="invalid escape sequence",
-    )
+    with suppress(AttributeError):
+        warnings.filterwarnings(
+            "ignore", category=pydantic.warnings.PydanticDeprecatedSince212
+        )
+    with suppress(AttributeError):
+        warnings.filterwarnings(
+            "ignore", category=pydantic.warnings.PydanticDeprecatedSince20
+        )
 
 
 basic_setup()
