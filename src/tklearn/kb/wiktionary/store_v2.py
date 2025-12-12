@@ -20,6 +20,7 @@ from tklearn.embeddings.base import AutoEmbedding
 from tklearn.kb.base import ArtifactStore, ArtifactStoreConfig
 from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.triple_store import TripleStore
+from tklearn.kb.wiktionary.helpers import JSONDisk
 from tklearn.kb.wiktionary.models import Sense, Word, parse_jsonl
 
 logger = logging.get_logger(__name__)
@@ -34,12 +35,12 @@ def count_lines_fast(path):
 
 
 def setup_wiktionary_words(
-    extracted_path: Path, wiktionary_path: Path, language: str
+    extracted_path: Path, wiktionary_path: Path, language: str = "en"
 ) -> bool:
     words = []
     data_iter = parse_jsonl(extracted_path)
     num_lines = count_lines_fast(extracted_path)
-    if language == "en":
+    if language in {"en", "english"}:
         languages = {"en", "english"}
     else:
         raise NotImplementedError(f"Language {language} not supported.")
@@ -88,10 +89,11 @@ def setup_wiktionary(
     temp_download_path: Path,
     temp_extracted_path: Path,
     wiktionary_path: Path,
-    language: list[str],
+    language: str = "en",
+    remove_downloaded: bool = True,
 ) -> Path:
     logger.info("Downloading wiktionary data.")
-    if not wiktionary_path.exists():
+    if wiktionary_path is None or not wiktionary_path.exists():
         logger.info("Wiktionary data not found.")
         if not temp_extracted_path.exists():
             # Download the gzip file
@@ -110,13 +112,15 @@ def setup_wiktionary(
             # remove the compressed file after extraction
             os.remove(temp_download_path)
         # Cache English words
-        setup_wiktionary_words(
-            extracted_path=temp_extracted_path,
-            wiktionary_path=wiktionary_path,
-            language=language,
-        )
+        if wiktionary_path is not None:
+            setup_wiktionary_words(
+                extracted_path=temp_extracted_path,
+                wiktionary_path=wiktionary_path,
+                language=language,
+            )
         # remove the extracted jsonl file after caching
-        os.remove(temp_extracted_path)
+        if remove_downloaded:
+            os.remove(temp_extracted_path)
     else:
         logger.info("Wiktionary data already exists.")
     return temp_extracted_path
@@ -140,6 +144,8 @@ class WikitionaryProcessor:
     def process_sense(self, word: Word, sense: Sense):
         # Determine sense ID based on glosses
         definition = " ".join(sense.glosses or []).strip() or None
+        if not definition:
+            definition = " ".join(sense.raw_glosses or []).strip() or None
         sense_id = None
         if definition:
             sense_id = self.get_or_set_sense_id(definition)
@@ -219,25 +225,27 @@ class WikitionaryProcessor:
     ):
         self.embeddings.update(dict(zip(buffer[0], ex)))
         for k, v in zip(buffer[1], ex):
-            self.embedding_cache[k] = v.tolist()
+            self.embedding_cache[k] = v
 
     def embed_glosses(self) -> dict[int, np.ndarray]:
         logger.info("Building gloss embeddings.")
-        model = AutoEmbedding({
-            "loader": "transformers",
-            "name": "sentence-transformers/all-MiniLM-L6-v2",
-        })
+        model = None
         desc = "Embedding Definitions"
         progress_bar = tqdm.tqdm(total=len(self.gloss2idx), desc=desc)
         buffer = ([], [])
         for gloss, index in self.gloss2idx.items():
             if gloss in self.embedding_cache:
-                self.embeddings[index] = np.array(self.embedding_cache[gloss])
+                self.embeddings[index] = self.embedding_cache[gloss]
                 progress_bar.update(1)
                 continue
+            if model is None:
+                model = AutoEmbedding({
+                    "loader": "transformers",
+                    "name": "sentence-transformers/all-MiniLM-L6-v2",
+                })
             buffer[0].append(index)
             buffer[1].append(gloss)
-            if len(buffer[0]) >= 512:
+            if len(buffer[0]) >= 10_000:
                 ex = model.encode(buffer[1], batch_size=256)
                 self.update_embeddings(buffer, ex)
                 buffer = ([], [])
@@ -256,6 +264,8 @@ class WikitionaryProcessor:
 
         def add_triple(triple: tuple[WS, str, WS]):
             subject, predicate, object_ = triple
+            if subject[1] is None and object_[1] is None:
+                return
             if predicate == "hyponym":
                 rev_triple = (object_, "hypernym", subject)
                 ts.insert(rev_triple)
@@ -298,7 +308,7 @@ class WikitionaryProcessor:
                 pickle.dump(senses, f)
 
         pth = self.cache_dir / "embeddings"
-        self.embedding_cache = Cache(pth)
+        self.embedding_cache = Cache(pth, disk=JSONDisk)
         self.embeddings = {}
         self.embed_glosses()
         self.embedding_cache.close()
@@ -321,6 +331,7 @@ class WiktionaryArtifactStoreConfig(ArtifactStoreConfig):
     version: str = "v1.0"
     repo_type: str = "dataset"
     language: str = "en"
+    verbose: bool = False
 
     @property
     def repo_name(self) -> str:
@@ -378,13 +389,7 @@ class WiktionaryArtifactStore(ArtifactStore):
             wiktionary_path=self.wiktionary_path,
             language=language,
         )
-        with open(self.wiktionary_path, "rb") as f:
-            words: list[Word] = pickle.load(f)
-        processor = WikitionaryProcessor(
-            words=words,
-            predicates=["synonym", "antonym", "hypernym", "hyponym"],
-            cache_dir=self.local_dir,
-        )
+        processor = self.get_processor()
         for key, value in processor.build().items():
             setattr(self, key, value)
         self.api.upload_folder(
@@ -392,4 +397,17 @@ class WiktionaryArtifactStore(ArtifactStore):
             repo_id=self.config.repo_id,
             repo_type=self.config.repo_type,
             ignore_patterns=["*.jsonl", "*.jsonl.gz"],
+        )
+        if self.config.verbose:
+            logger.setLevel(logging.WARNING)
+        else:
+            logger.setLevel(logging.INFO)
+
+    def get_processor(self):
+        with open(self.wiktionary_path, "rb") as f:
+            words: list[Word] = pickle.load(f)
+        return WikitionaryProcessor(
+            words=words,
+            predicates=["synonym", "antonym", "hypernym", "hyponym"],
+            cache_dir=self.local_dir,
         )
