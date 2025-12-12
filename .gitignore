@@ -155,3 +155,4 @@ requirements-dev.txt
 agentic_examples/*
 
 /cache
+/ops
