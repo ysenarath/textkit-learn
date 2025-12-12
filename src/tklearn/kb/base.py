@@ -1,25 +1,16 @@
 from __future__ import annotations
 
-import functools
 from collections import defaultdict
 from collections.abc import Iterable
 from typing import Any, ClassVar
 
-import nltk
 import numpy as np
 from nightjar import AutoModule, BaseConfig, BaseModule
-from nltk.corpus import stopwords
 
+from tklearn.kb.helpers import get_stopwords
 from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.models import Candidate, Mention, Span, Triple
 from tklearn.kb.triple_store import TripleStore
-
-nltk.download("stopwords", quiet=True)
-
-
-@functools.lru_cache(maxsize=1)
-def get_stopwords(language: str = "english") -> set[str]:
-    return set(stopwords.words(language))
 
 
 class ArtifactStoreConfig(BaseConfig, dispatch="name"):
