@@ -361,6 +361,10 @@ class WiktionaryArtifactStore(ArtifactStore):
     attrs: dict[str, set[int]]
 
     def __post_init__(self):
+        if self.config.verbose:
+            logger.setLevel(logging.WARNING)
+        else:
+            logger.setLevel(logging.INFO)
         # local_dir is the directory where the repo will be downloaded
         self.local_dir = Path(config.assets_dir) / self.config.repo_name
         self.local_dir.mkdir(parents=True, exist_ok=True)
@@ -398,10 +402,6 @@ class WiktionaryArtifactStore(ArtifactStore):
             repo_type=self.config.repo_type,
             ignore_patterns=["*.jsonl", "*.jsonl.gz"],
         )
-        if self.config.verbose:
-            logger.setLevel(logging.WARNING)
-        else:
-            logger.setLevel(logging.INFO)
 
     def get_processor(self):
         with open(self.wiktionary_path, "rb") as f:
