@@ -16,6 +16,15 @@ _LOGGING_TEMPLATE = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 T = TypeVar("T")
 
+CRITICAL = logging.CRITICAL
+FATAL = CRITICAL
+ERROR = logging.ERROR
+WARNING = logging.WARNING
+WARN = WARNING
+INFO = logging.INFO
+DEBUG = logging.DEBUG
+NOTSET = logging.NOTSET
+
 
 def _get_default_log_level() -> str:
     if config.debug:
