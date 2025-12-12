@@ -85,7 +85,7 @@ class Module(nn.Module, Generic[K, V]):
         layers = [p.replace(".", r"\.").replace("*", ".*") for p in layers]
         pattern_regex = "|".join(layers)
         if prefix:
-            pattern_regex = f"{prefix}\.({pattern_regex})"
+            pattern_regex = rf"{prefix}\.({pattern_regex})"
         # compile regex pattern
         try:
             pattern = re.compile(f"^{pattern_regex}$")
