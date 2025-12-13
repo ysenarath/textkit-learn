@@ -6,15 +6,22 @@ from typing import Any, ClassVar
 
 import numpy as np
 from nightjar import AutoModule, BaseConfig, BaseModule
+from typing_extensions import Protocol
 
 from tklearn.kb.helpers import get_stopwords
 from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.models import Candidate, Mention, Span, Triple
-from tklearn.kb.triple_store import TripleStore
 
 
 class ArtifactStoreConfig(BaseConfig, dispatch="name"):
     name: ClassVar[str]
+
+
+class TripleStore(Protocol):
+    # def get(self, subj: S, default: SV) -> dict[P, O]: ...
+    def get(
+        self, subj: str | tuple[str, int], default: Any = None
+    ) -> dict[str, list[tuple[str, int]]]: ...
 
 
 class ArtifactStore(BaseModule):
