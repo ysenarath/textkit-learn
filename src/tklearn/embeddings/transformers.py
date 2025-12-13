@@ -46,14 +46,14 @@ class TransformerWrapper:
     def __init__(self, model: SentenceTransformer):
         self.model = model
 
-    def encode(self, texts: str | list[str], **kwargs) -> np.ndarray:
+    def encode(
+        self, texts: str | list[str], batch_size: int = 32, **kwargs
+    ) -> np.ndarray:
         """Encode the texts."""
         if isinstance(texts, str):
             texts = [texts]
         return self.model.encode(
-            texts,
-            convert_to_numpy=True,
-            batch_size=kwargs.get("batch_size", 32),
+            texts, convert_to_numpy=True, batch_size=batch_size
         )
 
     def get_dimension(self) -> int:
