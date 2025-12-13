@@ -47,13 +47,15 @@ class Candidate:
         return get_wordex()
 
 
-def concept2tuple(concept: str) -> tuple[str, int]:
+def concept2tuple(
+    concept: str | tuple[str, int | None],
+) -> tuple[str, int | None]:
     if isinstance(concept, str) or concept is None:
         concept = (concept, None)
     elif len(concept) == 1:
         concept = (*concept, None)
     concept_word, concept_sense = concept
-    if concept_sense < 0:
+    if concept_sense and concept_sense < 0:
         concept_sense = None
     return concept_word, concept_sense
 
