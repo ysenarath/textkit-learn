@@ -11,16 +11,15 @@ from typing import Any, ClassVar
 
 import numpy as np
 import requests
-from diskcache import Cache
+from datasets import Dataset
 from huggingface_hub import HfApi
 from tqdm import auto as tqdm
 
 from tklearn import config, logging
-from tklearn.embeddings.base import AutoEmbedding
+from tklearn.embeddings.base import AutoEmbedding, Embedding
 from tklearn.kb.base import ArtifactStore, ArtifactStoreConfig
 from tklearn.kb.lexicon import Lexicon
-from tklearn.kb.triple_store import TripleStore
-from tklearn.kb.wiktionary.helpers import JSONDisk
+from tklearn.kb.triple_store_v2 import TripleStore
 from tklearn.kb.wiktionary.models import Sense, Word, parse_jsonl
 
 logger = logging.get_logger(__name__)
@@ -44,7 +43,8 @@ def setup_wiktionary_words(
         languages = {"en", "english"}
     else:
         raise NotImplementedError(f"Language {language} not supported.")
-    for wd in tqdm.tqdm(data_iter, total=num_lines):
+    desc = "Caching Wiktionary"
+    for wd in tqdm.tqdm(data_iter, total=num_lines, desc=desc):
         if wd.lang is not None and (
             wd.lang.lower() not in languages
             or wd.lang_code.lower() not in languages
@@ -126,11 +126,68 @@ def setup_wiktionary(
     return temp_extracted_path
 
 
+def load_from_cache(data: list[dict[str, Any]]):
+    for item in data:
+        yield item
+
+
+def batch_embedding_func(
+    batch: dict[str, list[Any]], *, encoder: Embedding
+) -> dict[str, list[np.ndarray]]:
+    embeddings = encoder.encode(batch["gloss"])
+    return {"embedding": embeddings}
+
+
+def compute_gloss_embeddings(
+    gloss2idx: dict[str, int], cache_file_name: str | Path
+) -> dict[int, np.ndarray]:
+    cache_file_name = Path(cache_file_name)
+    if not cache_file_name.exists():
+        ds = Dataset.from_generator(
+            load_from_cache,
+            gen_kwargs={
+                "data": [{"gloss": gloss} for gloss in gloss2idx.keys()]
+            },
+        )
+        ds = ds.map(
+            batch_embedding_func,
+            batched=True,
+            batch_size=10_000,
+            num_proc=1,
+            load_from_cache_file=True,
+            fn_kwargs={
+                "encoder": AutoEmbedding({
+                    "loader": "transformers",
+                    "name": "sentence-transformers/all-MiniLM-L6-v2",
+                }),
+            },
+        )
+        ds = ds.save_to_disk(cache_file_name)
+        del ds
+    dataset = Dataset.load_from_disk(cache_file_name)
+    dataset.set_format("numpy")
+    embeddings = {}
+    for item in tqdm.tqdm(dataset, desc="Computing Gloss Embeddings"):
+        idx = gloss2idx[item["gloss"]]
+        embeddings[idx] = item["embedding"]
+    return embeddings
+
+
+def format_triple(triple: tuple[WS, str, WS]):
+    subject, predicate, object_ = triple
+    if subject[1] is None and object_[1] is None:
+        return
+    if predicate == "hyponym":
+        rev_triple = (object_, "hypernym", subject)
+        return rev_triple
+    return triple
+
+
 class WikitionaryProcessor:
     def __init__(
-        self, words: list[Word], predicates: list[str], cache_dir: Path
+        self, wiktionary_path: Path, predicates: list[str], cache_dir: Path
     ):
-        self.words = words
+        self.wiktionary_path = wiktionary_path
         self.predicates = predicates
         self.cache_dir = cache_dir
 
@@ -169,7 +226,10 @@ class WikitionaryProcessor:
                     predicate,
                     (obj.word, obj_sense_id),
                 )
-                self.triple_set.add(triple)
+                triple = format_triple(triple)
+                if triple is None:
+                    continue
+                self.triples.add(triple)
 
     def process_word(self, word: Word):
         self.form2senses[word.word].add((word.word, None))
@@ -191,28 +251,35 @@ class WikitionaryProcessor:
                     predicate,
                     (obj.word, obj_sense_id),
                 )
-                self.triple_set.add(triple)
+                triple = format_triple(triple)
+                if triple is None:
+                    continue
+                self.triples.add(triple)
         for sense in word.senses or []:
             self.process_sense(word, sense)
 
     def process_words(self):
-        self.triple_set = set()
+        self.triples = TripleStore()
         self.sense2words: defaultdict[G, set[str]] = defaultdict(set)
         self.form2senses: defaultdict[str, set[WS]] = defaultdict(set)
         self.gloss2idx: dict[str, int] = {}
         try:
+            logger.info("Loading processed words from cache.")
             with open(self.cache_dir / "processed-words.pkl", "rb") as f:
                 cache_data = pickle.load(f)
-            self.triple_set = cache_data["triple_set"]
+            logger.info("Loaded processed words from cache.")
+            self.triples = cache_data["triples"]
             self.sense2words = cache_data["sense2words"]
             self.form2senses = cache_data["form2senses"]
             self.gloss2idx = cache_data["gloss2idx"]
         except FileNotFoundError:
-            for word in tqdm.tqdm(self.words):
+            with open(self.wiktionary_path, "rb") as f:
+                words: list[Word] = pickle.load(f)
+            for word in tqdm.tqdm(words, desc="Processing Words"):
                 self.process_word(word)
             # save intermediate cache
             cache_data = {
-                "triple_set": self.triple_set,
+                "triples": self.triples,
                 "sense2words": self.sense2words,
                 "form2senses": self.form2senses,
                 "gloss2idx": self.gloss2idx,
@@ -220,65 +287,16 @@ class WikitionaryProcessor:
             with open(self.cache_dir / "processed-words.pkl", "wb") as f:
                 pickle.dump(cache_data, f)
 
-    def update_embeddings(
-        self, buffer: tuple[list[int], list[str]], ex: np.ndarray
-    ):
-        self.embeddings.update(dict(zip(buffer[0], ex)))
-        for k, v in zip(buffer[1], ex):
-            self.embedding_cache[k] = v
-
-    def embed_glosses(self) -> dict[int, np.ndarray]:
-        logger.info("Building gloss embeddings.")
-        model = None
-        desc = "Embedding Definitions"
-        progress_bar = tqdm.tqdm(total=len(self.gloss2idx), desc=desc)
-        buffer = ([], [])
-        for gloss, index in self.gloss2idx.items():
-            if gloss in self.embedding_cache:
-                self.embeddings[index] = self.embedding_cache[gloss]
-                progress_bar.update(1)
-                continue
-            if model is None:
-                model = AutoEmbedding({
-                    "loader": "transformers",
-                    "name": "sentence-transformers/all-MiniLM-L6-v2",
-                })
-            buffer[0].append(index)
-            buffer[1].append(gloss)
-            if len(buffer[0]) >= 10_000:
-                ex = model.encode(buffer[1], batch_size=256)
-                self.update_embeddings(buffer, ex)
-                buffer = ([], [])
-            progress_bar.update(1)
-        if buffer[0]:
-            ex = model.encode(buffer[1], batch_size=256)
-            self.update_embeddings(buffer, ex)
-            buffer = ([], [])
-        progress_bar.close()
-        logger.info("Completed building gloss embeddings.")
-
     def build(self) -> dict[str, Any]:
         self.process_words()
 
-        ts = TripleStore()
-
-        def add_triple(triple: tuple[WS, str, WS]):
-            subject, predicate, object_ = triple
-            if subject[1] is None and object_[1] is None:
-                return
-            if predicate == "hyponym":
-                rev_triple = (object_, "hypernym", subject)
-                ts.insert(rev_triple)
-            else:
-                ts.insert(triple)
-
-        for triple in self.triple_set:
-            add_triple(triple)
-
         lexicon: Lexicon[set[tuple[str, int]]]
         try:
+            logger.info("Loading lexicon from cache.")
             lexicon = Lexicon.load(self.cache_dir / "lexicon.pkl")
+            logger.info("Loaded lexicon from cache.")
         except FileNotFoundError:
+            logger.info("Building lexicon.")
             lexicon = Lexicon()
             for form, words_set in self.form2senses.items():
                 if form is None:
@@ -294,27 +312,35 @@ class WikitionaryProcessor:
                     lexicon[form] = {
                         word for word in words_set if word[0] is not None
                     }
+            logger.info("Saving lexicon to cache.")
             lexicon.dump(self.cache_dir / "lexicon.pkl")
+            logger.info("Completed building lexicon.")
 
         try:
+            logger.info("Loading senses from cache.")
             with open(self.cache_dir / "senses.pkl", "rb") as f:
                 senses = pickle.load(f)
+            logger.info("Loaded senses from cache.")
         except FileNotFoundError:
+            logger.info("Building senses.")
             senses = defaultdict(set)
             for sense_id, words in self.sense2words.items():
                 for word in words:
                     senses[word].add(sense_id)
+            logger.info("Saving senses to cache.")
             with open(self.cache_dir / "senses.pkl", "wb") as f:
                 pickle.dump(senses, f)
+            logger.info("Completed building senses.")
 
-        pth = self.cache_dir / "embeddings"
-        self.embedding_cache = Cache(pth, disk=JSONDisk)
-        self.embeddings = {}
-        self.embed_glosses()
-        self.embedding_cache.close()
+        logger.info("Loading embeddings from cache.")
+        self.embeddings = compute_gloss_embeddings(
+            gloss2idx=self.gloss2idx,
+            cache_file_name=self.cache_dir / "embeddings",
+        )
+        logger.info("Completed loading embeddings from cache.")
 
         return {
-            "triples": ts,
+            "triples": self.triples,
             "lexicon": lexicon,
             "gloss2idx": self.gloss2idx,
             "idx2gloss": {idx: gloss for gloss, idx in self.gloss2idx.items()},
@@ -404,10 +430,8 @@ class WiktionaryArtifactStore(ArtifactStore):
         )
 
     def get_processor(self):
-        with open(self.wiktionary_path, "rb") as f:
-            words: list[Word] = pickle.load(f)
         return WikitionaryProcessor(
-            words=words,
+            wiktionary_path=self.wiktionary_path,
             predicates=["synonym", "antonym", "hypernym", "hyponym"],
             cache_dir=self.local_dir,
         )
