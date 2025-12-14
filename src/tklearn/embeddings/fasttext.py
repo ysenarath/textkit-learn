@@ -65,6 +65,7 @@ class FastTextEmbedding(Embedding):
         return self._fetch_embedding()._read_embedding()
 
     def get_encoder(self) -> FastTextWrapper:
+        self._fetch_embedding()
         model = fasttext.load_model(f"{self.files_dir / self.config.name}")
         return FastTextWrapper(model)
 
