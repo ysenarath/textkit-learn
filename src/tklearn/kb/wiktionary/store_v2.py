@@ -3,6 +3,7 @@ from __future__ import annotations
 import gzip
 import os
 import pickle
+import re
 import shutil
 import subprocess
 from collections import defaultdict
@@ -190,10 +191,20 @@ class WikitionaryProcessor:
         self.wiktionary_path = wiktionary_path
         self.predicates = predicates
         self.cache_dir = cache_dir
+        self.anti_patterns = [
+            # antonym(s) of "{definition}" -> definition
+            # (see https://en.wiktionary.org/wiki/Template:antsense)
+            re.compile(r'antonym\(s\) of [“"](.*)[”"]')
+        ]
 
     def get_or_set_sense_id(self, definition: str | None) -> int | None:
         if definition is None:
             return None
+        for pattern in self.anti_patterns:
+            m = pattern.match(definition)
+            if m:
+                definition = m.group(1)
+                break
         if definition not in self.gloss2idx:
             self.gloss2idx[definition] = len(self.gloss2idx)
         return self.gloss2idx[definition]
@@ -214,17 +225,17 @@ class WikitionaryProcessor:
         for predicate in self.predicates:
             objects = getattr(sense, predicate + "s") or []
             for obj in objects:
-                obj_sense_id = None
+                rel_sense_id = None
                 if obj.sense:
                     assert isinstance(obj.sense, str), (
                         "expected str, got {}".format(type(obj.sense).__name__)
                     )
-                    obj_sense_id = self.get_or_set_sense_id(obj.sense)
-                    self.sense2words[obj_sense_id].add(word.word)
+                    rel_sense_id = self.get_or_set_sense_id(obj.sense)
+                    self.sense2words[rel_sense_id].add(word.word)
                 triple = (
-                    (word.word, sense_id),
+                    (word.word, sense_id or rel_sense_id),
                     predicate,
-                    (obj.word, obj_sense_id),
+                    (obj.word, None),
                 )
                 triple = format_triple(triple)
                 if triple is None:
@@ -239,17 +250,17 @@ class WikitionaryProcessor:
         for predicate in self.predicates:
             objects = getattr(word, predicate + "s") or []
             for obj in objects:
-                obj_sense_id = None
+                rel_sense_id = None
                 if obj.sense:
                     assert isinstance(obj.sense, str), (
                         "expected str, got {}".format(type(obj.sense).__name__)
                     )
-                    obj_sense_id = self.get_or_set_sense_id(obj.sense)
-                    self.sense2words[obj_sense_id].add(word.word)
+                    rel_sense_id = self.get_or_set_sense_id(obj.sense)
+                    self.sense2words[rel_sense_id].add(word.word)
                 triple = (
-                    (word.word, None),
+                    (word.word, rel_sense_id),
                     predicate,
-                    (obj.word, obj_sense_id),
+                    (obj.word, None),
                 )
                 triple = format_triple(triple)
                 if triple is None:
@@ -296,7 +307,7 @@ class WikitionaryProcessor:
             lexicon = Lexicon.load(self.cache_dir / "lexicon.pkl")
             logger.info("Loaded lexicon from cache.")
         except FileNotFoundError:
-            logger.info("Building lexicon.")
+            logger.info("Failed to load lexicon from cache. Building lexicon.")
             lexicon = Lexicon()
             for form, words_set in self.form2senses.items():
                 if form is None:
@@ -322,7 +333,7 @@ class WikitionaryProcessor:
                 senses = pickle.load(f)
             logger.info("Loaded senses from cache.")
         except FileNotFoundError:
-            logger.info("Building senses.")
+            logger.info("Failed to load senses from cache. Building senses.")
             senses = defaultdict(set)
             for sense_id, words in self.sense2words.items():
                 for word in words:
