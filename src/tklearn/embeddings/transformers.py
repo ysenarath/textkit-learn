@@ -11,22 +11,22 @@ from tklearn.embeddings.base import Embedding, EmbeddingConfig
 from tklearn.nn.utils import get_device
 
 __all__ = [
-    "TransformersEmbeddingConfig",
-    "TransformersEmbedding",
+    "SentenceTransformerEmbeddingConfig",
+    "SentenceTransformerEmbedding",
 ]
 
 logger = logging.get_logger(__name__)
 
 
-class TransformersEmbeddingConfig(EmbeddingConfig):
+class SentenceTransformerEmbeddingConfig(EmbeddingConfig):
     loader: ClassVar[str] = "transformers"
     name: str = "all-MiniLM-L6-v2"
     device: str = "auto"
     verbose: Union[bool, int] = 1
 
 
-class TransformersEmbedding(Embedding):
-    config: TransformersEmbeddingConfig
+class SentenceTransformerEmbedding(Embedding):
+    config: SentenceTransformerEmbeddingConfig
 
     def get_vectors(self) -> dict[str, ArrayLike]:
         """Load resource."""

@@ -1,7 +1,9 @@
 from tklearn.embeddings.base import AutoEmbedding, Embedding
 from tklearn.embeddings.fasttext import FastTextEmbedding
 from tklearn.embeddings.gensim import GensimEmbedding
-from tklearn.embeddings.transformers import TransformersEmbedding
+from tklearn.embeddings.transformers import SentenceTransformerEmbedding
+
+TransformersEmbedding = SentenceTransformerEmbedding  # backward compatibility
 
 __all__ = [
     "Embedding",
@@ -9,4 +11,5 @@ __all__ = [
     "FastTextEmbedding",
     "GensimEmbedding",
     "TransformersEmbedding",
+    "SentenceTransformerEmbedding",
 ]
