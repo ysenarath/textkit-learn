@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import os
 from contextlib import contextmanager
 from pathlib import Path
@@ -11,7 +10,7 @@ import fasttext.util
 import numpy as np
 from typing_extensions import Self
 
-from tklearn import config
+from tklearn import config, logging
 from tklearn.embeddings.base import Embedding, EmbeddingConfig
 
 __all__ = [
@@ -19,7 +18,7 @@ __all__ = [
     "FastTextEmbedding",
 ]
 
-logger = logging.getLogger(__name__)
+logger = logging.get_logger(__name__)
 
 
 @contextmanager
