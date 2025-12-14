@@ -4,8 +4,12 @@ import functools
 
 import nltk
 
+__all__ = [
+    "get_stopwords",
+]
 
-@functools.lru_cache(maxsize=1)
+
+@functools.lru_cache(maxsize=5)
 def get_stopwords(language: str = "english") -> set[str]:
     if language == "en":
         return get_stopwords("english")
