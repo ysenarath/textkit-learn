@@ -9,6 +9,9 @@ from tklearn.nn.utils.devices import get_device
 device = get_device()
 max_steps = 20
 
+# CMAKE_ARGS="-DGGML_CUDA=on" uv pip install llama-cpp-python
+# module load cuda
+# CMAKE_ARGS="-DGGML_METAL=on" pip install llama-cpp-python
 model = model_factory(
     "llama_cpp",
     filename="gemma-3-12b-it-q4_0.gguf",
