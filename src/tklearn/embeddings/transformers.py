@@ -34,10 +34,7 @@ class TransformersEmbedding(Embedding):
 
     def get_encoder(self) -> TransformerWrapper:
         """Return the model."""
-        if self.config.device == "auto":
-            device = get_device()
-        else:
-            device = self.config.device
+        device = get_device(self.config.device)
         encoder = SentenceTransformer(self.config.name, device=device)
         return TransformerWrapper(encoder)
 
