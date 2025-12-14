@@ -8,7 +8,7 @@ __all__ = [
 
 
 def get_device(device: str | None = None) -> torch.device:
-    if device is None:
+    if device is None or device == "auto":
         if torch.cuda.is_available():
             device = "cuda"
         elif (
