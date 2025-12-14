@@ -36,7 +36,7 @@ class KnowledgeBasedTokenizer:
             pretrained_model_name_or_path
         )
         # has the tokenizer been created?
-        self.embedding = AutoEmbedding.from_config({"name": "fasttext"})
+        self.embedding = AutoEmbedding({"name": "fasttext"})
         return self
 
     def load_triples(self, path: str | Path) -> None:
