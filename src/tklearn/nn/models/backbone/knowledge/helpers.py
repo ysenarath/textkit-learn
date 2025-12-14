@@ -3,38 +3,28 @@ from __future__ import annotations
 import csv
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Optional, Tuple, TypeVar
+from typing import TypeVar
 
-import nltk
 import numpy as np
 import unibreak
-from nltk.corpus import stopwords as st
 from scipy.spatial.distance import cdist
 from tqdm import auto as tqdm
 
 from tklearn.embeddings import Embedding
 from tklearn.kb.lexicon import Lexicon
+from tklearn.utils.lang import get_stopwords
 from tklearn.utils.lexrank import degree_centrality_scores
 
 T = TypeVar("T")
 
-nltk.download("stopwords", quiet=True)
-
-stopwords = set(st.words("english"))
-
 DEFAULT_TOP_K = 3
 
-
-def preprocess(s: str) -> Optional[str]:
-    s = " ".join(s.split()).lower()
-    if s in stopwords:
-        return None
-    return s
+stopwords = get_stopwords("english")
 
 
 def score_triples(
-    triples: Dict[Tuple[str, str, str], set], embedding: Embedding
-) -> Dict[Tuple[str, str, str], float]:
+    triples: dict[tuple[str, str, str], set], embedding: Embedding
+) -> dict[tuple[str, str, str], float]:
     vocab = set()
     for s, p, o in triples.keys():
         vocab.update([s, o])
@@ -57,10 +47,10 @@ def score_triples(
 
 
 def score_triples_v2(
-    triples: Dict[Tuple[str, str, str], set],
+    triples: dict[tuple[str, str, str], set],
     embedding: Embedding,
     threshold: float = 0.1,
-) -> Dict[Tuple[str, str, str], float]:
+) -> dict[tuple[str, str, str], float]:
     vocab2triple = {}
     for s, p, o in triples.keys():
         if p == "HasContext":
@@ -92,11 +82,11 @@ def score_triples_v2(
 
 
 def score_triples_v3(
-    triples: Dict[Tuple[str, str, str], set],
+    triples: dict[tuple[str, str, str], set],
     embedding: Embedding,
     context: str,
     threshold: float = 0.1,
-) -> Dict[Tuple[str, str, str], float]:
+) -> dict[tuple[str, str, str], float]:
     vocab = {
         v.strip()
         for v in unibreak.split_words(context)
@@ -124,7 +114,7 @@ def score_triples_v3(
     return triple_score
 
 
-def augment(text: str, triples: Dict[Tuple[str, str, str], set]):
+def augment(text: str, triples: dict[tuple[str, str, str], set]):
     aug_text = text
     aug_triples = defaultdict(set)
     aug_triples.update(triples)
@@ -149,10 +139,10 @@ def augment(text: str, triples: Dict[Tuple[str, str, str], set]):
 
 
 def filter_triples(
-    triples: Dict[Tuple[str, str, str], set],
+    triples: dict[tuple[str, str, str], set],
     embedding: Embedding,
     top_k: int | None = None,
-) -> Dict[Tuple[str, str, str], set]:
+) -> dict[tuple[str, str, str], set]:
     if top_k is None:
         top_k = DEFAULT_TOP_K
     # select top 2 per subject
@@ -167,7 +157,7 @@ def filter_triples(
     return filtered_triples
 
 
-def lexquery(lexicon: Lexicon, text: str) -> Dict[Tuple[str, str, str], set]:
+def lexquery(lexicon: Lexicon, text: str) -> dict[tuple[str, str, str], set]:
     result = defaultdict(set)
     matches = list(lexicon.extract(text))
     visited = set()
@@ -199,9 +189,10 @@ def lexload(
         reader = csv.reader(f)
         # no header
         for s, p, o in tqdm.tqdm(reader, total=nlines, desc="Loading triples"):
-            k = preprocess(s)
-            if k:
-                triplets[k].add((s, p, o))
+            k = " ".join(s.split()).lower()
+            if k in stopwords:
+                continue
+            triplets[k].add((s, p, o))
     lexicon = Lexicon(case_sensitive=case_sensitive)
     for k in triplets.keys():
         lexicon[k] = triplets[k]
