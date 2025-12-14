@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -18,6 +19,7 @@ from tqdm import auto as tqdm
 
 from tklearn import config, logging
 from tklearn.embeddings.base import AutoEmbedding, Embedding
+from tklearn.exceptions import UnexpectedValueError
 from tklearn.kb.base import ArtifactStore, ArtifactStoreConfig
 from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.triple_store_v2 import TripleStore
@@ -28,6 +30,13 @@ G = int | None
 WS = tuple[str, G]
 
 WIKTIONARY_URL = "https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz"
+SUPPORTED_PREDICATES = {
+    "synonym",
+    "antonym",
+    "hypernym",
+    "hyponym",
+    "category",
+}
 
 
 def count_lines_fast(path):
@@ -184,23 +193,69 @@ def format_triple(triple: tuple[WS, str, WS]):
     return triple
 
 
+@dataclass
+class WordSense:
+    word: str
+    sense: str | None = None
+
+    def __init__(self, word: str, sense: str | None = None):
+        # asset word is str
+        if not isinstance(word, str):
+            raise UnexpectedValueError(
+                got=type(word).__name__,
+                expected="str",
+            )
+        self.word = word
+        self.sense = sense
+
+
+def predicate_getattr(subj: Word | Sense, predicate: str) -> list[WordSense]:
+    value = None
+    if predicate == "synonym":
+        value = subj.synonyms
+    elif predicate == "antonym":
+        value = subj.antonyms
+    elif predicate == "hypernym":
+        value = subj.hypernyms
+    elif predicate == "hyponym":
+        value = subj.hyponyms
+    elif predicate == "category" and subj.categories:
+        value = list(map(WordSense, subj.categories))
+    else:
+        raise UnexpectedValueError(
+            got=predicate, expected=SUPPORTED_PREDICATES
+        )
+    return value or []
+
+
 class WikitionaryProcessor:
+    ANTI_PATTERNS = [
+        # antonym(s) of "{definition}" -> definition
+        # (see https://en.wiktionary.org/wiki/Template:antsense)
+        re.compile(r'antonym\(s\) of [“"](.*)[”"]')
+    ]
+
     def __init__(
-        self, wiktionary_path: Path, predicates: list[str], cache_dir: Path
+        self,
+        wiktionary_path: Path,
+        cache_dir: Path,
+        predicates: set[str] | None = None,
     ):
         self.wiktionary_path = wiktionary_path
-        self.predicates = predicates
+        if predicates is None:
+            predicates = SUPPORTED_PREDICATES
+        self.predicates = set(predicates)
         self.cache_dir = cache_dir
-        self.anti_patterns = [
-            # antonym(s) of "{definition}" -> definition
-            # (see https://en.wiktionary.org/wiki/Template:antsense)
-            re.compile(r'antonym\(s\) of [“"](.*)[”"]')
-        ]
 
     def get_or_set_sense_id(self, definition: str | None) -> int | None:
         if definition is None:
             return None
-        for pattern in self.anti_patterns:
+        if not isinstance(definition, str):
+            raise UnexpectedValueError(
+                got=type(definition).__name__,
+                expected="str",
+            )
+        for pattern in self.ANTI_PATTERNS:
             m = pattern.match(definition)
             if m:
                 definition = m.group(1)
@@ -223,7 +278,7 @@ class WikitionaryProcessor:
             self.form2senses[word.word].add((form_of.word, sense_id))
         # Add other relations
         for predicate in self.predicates:
-            objects = getattr(sense, predicate + "s") or []
+            objects = predicate_getattr(sense, predicate)
             for obj in objects:
                 rel_sense_id = None
                 if obj.sense:
@@ -248,13 +303,10 @@ class WikitionaryProcessor:
             word_form: str = form.form
             self.form2senses[word_form].add((word.word, None))
         for predicate in self.predicates:
-            objects = getattr(word, predicate + "s") or []
+            objects = predicate_getattr(word, predicate)
             for obj in objects:
                 rel_sense_id = None
                 if obj.sense:
-                    assert isinstance(obj.sense, str), (
-                        "expected str, got {}".format(type(obj.sense).__name__)
-                    )
                     rel_sense_id = self.get_or_set_sense_id(obj.sense)
                     self.sense2words[rel_sense_id].add(word.word)
                 triple = (
@@ -442,7 +494,5 @@ class WiktionaryArtifactStore(ArtifactStore):
 
     def get_processor(self):
         return WikitionaryProcessor(
-            wiktionary_path=self.wiktionary_path,
-            predicates=["synonym", "antonym", "hypernym", "hyponym"],
-            cache_dir=self.local_dir,
+            wiktionary_path=self.wiktionary_path, cache_dir=self.local_dir
         )
