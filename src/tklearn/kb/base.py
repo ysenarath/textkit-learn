@@ -8,9 +8,9 @@ import numpy as np
 from nightjar import AutoModule, BaseConfig, BaseModule
 from typing_extensions import Protocol
 
-from tklearn.kb.helpers import get_stopwords
 from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.models import Candidate, Mention, Span, Triple
+from tklearn.utils.lang import get_stopwords
 
 
 class ArtifactStoreConfig(BaseConfig, dispatch="name"):

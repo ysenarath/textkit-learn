@@ -5,10 +5,6 @@ import re
 
 import nltk
 
-__all__ = [
-    "codec",
-]
-
 
 @functools.lru_cache(maxsize=1)
 def get_stopwords(language: str = "english") -> set[str]:
