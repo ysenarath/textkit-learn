@@ -174,13 +174,14 @@ def compute_gloss_embeddings(
                     "name": "sentence-transformers/all-mpnet-base-v2",
                 }),
             },
+            desc="Computing Gloss Embeddings",
         )
         ds = ds.save_to_disk(cache_file_name)
         del ds
     dataset = Dataset.load_from_disk(cache_file_name)
     dataset.set_format("numpy")
     embeddings = {}
-    for item in tqdm.tqdm(dataset, desc="Computing Gloss Embeddings"):
+    for item in tqdm.tqdm(dataset, desc="Loading Gloss Embeddings"):
         idx = gloss2idx[item["gloss"]]
         embeddings[idx] = item["embedding"]
     return embeddings
