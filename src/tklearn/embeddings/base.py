@@ -283,6 +283,22 @@ class Embedding(BaseModule, Mapping[str, np.ndarray], EmbeddingBase):
             return vectors
         raise KeyError(key)
 
+    def encode_query(self, texts: str | list[str], **kwargs) -> np.ndarray:
+        """Encode the texts as queries."""
+        if not hasattr(self.model, "encode_query"):
+            raise NotImplementedError(
+                f"{self.model.__class__.__name__} does not implement encode_query"
+            )
+        return self.model.encode_query(texts, **kwargs)
+
+    def encode_document(self, texts: str | list[str], **kwargs) -> np.ndarray:
+        """Encode the texts as documents."""
+        if not hasattr(self.model, "encode_document"):
+            raise NotImplementedError(
+                f"{self.model.__class__.__name__} does not implement encode_document"
+            )
+        return self.model.encode_document(texts, **kwargs)
+
     def __getitem__(self, key: str) -> np.ndarray:
         """Retrieve the vector for a specific word.
 
