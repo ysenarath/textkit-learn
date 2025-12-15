@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, ClassVar
@@ -151,9 +152,34 @@ def batch_embedding_func(
     return {"embedding": embeddings}
 
 
+class EmbeddingsMapping(Mapping[int, np.ndarray]):
+    def __init__(self, dataset: Dataset, gloss2idx: dict[str, int]):
+        self.dataset = dataset
+        id2iloc = {}
+        pbar = tqdm.tqdm(
+            enumerate(dataset["gloss"]), desc="Loading Gloss Embeddings"
+        )
+        for index, gloss in pbar:
+            id2iloc[gloss2idx[gloss]] = index
+        self.id2iloc = id2iloc
+
+    def __getitem__(self, key: int) -> np.ndarray:
+        index = self.id2iloc[key]
+        return self.dataset[index]["embedding"]
+
+    def __iter__(self):
+        return iter(self.id2iloc.keys())
+
+    def __len__(self) -> int:
+        return len(self.id2iloc)
+
+    def __contains__(self, key: int) -> bool:
+        return key in self.id2iloc
+
+
 def compute_gloss_embeddings(
     gloss2idx: dict[str, int], cache_file_name: str | Path
-) -> dict[int, np.ndarray]:
+) -> EmbeddingsMapping:
     cache_file_name = Path(cache_file_name)
     if not cache_file_name.exists():
         ds = Dataset.from_generator(
@@ -180,11 +206,7 @@ def compute_gloss_embeddings(
         del ds
     dataset = Dataset.load_from_disk(cache_file_name)
     dataset.set_format("numpy")
-    embeddings = {}
-    for item in tqdm.tqdm(dataset, desc="Loading Gloss Embeddings"):
-        idx = gloss2idx[item["gloss"]]
-        embeddings[idx] = item["embedding"]
-    return embeddings
+    return EmbeddingsMapping(dataset, gloss2idx=gloss2idx)
 
 
 def format_triple(triple: tuple[WS, str, WS]):
