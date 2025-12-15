@@ -146,7 +146,7 @@ def batch_embedding_func(
 ) -> dict[str, list[np.ndarray]]:
     try:
         embeddings = encoder.encode_document(batch["gloss"])
-    except NotImplementedError:
+    except (NotImplementedError, AttributeError):
         embeddings = encoder.encode(batch["gloss"])
     return {"embedding": embeddings}
 
