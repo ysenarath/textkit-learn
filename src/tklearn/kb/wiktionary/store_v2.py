@@ -144,7 +144,10 @@ def load_from_cache(data: list[dict[str, Any]]):
 def batch_embedding_func(
     batch: dict[str, list[Any]], *, encoder: Embedding
 ) -> dict[str, list[np.ndarray]]:
-    embeddings = encoder.encode(batch["gloss"])
+    try:
+        embeddings = encoder.encode_document(batch["gloss"])
+    except NotImplementedError:
+        embeddings = encoder.encode(batch["gloss"])
     return {"embedding": embeddings}
 
 
@@ -168,7 +171,7 @@ def compute_gloss_embeddings(
             fn_kwargs={
                 "encoder": AutoEmbedding({
                     "loader": "transformers",
-                    "name": "sentence-transformers/all-MiniLM-L6-v2",
+                    "name": "sentence-transformers/all-mpnet-base-v2",
                 }),
             },
         )
