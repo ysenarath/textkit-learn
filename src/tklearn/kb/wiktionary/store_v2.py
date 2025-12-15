@@ -222,8 +222,9 @@ def predicate_getattr(subj: Word | Sense, predicate: str) -> list[WordSense]:
         value = subj.hypernyms
     elif predicate == "hyponym":
         value = subj.hyponyms
-    elif predicate == "category" and subj.categories:
-        value = list(map(WordSense, subj.categories))
+    elif predicate == "category":
+        if subj.categories:
+            value = list(map(WordSense, subj.categories))
     else:
         raise UnexpectedValueError(
             got=predicate, expected=SUPPORTED_PREDICATES
