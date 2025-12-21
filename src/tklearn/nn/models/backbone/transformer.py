@@ -26,12 +26,7 @@ def get_features(
     ):
         msg = f"expected {PreTrainedTokenizer.__name__}, got {tokenizer.__class__.__name__}"
         raise TypeError(msg)
-    encoding = tokenizer(
-        SAMPLE_TEXT,
-        return_tensors="pt",
-        padding="max_length",
-        truncation=True,
-    )
+    encoding = tokenizer(SAMPLE_TEXT, return_tensors="pt")
     if not isinstance(encoding, BatchEncoding):
         msg = f"expected {BatchEncoding.__name__}, got {encoding.__class__.__name__}"
         raise TypeError(msg)
