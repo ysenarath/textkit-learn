@@ -116,6 +116,7 @@ ignore = [
     "F841", # local variable ... assigned but never used
     # "F821", # undefined name
     "F403", # 'from module import *' used; unable to detect undefined names
+    "E402", # module level import not at top of file
 ]
 
 [tool.ruff.lint.isort]
