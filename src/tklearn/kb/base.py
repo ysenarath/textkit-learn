@@ -163,13 +163,19 @@ class KnowledgeBase:
                 }
 
     def extract_relations(
-        self, candidate: Candidate, predicates: list[str] | None = None
+        self, candidate: Candidate, predicates: Iterable[str] | None = None
     ) -> list[Triple]:
         if predicates is None:
-            predicates = ["synonym", "hyponym", "instance"]
+            predicates = {
+                "synonym",
+                "antonym",
+                "hypernym",
+                "hyponym",
+                "category",
+            }
         subject = (candidate.word, candidate.sense_id)
         triples = []
-        for predicate in predicates:
+        for predicate in set(predicates):
             objects = self.triples.get(subject, {}).get(predicate, [])
             for object_ in objects:
                 rel = Triple(subject, predicate, object_)
