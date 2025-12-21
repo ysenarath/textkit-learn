@@ -478,9 +478,9 @@ class WiktionaryArtifactStore(ArtifactStore):
 
     def __post_init__(self):
         if self.config.verbose:
-            logger.setLevel(logging.WARNING)
-        else:
             logger.setLevel(logging.INFO)
+        else:
+            logger.setLevel(logging.WARNING)
         # local_dir is the directory where the repo will be downloaded
         self.local_dir = Path(config.assets_dir) / self.config.repo_name
         self.local_dir.mkdir(parents=True, exist_ok=True)
