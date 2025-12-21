@@ -27,6 +27,9 @@ class Mention:
     span: Span
     candidates: list[Candidate]
 
+    def __repr__(self):
+        return f"Mention(form={self.form!r}, span=({self.span.start}, {self.span.end}), candidates={self.candidates})"
+
 
 @dataclass(order=True)
 class Candidate:
@@ -45,6 +48,9 @@ class Candidate:
         if get_wordex is None:
             raise AttributeError("Candidate is not bound to a Wordex instance")
         return get_wordex()
+
+    def __repr__(self):
+        return f"Candidate(word={self.word!r}, sense_id={self.sense_id}, definition={self.definition!r})"
 
 
 def concept2tuple(
