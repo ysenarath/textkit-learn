@@ -1,7 +1,12 @@
+import warnings
 from typing import Optional, Union
 
-import mlflow
-from mlflow.tracking.fluent import ActiveRun
+# Create the sandbox
+with warnings.catch_warnings():
+    # Tell the sandbox to ignore all warnings that happen inside it
+    warnings.simplefilter("ignore")
+    import mlflow
+    from mlflow.tracking.fluent import ActiveRun
 
 from tklearn.nn.callbacks.base import Callback
 
