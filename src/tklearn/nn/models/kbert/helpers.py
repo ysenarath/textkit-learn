@@ -17,12 +17,44 @@ class Injection:
     def truncated_span(self) -> Span:
         start = self._final_start + len(self.text) - len(self.text.lstrip())
         end = self._final_end - len(self.text) + len(self.text.rstrip())
+        if start >= end:
+            start = end
         return Span(start, end)
 
 
 def inject(
     text: str, injections: list[Injection], spans: list[Span]
 ) -> tuple[str, list[Span], list[Span]]:
+    """Injects text snippets into the original text at specified indices,
+    adjusting for collisions with existing spans.
+
+    Collision Logic:
+        - A collision occurs if the injection's target index is strictly inside
+          an existing span (`span.start < index < span.end`).
+        - Resolution is cascading: if a collision occurs, the injection is moved
+          to the end of that span.
+        - If this new position falls strictly inside a subsequent overlapping span,
+          it moves again.
+        - Effectively, the injection "slides" to the right until it exits the
+          entire chain of overlapping original spans.
+        - Injections at exact boundaries (`start` or `end`) are NOT collisions.
+
+    Whitespace Handling:
+        - The `injected_spans` returned by this function disregard leading and
+          trailing spaces of the injected text.
+        - While the full text (including spaces) is inserted into the string,
+          the resulting Span object will only cover the non-whitespace content.
+        - If an injection is purely whitespace, the span will collapse to a zero-length span
+          at the insertion point.
+
+    Args:
+        text (str): The original text.
+        injections (list[Injection]): List of Injection objects.
+        spans (list[Span]): List of existing spans in the original text.
+
+    Returns:
+        tuple: (modified_text, updated_original_spans, new_injection_spans)
+    """
     # --- Step 1: Resolve Collisions (Logic from previous answer) ---
     # We resolve against original spans.
     # Optimization: Sort spans by start for efficient collision checking.
@@ -134,6 +166,8 @@ def example():
         Injection(" brave", 2),
         Injection(" big", 6),
         Injection(" tiny", 6),
+        Injection("apple", 0),
+        Injection(" " * 5, 0),
     ]
 
     final_txt, updated_s, new_s = inject(orig_text, to_inject, orig_spans)
