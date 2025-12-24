@@ -61,25 +61,28 @@ def get_token_aligned_triples(item: dict) -> dict:
         triple_start_token = char2token[triple_start_char]
         triple_end_token = char2token[triple_end_char - 1] + 1
         triples.append({
+            "span.type": "token",
+            # triple data
             "triple.subject": triple["triple.subject"],
             "triple.predicate": triple["triple.predicate"],
             "triple.object": triple["triple.object"],
-            "mention.span.start": mention_start_token.item(),
-            "mention.span.end": mention_end_token.item(),
-            "triple.span.start": triple_start_token.item(),
-            "triple.span.end": triple_end_token.item(),
-            "mention.span.start.char": mention_start_char,
-            "mention.span.end.char": mention_end_char,
+            # triple span data
             "triple.span.start.char": triple_start_char,
             "triple.span.end.char": triple_end_char,
-            "span.type": "token",
-            "mention_str": triple["mention_str"],
-            "triple_str": triple["triple_str"],
-            "mention_tokens": item["tokens"][
-                mention_start_token:mention_end_token
-            ],
-            "triple_tokens": item["tokens"][
+            "triple.span.start": triple_start_token.item(),
+            "triple.span.end": triple_end_token.item(),
+            "triple.text": triple["triple.text"],
+            "triple.tokens": item["tokens"][
                 triple_start_token:triple_end_token
+            ],
+            # mention span data
+            "mention.span.start.char": mention_start_char,
+            "mention.span.end.char": mention_end_char,
+            "mention.span.start": mention_start_token.item(),
+            "mention.span.end": mention_end_token.item(),
+            "mention.text": triple["mention.text"],
+            "mention.tokens": item["tokens"][
+                mention_start_token:mention_end_token
             ],
         })
     return triples
@@ -255,16 +258,19 @@ class KnowledgeBaseTokenizer:
                     original_mention_strs[i] == original_mention_str_augmented
                 ), "Original mention string does not match after augmentation."
                 triples.append(({
+                    "span.type": "char",
+                    # triple data
                     "triple.subject": triple_spo[i][0],
                     "triple.predicate": triple_spo[i][1],
                     "triple.object": triple_spo[i][2],
+                    # triple span data
                     "mention.span.start": mention_span.start,
                     "mention.span.end": mention_span.end,
+                    "mention.text": original_mention_strs[i],
+                    # triple span data
                     "triple.span.start": triple_span.start,
                     "triple.span.end": triple_span.end,
-                    "mention_str": original_mention_strs[i],
-                    "triple_str": triple_str,
-                    "span.type": "char",
+                    "triple.text": triple_str,
                 }))
             item["text"] = augmented_text
             item["original_text"] = item_text
