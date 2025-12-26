@@ -145,6 +145,11 @@ class KnowledgeBaseTokenizer:
             # "category",
         }
 
+    @property
+    def pad_token_id(self) -> int:
+        # bert-style padding
+        return self.tokenizer.pad_token_id
+
     def convert_ids_to_tokens(self, ids: int | list[int]) -> str | list[str]:
         return self.tokenizer.convert_ids_to_tokens(ids)
 
