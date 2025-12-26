@@ -109,6 +109,8 @@ def extract_visibility_matrix(item: dict):
             for mt in range(mention_start_token, mention_end_token):
                 visibility_matrix[mt, tt] = 1
                 visibility_matrix[tt, mt] = 1
+            for tk in range(triple_start_token, triple_end_token):
+                visibility_matrix[tt, tk] = 1
     # set visibility among normal tokens
     normal_token_indexes = np.where(is_normal_token)[0]
     for ti in normal_token_indexes:
