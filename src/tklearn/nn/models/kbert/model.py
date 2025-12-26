@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import types
 import warnings
-from typing import Any, Union
+from typing import Any, Type, Union
 
 import torch
 from transformers import AutoModel, PreTrainedModel
@@ -87,20 +87,41 @@ class AutoKnowledgeBaseModel(torch.nn.Module):
 
     def __init__(self, base_model: PreTrainedModel):
         super().__init__()
-        if not hasattr(base_model, "get_extended_attention_mask"):
+        # Locate the correct encoder to patch.
+        # HF models expose the inner encoder via the `.base_model` property.
+        # - If 'base_model' is a Classifier, .base_model returns the inner BERT/RoBERTa.
+        # - If 'base_model' is already the bare BERT, .base_model returns self.
+        target_encoder = base_model.base_model
+        if not hasattr(target_encoder, "get_extended_attention_mask"):
             raise ValueError(UNSUPORTED_MODEL_ERROR)
-        base_model.get_extended_attention_mask = types.MethodType(
-            get_extended_attention_mask, base_model
+        # 2. Patch the method on the specific instance
+        target_encoder.get_extended_attention_mask = types.MethodType(
+            get_extended_attention_mask, target_encoder
         )
         self.base_model = base_model
 
     @classmethod
     def from_pretrained(
-        cls, pretrained_model_name_or_path: Union[str, Any], **kwargs
+        cls,
+        pretrained_model_name_or_path: Union[str, Any],
+        model_cls: Type[PreTrainedModel] | None = None,
+        **kwargs,
     ):
+        """
+        Load a pretrained model and wrap it.
+
+        Args:
+            pretrained_model_name_or_path: Path or HF Hub ID.
+            model_cls: The specific HF class to load (e.g., AutoModel,
+                       AutoModelForSequenceClassification). Defaults to AutoModel.
+            **kwargs: Passed to the HF from_pretrained method.
+        """
+        if model_cls is None:
+            model_cls = AutoModel
         if "attn_implementation" not in kwargs:
             kwargs["attn_implementation"] = "eager"
-        base_model = AutoModel.from_pretrained(
+        # Instantiate the requested model architecture
+        base_model = model_cls.from_pretrained(
             pretrained_model_name_or_path, **kwargs
         )
         return cls(base_model)
@@ -112,8 +133,9 @@ class AutoKnowledgeBaseModel(torch.nn.Module):
     def resize_token_embeddings(self, *args, **kwargs) -> None:
         self.base_model.resize_token_embeddings(*args, **kwargs)
 
+    def save_pretrained(self, save_directory: str, **kwargs):
+        self.base_model.save_pretrained(save_directory, **kwargs)
+
     def forward(self, *args, **kwargs):
-        # We just pass everything through. Since we patched the method inside
-        # base_model, when base_model calls "self.get_extended_attention_mask",
-        # it executes OUR code below.
+        kwargs.pop("num_items_in_batch", None)
         return self.base_model(*args, **kwargs)

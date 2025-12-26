@@ -130,6 +130,7 @@ class KnowledgeBaseTokenizer:
     tokenizer: PreTrainedTokenizer
     knowledge_base: KnowledgeBase
     predicates: set[str]
+    k: int | None
 
     def __init__(
         self, tokenizer: PreTrainedTokenizer, knowledge_base: KnowledgeBase
@@ -331,3 +332,6 @@ class KnowledgeBaseTokenizer:
         batch = self.tokenize(batch)
         batch = self.extract_features(batch)
         return batch
+
+    def save_pretrained(self, save_directory: str, **kwargs):
+        self.tokenizer.save_pretrained(save_directory, **kwargs)
