@@ -117,36 +117,6 @@ def extract_visibility_matrix(item: dict):
     return visibility_matrix
 
 
-def extract_token_tree(tokenizer: KnowledgeBaseTokenizer, item: dict):
-    input_ids = item["input_ids"]
-    tree = TokenTree()
-    for input_id in input_ids:
-        text = tokenizer.convert_ids_to_tokens(input_id)
-        tree.append(text)
-    # mark parent nodes for triples by setting parent for each token in tree
-    tree.head = 0
-    tree.tail = len(input_ids) - 1
-    for triple in item["triples"]:
-        if triple["span.type"] != "token":
-            raise ValueError(
-                "Triples must be token-aligned to extract token tree."
-            )
-        mention_end_token = triple["mention.span.end"] - 1
-        tr_ = input_ids[mention_end_token]
-        if mention_end_token is None:
-            raise ValueError("Mention end token is None.")
-        triple_start_token = triple["triple.span.start"]
-        assert mention_end_token is not None, "mention_end_token is None"
-        # triplet start should be the child of the mention end token
-        tree.nodes[triple_start_token]["parent"] = mention_end_token
-        # triplet end + 1 should be the child of the mention end token
-        triple_end_token = triple["triple.span.end"]
-        if triple_end_token < len(input_ids):
-            tree.nodes[triple_end_token]["parent"] = mention_end_token
-    tree.build()
-    return tree
-
-
 def extract_soft_position_index(tree: TokenTree) -> np.ndarray:
     soft_position_index = np.zeros(len(tree), dtype=np.int32)
     for idx, item in enumerate(tree):
@@ -295,6 +265,34 @@ class KnowledgeBaseTokenizer:
         batch["triples"] = triples_list
         return batch
 
+    def extract_token_tree(self, item: dict):
+        input_ids = item["input_ids"]
+        tree = TokenTree()
+        for input_id in input_ids:
+            text = self.convert_ids_to_tokens(input_id)
+            tree.append(text)
+        # mark parent nodes for triples by setting parent for each token in tree
+        tree.head = 0
+        tree.tail = len(input_ids) - 1
+        for triple in item["triples"]:
+            if triple["span.type"] != "token":
+                raise ValueError(
+                    "Triples must be token-aligned to extract token tree."
+                )
+            mention_end_token = triple["mention.span.end"] - 1
+            if mention_end_token is None:
+                raise ValueError("Mention end token is None.")
+            triple_start_token = triple["triple.span.start"]
+            assert mention_end_token is not None, "mention_end_token is None"
+            # triplet start should be the child of the mention end token
+            tree.nodes[triple_start_token]["parent"] = mention_end_token
+            # triplet end + 1 should be the child of the mention end token
+            triple_end_token = triple["triple.span.end"]
+            if triple_end_token < len(input_ids):
+                tree.nodes[triple_end_token]["parent"] = mention_end_token
+        tree.build()
+        return tree
+
     def extract_features(self, batch: dict) -> dict:
         visibility_matrices = []
         soft_position_indexes = []
@@ -307,7 +305,7 @@ class KnowledgeBaseTokenizer:
             # filename = here / "outputs" / "visibility_matrix_{}.png".format(i)
             # fig = plot_dot_matrix(visibility_matrix)
             # fig.savefig(filename)
-            tree = extract_token_tree(self, item)
+            tree = self.extract_token_tree(item)
             # add tree to data -- you can use TokenTree.loads to load this back
             tree_data.append(tree.dumps())
             soft_position_index = extract_soft_position_index(tree)
