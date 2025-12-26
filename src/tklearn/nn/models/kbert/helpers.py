@@ -1,3 +1,4 @@
+import bisect
 from dataclasses import dataclass
 
 from tklearn.kb.models import Span
@@ -15,11 +16,53 @@ class Injection:
 
     @property
     def truncated_span(self) -> Span:
-        start = self._final_start + len(self.text) - len(self.text.lstrip())
-        end = self._final_end - len(self.text) + len(self.text.rstrip())
+        """Calculates the span of the injected text, excluding leading/trailing whitespace.
+        Collapses to a zero-length span if the text is entirely whitespace.
+        """
+        # Calculate how much whitespace to skip from left and right
+        l_len = len(self.text) - len(self.text.lstrip())
+        r_len = len(self.text) - len(self.text.rstrip())
+
+        start = self._final_start + l_len
+        end = self._final_end - r_len
+
+        # Handle pure whitespace or empty strings (where start > end)
         if start >= end:
             start = end
+
         return Span(start, end)
+
+
+def _merge_spans(spans: list[Span]) -> list[Span]:
+    """Merges strictly overlapping spans into disjoint intervals.
+
+    Logic aligns with collision rules:
+    - Spans that strictly overlap (Start A < End B) are merged.
+    - Spans that only touch (Start A == End B) are NOT merged, preserving
+      the valid insertion point at the boundary.
+    """
+    if not spans:
+        return []
+
+    # Sort by start, then by end (descending) to grab the widest container first
+    sorted_spans = sorted(spans, key=lambda s: (s.start, -s.end))
+    merged = []
+
+    current_start, current_end = sorted_spans[0].start, sorted_spans[0].end
+
+    for i in range(1, len(sorted_spans)):
+        next_span = sorted_spans[i]
+
+        # Strict overlap check:
+        # If next_span starts strictly before current_end, they overlap.
+        if next_span.start < current_end:
+            current_end = max(current_end, next_span.end)
+        else:
+            merged.append(Span(current_start, current_end))
+            current_start, current_end = next_span.start, next_span.end
+
+    merged.append(Span(current_start, current_end))
+    return merged
 
 
 def inject(
@@ -28,124 +71,93 @@ def inject(
     """Injects text snippets into the original text at specified indices,
     adjusting for collisions with existing spans.
 
-    Collision Logic:
-        - A collision occurs if the injection's target index is strictly inside
-          an existing span (`span.start < index < span.end`).
-        - Resolution is cascading: if a collision occurs, the injection is moved
-          to the end of that span.
-        - If this new position falls strictly inside a subsequent overlapping span,
-          it moves again.
-        - Effectively, the injection "slides" to the right until it exits the
-          entire chain of overlapping original spans.
-        - Injections at exact boundaries (`start` or `end`) are NOT collisions.
-
-    Whitespace Handling:
-        - The `injected_spans` returned by this function disregard leading and
-          trailing spaces of the injected text.
-        - While the full text (including spaces) is inserted into the string,
-          the resulting Span object will only cover the non-whitespace content.
-        - If an injection is purely whitespace, the span will collapse to a zero-length span
-          at the insertion point.
-
-    Args:
-        text (str): The original text.
-        injections (list[Injection]): List of Injection objects.
-        spans (list[Span]): List of existing spans in the original text.
-
-    Returns:
-        tuple: (modified_text, updated_original_spans, new_injection_spans)
+    Complexity: O(N log N + M log M) where N=spans, M=injections.
     """
-    # --- Step 1: Resolve Collisions (Logic from previous answer) ---
-    # We resolve against original spans.
-    # Optimization: Sort spans by start for efficient collision checking.
-    sorted_spans = sorted(spans, key=lambda s: s.start)
+
+    if not injections:
+        return text, spans, []
+
+    # --- Step 1: Efficient Collision Resolution ---
+    # Instead of cascading iteratively, we merge overlaps and check once.
+
+    merged_spans = _merge_spans(spans)
+    merged_starts = [s.start for s in merged_spans]
 
     for inj in injections:
         curr = inj.target_index
 
-        # Determine strict inclusion in spans
-        # Since we are doing this for multiple inputs, we can just scan.
-        # For very large datasets, use a binary search or interval tree.
-        # Here, a simple loop over sorted spans is reasonably fast.
-        for span in sorted_spans:
-            if span.start < curr < span.end:
-                curr = span.end
-                # We don't break immediately; we continue checking
-                # in case the new index lands in an overlapping span.
+        # Find the span that starts before or at the target index.
+        # bisect_right returns insertion point to keep list sorted.
+        idx = bisect.bisect_right(merged_starts, curr) - 1
+
+        if idx >= 0:
+            candidate = merged_spans[idx]
+            # Strict inclusion check: start < curr < end
+            if candidate.start < curr < candidate.end:
+                curr = candidate.end
 
         inj._resolved_index = curr
 
     # --- Step 2: Sort Injections ---
-    # Sort by resolved index.
-    # If two injections resolve to the same spot, keep original order (stable sort).
-    # We assume 'injections' list order implies priority.
+    # Stable sort ensures deterministic order for injections at the same index
     injections.sort(key=lambda x: x._resolved_index)
 
-    # --- Step 3: Calculate Offsets & Build Text ---
+    # --- Step 3: Build Text & Calculate Offsets ---
 
-    # We'll build the new text in chunks.
     result_parts = []
     current_text_idx = 0
     cumulative_shift = 0
 
-    # We need a list of "shift events" to help update the original spans later.
-    # Event: (at_original_index, amount_to_add)
-    shift_events = []
+    # Store shifts for Step 4: (at_original_index, amount_added)
+    injection_shifts = []
 
     for inj in injections:
         # 1. Append text from the last injection point up to this one
-        # Note: multiple injections might share the same _resolved_index.
-        # The slice len will be 0, which is fine.
-        segment = text[current_text_idx : inj._resolved_index]
-        result_parts.append(segment)
+        if current_text_idx < inj._resolved_index:
+            result_parts.append(text[current_text_idx : inj._resolved_index])
+            current_text_idx = inj._resolved_index
 
         # 2. Append the injection
         result_parts.append(inj.text)
 
-        # 3. Track where this injection landed for the return value
-        # The start is the resolved index + all previous shifts (including segments of original text)
-        # Actually, simpler: Current length of result_parts so far
-        # But we haven't joined them yet.
-        # Math: _resolved_index + cumulative_shift
+        inj_len = len(inj.text)
 
+        # 3. Calculate final positions for this injection
         final_start = inj._resolved_index + cumulative_shift
-        final_end = final_start + len(inj.text)
-
         inj._final_start = final_start
-        inj._final_end = final_end
+        inj._final_end = final_start + inj_len
 
-        # 4. Update counters
-        cumulative_shift += len(inj.text)
-        current_text_idx = inj._resolved_index
-
-        # Record shift for Step 4
-        shift_events.append((inj._resolved_index, len(inj.text)))
+        # 4. Track shift
+        cumulative_shift += inj_len
+        injection_shifts.append((inj._resolved_index, inj_len))
 
     # Append remaining original text
     result_parts.append(text[current_text_idx:])
     final_text = "".join(result_parts)
 
-    # --- Step 4: Update Original Spans ---
+    # --- Step 4: Update Original Spans (Linear Sweep) ---
 
     new_spans = []
+    # We must iterate original spans in order to match shifts correctly
+    sorted_spans = sorted(spans, key=lambda s: s.start)
 
-    # For efficiency, ensure spans are sorted (they are from Step 1)
-    # and shift_events are sorted (they are from Step 2)
+    current_shift = 0
+    inj_idx = 0
+    n_injections = len(injection_shifts)
 
     for span in sorted_spans:
-        shift_amount = 0
-
-        # Calculate how much this span needs to move.
-        # Rule: If shift event happens at or before span.start, the span moves.
-        for event_idx, amount in shift_events:
-            if event_idx <= span.start:
-                shift_amount += amount
+        # Advance the injection pointer to apply all shifts that occur
+        # at or before the start of the current span.
+        while inj_idx < n_injections:
+            r_index, length = injection_shifts[inj_idx]
+            if r_index <= span.start:
+                current_shift += length
+                inj_idx += 1
             else:
-                # Since events are sorted by index, we can stop early
                 break
 
         new_spans.append(
-            Span(span.start + shift_amount, span.end + shift_amount)
+            Span(span.start + current_shift, span.end + current_shift)
         )
 
     # --- Step 5: Collect Injection Spans ---
