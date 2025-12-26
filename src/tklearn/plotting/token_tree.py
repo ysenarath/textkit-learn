@@ -4,6 +4,7 @@ from collections import defaultdict
 
 import graphviz
 import orjson
+from graphviz import escape
 
 from tklearn.utils.frozenlist import FrozenList
 
@@ -14,7 +15,7 @@ __all__ = [
 
 
 def _generate_node_label(node: dict, index: int = 0) -> str:
-    label = node["label"]
+    label = escape(node["label"])
     hard_index_key = "index"
     if "hard_index" in node:
         hard_index_key = "hard_index"
