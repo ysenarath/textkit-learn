@@ -25,6 +25,7 @@ from tklearn.kb.base import ArtifactStore, ArtifactStoreConfig
 from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.triple_store_v2 import TripleStore
 from tklearn.kb.wiktionary.models import Sense, Word, parse_jsonl
+from tklearn.utils.hf import suppress_hf_output
 
 logger = logging.get_logger(__name__)
 G = int | None
@@ -156,10 +157,8 @@ class EmbeddingsMapping(Mapping[int, np.ndarray]):
     def __init__(self, dataset: Dataset, gloss2idx: dict[str, int]):
         self.dataset = dataset
         id2iloc = {}
-        pbar = tqdm.tqdm(
-            enumerate(dataset["gloss"]), desc="Loading Gloss Embeddings"
-        )
-        for index, gloss in pbar:
+        DESC = "Loading Gloss Embeddings"
+        for index, gloss in enumerate(tqdm.tqdm(dataset["gloss"], desc=DESC)):
             id2iloc[gloss2idx[gloss]] = index
         self.id2iloc = id2iloc
 
@@ -512,12 +511,13 @@ class WiktionaryArtifactStore(ArtifactStore):
         processor = self.get_processor()
         for key, value in processor.build().items():
             setattr(self, key, value)
-        self.api.upload_folder(
-            folder_path=self.local_dir,
-            repo_id=self.config.repo_id,
-            repo_type=self.config.repo_type,
-            ignore_patterns=["*.jsonl", "*.jsonl.gz"],
-        )
+        with suppress_hf_output():
+            self.api.upload_folder(
+                folder_path=self.local_dir,
+                repo_id=self.config.repo_id,
+                repo_type=self.config.repo_type,
+                ignore_patterns=["*.jsonl", "*.jsonl.gz"],
+            )
 
     def get_processor(self):
         return WikitionaryProcessor(
