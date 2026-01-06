@@ -62,6 +62,7 @@ class KnowledgeBase:
     senses: dict[str, set[int]]
     embeddings: dict[int, np.ndarray]
     attrs: dict[str, set[int]]
+    config: ArtifactStoreConfig
 
     def __init__(self, config: Any, **kwargs: Any) -> None:
         self.store = AutoArtifactStore(config, **kwargs)
