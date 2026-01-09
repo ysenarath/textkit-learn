@@ -8,7 +8,7 @@ import torch
 from transformers import AutoModel, PreTrainedModel
 from transformers.modeling_utils import ModuleUtilsMixin
 
-__all__ = ["AutoKnowledgeBaseModel"]
+__all__ = ["KBertModel"]
 
 UNSUPORTED_MODEL_ERROR = (
     "The base model must have the `get_extended_attention_mask` method."
@@ -82,7 +82,7 @@ def get_extended_attention_mask(
     return extended_attention_mask
 
 
-class AutoKnowledgeBaseModel(torch.nn.Module):
+class KBertModel(torch.nn.Module):
     base_model: PreTrainedModel
 
     def __init__(self, base_model: PreTrainedModel):
