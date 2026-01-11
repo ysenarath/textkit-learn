@@ -6,10 +6,6 @@ Knowledge base management, lexicons, and triple stores for integrating external 
 
 ::: tklearn.kb.base
 
-## Helpers
-
-::: tklearn.kb.helpers
-
 ## Lexicon
 
 ::: tklearn.kb.lexicon

@@ -90,13 +90,15 @@ Neural network models, training utilities, and optimization tools for text proce
 
 ::: tklearn.nn.models.backbone.transformer
 
-#### Knowledge-Enhanced Models
+#### KBERT Models
 
-::: tklearn.nn.models.backbone.knowledge.helpers
+::: tklearn.nn.models.kbert.helpers
 
-::: tklearn.nn.models.backbone.knowledge.model
+::: tklearn.nn.models.kbert.model
 
-::: tklearn.nn.models.backbone.knowledge.tokenizer
+::: tklearn.nn.models.kbert.tokenizer
+
+::: tklearn.nn.models.kbert.collator
 
 ### Classifiers
 
