@@ -9,12 +9,12 @@ from typing import Generator, Optional, TypedDict
 import numpy as np
 import pandas as pd
 from nightjar import BaseConfig
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.feature_selection import chi2, mutual_info_classif
 from sklearn.svm import LinearSVC
 from tqdm import auto as tqdm
 from transformers import AutoTokenizer, PreTrainedTokenizer
-from typing_extensions import Self
+from typing_extensions import Literal, Self
 
 from tklearn.kb.base import ArtifactStoreConfig, KnowledgeBase
 from tklearn.kb.models import Mention, Span, Triple
@@ -145,15 +145,20 @@ def extract_soft_position_index(tree: TokenTree) -> np.ndarray:
     return soft_position_index
 
 
+ScorerLiteral = Literal["default", "svm_score", "chi2_score", "mutual_info"]
+FeaturizerLiteral = Literal["count", "tfidf"]
+
+
 class KBertTokenizerLegacyConfig(BaseConfig):
     model_name_or_path: str
     predicates: Optional[list[str]] = None
     augment_top_k: Optional[int] = 2
     threshold_top_k: int = 500
-    scorer: str = "default"
+    scorer: ScorerLiteral | str = "default"
     sequence_length: int = 512
     truncate: bool = True
     knowledge_base: str | dict | ArtifactStoreConfig = "wiktionary"
+    featurizer: FeaturizerLiteral | str = "count"
 
 
 KBertTokenizerLegacyConfig._dispatch_registry.register(
@@ -166,10 +171,11 @@ class KBertTokenizerLegacyConfigDict(TypedDict):
     predicates: list[str] | None
     augment_top_k: int | None
     threshold_top_k: int
-    scorer: str
+    scorer: ScorerLiteral | str
     sequence_length: int
     truncate: bool
     knowledge_base: str | dict | ArtifactStoreConfig
+    featurizer: FeaturizerLiteral | str
 
 
 class KBertTokenizer:
@@ -551,22 +557,27 @@ class KBertTokenizer:
             .reset_index()
         )
         labels = temp_df["label"].values
-        # Use TF-IDF vectorizer
-        # tfidf = TfidfVectorizer(
-        #     tokenizer=passthrough,
-        #     preprocessor=passthrough,
-        #     lowercase=False,
-        #     token_pattern=None,
-        # )
-        cv = CountVectorizer(
-            tokenizer=passthrough,
-            preprocessor=passthrough,
-            lowercase=False,
-            token_pattern=None,
-        )
-        X = cv.fit_transform(temp_df["predicate_object"])
+        # Extract features from the predicate-object lists  (treating them like words)
+        if self.config.featurizer == "tfidf":
+            featurizer = TfidfVectorizer(
+                tokenizer=passthrough,
+                preprocessor=passthrough,
+                lowercase=False,
+                token_pattern=None,
+            )
+        elif self.config.featurizer == "count":
+            featurizer = CountVectorizer(
+                tokenizer=passthrough,
+                preprocessor=passthrough,
+                lowercase=False,
+                token_pattern=None,
+            )
+        else:
+            msg = f"invalid featurizer: {self.config.featurizer}"
+            raise ValueError(msg)
+        X = featurizer.fit_transform(temp_df["predicate_object"])
         # Feature names
-        feature_names = cv.get_feature_names_out()
+        feature_names = featurizer.get_feature_names_out()
         # # Multiply counts by diversity to get weighted counts
         # diversity_weights = np.array([
         #     diversity.get(fn, 1.0) for fn in feature_names
@@ -591,12 +602,18 @@ class KBertTokenizer:
             svm_scores = np.abs(clf.coef_).max(axis=0)
         # Store the scores in a DataFrame
         doc_counts = (X > 0).sum(axis=0).tolist()[0]
+        class_counts = {}
+        for class_label in np.unique(labels):
+            class_mask = labels == class_label
+            class_count = X[class_mask].sum(axis=0).tolist()[0]
+            class_counts[f"classes[{class_label}].count"] = class_count
         triple_scores = pd.DataFrame(
             {
-                "svm_score": svm_scores,
                 "doc_counts": doc_counts,
+                "svm_score": svm_scores,
                 "chi2_score": chi2_scores,
                 "mutual_info": mi_scores,
+                **class_counts,
             },
             index=feature_names,
         )
