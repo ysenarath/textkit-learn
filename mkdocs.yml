@@ -34,6 +34,8 @@ plugins:
 
 nav:
   - Home: index.md
+  - Guides:
+      - KBERT Feature Selection: guides/kbert-feature-selection.md
   - API Reference:
       - Overview: api/index.md
       - Embeddings: api/embeddings.md
