@@ -10,8 +10,9 @@ import numpy as np
 import pandas as pd
 from nightjar import BaseConfig
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.feature_selection import chi2, mutual_info_classif
-from sklearn.svm import LinearSVC
+from sklearn.feature_selection import RFECV, chi2, mutual_info_classif
+from sklearn.preprocessing import LabelEncoder
+from sklearn.svm import SVC, LinearSVC
 from tqdm import auto as tqdm
 from transformers import AutoTokenizer, PreTrainedTokenizer
 from typing_extensions import Literal, Self
@@ -491,39 +492,7 @@ class KBertTokenizer:
         batch = self.truncate_batch(batch)
         return batch
 
-    def fit(self, raw_documents: list[str], y: list | None = None):
-        """
-        Fit the tokenizer using feature scoring methods.
-
-        This method extracts triples from the documents and scores them using
-        three different feature selection methods:
-
-        1. **Chi-Square (chi2_score)**: Measures the dependence between each
-           predicate-object pair and the class labels. Higher scores indicate
-           that the feature's occurrence is more dependent on the class,
-           making it useful for classification. Chi-square is best suited for
-           non-negative feature values (e.g., term counts).
-
-        2. **Mutual Information (mutual_info)**: Quantifies the amount of
-           information that a predicate-object pair provides about the class
-           label. Unlike chi-square, mutual information can capture non-linear
-           dependencies between features and labels. A score of zero indicates
-           independence between the feature and the class.
-
-        3. **SVM Coefficients (svm_score)**: Uses the absolute values of
-           coefficients from a trained Linear Support Vector Classifier
-           (LinearSVC). Features with larger absolute coefficients have a
-           stronger influence on the decision boundary. For binary
-           classification, the absolute coefficient is used; for multiclass,
-           the maximum absolute coefficient across all classes is taken.
-
-        Parameters
-        ----------
-        raw_documents : list[str]
-            List of raw text documents.
-        y : list | None
-            List of labels for each document.
-        """
+    def get_features(self, raw_documents: list[str], y: list | None = None):
         triples = []
         desc = "Extracting Triples"
         pbar = tqdm.tqdm(
@@ -556,8 +525,12 @@ class KBertTokenizer:
             .agg({"predicate_object": lambda x: list(x), "label": "first"})
             .reset_index()
         )
-        labels = temp_df["label"].values
+        # .astype(str) ?
+        raw_y = temp_df["label"].values
+        encoder = LabelEncoder()
+        y = encoder.fit_transform(raw_y)
         # Extract features from the predicate-object lists  (treating them like words)
+        is_discrete = self.config.featurizer == "count"
         if self.config.featurizer == "tfidf":
             featurizer = TfidfVectorizer(
                 tokenizer=passthrough,
@@ -565,7 +538,7 @@ class KBertTokenizer:
                 lowercase=False,
                 token_pattern=None,
             )
-        elif self.config.featurizer == "count":
+        elif is_discrete:
             featurizer = CountVectorizer(
                 tokenizer=passthrough,
                 preprocessor=passthrough,
@@ -578,6 +551,32 @@ class KBertTokenizer:
         X = featurizer.fit_transform(temp_df["predicate_object"])
         # Feature names
         feature_names = featurizer.get_feature_names_out()
+        return {
+            "X": X,
+            "y": y,
+            "feature_names": feature_names,
+            "diversity": diversity,
+            "is_discrete": is_discrete,
+            "classes": encoder.classes_,
+        }
+
+    def fit(self, raw_documents: list[str], y: list | None = None):
+        """
+        Fit the tokenizer using feature scoring methods.
+
+        Parameters
+        ----------
+        raw_documents : list[str]
+            List of raw text documents.
+        y : list | None
+            List of labels for each document.
+        """
+        features = self.get_features(raw_documents, y)
+        X = features["X"]
+        y = features["y"]
+        feature_names = features["feature_names"]
+        diversity = features["diversity"]
+        is_discrete = features["is_discrete"]
         # # Multiply counts by diversity to get weighted counts
         # diversity_weights = np.array([
         #     diversity.get(fn, 1.0) for fn in feature_names
@@ -585,26 +584,24 @@ class KBertTokenizer:
         # # Apply diversity weights
         # X = X.multiply(diversity_weights)
         # Calculate Chi-Square
-        chi2_scores, p_values = chi2(X, labels)
+        chi2_scores, p_values = chi2(X, y)
         # Calculate Mutual Information (Information Gain)
-        mi_scores = mutual_info_classif(X, labels, discrete_features=True)
+        mi_scores = mutual_info_classif(
+            X,
+            y,
+            random_state=42,
+            n_neighbors=5,
+            discrete_features=is_discrete,
+        )
         # Train LinearSVC to get feature importance via coefficients
-        clf = LinearSVC(max_iter=10000, dual="auto")
-        clf.fit(X, labels)
-        # Extract feature scores from SVM coefficients
-        # For binary classification: coef_ is shape (1, n_features)
-        # For multiclass: coef_ is shape (n_classes, n_features)
-        if clf.coef_.shape[0] == 1:
-            # Binary classification: use absolute coefficients
-            svm_scores = np.abs(clf.coef_[0])
-        else:
-            # Multiclass: use max absolute coefficient across classes
-            svm_scores = np.abs(clf.coef_).max(axis=0)
+        svm_scores = linear_svm(X, y)
+        # Extract RFECV scores
+        # rfecv_scores = extract_RFECV_SVM_scores(X, y)
         # Store the scores in a DataFrame
         doc_counts = (X > 0).sum(axis=0).tolist()[0]
         class_counts = {}
-        for class_label in np.unique(labels):
-            class_mask = labels == class_label
+        for class_label in np.unique(y):
+            class_mask = y == class_label
             class_count = X[class_mask].sum(axis=0).tolist()[0]
             class_counts[f"classes[{class_label}].count"] = class_count
         triple_scores = pd.DataFrame(
@@ -613,6 +610,7 @@ class KBertTokenizer:
                 "svm_score": svm_scores,
                 "chi2_score": chi2_scores,
                 "mutual_info": mi_scores,
+                # "rfecv_score": rfecv_scores,  # very slow to compute
                 **class_counts,
             },
             index=feature_names,
@@ -637,3 +635,44 @@ class KBertTokenizer:
             elif "chi2_score" in score_row:
                 return score_row["chi2_score"]
         return score_row[scorer]
+
+
+def extract_RFECV_SVM_scores(
+    X: np.ndarray,
+    y: list | np.ndarray,
+    min_features_to_select: int = 500,
+) -> np.ndarray:
+    """
+    Extract feature importance scores using RFECV with a linear SVM.
+    1. Initialize a linear SVM estimator.
+    2. Set up RFECV with the estimator, specifying step size and cross-validation folds.
+    3. Fit RFECV to the data.
+    4. Retrieve the support mask and ranking of features.
+    5. Convert rankings to scores: features selected (support=True) get scores
+         inversely proportional to their rank; unselected features get a score of 0.
+    """
+    estimator = SVC(kernel="linear")
+    selector = RFECV(
+        estimator,
+        step=250,
+        cv=5,
+        min_features_to_select=min_features_to_select,
+    )
+    selector.fit(X, y)
+    rfecv_scores = 1.0 / selector.ranking_
+    return rfecv_scores
+
+
+def linear_svm(X: np.ndarray, y: list | np.ndarray) -> np.ndarray:
+    clf = LinearSVC(max_iter=10000, dual="auto")
+    clf.fit(X, y)
+    # Extract feature scores from SVM coefficients
+    # For binary classification: coef_ is shape (1, n_features)
+    # For multiclass: coef_ is shape (n_classes, n_features)
+    if clf.coef_.shape[0] == 1:
+        # Binary classification: use absolute coefficients
+        svm_scores = np.abs(clf.coef_[0])
+    else:
+        # Multiclass: use max absolute coefficient across classes
+        svm_scores = np.abs(clf.coef_).max(axis=0)
+    return svm_scores
