@@ -4,6 +4,10 @@ import contextlib
 
 from huggingface_hub import utils
 
+__all__ = [
+    "suppress_hf_output",
+]
+
 
 @contextlib.contextmanager
 def suppress_hf_output():
