@@ -10,9 +10,7 @@ import numpy as np
 import pandas as pd
 from nightjar import BaseConfig
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.feature_selection import RFECV, chi2, mutual_info_classif
 from sklearn.preprocessing import LabelEncoder
-from sklearn.svm import SVC, LinearSVC
 from tqdm import auto as tqdm
 from transformers import AutoTokenizer, PreTrainedTokenizer
 from typing_extensions import Literal, Self
@@ -20,13 +18,127 @@ from typing_extensions import Literal, Self
 from tklearn.kb.base import ArtifactStoreConfig, KnowledgeBase
 from tklearn.kb.models import Mention, Span, Triple
 from tklearn.nn.models.kbert.helpers import Injection, inject
+from tklearn.nn.models.kbert.metrics import FeatureScorer, get_scorer
 from tklearn.plotting.token_tree import TokenTree
 
 __all__ = [
-    "KBertTokenizerLegacyConfig",
-    "KBertTokenizerLegacyConfigDict",
+    "KBertTokenizerConfig",
+    "KBertTokenizerConfigDict",
     "KBertTokenizer",
 ]
+
+import re
+
+countries = {
+    "Alabama",
+    "Anhui",
+    "Argentina",
+    "Ascension and Tristan da Cunha",
+    "Australia",
+    "Bangladesh",
+    "Brazil",
+    "California",
+    "China",
+    "Colombia",
+    "Costa Rica",
+    "D.C.",
+    "Egypt",
+    "Finland",
+    "Greece",
+    "Guanajuato",
+    "Indonesia",
+    "Iran",
+    "Ireland",
+    "Japan",
+    "Jiangsu",
+    "Lebanon",
+    "Malaysia",
+    "Malta",
+    "Moldova",
+    "Morocco",
+    "Netherlands",
+    "New South Wales",
+    "Nigeria",
+    "North Korea",
+    "Northern Ireland",
+    "Norway",
+    "Pakistan",
+    "Poland",
+    "Portugal",
+    "Romania",
+    "Russia",
+    "Saudi Arabia",
+    "Scotland",
+    "South Africa",
+    "South Korea",
+    "Spain",
+    "Taiwan",
+    "Turkey",
+    "Venezuela",
+    "Vietnam",
+    "Zhejiang",
+    "-ck or -k",
+    "Austria",
+    "Canada",
+    "England",
+    "France",
+    "Germany",
+    "India",
+    "Italy",
+    "Laos",
+    "Mexico",
+    "New Zealand",
+    "Philippines",
+    "Thailand",
+    "USA",
+    "Ukraine",
+    "Wales",
+    "and Richard A. Lundy",
+}
+
+patterns = [
+    r"^English terms spelled",
+    r"^English terms .* (from|with)",
+    r"^Terms with .* translations",
+    # English surnames from
+    r"^English surnames from ",
+    # Rhymes:
+    r"^Rhymes:",
+    # en:Towns in
+    r"^en:Towns in .*",
+    # en:Cities in Hail Province, Saudi Arabia
+    r"^en:Cities in .*",
+    # en:Places in Kuwait
+    r"^en:Places in .*",
+    # en:Provinces of
+    r"^en:Provinces of .*",
+    # en:Villages in
+    r"^en:Villages in .*",
+    *[rf"^.*, {country}$" for country in countries],
+]
+patterns = re.compile("|".join(patterns))
+
+
+def validate_category_value(value: str) -> str | None:
+    # categories = set()
+    # for subject, spo in tokenizer.knowledge_base.triples.data.items():
+    #     for subject_id, po in spo.items():
+    #         for predicate, objects in po.items():
+    #             for object_ in objects:
+    #                 object_value, object_sense_id = object_
+    #                 if predicate == "category" and object_value:
+    #                     if patterns.match(object_value):
+    #                         continue
+    #                     # replace pattern matches like "^English" to "", "En:" to ""
+    #                     object_value = re.sub(r"^English ", "", object_value)
+    #                     object_value = re.sub(r"^[Ee]n: *", "", object_value)
+    #                     categories.add(object_value)
+    if patterns.match(value):
+        return None
+    # replace pattern matches like "^English" to "", "En:" to ""
+    value = re.sub(r"^English ", "", value)
+    value = re.sub(r"^[Ee]n: *", "", value)
+    return value
 
 
 def passthrough(x):
@@ -146,32 +258,31 @@ def extract_soft_position_index(tree: TokenTree) -> np.ndarray:
     return soft_position_index
 
 
-ScorerLiteral = Literal["default", "svm_score", "chi2_score", "mutual_info"]
+ScorerLiteral = Literal[
+    "default", "rf_shapley_pagerank", "chi2_score", "mutual_info"
+]
 FeaturizerLiteral = Literal["count", "tfidf"]
 
 
-class KBertTokenizerLegacyConfig(BaseConfig):
+class KBertTokenizerConfig(BaseConfig):
     model_name_or_path: str
     predicates: Optional[list[str]] = None
     augment_top_k: Optional[int] = 2
-    threshold_top_k: int = 500
     scorer: ScorerLiteral | str = "default"
+    scorer_kw: dict | None = None
     sequence_length: int = 512
     truncate: bool = True
     knowledge_base: str | dict | ArtifactStoreConfig = "wiktionary"
     featurizer: FeaturizerLiteral | str = "count"
 
 
-KBertTokenizerLegacyConfig._dispatch_registry.register(
-    KBertTokenizerLegacyConfig, True
-)
+KBertTokenizerConfig._dispatch_registry.register(KBertTokenizerConfig, True)
 
 
-class KBertTokenizerLegacyConfigDict(TypedDict):
+class KBertTokenizerConfigDict(TypedDict):
     model_name_or_path: str
     predicates: list[str] | None
     augment_top_k: int | None
-    threshold_top_k: int
     scorer: ScorerLiteral | str
     sequence_length: int
     truncate: bool
@@ -182,15 +293,14 @@ class KBertTokenizerLegacyConfigDict(TypedDict):
 class KBertTokenizer:
     tokenizer: PreTrainedTokenizer
     knowledge_base: KnowledgeBase
-    triple_scores: pd.DataFrame | None
-    threshold: float | None
+    scorer: FeatureScorer | None
 
     def __init__(
         self,
-        config: KBertTokenizerLegacyConfig | KBertTokenizerLegacyConfigDict,
+        config: KBertTokenizerConfig | KBertTokenizerConfigDict,
     ):
         if isinstance(config, dict):
-            config = KBertTokenizerLegacyConfig.from_dict(config)
+            config = KBertTokenizerConfig.from_dict(config)
         self.config = config
         self.__post_init__()
 
@@ -200,22 +310,16 @@ class KBertTokenizer:
         )
         self.knowledge_base = KnowledgeBase(self.config.knowledge_base)
         # this may be uploaded when .fit is called
-        self.triple_scores = None
-        self.threshold = None
+        self.scorer = None
 
     def save_pretrained(self, save_directory: str, **kwargs):
-        sort_values_by = kwargs.pop("sort_values_by", None)
+        # _ = kwargs.pop("sort_values_by", None)
         self.tokenizer.save_pretrained(save_directory, **kwargs)
-        triple_scores = self.triple_scores
-        if sort_values_by and sort_values_by in triple_scores.columns:
-            triple_scores = triple_scores.sort_values(
-                by=sort_values_by, ascending=False
-            )
-        path = Path(save_directory) / "triple_scores.csv"
-        triple_scores.to_csv(path)
-        json_data = self.config.to_dict()
-        json_data["threshold"] = self.threshold
+        scorer_path = Path(save_directory) / "scorer"
+        if self.scorer is not None:
+            self.scorer.dump(scorer_path)
         path = Path(save_directory) / "kb_tokenizer_config.json"
+        json_data = self.config.to_dict()
         with open(path, "w") as f:
             json.dump(json_data, f, indent=4)
 
@@ -229,15 +333,15 @@ class KBertTokenizer:
         if config_path.exists():
             with open(config_path, "r") as f:
                 config = json.load(f)
-        threshold = config.pop("threshold")
         self = cls(config)
+        Scorer = get_scorer(self.config.scorer)
+        try:
+            self.scorer = Scorer.load(base_path / "scorer")
+        except FileNotFoundError:
+            self.scorer = None
         self.tokenizer = AutoTokenizer.from_pretrained(
             pretrained_model_name_or_path, **kwargs
         )
-        triple_scores_path = base_path / "triple_scores.csv"
-        if triple_scores_path.exists():
-            self.triple_scores = pd.read_csv(triple_scores_path, index_col=0)
-        self.threshold = threshold
         return self
 
     @property
@@ -251,34 +355,49 @@ class KBertTokenizer:
     def extract_mentions(self, *, text: str) -> list[Mention]:
         return self.knowledge_base.extract_mentions(text)
 
-    def filter_triples(
-        self,
-        *,
-        relations: list[Triple],
-        text: str | None = None,
-        mention: Mention | None = None,
-        return_all: bool = False,
-    ) -> tuple[list[Triple], dict[Triple, float]]:
-        # filter candidate triples based on some criteria
-        if return_all:
-            return relations, {}
-        relation_scores = {}
-        if self.triple_scores is not None and self.threshold is not None:
-            filtered_relations = []
-            for triple in relations:
-                predicate_object = f"{triple.predicate}:{triple.object[0]}"
-                try:
-                    score_row = self.triple_scores.loc[predicate_object]
-                except KeyError:
+    def _extract_candidate_triples(
+        self, candidate, predicates
+    ) -> list[Triple]:
+        relations = []
+        for triple in self.knowledge_base.extract_relations(
+            candidate, predicates=predicates
+        ):
+            object_value, object_sense_id = triple.object
+            if triple.predicate == "category":
+                object_value = validate_category_value(object_value)
+            if object_value is None:
+                continue
+            triple = Triple(
+                subject=triple.subject,
+                predicate=triple.predicate,
+                object=(object_value, object_sense_id),
+            )
+            relations.append(triple)
+        return relations
+
+    def _extract_mention_triples(
+        self, text: str, predicates: set[str] | None = None
+    ) -> tuple[list[tuple[Mention, list[Triple]]], dict[str, float]]:
+        mentions: list[tuple[Mention, list[Triple]]] = []
+        features = []
+        for mention in self.extract_mentions(text=text):
+            mention_triples: list[Triple] = []
+            for candidate in mention.candidates:
+                candidate_triples = self._extract_candidate_triples(
+                    candidate, predicates=predicates
+                )
+                if not candidate_triples:
                     continue
-                if score_row.empty:
-                    continue
-                if self.get_score(score_row) < self.threshold:
-                    continue
-                filtered_relations.append(triple)
-                relation_scores[triple] = self.get_score(score_row)
-            relations = filtered_relations
-        return relations, relation_scores
+                mention_triples.extend(candidate_triples)
+            mentions.append((mention, mention_triples))
+            for triple in mention_triples:
+                po = f"{triple.predicate}:{triple.object[0]}"
+                features.append(po)
+        if self.scorer:
+            feature_scores = self.scorer.score(features)
+        else:
+            feature_scores = {}
+        return mentions, feature_scores
 
     def extract_triples(
         self, *, text: str, return_all: bool = False
@@ -287,42 +406,35 @@ class KBertTokenizer:
         predicates = None
         if self.config.predicates is not None:
             predicates = set(self.config.predicates)
-        mentions = self.extract_mentions(text=text)
+        mentions, feature_scores = self._extract_mention_triples(
+            text=text, predicates=predicates
+        )
+        # J
         collection = ([], [])  # triples, mention_spans
-        for mention in mentions:
-            curr_mention_triples = {}
-            curr_mention_triple_scores = {}
-            for candidate in mention.candidates:
-                relations = self.knowledge_base.extract_relations(
-                    candidate, predicates=predicates
+        for mention, mention_triples in mentions:
+            triple_scores = {}
+            if not return_all:
+                mention_triples, triple_scores = self.filter_triples(
+                    relations=mention_triples,
+                    feature_scores=feature_scores,
+                    text=text,
+                    mention=mention,
                 )
-                candidate_triples, candidate_triple_scores = (
-                    self.filter_triples(
-                        relations=relations,
-                        text=text,
-                        mention=mention,
-                        return_all=return_all,
-                    )
-                )
-                for triple in candidate_triples:
-                    sw = triple.subject[0]
-                    ow = triple.object[0]
-                    pred = triple.predicate
-                    # avoid duplicate triples for the same mention
-                    kt = (sw, pred, ow)
-                    curr_mention_triples[kt] = mention.span
-                    curr_mention_triple_scores[kt] = (
-                        candidate_triple_scores.get(triple, 0.0)
-                    )
+            curr_triples = {}
+            curr_triple_scores = {}
+            for triple in mention_triples:
+                kt = (triple.subject[0], triple.predicate, triple.object[0])
+                curr_triples[kt] = mention.span
+                curr_triple_scores[kt] = triple_scores.get(triple, 0.0)
             if top_k is not None:
                 # keep only top-k triples by span length
-                curr_mention_triples = sorted(
-                    curr_mention_triples.items(),
-                    key=lambda x: curr_mention_triple_scores.get(x[0], 0.0),
+                curr_triples = sorted(
+                    curr_triples.items(),
+                    key=lambda x: curr_triple_scores[x[0]],
                     reverse=True,
                 )
-                curr_mention_triples = dict(curr_mention_triples[:top_k])
-            for triple, span in curr_mention_triples.items():
+                curr_triples = dict(curr_triples[:top_k])
+            for triple, span in curr_triples.items():
                 collection[0].append(triple)
                 collection[1].append(span)
         return collection
@@ -544,6 +656,8 @@ class KBertTokenizer:
                 preprocessor=passthrough,
                 lowercase=False,
                 token_pattern=None,
+                # binary=True,
+                # dtype=np.int32,
             )
         else:
             msg = f"invalid featurizer: {self.config.featurizer}"
@@ -576,103 +690,34 @@ class KBertTokenizer:
         y = features["y"]
         feature_names = features["feature_names"]
         diversity = features["diversity"]
-        is_discrete = features["is_discrete"]
-        # # Multiply counts by diversity to get weighted counts
-        # diversity_weights = np.array([
-        #     diversity.get(fn, 1.0) for fn in feature_names
-        # ])
-        # # Apply diversity weights
-        # X = X.multiply(diversity_weights)
-        # Calculate Chi-Square
-        chi2_scores, p_values = chi2(X, y)
-        # Calculate Mutual Information (Information Gain)
-        mi_scores = mutual_info_classif(
-            X,
-            y,
-            random_state=42,
-            n_neighbors=5,
-            discrete_features=is_discrete,
-        )
-        # Train LinearSVC to get feature importance via coefficients
-        svm_scores = linear_svm(X, y)
-        # Extract RFECV scores
-        # rfecv_scores = extract_RFECV_SVM_scores(X, y)
-        # Store the scores in a DataFrame
-        doc_counts = (X > 0).sum(axis=0).tolist()[0]
-        class_counts = {}
-        for class_label in np.unique(y):
-            class_mask = y == class_label
-            class_count = X[class_mask].sum(axis=0).tolist()[0]
-            class_counts[f"classes[{class_label}].count"] = class_count
-        triple_scores = pd.DataFrame(
-            {
-                "doc_counts": doc_counts,
-                "svm_score": svm_scores,
-                "chi2_score": chi2_scores,
-                "mutual_info": mi_scores,
-                # "rfecv_score": rfecv_scores,  # very slow to compute
-                **class_counts,
-            },
-            index=feature_names,
-        )
-        self.triple_scores = triple_scores.join(diversity)
-        self.threshold = None
-        if len(self.triple_scores) < self.config.threshold_top_k:
-            return
-        self.threshold = (
-            self.get_score(self.triple_scores)
-            .sort_values(ascending=False)
-            .iloc[self.config.threshold_top_k - 1]
-        ).item()
+        # ------------------------------
+        Scorer = get_scorer(self.config.scorer)
+        scorer_kw = self.config.scorer_kw
+        if scorer_kw is None:
+            scorer_kw = {}
+        scorer = Scorer(**scorer_kw)
+        scorer.fit(X, y, feature_names)
+        self.scorer = scorer
 
-    def get_score(
-        self, score_row: dict | pd.Series | pd.DataFrame
-    ) -> float | pd.Series:
-        scorer = self.config.scorer
-        if scorer == "default":
-            if "svm_score" in score_row:
-                return score_row["svm_score"]
-            elif "chi2_score" in score_row:
-                return score_row["chi2_score"]
-        return score_row[scorer]
+    @property
+    def is_fitted(self) -> bool:
+        return self.scorer is not None
 
-
-def extract_RFECV_SVM_scores(
-    X: np.ndarray,
-    y: list | np.ndarray,
-    min_features_to_select: int = 500,
-) -> np.ndarray:
-    """
-    Extract feature importance scores using RFECV with a linear SVM.
-    1. Initialize a linear SVM estimator.
-    2. Set up RFECV with the estimator, specifying step size and cross-validation folds.
-    3. Fit RFECV to the data.
-    4. Retrieve the support mask and ranking of features.
-    5. Convert rankings to scores: features selected (support=True) get scores
-         inversely proportional to their rank; unselected features get a score of 0.
-    """
-    estimator = SVC(kernel="linear")
-    selector = RFECV(
-        estimator,
-        step=250,
-        cv=5,
-        min_features_to_select=min_features_to_select,
-    )
-    selector.fit(X, y)
-    rfecv_scores = 1.0 / selector.ranking_
-    return rfecv_scores
-
-
-def linear_svm(X: np.ndarray, y: list | np.ndarray) -> np.ndarray:
-    clf = LinearSVC(max_iter=10000, dual="auto")
-    clf.fit(X, y)
-    # Extract feature scores from SVM coefficients
-    # For binary classification: coef_ is shape (1, n_features)
-    # For multiclass: coef_ is shape (n_classes, n_features)
-    if clf.coef_.shape[0] == 1:
-        # Binary classification: use absolute coefficients
-        svm_scores = np.abs(clf.coef_[0])
-    else:
-        # Multiclass: use max absolute coefficient across classes
-        svm_scores = np.abs(clf.coef_).max(axis=0)
-    return svm_scores
+    def filter_triples(
+        self,
+        *,
+        relations: list[Triple],
+        feature_scores: dict[str, float],
+        text: str | None = None,
+        mention: Mention | None = None,
+    ) -> tuple[list[Triple], dict[Triple, float]]:
+        relation_scores = {}
+        for triple in relations:
+            po = f"{triple.predicate}:{triple.object[0]}"
+            if po not in feature_scores:
+                continue
+            relation_scores[triple] = feature_scores[po]
+        # filter relations based on scores
+        relations = [item for item in relations if item in relation_scores]
+        # sort relations by scores
+        return relations, relation_scores
