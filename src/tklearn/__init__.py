@@ -1,4 +1,5 @@
 import ssl
+import warnings
 
 from tklearn.config import config
 
@@ -15,3 +16,7 @@ except AttributeError:
     pass
 else:
     ssl._create_default_https_context = _create_unverified_https_context
+
+warnings.filterwarnings(
+    "ignore", category=DeprecationWarning, module="datasets.utils._dill"
+)
