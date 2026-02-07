@@ -5,10 +5,9 @@ from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
-import networkx as nx
+import igraph as ig
 import numpy as np
 import shap
-from networkx import DiGraph
 from scipy.sparse import issparse, spmatrix
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import chi2, mutual_info_classif
@@ -38,26 +37,52 @@ class FeatureScorer:
         raise NotImplementedError
 
 
-class PreferencesStoreMixin:
+class StoreMixin:
     preferences: Any
+    threshold: Any
+
+    def get_params(self) -> dict[str, Any]:
+        return None
 
     def dump(self, path: Path | str) -> None:
-        path = Path(path) / "preferences.json"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "w") as f:
+        base_path = Path(path)
+        preferences_path = base_path / "preferences.json"
+        preferences_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(preferences_path, "w") as f:
             json.dump(self.preferences, f, indent=4)
+        if hasattr(self, "threshold") and self.threshold is not None:
+            threshold_path = base_path / "threshold.json"
+            with open(threshold_path, "w") as f:
+                json.dump(self.threshold, f, indent=4)
+        params = self.get_params()
+        if params:
+            params_path = base_path / "params.json"
+            with open(params_path, "w") as f:
+                json.dump(params, f, indent=4)
 
     @classmethod
     def load(cls, path: Path | str) -> Self:
-        path = Path(path) / "preferences.json"
-        with open(path, "r") as f:
+        base_path = Path(path)
+        # load params if any
+        params_path = base_path / "params.json"
+        if params_path.exists():
+            with open(params_path, "r") as f:
+                params = json.load(f)
+            obj = cls(**params)
+        else:
+            obj = cls()
+        preferences_path = base_path / "preferences.json"
+        with open(preferences_path, "r") as f:
             preferences = json.load(f)
-        obj = cls()
         obj.preferences = preferences
+        threshold_path = base_path / "threshold.json"
+        if threshold_path.exists():
+            with open(threshold_path, "r") as f:
+                obj.threshold = json.load(f)
         return obj
 
 
-class Chi2FeatureScorer(PreferencesStoreMixin, FeatureScorer):
+class Chi2FeatureScorer(StoreMixin, FeatureScorer):
     def __init__(self):
         self.preferences: dict[str, float] = {}
 
@@ -81,9 +106,14 @@ class Chi2FeatureScorer(PreferencesStoreMixin, FeatureScorer):
         return scores
 
 
-class MutualInfoFeatureScorer(PreferencesStoreMixin, FeatureScorer):
-    def __init__(self):
+class MutualInfoFeatureScorer(StoreMixin, FeatureScorer):
+    def __init__(self, top_k: int | None = None):
+        self.top_k = top_k
         self.preferences: dict[str, float] = {}
+        self.threshold: float | None = None
+
+    def get_params(self) -> dict[str, Any]:
+        return {"top_k": self.top_k}
 
     def fit(
         self, X: np.ndarray | spmatrix, y: np.ndarray, feature_names: list[str]
@@ -93,19 +123,29 @@ class MutualInfoFeatureScorer(PreferencesStoreMixin, FeatureScorer):
             feature_names[i]: mi_values[i].item()
             for i in range(len(feature_names))
         }
+        # set threshold to top 500 features if more than 500 features
+        if self.top_k is not None and len(feature_names) > self.top_k:
+            sorted_mi = sorted(self.preferences.values(), reverse=True)
+            self.threshold = sorted_mi[self.top_k - 1]
+        else:
+            self.threshold = None
 
     def score(self, features: list[str]) -> dict[str, float]:
-        scores = {
-            feature: self.preferences.get(feature, 0.0) for feature in features
-        }
+        scores = {}
+        for feature in features:
+            # feature: self.preferences.get(feature, 0.0)
+            score = self.preferences.get(feature, 0.0)
+            if self.threshold is not None and score < self.threshold:
+                continue
+            scores[feature] = score
         # normalize scores
-        total = sum(scores.values())
-        if total > 0:
-            scores = {k: v / total for k, v in scores.items()}
+        # total = sum(scores.values())
+        # if total > 0:
+        #     scores = {k: v / total for k, v in scores.items()}
         return scores
 
 
-class ShapleyPageRankFeatureScorer(PreferencesStoreMixin, FeatureScorer):
+class ShapleyPageRankFeatureScorer(StoreMixin, FeatureScorer):
     def __init__(self):
         # preferences stores the minimum delta score between feature pairs
         #   featureA comes before featureB since A < B < C ...
@@ -211,32 +251,50 @@ class ShapleyPageRankFeatureScorer(PreferencesStoreMixin, FeatureScorer):
     #     )
     #     return scores
 
+    # def score(self, features: list[str]) -> dict[str, float]:
+    #     # graph based scoring
+    #     G = DiGraph()
+    #     for winner, loser, weight in self._get_preferences(features):
+    #         if G.has_edge(winner, loser):
+    #             G[loser][winner]["weight"] += weight
+    #         else:
+    #             G.add_edge(loser, winner, weight=weight)
+    #     # compute page rank as scores
+    #     scores = nx.pagerank(G, weight="weight")
+    #     # normalize scores
+    #     total = sum(scores.values())
+    #     if total > 0:
+    #         scores = {k: v / total for k, v in scores.items()}
+    #     # ensure all features are present in scores
+    #     for feature in features:
+    #         if feature not in scores:
+    #             scores[feature] = 0.0
+    #     return scores
+
     def score(self, features: list[str]) -> dict[str, float]:
-        # graph based scoring
-        G = DiGraph()
+        edges = []
+        weights = []
         for winner, loser, weight in self._get_preferences(features):
-            if G.has_edge(winner, loser):
-                G[loser][winner]["weight"] += weight
-            else:
-                G.add_edge(loser, winner, weight=weight)
-        # compute page rank as scores
-        scores = nx.pagerank(G, weight="weight")
+            edges.append((loser, winner))
+            weights.append(weight)
+        g = ig.Graph(directed=True)
+        g.add_vertices(features)
+        g.add_edges(edges)
+        g.es["weight"] = weights
+        scores = g.pagerank(weights="weight")
+        scores_dict = {g.vs[i]["name"]: scores[i] for i in range(len(g.vs))}
         # normalize scores
-        total = sum(scores.values())
+        total = sum(scores_dict.values())
         if total > 0:
-            scores = {k: v / total for k, v in scores.items()}
-        # ensure all features are present in scores
-        for feature in features:
-            if feature not in scores:
-                scores[feature] = 0.0
-        return scores
+            scores_dict = {k: v / total for k, v in scores_dict.items()}
+        return scores_dict
 
 
-def get_scorer(score: str) -> type[FeatureScorer]:
-    if score == "rf_shapley_pagerank":
+def get_scorer(name: str, **kwargs) -> type[FeatureScorer]:
+    if name == "rf_shapley_pagerank":
         return ShapleyPageRankFeatureScorer
-    elif score == "chi2_score":
+    elif name == "chi2_score":
         return Chi2FeatureScorer
-    elif score == "mutual_info" or score == "default":
+    elif name == "mutual_info" or name == "default":
         return MutualInfoFeatureScorer
-    raise ValueError(score)
+    raise ValueError(name)
