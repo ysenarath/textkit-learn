@@ -69,6 +69,7 @@ dependencies = [
     "sentencepiece>=0.2.1",
     "bertviz>=1.4.1",
     "igraph>=1.0.0",
+    "higher>=0.2.1",
 ]
 dynamic = ["version"]
 
