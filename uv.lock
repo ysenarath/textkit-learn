@@ -1736,6 +1736,18 @@ wheels = [
 ]
 
 [[package]]
+name = "higher"
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fc/07/6b15c672bf1c0e561b695bb54a67eb0c94ffe7f898a1f8927ac37f96de90/higher-0.2.1.tar.gz", hash = "sha256:f5b7baa668be5dc59cca9ae06c4ed14c2bd2fe5ca8283f95db660e8732513c1d", size = 24988 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/63/94/bb9b7326cb11fcbb025f7895594655b74b1d6efbb290694b911ca9bddaa8/higher-0.2.1-py3-none-any.whl", hash = "sha256:740387d25037e492c5556f51b118dcdfdd94081aaec06833b62db51afb8ac2b5", size = 27323 },
+]
+
+[[package]]
 name = "hnswlib"
 version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -6008,6 +6020,7 @@ dependencies = [
     { name = "flashtext" },
     { name = "gensim" },
     { name = "graphviz" },
+    { name = "higher" },
     { name = "hnswlib" },
     { name = "igraph" },
     { name = "ipywidgets" },
@@ -6090,6 +6103,7 @@ requires-dist = [
     { name = "flask-caching", marker = "extra == 'dash'", specifier = ">=2.3.1" },
     { name = "gensim", specifier = ">=4.3.3,<=4.4.0" },
     { name = "graphviz", specifier = ">=0.21" },
+    { name = "higher", specifier = ">=0.2.1" },
     { name = "hnswlib", specifier = ">=0.3.2.0,<=0.8.0" },
     { name = "igraph", specifier = ">=1.0.0" },
     { name = "ipywidgets", specifier = ">=4.0.0,<=8.1.8" },
