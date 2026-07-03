@@ -8,22 +8,28 @@
       
       
       
+        <link rel="canonical" href="https://ysenarath.github.io/textkit-learn/guides/feature-selection/">
       
+      
+        <link rel="prev" href="../..">
+      
+      
+        <link rel="next" href="../../api/">
       
       
         
       
       
-      <link rel="icon" href="/textkit-learn/assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
       
-        <title>TextKit-Learn</title>
+        <title>Feature Selection - TextKit-Learn</title>
       
     
     
-      <link rel="stylesheet" href="/textkit-learn/assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
       
 
@@ -42,9 +48,9 @@
       
     
     
-      <link rel="stylesheet" href="/textkit-learn/assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("/textkit-learn/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -61,6 +67,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#feature-selection-methods" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -73,7 +84,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/textkit-learn/." title="TextKit-Learn" class="md-header__button md-logo" aria-label="TextKit-Learn" data-md-component="logo">
+    <a href="../.." title="TextKit-Learn" class="md-header__button md-logo" aria-label="TextKit-Learn" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -93,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Feature Selection
             
           </span>
         </div>
@@ -175,7 +186,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/textkit-learn/." title="TextKit-Learn" class="md-nav__button md-logo" aria-label="TextKit-Learn" data-md-component="logo">
+    <a href="../.." title="TextKit-Learn" class="md-nav__button md-logo" aria-label="TextKit-Learn" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -193,7 +204,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/textkit-learn/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -217,8 +228,10 @@
       
   
   
+    
   
   
+  
     
     
     
@@ -229,13 +242,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -256,7 +267,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -271,10 +282,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/textkit-learn/guides/feature-selection/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feature Selection
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -290,6 +328,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#chi-square-chi2_score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chi-Square (chi2_score)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mutual-information-mutual_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutual Information (mutual_info)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#svm-coefficients-svm_score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SVM Coefficients (svm_score)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#comparison-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Comparison Table
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommendations
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -363,7 +504,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/textkit-learn/api/" class="md-nav__link">
+      <a href="../../api/" class="md-nav__link">
         
   
   
@@ -391,7 +532,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/textkit-learn/api/embeddings/" class="md-nav__link">
+      <a href="../../api/embeddings/" class="md-nav__link">
         
   
   
@@ -419,7 +560,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/textkit-learn/api/kb/" class="md-nav__link">
+      <a href="../../api/kb/" class="md-nav__link">
         
   
   
@@ -447,7 +588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/textkit-learn/api/metrics/" class="md-nav__link">
+      <a href="../../api/metrics/" class="md-nav__link">
         
   
   
@@ -475,7 +616,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/textkit-learn/api/nn/" class="md-nav__link">
+      <a href="../../api/nn/" class="md-nav__link">
         
   
   
@@ -503,7 +644,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/textkit-learn/api/plotting/" class="md-nav__link">
+      <a href="../../api/plotting/" class="md-nav__link">
         
   
   
@@ -531,7 +672,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/textkit-learn/api/utils/" class="md-nav__link">
+      <a href="../../api/utils/" class="md-nav__link">
         
   
   
@@ -572,8 +713,119 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+
+<h1 id="feature-selection-methods">Feature Selection Methods</h1>
+<p>The <code>KBertTokenizer</code> class uses feature selection methods to score and rank predicate-object pairs (triples) extracted from text. This page describes the three available methods and their advantages and disadvantages.</p>
+<h2 id="overview">Overview</h2>
+<p>When augmenting text with knowledge triples, not all triples are equally useful for classification. Feature selection methods help identify which triples are most relevant by scoring them based on their relationship with class labels.</p>
+<h2 id="methods">Methods</h2>
+<h3 id="chi-square-chi2_score">Chi-Square (chi2_score)</h3>
+<p>Chi-Square measures the statistical dependence between predicate-object pairs and class labels using the chi-squared test.</p>
+<p><strong>Advantages</strong></p>
+<ul>
+<li><strong>Fast computation</strong>: Chi-square is computationally efficient, making it suitable for large datasets.</li>
+<li><strong>Interpretable</strong>: The scores have a clear statistical interpretation based on the chi-squared distribution.</li>
+<li><strong>Works well with term counts</strong>: Naturally suited for text classification where features are word or term frequencies.</li>
+<li><strong>No assumptions about feature distribution</strong>: Does not require features to follow a specific distribution.</li>
+</ul>
+<p><strong>Disadvantages</strong></p>
+<ul>
+<li><strong>Assumes feature independence</strong>: Does not account for correlations between features, which may lead to selecting redundant features.</li>
+<li><strong>Requires non-negative values</strong>: Only works with non-negative feature values (e.g., term frequencies or counts).</li>
+<li><strong>Sensitive to sample size</strong>: Results can be unreliable with small sample sizes or sparse data.</li>
+<li><strong>Linear relationships only</strong>: Captures only linear dependencies between features and class labels.</li>
+</ul>
+<hr />
+<h3 id="mutual-information-mutual_info">Mutual Information (mutual_info)</h3>
+<p>Mutual Information quantifies the amount of information a feature provides about the class label, based on information theory.</p>
+<p><strong>Advantages</strong></p>
+<ul>
+<li><strong>Captures non-linear dependencies</strong>: Unlike chi-square, mutual information can detect both linear and non-linear relationships between features and class labels.</li>
+<li><strong>Information-theoretic foundation</strong>: Grounded in well-established information theory principles.</li>
+<li><strong>Feature independence not required</strong>: Can identify informative features regardless of their correlations with other features.</li>
+<li><strong>Scale-invariant</strong>: Not affected by linear transformations of the feature values.</li>
+</ul>
+<p><strong>Disadvantages</strong></p>
+<ul>
+<li><strong>Computationally more expensive</strong>: Requires density estimation, which can be slower than chi-square, especially for large datasets.</li>
+<li><strong>Sensitive to binning/discretization</strong>: For continuous features, the results depend on how features are discretized.</li>
+<li><strong>Estimation challenges</strong>: Accurate estimation requires sufficient samples; may be unreliable with sparse data.</li>
+<li><strong>No built-in redundancy handling</strong>: Does not inherently account for redundancy among selected features.</li>
+</ul>
+<hr />
+<h3 id="svm-coefficients-svm_score">SVM Coefficients (svm_score)</h3>
+<p>SVM Coefficients uses the absolute values of LinearSVC (linear Support Vector Machine) coefficients as feature importance scores.</p>
+<p><strong>Advantages</strong></p>
+<ul>
+<li><strong>Considers feature interactions</strong>: Through margin optimization, SVM implicitly considers how features work together for classification.</li>
+<li><strong>Direct classification relevance</strong>: Provides feature importance directly tied to classification performance.</li>
+<li><strong>Robust to outliers</strong>: SVMs are generally robust to outliers due to the margin-based optimization.</li>
+<li><strong>Effective in high-dimensional spaces</strong>: Works well when the number of features is large relative to the number of samples.</li>
+</ul>
+<p><strong>Disadvantages</strong></p>
+<ul>
+<li><strong>Requires training a model</strong>: More computationally expensive as it requires training a full SVM classifier.</li>
+<li><strong>May not generalize well</strong>: The importance scores are specific to the linear SVM model and may not reflect importance for other classifiers.</li>
+<li><strong>Sensitive to hyperparameters</strong>: Results depend on regularization parameters (e.g., C parameter).</li>
+<li><strong>Assumes linear separability</strong>: Uses a linear kernel, which may not capture complex non-linear relationships.</li>
+</ul>
+<h2 id="comparison-table">Comparison Table</h2>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Computation Speed</th>
+<th>Non-linear Dependencies</th>
+<th>Feature Interactions</th>
+<th>Model-Free</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chi-Square</td>
+<td>Fast</td>
+<td>No</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Mutual Information</td>
+<td>Moderate</td>
+<td>Yes</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>SVM Coefficients</td>
+<td>Slow</td>
+<td>No</td>
+<td>Partial</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<h2 id="recommendations">Recommendations</h2>
+<ul>
+<li><strong>Use Chi-Square</strong> when you need fast feature selection and your data has clear linear relationships between features and class labels.</li>
+<li><strong>Use Mutual Information</strong> when you suspect non-linear relationships between features and class labels, and computational cost is not a primary concern.</li>
+<li><strong>Use SVM Coefficients</strong> when you want feature importance that directly reflects classification relevance and are willing to invest in training time.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -616,10 +868,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "/textkit-learn/", "features": ["navigation.sections", "navigation.expand", "navigation.top", "toc.integrate", "search.suggest", "search.highlight", "content.code.copy"], "search": "/textkit-learn/assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "toc.integrate", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/textkit-learn/assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
