@@ -265,13 +265,26 @@ class WikitionaryProcessor:
         self,
         wiktionary_path: Path,
         cache_dir: Path,
+        language: str,
         predicates: set[str] | None = None,
     ):
-        self.wiktionary_path = wiktionary_path
+        self.language = language
+        self._wiktionary_path = wiktionary_path
         if predicates is None:
             predicates = SUPPORTED_PREDICATES
         self.predicates = set(predicates)
         self.cache_dir = cache_dir
+
+    @property
+    def wiktionary_path(self) -> Path:
+        setup_wiktionary(
+            wiktionary_url=WIKTIONARY_URL,
+            temp_download_path=self.cache_dir / "wiktionary.jsonl.gz",
+            temp_extracted_path=self.cache_dir / "wiktionary.jsonl",
+            wiktionary_path=self._wiktionary_path,
+            language=self.language,
+        )
+        return self._wiktionary_path
 
     def get_or_set_sense_id(self, definition: str | None) -> int | None:
         if definition is None:
@@ -499,15 +512,7 @@ class WiktionaryArtifactStore(ArtifactStore):
             repo_type=self.config.repo_type,
             local_dir=self.local_dir,
         )
-        language = self.config.language
         self.wiktionary_path = self.local_dir / "words.pkl"
-        setup_wiktionary(
-            wiktionary_url=WIKTIONARY_URL,
-            temp_download_path=self.local_dir / "wiktionary.jsonl.gz",
-            temp_extracted_path=self.local_dir / "wiktionary.jsonl",
-            wiktionary_path=self.wiktionary_path,
-            language=language,
-        )
         processor = self.get_processor()
         for key, value in processor.build().items():
             setattr(self, key, value)
@@ -521,5 +526,7 @@ class WiktionaryArtifactStore(ArtifactStore):
 
     def get_processor(self):
         return WikitionaryProcessor(
-            wiktionary_path=self.wiktionary_path, cache_dir=self.local_dir
+            wiktionary_path=self.wiktionary_path,
+            cache_dir=self.local_dir,
+            language=self.config.language,
         )
