@@ -123,8 +123,6 @@ class WiktionaryArtifactStoreV1(ArtifactStore):
         self.triplet_path = self.local_dir / "triples.duckdb"
         self.attrs_path = self.local_dir / "attrs.pkl"
         self.forms_lexicon_path = self.local_dir / f"forms-{lang}.pkl"
-        self.wiktionary_path = self.setup_wiktionary()
-        self.wiktionary_size = count_jsonl(self.wiktionary_path)
         gloss2idx, idx2gloss, senses, embeddings = self.setup_senses()
         self.gloss2idx = gloss2idx
         self.idx2gloss = idx2gloss
@@ -139,6 +137,18 @@ class WiktionaryArtifactStoreV1(ArtifactStore):
             repo_type=self.repo_type,
             ignore_patterns=["*.jsonl", "*.jsonl.gz"],
         )
+
+    @property
+    def wiktionary_path(self) -> Path:
+        if not hasattr(self, "_wiktionary_path"):
+            self._wiktionary_path = self.setup_wiktionary()
+        return self._wiktionary_path
+
+    @property
+    def wiktionary_size(self) -> int:
+        if not hasattr(self, "_wiktionary_size"):
+            self._wiktionary_size = count_jsonl(self.wiktionary_path)
+        return self._wiktionary_size
 
     def setup_wiktionary(self) -> Path:
         logger.info("Downloading wiktionary data.")
