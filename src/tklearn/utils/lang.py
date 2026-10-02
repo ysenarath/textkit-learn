@@ -10,7 +10,13 @@ __all__ = [
 
 
 @functools.lru_cache(maxsize=5)
-def get_stopwords(language: str = "english") -> set[str]:
+def get_stopwords(language: str = "english") -> frozenset[str]:
+    """Return NLTK's stopwords for a language, downloading them if needed."""
     if language == "en":
-        return get_stopwords("english")
-    return set(nltk.corpus.stopwords.words(language))
+        language = "english"
+    try:
+        words = nltk.corpus.stopwords.words(language)
+    except LookupError:
+        nltk.download("stopwords", quiet=True)
+        words = nltk.corpus.stopwords.words(language)
+    return frozenset(words)
