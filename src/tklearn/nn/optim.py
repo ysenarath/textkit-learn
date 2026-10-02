@@ -37,7 +37,7 @@ def get_scheduler(
         elif isinstance(num_warmup_steps, (int, float)):
             pass
         elif num_warmup_steps is None:
-            pass
+            num_warmup_steps = 0
         else:
             raise ValueError("num_warmup_steps must be a float or None")
     elif num_warmup_steps is None:
