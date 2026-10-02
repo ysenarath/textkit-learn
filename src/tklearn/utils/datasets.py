@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import gc
 import logging
 import tempfile
@@ -14,11 +13,8 @@ import torch
 from datasets import (
     Dataset,
     DatasetDict,
-    IterableDataset,
-    IterableDatasetDict,
     concatenate_datasets,
 )
-from datasets import load_dataset as hf_load_dataset
 from datasets.utils.logging import disable_progress_bar, enable_progress_bar
 from tqdm import auto as tqdm
 
@@ -31,7 +27,6 @@ T_O = dict[str, Any]
 
 __all__ = [
     "DatasetMapper",
-    "load_dataset",
     "islice",
     "map_dataset",
     "GroupBy",
@@ -138,13 +133,6 @@ class DatasetMapper:
                 outpaths.append(outpath)
             output = Dataset.from_parquet(list(map(str, outpaths)))
         return output
-
-
-@functools.wraps(hf_load_dataset)
-def load_dataset(
-    *args, **kwargs
-) -> DatasetDict | Dataset | IterableDatasetDict | IterableDataset:
-    return hf_load_dataset(*args, **kwargs)
 
 
 def islice(
