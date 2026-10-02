@@ -1,88 +1,64 @@
 from __future__ import annotations
 
-import os
-from contextlib import contextmanager
-from pathlib import Path
-from typing import ClassVar, Dict
-
-import fasttext
-import fasttext.util
 import numpy as np
-from typing_extensions import Self
+from tqdm import auto as tqdm
 
-from tklearn import config, logging
-from tklearn.embeddings.base import Embedding, EmbeddingConfig
+from tklearn.embeddings._utils import change_dir
+from tklearn.embeddings.base import EMBEDDINGS, WordEmbedding
 
 __all__ = [
-    "FastTextEmbeddingConfig",
     "FastTextEmbedding",
 ]
 
-logger = logging.get_logger(__name__)
 
+@EMBEDDINGS.register("fasttext")
+class FastTextEmbedding(WordEmbedding):
+    """fastText word vectors, with subword vectors for unknown words.
 
-@contextmanager
-def change_dir(path: str | Path):
-    path = Path(path)
-    path.mkdir(parents=True, exist_ok=True)
-    old_path = os.getcwd()
-    os.chdir(path)
-    try:
-        yield
-    finally:
-        os.chdir(old_path)
+    Parameters
+    ----------
+    name : str, default="cc.en.300.bin"
+        A pretrained Common Crawl model, ``"cc.<lang>.300.bin"``.
+    verbose : bool, default=True
+        Show progress while building the cache.
 
+    Notes
+    -----
+    Known words are read from the memory-mapped cache. The full fastText
+    model is only loaded the first time an out-of-vocabulary word is
+    encoded.
+    """
 
-class FastTextEmbeddingConfig(EmbeddingConfig):
-    loader: ClassVar[str] = "fasttext"
-    name: str = "cc.en.300.bin"
+    loader = "fasttext"
 
+    def __init__(
+        self, name: str = "cc.en.300.bin", verbose: bool = True
+    ) -> None:
+        self._model = None
+        super().__init__(name, verbose=verbose)
 
-class FastTextEmbedding(Embedding):
-    config: FastTextEmbeddingConfig
+    def _load_model(self):
+        import fasttext
+        import fasttext.util
 
-    def __post_init__(self):
-        self.files_dir = (
-            Path(config.assets_dir) / self.config.loader / "loader"
-        )
-        super().__post_init__()
-
-    def _fetch_embedding(self) -> Self:
-        lang_id = self.config.name.split(".")[1]
-        with change_dir(self.files_dir):
+        files_dir = self.cache_dir / "loader"
+        lang_id = self.name.split(".")[1]
+        with change_dir(files_dir):
             fasttext.util.download_model(lang_id, if_exists="ignore")
-        return self
+        return fasttext.load_model(str(files_dir / self.name))
 
-    def _read_embedding(self) -> Dict[str, np.ndarray]:
-        fn = self.config.name
-        model = fasttext.load_model(f"{self.files_dir / fn}")
-        vectors = {}
-        for term in model.get_words():
-            vectors[term] = model.get_word_vector(term)
-        return vectors
+    @property
+    def model(self):
+        if self._model is None:
+            self._model = self._load_model()
+        return self._model
 
-    def get_vectors(self) -> Dict[str, np.ndarray]:
-        return self._fetch_embedding()._read_embedding()
+    def load_vectors(self) -> dict[str, np.ndarray]:
+        model = self.model
+        return {
+            term: model.get_word_vector(term)
+            for term in tqdm.tqdm(model.get_words(), disable=not self.verbose)
+        }
 
-    def get_encoder(self) -> FastTextWrapper:
-        self._fetch_embedding()
-        model = fasttext.load_model(f"{self.files_dir / self.config.name}")
-        return FastTextWrapper(model)
-
-
-class FastTextWrapper:
-    def __init__(self, model: fasttext.FastText._FastText):
-        self.model = model
-
-    def encode(self, texts: str | list[str]) -> np.ndarray:
-        """Encode the texts."""
-        if isinstance(texts, str):
-            texts = [texts]
-        vectors = []
-        for text in texts:
-            vectors.append(self.model.get_word_vector(text))
-        return np.array(vectors)
-
-    def get_dimension(self) -> int | None:
-        """Get the embedding size."""
-        return self.model.get_dimension()
+    def encode_oov(self, word: str) -> np.ndarray:
+        return self.model.get_word_vector(word)
