@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Any
 
 import pandas as pd
 
@@ -12,21 +12,31 @@ __all__ = [
 
 
 class History(Callback):
-    def __init__(self):
+    """Records the logs of every epoch. Returned by `Trainer.fit`.
+
+    Attributes
+    ----------
+    epoch : list of int
+        The epochs that completed.
+    history : dict of str to list
+        One list of values per log key, aligned with `epoch`.
+    """
+
+    def __init__(self) -> None:
         super().__init__()
-        self.history: Dict[str, List[float | int | str]] = {}
+        self.epoch: list[int] = []
+        self.history: dict[str, list[Any]] = {}
 
-    def on_train_begin(self, logs=None):
+    def on_train_begin(self, logs: dict[str, Any] | None = None) -> None:
         self.epoch = []
+        self.history = {}
 
-    def on_epoch_end(self, epoch, logs=None):
-        logs = logs or {}
+    def on_epoch_end(
+        self, epoch: int, logs: dict[str, Any] | None = None
+    ) -> None:
         self.epoch.append(epoch)
-        for k, v in logs.items():
-            self.history.setdefault(k, []).append(v)
-        # Set the history attribute on the model after the epoch ends. This will
-        # make sure that the state which is set is the latest one.
-        self.model.history = self
+        for key, value in (logs or {}).items():
+            self.history.setdefault(key, []).append(value)
 
     def to_pandas(self) -> pd.DataFrame:
         return pd.DataFrame(self.history, index=self.epoch)

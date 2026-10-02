@@ -1,4 +1,4 @@
-from tklearn.metrics.base import MetricBase, MetricState
+from tklearn.metrics.base import Metric, MetricCollection
 from tklearn.metrics.classification import (
     AUC,
     F1,
@@ -8,21 +8,17 @@ from tklearn.metrics.classification import (
     Precision,
     Recall,
 )
-from tklearn.metrics.helpers import ArrayAccum, StepsCounter
 
 __all__ = [
-    # --- Base Metrics ---
-    "MetricState",
-    "MetricBase",
-    # --- General Metrics ---
-    "StepsCounter",
-    "ArrayAccum",
-    # --- Classification Metrics ---
+    # --- Base ---
+    "Metric",
+    "MetricCollection",
+    # --- Classification ---
     "AUC",
     "Accuracy",
     "F1",
-    "Precision",
-    "Recall",
     "OptimalAUCThreshold",
     "OptimalPRThreshold",
+    "Precision",
+    "Recall",
 ]

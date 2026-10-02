@@ -46,9 +46,9 @@ class TemperatureTrainer:
         logits_list = []
         labels_list = []
         with torch.no_grad():
-            for b, batch in enumerate(self.validation_loader):
+            for batch in self.validation_loader:
                 batch = move_to_device(batch, self.device, non_blocking=True)
-                output = self.base_model.predict_step(batch, batch_idx=b)
+                output = self.base_model.predict_step(batch)
                 labels, logits = batch["labels"], output["logits"]
                 logits_list.append(logits)
                 labels_list.append(labels)
@@ -110,15 +110,13 @@ class CalibratedModule(Module):
     def compute_loss(self, batch, output):
         return self.base_model.compute_loss(batch, output)
 
-    def predict_step(self, batch, batch_idx=None, dataloader_idx=None):
-        output = self.base_model.predict_step(
-            batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
-        )
+    def predict_step(self, batch):
+        output = self.base_model.predict_step(batch)
         output["logits"] = self.temperature_model(output["logits"])
         return output
 
-    def compute_metric_inputs(self, batch, output, **kwargs) -> dict:
-        return self.base_model.compute_metric_inputs(batch, output, **kwargs)
+    def compute_metric_inputs(self, batch, output) -> dict:
+        return self.base_model.compute_metric_inputs(batch, output)
 
     @property
     def temperature(self):

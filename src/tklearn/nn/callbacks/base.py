@@ -1,447 +1,220 @@
 from __future__ import annotations
 
-import functools
-import warnings
-from collections import UserList
 from collections.abc import Iterable, Iterator, Sequence
 from typing import TYPE_CHECKING, Any
 
 from torch.optim.optimizer import Optimizer
-from typing_extensions import Self
 
 __all__ = [
     "Callback",
     "CallbackList",
+    "CallbacksMixin",
 ]
-
 
 if TYPE_CHECKING:
     from tklearn.nn.base.module import Module
+    from tklearn.nn.base.trainer import Trainer
 
 
 class Callback:
-    def __init__(self, *args, **kwargs) -> None:
-        self._model = None
-        self._params = {}
-        super().__init__(*args, **kwargs)
+    """Base class for hooks into `Trainer`, `Evaluator` and `Predictor`.
+
+    Override any of the ``on_*`` methods. Before a run starts, the runner
+    calls `set_model` and `set_params`; `Trainer` also calls `set_trainer`,
+    which lets a callback stop training with
+    ``self.trainer.stop_training = True``.
+
+    Which hooks fire:
+
+    - `Trainer.fit`: ``on_train_begin``/``on_train_end``,
+      ``on_epoch_begin``/``on_epoch_end``,
+      ``on_train_batch_begin``/``on_train_batch_end`` and the gradient hooks
+      ``on_before_zero_grad``, ``on_before_backward``, ``on_after_backward``,
+      ``on_before_optimizer_step``.
+    - `Evaluator.evaluate`: ``on_test_begin``/``on_test_end`` and
+      ``on_test_batch_begin``/``on_test_batch_end``.
+    - `Predictor.predict` and `Encoder.encode`: ``on_predict_begin``/
+      ``on_predict_end`` and ``on_predict_batch_begin``/
+      ``on_predict_batch_end``.
+
+    `logs` is always a dict. ``on_epoch_end`` receives the epoch's mean
+    training losses plus any evaluation results; ``on_train_end`` receives the
+    logs of the last epoch.
+    """
+
+    def __init__(self) -> None:
+        self._model: Module | None = None
+        self._trainer: Trainer | None = None
+        self._params: dict[str, Any] = {}
 
     @property
-    def model(self) -> Module:
-        """
-        Get the model associated with the callback.
-
-        Returns
-        -------
-        Model
-            The model associated with the callback.
-        """
+    def model(self) -> Module | None:
+        """The model being trained, evaluated or run."""
         return self._model
 
-    def set_model(self, model: Module):
-        """
-        Set the model associated with the callback.
-
-        Parameters
-        ----------
-        model : Model
-            The model to be set.
-        """
-        if (
-            model is not None
-            and self._model is not None
-            and model is not self._model
-        ):
-            msg = (
-                f"the callback '{type(self).__name__}' is already "
-                f"associated with a model '{type(self._model).__name__}'"
-            )
-            raise ValueError(msg)
+    def set_model(self, model: Module | None) -> None:
         self._model = model
 
     @property
-    def params(self) -> dict:
-        """
-        Get the parameters of the callback.
+    def trainer(self) -> Trainer | None:
+        """The running `Trainer`, or None outside of `Trainer.fit`."""
+        return self._trainer
 
-        Returns
-        -------
-        dict
-            The parameters of the callback.
+    def set_trainer(self, trainer: Trainer | None) -> None:
+        self._trainer = trainer
+
+    @property
+    def params(self) -> dict[str, Any]:
+        """Run parameters set by the runner.
+
+        `Trainer` sets ``epochs``, ``steps`` (batches per epoch) and
+        ``batch_size``; `Evaluator` sets ``test_steps``; `Predictor` sets
+        ``pred_steps``.
         """
         return self._params
 
-    def set_params(self, params):
-        """
-        Set the parameters of the callback.
-
-        Parameters
-        ----------
-        params : dict
-            The parameters to be set.
-        """
-        if params is None:
-            params = {}
-        self._params = params
-
-    def on_epoch_begin(self, epoch, logs=None):
-        """
-        Called at the start of an epoch.
-
-        Parameters
-        ----------
-        epoch : int
-            Index of epoch.
-        logs : dict, optional
-            Currently no data is passed to this argument for this method but
-            that may change in the future.
-        """
-        pass
-
-    def on_epoch_end(self, epoch, logs=None):
-        """
-        Called at the end of an epoch.
-
-        Subclasses should override for any actions to run. This function should
-        only be called during TRAIN mode.
-
-        Parameters
-        ----------
-        epoch : int
-            Index of epoch.
-        logs : dict, optional
-            Metric results for this training epoch, and for the validation
-            epoch if validation is performed.
-            Validation result keys are prefixed with `val_`.
-            For the training epoch, the values of the `Model`'s metrics are
-            returned.
-            Example: `{'loss': 0.2, 'accuracy': 0.7}`.
-        """
-        pass
-
-    def on_train_batch_begin(self, batch, logs=None):
-        """
-        Called at the beginning of a training batch in `fit` methods.
-
-        Subclasses should override for any actions to run.
-
-        Note that if the `steps_per_execution` argument to `compile` in
-        `Model` is set to `N`, this method will only be called every
-        `N` batches.
-
-        Parameters
-        ----------
-        batch : int
-            Index of batch within the current epoch.
-        logs : dict, optional
-            Currently no data is passed to this argument for this method
-            but that may change in the future.
-        """
-        pass
-
-    def on_train_batch_end(self, batch, logs=None):
-        """
-        Called at the end of a training batch in `fit` methods.
-
-        Subclasses should override for any actions to run.
-
-        Note that if the `steps_per_execution` argument to `compile` in
-        `Model` is set to `N`, this method will only be called every
-        `N` batches.
-
-        Parameters
-        ----------
-        batch : int
-            Index of batch within the current epoch.
-        logs : dict, optional
-            Aggregated metric results up until this batch.
-        """
-        pass
-
-    def on_test_batch_begin(self, batch, logs=None):
-        """
-        Called at the beginning of a batch in `evaluate` methods.
-
-        Also called at the beginning of a validation batch in the `fit`
-        methods, if validation data is provided.
-
-        Subclasses should override for any actions to run.
-
-        Note that if the `steps_per_execution` argument to `compile` in
-        `Model` is set to `N`, this method will only be called every
-        `N` batches.
-
-        Parameters
-        ----------
-        batch : int
-            Index of batch within the current epoch.
-        logs : dict, optional
-            Currently no data is passed to this argument for this method
-            but that may change in the future.
-        """
-        pass
-
-    def on_test_batch_end(self, batch, logs=None):
-        """
-        Called at the end of a batch in `evaluate` methods.
-
-        Also called at the end of a validation batch in the `fit`
-        methods, if validation data is provided.
-
-        Subclasses should override for any actions to run.
-
-        Note that if the `steps_per_execution` argument to `compile` in
-        `Model` is set to `N`, this method will only be called every
-        `N` batches.
-
-        Parameters
-        ----------
-        batch : int
-            Index of batch within the current epoch.
-        logs : dict, optional
-            Aggregated metric results up until this batch.
-        """
-        pass
-
-    def on_predict_batch_begin(self, batch, logs=None):
-        """
-        Called at the beginning of a batch in `predict` methods.
-
-        Subclasses should override for any actions to run.
-
-        Note that if the `steps_per_execution` argument to `compile` in
-        `Model` is set to `N`, this method will only be called every
-        `N` batches.
-
-        Parameters
-        ----------
-        batch : int
-            Index of batch within the current epoch.
-        logs : dict, optional
-            Currently no data is passed to this argument for this method
-            but that may change in the future.
-        """
-        pass
-
-    def on_predict_batch_end(self, batch, logs=None):
-        """
-        Called at the end of a batch in `predict` methods.
-
-        Subclasses should override for any actions to run.
-
-        Note that if the `steps_per_execution` argument to `compile` in
-        `Model` is set to `N`, this method will only be called every
-        `N` batches.
-
-        Parameters
-        ----------
-        batch : int
-            Index of batch within the current epoch.
-        logs : dict, optional
-            Aggregated metric results up until this batch.
-        """
-        pass
-
-    def on_train_begin(self, logs=None):
-        """
-        Called at the beginning of training.
-
-        Subclasses should override for any actions to run.
-
-        Parameters
-        ----------
-        logs : dict, optional
-            Currently no data is passed to this argument for this method
-            but that may change in the future.
-        """
-        pass
-
-    def on_train_end(self, logs=None):
-        """
-        Called at the end of training.
-
-        Subclasses should override for any actions to run.
-
-        Parameters
-        ----------
-        logs : dict, optional
-            Currently the output of the last call to `on_epoch_end()` is
-            passed to this argument for this method but that may change
-            in the future.
-        """
-        pass
-
-    def on_test_begin(self, logs=None):
-        """
-        Called at the beginning of evaluation or validation.
-
-        Subclasses should override for any actions to run.
-
-        Parameters
-        ----------
-        logs : dict, optional
-            Currently no data is passed to this argument for this method but
-            that may change in the future.
-        """
-        pass
-
-    def on_test_end(self, logs=None):
-        """
-        Called at the end of evaluation or validation.
-
-        Subclasses should override for any actions to run.
-
-        Parameters
-        ----------
-        logs : dict, optional
-            Currently the output of the last call to `on_test_batch_end()` is
-            passed to this argument for this method but that may change in the
-            future.
-        """
-        pass
-
-    def on_predict_begin(self, logs=None):
-        """
-        Called at the beginning of prediction.
-
-        Subclasses should override for any actions to run.
-
-        Parameters
-        ----------
-        logs : dict, optional
-            Currently no data is passed to this argument for this method but
-            that may change in the future.
-        """
-        pass
-
-    def on_predict_end(self, logs=None):
-        """
-        Called at the end of prediction.
-
-        Subclasses should override for any actions to run.
-
-        Parameters
-        ----------
-        logs : dict, optional
-            Currently no data is passed to this argument for this method but
-            that may change in the future.
-        """
-        pass
-
-    def on_before_backward(self, logs=None):
-        """
-        Called before the backward pass.
-
-        Subclasses should override for any actions to run.
-
-        Parameters
-        ----------
-        logs : dict, optional
-            Currently no data is passed to this argument for this method but
-            that may change in the future.
-        """
-        pass
-
-    def on_after_backward(self, logs=None):
-        """
-        Called after the backward pass.
-
-        Subclasses should override for any actions to run.
-
-        Parameters
-        ----------
-        logs : dict, optional
-            Currently no data is passed to this argument for this method but
-            that may change in the future.
-        """
-        pass
-
-    def on_before_zero_grad(self, optimizer: Optimizer | None = None):
-        """
-        Called before the optimizer's `zero_grad` method is called.
-
-        Subclasses should override for any actions to run.
-
-        Parameters
-        ----------
-        optimizer : Optimizer, optional
-            The optimizer that is used for the training step.
-        """
-        pass
-
-    def on_before_optimizer_step(self, optimizer: Optimizer | None = None):
-        """
-        Called before the optimizer step.
-
-        Subclasses should override for any actions to run.
-
-        Parameters
-        ----------
-        optimizer : Optimizer, optional
-            The optimizer that is used for the training step.
-        """
-        pass
-
-
-def is_callback(name: str) -> bool:
-    return name.startswith("set_") or name.startswith("on_")
+    def set_params(self, params: dict[str, Any] | None) -> None:
+        self._params = dict(params or {})
+
+    # --- training --------------------------------------------------------
+
+    def on_train_begin(self, logs: dict[str, Any] | None = None) -> None:
+        """Called once before the first epoch."""
+
+    def on_train_end(self, logs: dict[str, Any] | None = None) -> None:
+        """Called once after the last epoch, with that epoch's logs."""
+
+    def on_epoch_begin(
+        self, epoch: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        """Called at the start of each epoch (zero-based)."""
+
+    def on_epoch_end(
+        self, epoch: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        """Called at the end of each epoch with training and eval results."""
+
+    def on_train_batch_begin(
+        self, batch_idx: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        """Called before each training batch."""
+
+    def on_train_batch_end(
+        self, batch_idx: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        """Called after each training batch, with its losses."""
+
+    def on_before_zero_grad(self, optimizer: Optimizer) -> None:
+        """Called before ``optimizer.zero_grad()``."""
+
+    def on_before_backward(self, logs: dict[str, Any] | None = None) -> None:
+        """Called before ``loss.backward()``."""
+
+    def on_after_backward(self, logs: dict[str, Any] | None = None) -> None:
+        """Called after gradients are computed (and clipped)."""
+
+    def on_before_optimizer_step(self, optimizer: Optimizer) -> None:
+        """Called before ``optimizer.step()``."""
+
+    # --- evaluation ------------------------------------------------------
+
+    def on_test_begin(self, logs: dict[str, Any] | None = None) -> None:
+        """Called before evaluation starts."""
+
+    def on_test_end(self, logs: dict[str, Any] | None = None) -> None:
+        """Called after evaluation, with the evaluation results."""
+
+    def on_test_batch_begin(
+        self, batch_idx: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        """Called before each evaluation batch."""
+
+    def on_test_batch_end(
+        self, batch_idx: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        """Called after each evaluation batch."""
+
+    # --- prediction ------------------------------------------------------
+
+    def on_predict_begin(self, logs: dict[str, Any] | None = None) -> None:
+        """Called before prediction starts."""
+
+    def on_predict_end(self, logs: dict[str, Any] | None = None) -> None:
+        """Called after prediction ends."""
+
+    def on_predict_batch_begin(
+        self, batch_idx: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        """Called before each prediction batch."""
+
+    def on_predict_batch_end(
+        self, batch_idx: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        """Called after each prediction batch."""
+
+
+_HOOKS = tuple(
+    name
+    for name in vars(Callback)
+    if name.startswith("on_") or name.startswith("set_")
+)
+
+
+def _dispatch(name: str):
+    def method(self: CallbackList, *args: Any, **kwargs: Any) -> None:
+        getattr(Callback, name)(self, *args, **kwargs)
+        for callback in self._callbacks:
+            getattr(callback, name)(*args, **kwargs)
+
+    method.__name__ = name
+    method.__doc__ = f"Call `{name}` on every callback in the list."
+    return method
 
 
 class CallbackList(Callback, Sequence[Callback]):
-    def __init__(self, callbacks: list[Callback] | None = None):
+    """An ordered group of callbacks that is itself a callback.
+
+    Calling a hook on the list calls it on each callback in order. Exceptions
+    raised by a callback propagate to the caller.
+    """
+
+    def __init__(self, callbacks: Iterable[Callback] | None = None) -> None:
         super().__init__()
         self._callbacks: list[Callback] = []
-        self.extend(callbacks)
-
-    def extend(
-        self, callbacks: list[Callback], /, inplace: bool = True
-    ) -> Self:
-        inst = self if inplace else self.copy()
-        if callbacks is None:
-            return
-        for callback in callbacks:
-            inst.append(callback)
-        return inst
+        for callback in callbacks or []:
+            self.append(callback)
 
     def append(self, callback: Callback) -> None:
-        callback.set_model(self.model)
-        callback.set_params(self.params)
         if not isinstance(callback, Callback):
             msg = (
-                "callback must be an instance of "
-                f"'{Callback.__name__}', not "
-                f"'{callback.__class__.__name__}'."
+                f"expected a {Callback.__name__}, got "
+                f"{type(callback).__name__}"
             )
             raise TypeError(msg)
         self._callbacks.append(callback)
 
     def remove(self, callback: Callback | type[Callback]) -> None:
+        """Remove a callback, or every callback of the given type."""
         if isinstance(callback, type):
-            callbacks = []
-            for cb in self._callbacks:
-                if isinstance(cb, callback):
-                    continue
-                callbacks.append(cb)
-            self._callbacks = callbacks
+            self._callbacks = [
+                cb for cb in self._callbacks if not isinstance(cb, callback)
+            ]
         else:
             self._callbacks.remove(callback)
 
-    def __getitem__(self, item: Callback | type[Callback]) -> Callback:
-        if isinstance(item, type):
-            for callback in self._callbacks:
-                if isinstance(callback, item):
-                    return callback
-            raise KeyError(f"callback of type '{item.__name__}' not found")
-        return self._callbacks[item]
-
     def get(
         self,
-        callback: Callback | type[Callback],
+        callback: type[Callback],
         default: Callback | None = None,
     ) -> Callback | None:
-        try:
-            return self[callback]
-        except KeyError:
-            return default
+        """Return the first callback of the given type, or `default`."""
+        for cb in self._callbacks:
+            if isinstance(cb, callback):
+                return cb
+        return default
+
+    def __getitem__(self, index: int) -> Callback:
+        return self._callbacks[index]
 
     def __len__(self) -> int:
         return len(self._callbacks)
@@ -449,58 +222,35 @@ class CallbackList(Callback, Sequence[Callback]):
     def __iter__(self) -> Iterator[Callback]:
         return iter(self._callbacks)
 
-    def __getattribute__(self, __name: str) -> Any:
-        if is_callback(__name):
-            return functools.partial(self.apply, __name)
-        else:
-            return super().__getattribute__(__name)
-
-    def __contains__(self, item: Callback | type[Callback]) -> bool:
+    def __contains__(self, item: object) -> bool:
         if isinstance(item, type):
             return any(isinstance(cb, item) for cb in self._callbacks)
         return item in self._callbacks
 
-    def copy(self) -> Self:
-        """Return a shallow copy of the list."""
-        return self.__class__(self._callbacks.copy())
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self._callbacks!r})"
 
-    def apply(self, __name: str, /, *args, **kwargs) -> UserList:
-        # call on self
-        super().__getattribute__(__name)(*args, **kwargs)
-        # call on each callback
-        outputs = UserList()
-        outputs.errors = []
-        for callback in self:
-            output = None
-            outputs.errors.append(None)
-            try:
-                output = getattr(callback, __name)(*args, **kwargs)
-            except NotImplementedError:
-                pass
-            except Exception as e:
-                warnings.warn(
-                    f"An exception occurred while applying callback '{__name}' on "
-                    f"callback '{callback.__class__.__name__} with message '{e!s}'",
-                    RuntimeWarning,
-                    stacklevel=0,
-                    source=e,
-                )
-                outputs.errors[-1] = e
-            outputs.append(output)
-        return outputs
+
+for _name in _HOOKS:
+    setattr(CallbackList, _name, _dispatch(_name))
+del _name
 
 
 class CallbacksMixin:
+    """Gives a runner a `callbacks` attribute that is always a CallbackList."""
+
     @property
     def callbacks(self) -> CallbackList:
         return self._callbacks
 
     @callbacks.setter
     def callbacks(
-        self, value: CallbackList | Iterable[Callback] | None
+        self, value: CallbackList | Iterable[Callback] | Callback | None
     ) -> None:
         if value is None:
             value = []
-        elif not isinstance(value, Sequence):
+        elif isinstance(value, Callback) and not isinstance(
+            value, CallbackList
+        ):
             value = [value]
         self._callbacks = CallbackList(value)

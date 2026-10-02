@@ -1,8 +1,15 @@
-from typing import Any, Literal, Optional
+from __future__ import annotations
 
-import numpy as np
+from typing import Any
 
-from tklearn import config, logging
+from tklearn import logging
+from tklearn.nn.callbacks._monitor import (
+    Mode,
+    is_improvement,
+    is_valid_value,
+    resolve_mode,
+    worst_value,
+)
 from tklearn.nn.callbacks.base import Callback
 from tklearn.utils import copy
 
@@ -12,220 +19,111 @@ __all__ = [
 
 logger = logging.get_logger(__name__)
 
-POS_METRICS_SUFFIX = ["acc", "accuracy", "auc", "_score"]
-NEG_METRICS_SUFFIX = ["loss", "error"]
-
-if hasattr(np, "Inf"):
-    Inf = np.Inf
-else:
-    Inf = np.inf
-
-
-def get_monitor_op(mode: str, monitor: str) -> np.ufunc:
-    if mode == "min":
-        return np.less
-    if mode == "max":
-        return np.greater
-
-    # Auto-detection logic
-    if any(monitor.endswith(suffix) for suffix in NEG_METRICS_SUFFIX):
-        return np.less
-    if any(monitor.endswith(suffix) for suffix in POS_METRICS_SUFFIX):
-        return np.greater
-
-    raise ValueError(
-        f"Could not infer the metric direction for {monitor}. Please specify mode='min' or 'max'."
-    )
-
 
 class EarlyStopping(Callback):
+    """Stop training when a monitored value stops improving.
+
+    Parameters
+    ----------
+    monitor : str, default="valid_loss"
+        Key in the epoch logs to watch.
+    min_delta : float, default=0
+        Smallest change that counts as an improvement.
+    patience : int, default=0
+        Epochs without improvement before stopping.
+    verbose : int, default=0
+        Log decisions at debug level when > 0.
+    mode : {"auto", "min", "max"}, default="auto"
+        Whether lower or higher is better; "auto" infers it from the name
+        (``*loss``/``*error`` minimize; ``*acc``, ``*auc``, ``*f1``, ... maximize).
+    baseline : float, optional
+        Only reset the patience counter for values that also beat this.
+    restore_best_weights : bool, default=True
+        Restore the weights of the best epoch when stopping.
+    start_from_epoch : int, default=0
+        Ignore epochs before this one (warm-up).
+
+    Attributes
+    ----------
+    best : float
+        Best monitored value so far.
+    best_epoch : int
+        Epoch of `best`.
+    stopped_epoch : int
+        Epoch at which training was stopped, or 0.
+    """
+
     def __init__(
         self,
         monitor: str = "valid_loss",
-        min_delta: float = 0,
+        min_delta: float = 0.0,
         patience: int = 0,
         verbose: int = 0,
-        mode: Literal["auto", "min", "max"] = "auto",
-        baseline: Optional[float] = None,
+        mode: Mode = "auto",
+        baseline: float | None = None,
         restore_best_weights: bool = True,
         start_from_epoch: int = 0,
     ) -> None:
         super().__init__()
         self.monitor = monitor
-        self.min_delta = min_delta
+        self.mode = resolve_mode(monitor, mode)
+        self.min_delta = abs(min_delta)
         self.patience = patience
         self.verbose = verbose
-        self.mode = mode
         self.baseline = baseline
         self.restore_best_weights = restore_best_weights
         self.start_from_epoch = start_from_epoch
+        self._reset()
 
-        # internal variables
+    def _reset(self) -> None:
         self.wait = 0
         self.stopped_epoch = 0
-        # Initialize best based on mode (requires monitor_op to be resolvable)
-        self.best = Inf if self.monitor_op == np.less else -Inf
-        self.best_weights = None
+        self.best = worst_value(self.mode)
         self.best_epoch = 0
-        self.history = []
-
-    @property
-    def monitor(self) -> str:
-        return self._monitor
-
-    @monitor.setter
-    def monitor(self, value: str):
-        self._monitor = value
-        self._monitor_op = None
-
-    @property
-    def mode(self) -> str:
-        return self._mode
-
-    @mode.setter
-    def mode(self, value: str):
-        if value not in {"auto", "min", "max"}:
-            raise ValueError(
-                f"Mode '{value}' is unknown, expected one of ('auto', 'min', 'max')"
-            )
-        self._mode = value
-        self._monitor_op = None
-
-    @property
-    def monitor_op(self) -> np.ufunc:
-        if getattr(self, "_monitor_op", None) is None:
-            self._monitor_op = get_monitor_op(self.mode, self.monitor)
-        return self._monitor_op
-
-    @property
-    def verbose(self) -> int:
-        return self._verbose
-
-    @verbose.setter
-    def verbose(self, value: int):
-        if config.debug:
-            value = max(value, 1)
-        self._verbose = value
-
-    def on_train_begin(self, logs=None):
-        if self.verbose:
-            ins_type = type(self.model).__name__
-            logger.debug(
-                "EarlyStopping: Training begins. "
-                f"The model is set to {ins_type} instance."
-            )
-        self.wait = 0
-        self.stopped_epoch = 0
-        self.best = Inf if self.monitor_op == np.less else -Inf
         self.best_weights = None
-        self.best_epoch = 0
-        self.history = []
-        self.model.stop_training = False
 
-    def _update_best(self, current, epoch):
+    def _log(self, msg: str) -> None:
         if self.verbose > 0:
-            logger.debug(
-                f"EarlyStopping: {self.monitor} improved from {self.best:.5f} "
-                f"to {current:.5f} in epoch {epoch}"
-            )
-        self.best = current
-        self.best_epoch = epoch
+            logger.debug(f"EarlyStopping: {msg}")
 
-        if self.restore_best_weights:
-            # NOTE: If 'tklearn.utils.copy' accepts 'device', keep it.
-            # If using standard python copy, remove 'device="cpu"'.
-            self.best_weights = copy.deepcopy(
-                self.model.state_dict(), device="cpu"
-            )
+    def on_train_begin(self, logs: dict[str, Any] | None = None) -> None:
+        self._reset()
 
-    def on_epoch_end(self, epoch: int, logs=None):
-        try:
-            return self._on_epoch_end(epoch, logs)
-        except Exception as e:
-            logger.exception(
-                f"EarlyStopping: Exception occurred during on_epoch_end at epoch {epoch}"
-            )
-            raise e from None
-
-    def _on_epoch_end(self, epoch: int, logs=None):
-        if self.verbose:
-            logger.debug(
-                f"EarlyStopping: At the start of epoch {epoch} the wait "
-                f"counter is at {self.wait} out of {self.patience}. "
-                f"Current best '{self.monitor}' is {self.best:.5f} at "
-                f"epoch {self.best_epoch}."
-            )
-
-        current = self.get_monitor_value(logs)
-
-        if self.verbose:
-            logger.debug(
-                f"EarlyStopping: At epoch {epoch} current '{self.monitor}' is {current}."
-            )
-
-        # Safety check for missing metrics or warm-up period
-        if current is None or epoch < self.start_from_epoch:
+    def on_epoch_end(
+        self, epoch: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        current = (logs or {}).get(self.monitor)
+        if not is_valid_value(current) or epoch < self.start_from_epoch:
             return
-
-        if self.verbose:
-            logger.debug(
-                f"EarlyStopping: Processing epoch {epoch} with current "
-                f"'{self.monitor}' = {current}."
-            )
-
-        # Fallback: Save initial weights if best_weights is empty
-        # (e.g. if min_delta prevents the first epoch from registering as 'improvement')
         if self.restore_best_weights and self.best_weights is None:
+            # keep the first weights in case no epoch ever improves
             self.best_weights = copy.deepcopy(
                 self.model.state_dict(), device="cpu"
             )
-
         self.wait += 1
-
-        # Check if current result is an improvement over previous best
-        if self._is_improvement(current, self.best):
-            if self.verbose:
-                logger.debug(
-                    f"EarlyStopping: Improvement detected for '{self.monitor}' "
-                    f"from {self.best:.5f} to {current:.5f}."
+        if is_improvement(current, self.best, self.mode, self.min_delta):
+            self._log(
+                f"{self.monitor} improved from {self.best:.5f} to "
+                f"{current:.5f} at epoch {epoch}"
+            )
+            self.best, self.best_epoch = current, epoch
+            if self.restore_best_weights:
+                self.best_weights = copy.deepcopy(
+                    self.model.state_dict(), device="cpu"
                 )
-            self._update_best(current, epoch)
-            # Reset wait counter logic
-            if self.baseline is None:
+            if self.baseline is None or is_improvement(
+                current, self.baseline, self.mode
+            ):
                 self.wait = 0
-            elif self._is_improvement(current, self.baseline):
-                self.wait = 0
-
-        # Stopping logic
+            return
         if self.wait >= self.patience and epoch > 0:
             self.stopped_epoch = epoch
-            self.model.stop_training = True
-            if self.verbose > 0:
-                logger.debug(
-                    f"EarlyStopping: Stopping training at epoch {epoch} "
-                    f"due to no improvement in '{self.monitor}' for "
-                    f"{self.patience} consecutive epochs."
-                )
-            if not self.restore_best_weights or self.best_weights is None:
-                return
-            if self.verbose > 0:
-                logger.debug(
-                    f"EarlyStopping: Restoring model weights from the end "
-                    f"of the best epoch {self.best_epoch} with "
-                    f"{self.monitor}: {self.best:.5f}."
-                )
-            self.model.load_state_dict(self.best_weights, strict=True)
-
-    def get_monitor_value(self, logs: Any):
-        val = (logs or {}).get(self.monitor)
-        # Optional: Handle NaN values which can break comparisons
-        if val is not None and (np.isnan(val) or np.isinf(val)):
-            # Treat NaN/Inf as "bad" result? Or let it crash?
-            # usually safer to return None to skip logic.
-            return None
-        return val
-
-    def _is_improvement(self, monitor_value, reference_value):
-        if self.monitor_op == np.greater:
-            return np.greater(monitor_value - self.min_delta, reference_value)
-        return np.less(monitor_value + self.min_delta, reference_value)
+            if self.trainer is not None:
+                self.trainer.stop_training = True
+            self._log(
+                f"stopping at epoch {epoch}: no improvement in "
+                f"{self.monitor} for {self.wait} epochs"
+            )
+            if self.restore_best_weights and self.best_weights is not None:
+                self._log(f"restoring weights from epoch {self.best_epoch}")
+                self.model.load_state_dict(self.best_weights, strict=True)

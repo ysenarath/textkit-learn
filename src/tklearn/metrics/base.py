@@ -1,207 +1,181 @@
 from __future__ import annotations
 
 import abc
-import contextvars
-import copy
-from contextvars import ContextVar
-from dataclasses import MISSING
-from functools import wraps
-from typing import (
-    Any,
-    Dict,
-    Generator,
-    Generic,
-    List,
-    Mapping,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
-from weakref import WeakKeyDictionary
+from collections.abc import Iterator, Mapping
+from typing import Any, ClassVar
 
-import cloudpickle
+import numpy as np
+import torch
 
 __all__ = [
-    "MetricBase",
-    "MetricState",
-    "MetricVariable",
+    "Metric",
+    "MetricCollection",
 ]
 
-T = TypeVar("T")
 
-_metric_states_cv: ContextVar[MetricState] = ContextVar(
-    "metric_state", default=MISSING
-)
+def _to_numpy(value: Any) -> np.ndarray:
+    if isinstance(value, torch.Tensor):
+        return value.detach().cpu().numpy()
+    return np.asarray(value)
 
 
-class MetricBase(abc.ABC):
-    def reset(self) -> None: ...
+def _to_python(value: Any) -> Any:
+    # numpy scalars and 0-d arrays become plain python numbers so that results
+    # can be compared, logged and serialized without special handling
+    if isinstance(value, np.ndarray) and value.ndim == 0:
+        return value.item()
+    if isinstance(value, np.generic):
+        return value.item()
+    return value
 
-    def update(self, **kwargs: Any) -> None: ...
+
+class Metric(abc.ABC):
+    """A metric computed from arrays accumulated over a whole dataset.
+
+    Subclasses declare the arrays they read in `inputs` (required) and
+    `optional_inputs`, and implement `compute`. A metric holds configuration
+    only; accumulation across batches is handled by `MetricCollection`.
+
+    The input names follow scikit-learn: `y_true`, `y_pred`, `y_score` and
+    `sample_weight`. Models provide them from `Module.compute_metric_inputs`.
+
+    Examples
+    --------
+    >>> f1 = F1(average="macro")
+    >>> f1(y_true=[0, 1, 1], y_pred=[0, 1, 0])  # one-off computation
+    0.6666666666666666
+    """
+
+    inputs: ClassVar[tuple[str, ...]] = ()
+    optional_inputs: ClassVar[tuple[str, ...]] = ("sample_weight",)
 
     @abc.abstractmethod
-    def result(self) -> Any:
+    def compute(self, **arrays: np.ndarray | None) -> Any:
+        """Compute the metric from complete (already concatenated) arrays.
+
+        Parameters
+        ----------
+        **arrays : np.ndarray or None
+            One array per name in `inputs`, and one per name in
+            `optional_inputs` (None when it was not provided).
+
+        Returns
+        -------
+        Any
+            The metric value.
+        """
         raise NotImplementedError
 
-    def copy(self, deep: bool = True) -> MetricBase:
-        if deep:
-            return cloudpickle.loads(cloudpickle.dumps(self))
-        return copy.copy(self)
-
-    def __call__(self, **kwargs: Any) -> Any:
-        state = MetricState(self)
-        state.update(**kwargs)
-        return next(iter(state.result()))
+    def __call__(self, **inputs: Any) -> Any:
+        """Compute the metric directly from complete inputs."""
+        collection = MetricCollection({"value": self})
+        collection.update(**inputs)
+        return collection.result()["value"]
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(...)"
+        params = ", ".join(
+            f"{k}={v!r}"
+            for k, v in vars(self).items()
+            if not k.startswith("_")
+        )
+        return f"{type(self).__name__}({params})"
 
 
-class MetricVariable(Generic[T]):
-    def __set_name__(self, owner: MetricBase, name: str) -> None:
-        self.name = name
+class _ArrayAccumulator:
+    def __init__(self) -> None:
+        self._chunks: list[np.ndarray] = []
 
-    def __get__(self, instance: MetricBase, owner: Type[MetricBase]) -> T:
-        if instance is None:
-            return self
-        metric_states = _metric_states_cv.get()
-        if metric_states is MISSING:
-            msg = "trying to get state of a metric outside the context"
-            raise ValueError(msg)
-        return metric_states[instance][self.name]
+    def append(self, value: Any) -> None:
+        self._chunks.append(_to_numpy(value))
 
-    def __set__(self, instance: MetricBase, value: T) -> None:
-        metric_states = _metric_states_cv.get()
-        if metric_states is MISSING:
-            msg = "trying to set state of a metric outside the context"
-            raise ValueError(msg)
-        metric_state = metric_states[instance]
-        if not isinstance(metric_state, dict):
-            msg = "state should be a dictionary"
-            raise TypeError(msg)
-        metric_state[self.name] = value
+    def result(self) -> np.ndarray | None:
+        if not self._chunks:
+            return None
+        if len(self._chunks) > 1:
+            self._chunks = [np.concatenate(self._chunks, axis=0)]
+        return self._chunks[0]
 
 
-def with_metric_context(func: T) -> T:
-    @wraps(func)
-    def decorator(self, *args: Any, **kwargs: Any) -> Any:
-        def run_in_context() -> Any:
-            token = _metric_states_cv.set(self)
-            try:
-                return func(self, *args, **kwargs)
-            except Exception as e:
-                raise e
-            finally:
-                _metric_states_cv.reset(token)
+class MetricCollection(Mapping[str, Metric]):
+    """A named group of metrics evaluated over the same stream of batches.
 
-        return self._context.run(run_in_context)
+    Each input array is accumulated once, however many metrics read it.
 
-    return decorator
+    Parameters
+    ----------
+    metrics : Mapping[str, Metric]
+        Metrics keyed by the name used in `result`.
 
+    Examples
+    --------
+    >>> metrics = MetricCollection({"acc": Accuracy(), "f1": F1()})
+    >>> for batch in batches:
+    ...     metrics.update(y_true=batch_true, y_pred=batch_pred)
+    >>> metrics.result()
+    {'acc': 0.9, 'f1': 0.88}
+    """
 
-class MetricStateMeta(abc.ABCMeta):
-    def __new__(cls, *args, **kwargs) -> MetricState:
-        msc: type[MetricState] = super().__new__(cls, *args, **kwargs)
-        # wrap methods
-        msc.reset = with_metric_context(msc.reset)
-        msc.update = with_metric_context(msc.update)
-        msc.result = with_metric_context(msc.result)
-        return msc
-
-
-class MetricState(
-    MetricBase,
-    Mapping[MetricBase, Dict[str, Any]],
-    metaclass=MetricStateMeta,
-):
-    _metric_states: Dict[MetricBase, Dict[str, Any]]
-
-    def __init__(
-        self,
-        metrics: Union[
-            Dict[dict, MetricBase], List[MetricBase], MetricBase, None
-        ] = None,
-        metric_names: Optional[List[str]] = None,
-    ) -> None:
-        super().__init__()
-        # metrics
-        if metrics is None:
-            metrics = {}
-        if isinstance(metrics, MetricBase):
-            metrics = [metrics]
-        elif isinstance(metrics, Mapping):
-            if metric_names is not None:
-                msg = "both 'metrics' and 'metric_names' are provided"
-                raise ValueError(msg)
-            metric_names = list(metrics.keys())
-            metrics = list(metrics.values())
-        # metric names
-        if metric_names is not None and len(metric_names) != len(metrics):
-            msg = "length of 'metric_names' should be equal to 'metrics'"
-            raise ValueError(msg)
-        self.metrics: List[MetricBase] = metrics
-        self.metric_names: Optional[List[str]] = metric_names
-        # update states
-        # this should be a ordered dictionary
-        self._metric_states = WeakKeyDictionary()
-        self._context = contextvars.copy_context()
-        for metric in self.metrics:
-            self.add_metric(metric)
+    def __init__(self, metrics: Mapping[str, Metric] | None = None) -> None:
+        metrics = dict(metrics or {})
+        for name, metric in metrics.items():
+            if not isinstance(metric, Metric):
+                msg = (
+                    f"expected a Metric for '{name}', got "
+                    f"{type(metric).__name__}"
+                )
+                raise TypeError(msg)
+        self._metrics = metrics
+        self._required = {n for m in metrics.values() for n in m.inputs}
+        self._optional = {
+            n for m in metrics.values() for n in m.optional_inputs
+        } - self._required
         self.reset()
 
-    def add_metric(self, metric: MetricBase) -> None:
-        if not isinstance(metric, MetricBase):
-            bases = ", ".join(
-                base.__name__ for base in metric.__class__.__bases__
-            )
-            msg = (
-                f"expected an instance of 'MetricBase', but got "
-                f"'{metric.__class__.__name__}({bases})'"
-            )
-            raise TypeError(msg)
-        if metric in self._metric_states:
-            return
-        self._metric_states[metric] = {}
-        class_ = metric.__class__
-        for class_var in dir(class_):
-            class_var_val = getattr(class_, class_var)
-            if not isinstance(class_var_val, MetricBase):
-                continue
-            self.add_metric(class_var_val)
+    def __getitem__(self, name: str) -> Metric:
+        return self._metrics[name]
 
-    def __getitem__(self, metric: MetricBase) -> Dict[str, Any]:
-        return self._metric_states[metric]
-
-    def __setitem__(self, metric: MetricBase, state: Dict[str, Any]) -> None:
-        self._metric_states[metric] = state
-
-    def __delitem__(self, metric: MetricBase) -> None:
-        del self._metric_states[metric]
-
-    def __iter__(self) -> Generator[MetricBase, None, None]:
-        for key in self._metric_states:
-            yield key
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._metrics)
 
     def __len__(self) -> int:
-        return len(self._metric_states)
+        return len(self._metrics)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self._metrics!r})"
 
     def reset(self) -> None:
-        for metric in self._metric_states:
-            metric.reset()
-
-    def update(self, **kwargs: Any) -> None:
-        for metric in self._metric_states:
-            metric.update(**kwargs)
-
-    def result(self) -> Union[Tuple[Any], Mapping[str, Any]]:
-        if self.metric_names is None:
-            return tuple(metric.result() for metric in self.metrics)
-        return {
-            name: metric.result()
-            for name, metric in zip(self.metric_names, self.metrics)
+        """Discard all accumulated inputs."""
+        self._arrays = {
+            name: _ArrayAccumulator()
+            for name in self._required | self._optional
         }
 
-    def __call__(self, **kwargs: Any) -> Any:
-        raise NotImplementedError
+    def update(self, **inputs: Any) -> None:
+        """Accumulate one batch of inputs.
+
+        Inputs that no metric reads are ignored, so a model can return more
+        than any single metric needs.
+
+        Raises
+        ------
+        KeyError
+            If an input required by one of the metrics is missing.
+        """
+        missing = sorted(n for n in self._required if inputs.get(n) is None)
+        if missing:
+            msg = f"missing metric inputs: {', '.join(missing)}"
+            raise KeyError(msg)
+        for name, accumulator in self._arrays.items():
+            value = inputs.get(name)
+            if value is not None:
+                accumulator.append(value)
+
+    def result(self) -> dict[str, Any]:
+        """Compute every metric over the inputs accumulated so far."""
+        arrays = {name: acc.result() for name, acc in self._arrays.items()}
+        results = {}
+        for name, metric in self._metrics.items():
+            names = metric.inputs + metric.optional_inputs
+            value = metric.compute(**{n: arrays.get(n) for n in names})
+            results[name] = _to_python(value)
+        return results

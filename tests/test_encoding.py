@@ -15,10 +15,10 @@ MODEL_NAME_OR_PATH = "google-bert/bert-base-uncased"
 DATASET = "yelp_review_full"
 
 
-class TestEarlyStopping(unittest.TestCase):
-    # setup
-    def setUp(self):
-        self.model = AutoModel({
+class TestEncoder(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.model = AutoModel({
             "type": "linear",
             "backbone": {
                 "type": "transformer",
@@ -26,141 +26,58 @@ class TestEarlyStopping(unittest.TestCase):
             },
             "num_labels": 5,
         })
-
-        self.auto_device = get_device()
-        self.model.to(self.auto_device)
-
-        self.dataset = load_dataset(DATASET, split="train").select(range(8))
-        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH)
-
-        def tokenize_function(examples):
-            return self.tokenizer(
+        cls.model.to(get_device())
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH)
+        dataset = load_dataset(DATASET, split="train").select(range(8))
+        dataset = dataset.rename_column("label", "labels").map(
+            lambda examples: tokenizer(
                 examples["text"], truncation=True, padding="max_length"
-            )
-
-        self.dataset = self.dataset.rename_column("label", "labels").map(
-            tokenize_function, batched=True, remove_columns=["text"]
+            ),
+            batched=True,
+            remove_columns=["text"],
         )
-        self.dataset.set_format(type="torch")
+        dataset.set_format(type="torch")
+        cls.dataset = dataset
+        cls.hidden_size = cls.model.backbone.hidden_size
+
+    def encode(self, **kwargs):
+        dataloader = DataLoader(self.dataset, batch_size=32)
+        encoder = Encoder(self.model, callbacks=[ProgbarLogger()])
+        return encoder.encode(dataloader, **kwargs)
 
     def test_encode_return_pt(self):
-        dataloader = DataLoader(
-            self.dataset,
-            batch_size=32,
-            pin_memory=True,
+        encodings = self.encode(return_tensors="pt")
+        self.assertIsInstance(encodings, torch.Tensor)
+        self.assertEqual(
+            tuple(encodings.shape), (len(self.dataset), self.hidden_size)
         )
-        encoder = Encoder(
-            self.model,
-            dataloader=dataloader,
-            callbacks=[ProgbarLogger()],
-        )
-        pooler_output = encoder.encode(
-            return_tensors="pt",
-            return_list=False,
-        )
-        self.assertIsInstance(pooler_output, torch.Tensor)
-        expected_shape = (len(self.dataset), self.model.backbone.hidden_size)
-        self.assertEqual(pooler_output.shape, expected_shape)
-
-    def test_encode_return_pt_2(self):
-        dataloader = DataLoader(
-            self.dataset,
-            batch_size=32,
-            pin_memory=True,
-        )
-        encoder = Encoder(
-            self.model,
-            dataloader=dataloader,
-            callbacks=[ProgbarLogger()],
-        )
-        pooler_output = encoder.encode(
-            return_tensors=None,
-            return_list=False,
-        )
-        self.assertIsInstance(pooler_output, torch.Tensor)
-        expected_shape = (len(self.dataset), self.model.backbone.hidden_size)
-        self.assertEqual(tuple(pooler_output.shape), expected_shape)
 
     def test_encode_return_np(self):
-        dataloader = DataLoader(
-            self.dataset,
-            batch_size=32,
-            pin_memory=True,
+        encodings = self.encode(return_tensors="np")
+        self.assertIsInstance(encodings, np.ndarray)
+        self.assertEqual(
+            encodings.shape, (len(self.dataset), self.hidden_size)
         )
-        encoder = Encoder(
-            self.model,
-            dataloader=dataloader,
-            callbacks=[ProgbarLogger()],
-        )
-        pooler_output = encoder.encode(
-            return_tensors="np",
-            return_list=False,
-        )
-        self.assertIsInstance(pooler_output, np.ndarray)
-        expected_shape = (len(self.dataset), self.model.backbone.hidden_size)
-        self.assertEqual(pooler_output.shape, expected_shape)
 
-    def test_encode_return_list_of_np(self):
-        dataloader = DataLoader(
-            self.dataset,
-            batch_size=32,
-            pin_memory=True,
-        )
-        encoder = Encoder(
-            self.model,
-            dataloader=dataloader,
-            callbacks=[ProgbarLogger()],
-        )
-        pooler_output = encoder.encode(
-            return_tensors="np",
-            return_list=True,
-        )
-        self.assertIsInstance(pooler_output, list)
-        self.assertEqual(len(pooler_output), len(self.dataset))
-        self.assertTrue(all(isinstance(t, np.ndarray) for t in pooler_output))
-        hidden_size = self.model.backbone.hidden_size
-        self.assertTrue(all(len(t) == hidden_size for t in pooler_output))
+    def test_encode_return_none_requires_list(self):
+        with self.assertRaises(ValueError):
+            self.encode(return_tensors=None, return_list=False)
 
-    def test_encode_return_list_of_pt(self):
-        dataloader = DataLoader(
-            self.dataset,
-            batch_size=32,
-            pin_memory=True,
-        )
-        encoder = Encoder(
-            self.model,
-            dataloader=dataloader,
-            callbacks=[ProgbarLogger()],
-        )
-        pooler_output = encoder.encode(
-            return_tensors="pt",
-            return_list=True,
-        )
-        self.assertIsInstance(pooler_output, list)
-        self.assertEqual(len(pooler_output), len(self.dataset))
-        self.assertTrue(
-            all(isinstance(t, torch.Tensor) for t in pooler_output)
-        )
-        hidden_size = self.model.backbone.hidden_size
-        self.assertTrue(all(len(t) == hidden_size for t in pooler_output))
-
-    def test_encode_return_list_of_list(self):
-        dataloader = DataLoader(
-            self.dataset,
-            batch_size=32,
-            pin_memory=True,
-        )
-        encoder = Encoder(
-            self.model,
-            dataloader=dataloader,
-            callbacks=[ProgbarLogger()],
-        )
-        pooler_output = encoder.encode(return_tensors=None, return_list=True)
-        self.assertIsInstance(pooler_output, list)
-        self.assertEqual(len(pooler_output), len(self.dataset))
-        self.assertTrue(all(isinstance(t, list) for t in pooler_output))
-        hidden_size = self.model.backbone.hidden_size
-        self.assertTrue(all(len(t) == hidden_size for t in pooler_output))
+    def test_encode_return_lists(self):
+        for return_tensors, item_type in [
+            ("pt", torch.Tensor),
+            ("np", np.ndarray),
+            (None, list),
+        ]:
+            with self.subTest(return_tensors=return_tensors):
+                encodings = self.encode(
+                    return_tensors=return_tensors, return_list=True
+                )
+                self.assertIsInstance(encodings, list)
+                self.assertEqual(len(encodings), len(self.dataset))
+                for item in encodings:
+                    self.assertIsInstance(item, item_type)
+                    self.assertEqual(len(item), self.hidden_size)
 
 
 if __name__ == "__main__":

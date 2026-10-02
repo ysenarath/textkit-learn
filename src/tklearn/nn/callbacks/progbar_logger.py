@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any
 
 import pandas as pd
 from tabulate import tabulate
@@ -41,180 +41,128 @@ def get_performance_report(logs, exclude=None, epoch=None) -> dict[str, str]:
 
 
 class ProgbarLogger(Callback):
-    """
-    Callback to display progress bars and performance reports during training and prediction.
-    Uses tqdm for progress visualization.
+    """Show tqdm progress bars and a table of epoch results.
+
+    During `Trainer.fit` it shows an epoch bar and a per-epoch batch bar, and
+    prints the logs of every finished epoch as a table. During
+    `Evaluator.evaluate`, `Predictor.predict` and `Encoder.encode` it shows a
+    batch bar.
+
+    Parameters
+    ----------
+    exclude : list of str, optional
+        Log keys to leave out of the table.
+    epoch_desc, batch_desc, test_desc, pred_desc : str
+        Labels of the epoch, training batch, evaluation and prediction bars.
     """
 
     def __init__(
         self,
-        exclude: Optional[list] = None,
+        exclude: list[str] | None = None,
         epoch_desc: str = "Epoch",
-        pred_desc: str = "Predicting",
         batch_desc: str = "Batch",
-    ):
+        test_desc: str = "Evaluating",
+        pred_desc: str = "Predicting",
+    ) -> None:
         super().__init__()
-        self.pred_desc = pred_desc
+        self.exclude = exclude
         self.epoch_desc = epoch_desc
         self.batch_desc = batch_desc
+        self.test_desc = test_desc
+        self.pred_desc = pred_desc
+        self.epoch_bar: tqdm.tqdm | None = None
+        self.batch_bar: tqdm.tqdm | None = None
+        self.eval_bar: tqdm.tqdm | None = None
+        # one formatted row per finished epoch
+        self.history: list[dict[str, str]] = []
 
-        self.exclude = exclude
+    @staticmethod
+    def _close(bar: tqdm.tqdm | None) -> None:
+        if bar is not None:
+            bar.close()
 
-        self.training = False
+    # --- training --------------------------------------------------------
 
-        self.train_epochs = None
-        self.train_steps = None  # Corrected typo from original code
-        self.pred_steps = None
-
-        self._zero_based_train_step = False
-        self._zero_based_train_epoch = False
-        self._zero_based_pred_step = False
-
-        # tqdm progress bar instances
-        self.epoch_progress_bar: Optional[tqdm.tqdm] = None
-        self.batch_progress_bar: Optional[tqdm.tqdm] = None
-        self.predict_progress_bar: Optional[tqdm.tqdm] = None
-
-        # history of performance reports
+    def on_train_begin(self, logs: dict[str, Any] | None = None) -> None:
         self.history = []
+        self.epoch_bar = tqdm.tqdm(
+            total=self.params.get("epochs"),
+            desc=self.epoch_desc,
+            unit="epoch",
+            leave=True,
+        )
 
-    def on_train_begin(self, logs=None):
-        """
-        Initializes the progress bar for training epochs.
-        """
-        self.training = True
-        self.train_epochs = self.params.get("epochs")  # Use .get() for safety
-        self.train_steps = self.params.get("steps")  # Use .get() for safety
+    def on_epoch_begin(
+        self, epoch: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        self.batch_bar = tqdm.tqdm(
+            total=self.params.get("steps"),
+            desc=self.batch_desc,
+            unit="batch",
+            leave=False,
+        )
 
-        if self.train_epochs is not None:
-            # initialize the progress bar for training epochs
-            self.epoch_progress_bar = tqdm.tqdm(
-                total=self.train_epochs,
-                desc=self.epoch_desc,
-                unit="epoch",
-                leave=True,  # Keep the bar after completion
-            )
+    def on_train_batch_end(
+        self, batch_idx: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        if self.batch_bar is not None:
+            self.batch_bar.update(1)
 
-        self.history = []  # Reset history at the start of training
-
-    def on_train_batch_begin(self, batch, logs=None):
-        """
-        Notes if batch indexing is zero-based.
-        Initializes batch progress bar at the start of each epoch's first batch.
-        """
-        if batch == 0:
-            self._zero_based_train_step = True
-            # Initialize batch progress bar at the start of a new epoch
-            if self.train_steps is not None:
-                self.batch_progress_bar = tqdm.tqdm(
-                    total=self.train_steps,
-                    desc=self.batch_desc,
-                    unit="batch",
-                    leave=False,  # Remove the bar after completion of the epoch
-                )
-
-    def on_train_batch_end(self, batch, logs=None):
-        """
-        Updates the training step progress bar with current batch logs.
-        """
-        # if self._zero_based_train_step:
-        #     natural_step = batch + 1
-        # else:
-        #     natural_step = batch
-        # update the training step progress bar
-        if self.batch_progress_bar is not None:
-            # Increment by 1 for the completed batch
-            self.batch_progress_bar.update(1)
-
-    def on_epoch_begin(self, epoch, logs=None):
-        """
-        Notes if epoch indexing is zero-based.
-        """
-        # Assuming 'epoch' here is the zero-based index provided by the trainer
-        self.current_epoch = epoch  # Store current epoch index
-        if epoch == 0:
-            self._zero_based_train_epoch = True
-
-    def on_epoch_end(self, epoch, logs=None):
-        """Finalizes the progress bar for the current epoch."""
-        # Increment by 1 for the completed epoch
-        if self.epoch_progress_bar is not None:
-            self.epoch_progress_bar.update(1)
-
-        # Close the batch progress bar for this epoch
-        if self.batch_progress_bar is not None:
-            self.batch_progress_bar.close()
-            self.batch_progress_bar = None  # Reset for the next epoch
-
-        # update table for the current epoch
-        if self._zero_based_train_epoch:
-            natural_epoch = epoch + 1
-        else:
-            natural_epoch = epoch
+    def on_epoch_end(
+        self, epoch: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        self._close(self.batch_bar)
+        self.batch_bar = None
+        if self.epoch_bar is not None:
+            self.epoch_bar.update(1)
+        # epochs are zero-based internally; show them one-based
         report = get_performance_report(
-            logs,
-            exclude=self.exclude,
-            epoch=natural_epoch,
+            logs, exclude=self.exclude, epoch=epoch + 1
         )
-
         self.history.append(report)
+        table = tabulate(
+            pd.DataFrame(self.history), headers="keys", tablefmt="pipe"
+        )
+        tqdm.tqdm.write(f"\n{table}\n")
 
-        # Use print directly as tqdm manages console output
-        df = pd.DataFrame(self.history)
-        tqdm.tqdm.write(
-            "\n{}\n".format(tabulate(df, headers="keys", tablefmt="pipe"))
+    def on_train_end(self, logs: dict[str, Any] | None = None) -> None:
+        self._close(self.epoch_bar)
+        self.epoch_bar = None
+
+    # --- evaluation and prediction ---------------------------------------
+
+    def _open_eval_bar(self, desc: str, total: int | None) -> None:
+        self._close(self.eval_bar)
+        self.eval_bar = tqdm.tqdm(
+            total=total, desc=desc, unit="batch", leave=False
         )
 
-    def on_predict_begin(self, logs=None):
-        """
-        Initializes the progress bar for prediction steps.
-        """
-        if "pred_steps" not in self.params:
-            return
-        total = self.params["pred_steps"]
-        # initialize the progress bar for prediction steps
-        self.predict_progress_bar = tqdm.tqdm(
-            total=total,
-            desc=self.pred_desc,
-            unit="step",
-            leave=True,  # Keep the bar after completion
-        )
+    def _advance_eval_bar(self) -> None:
+        if self.eval_bar is not None:
+            self.eval_bar.update(1)
 
-    def on_predict_batch_begin(self, batch, logs=None):
-        """
-        Notes if prediction batch indexing is zero-based.
-        """
-        if batch == 0:
-            self._zero_based_pred_step = True
+    def _close_eval_bar(self) -> None:
+        self._close(self.eval_bar)
+        self.eval_bar = None
 
-    def on_predict_batch_end(self, batch, logs=None):
-        """
-        Updates the prediction step progress bar.
-        """
-        # update the prediction step progress bar
-        if self.predict_progress_bar is None:
-            return
-        # Increment by 1 for the completed batch
-        self.predict_progress_bar.update(1)
+    def on_test_begin(self, logs: dict[str, Any] | None = None) -> None:
+        self._open_eval_bar(self.test_desc, self.params.get("test_steps"))
 
-    def on_predict_end(self, logs=None):
-        """
-        Finalizes the prediction progress bar.
-        """
-        if self.predict_progress_bar is None:
-            return
-        # finalize anything stated during prediction
-        self.predict_progress_bar.close()
-        self.predict_progress_bar = None
+    def on_test_batch_end(
+        self, batch_idx: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        self._advance_eval_bar()
 
-    def on_train_end(self, logs=None):
-        """
-        Finalizes the training epoch progress bar.
-        """
-        if not self.training:
-            return
-        # finalize anything stated during training
-        if self.epoch_progress_bar is None:
-            return
-        self.epoch_progress_bar.close()
-        self.epoch_progress_bar = None
+    def on_test_end(self, logs: dict[str, Any] | None = None) -> None:
+        self._close_eval_bar()
+
+    def on_predict_begin(self, logs: dict[str, Any] | None = None) -> None:
+        self._open_eval_bar(self.pred_desc, self.params.get("pred_steps"))
+
+    def on_predict_batch_end(
+        self, batch_idx: int, logs: dict[str, Any] | None = None
+    ) -> None:
+        self._advance_eval_bar()
+
+    def on_predict_end(self, logs: dict[str, Any] | None = None) -> None:
+        self._close_eval_bar()

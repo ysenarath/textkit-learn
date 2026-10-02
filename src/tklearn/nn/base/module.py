@@ -1,30 +1,59 @@
 from __future__ import annotations
 
 import re
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Generic, TypeVar
 
 import torch
 import torch.nn as nn
-from torch import Tensor
-from typing_extensions import Generic, Self
+from typing_extensions import Self
 
-K = TypeVar("K")
-V = TypeVar("V")
+from tklearn.nn.loss import LossLike
+
+__all__ = [
+    "Module",
+]
+
+BatchT = TypeVar("BatchT")
+OutputT = TypeVar("OutputT")
 
 
-class Module(nn.Module, Generic[K, V]):
+class Module(nn.Module, Generic[BatchT, OutputT]):
+    """Base class for models driven by `Trainer`, `Evaluator` and `Predictor`.
+
+    `BatchT` is the batch type produced by the dataloader and `OutputT` the output type
+    of `predict_step`. Subclasses implement:
+
+    - `predict_step` (required): run the model on a batch.
+    - `compute_loss` (for training and loss reporting): loss from a batch
+      and its output.
+    - `compute_metric_inputs` (for metrics): the arrays metrics read, such as
+      ``y_true``, ``y_pred`` and ``y_score``.
+
+    Override `training_step` only when the training forward pass differs from
+    ``compute_loss(batch, predict_step(batch))``.
+    """
+
     @property
     def device(self) -> torch.device:
         return next(self.parameters()).device
+
+    def predict_step(self, batch: BatchT) -> OutputT:
+        """Run the model on one batch."""
+        raise NotImplementedError
+
+    def compute_loss(self, batch: BatchT, output: OutputT) -> LossLike:
+        """Compute the loss for one batch from its `predict_step` output."""
+        raise NotImplementedError
+
+    def training_step(self, batch: BatchT) -> LossLike:
+        """Compute the training loss for one batch."""
+        return self.compute_loss(batch, self.predict_step(batch))
+
+    def compute_metric_inputs(
+        self, batch: BatchT, output: OutputT
+    ) -> dict[str, Any]:
+        """Return the metric inputs for one batch, keyed by input name."""
+        raise NotImplementedError
 
     def compile(
         self,
@@ -32,7 +61,7 @@ class Module(nn.Module, Generic[K, V]):
         dynamic: bool | None = None,
         backend: str | Callable[..., Any] = "inductor",
         mode: str | None = None,
-        options: Dict[str, str | int | bool] | None = None,
+        options: dict[str, str | int | bool] | None = None,
         disable: bool = False,
     ) -> Self:
         return torch.compile(
@@ -46,7 +75,7 @@ class Module(nn.Module, Generic[K, V]):
         )
 
     def freeze_layers(
-        self, layers: Optional[List[str]] = None, prefix: str = ""
+        self, layers: list[str] | None = None, prefix: str = ""
     ) -> int:
         """
         Freeze layers in the model that match the given patterns.
@@ -100,33 +129,3 @@ class Module(nn.Module, Generic[K, V]):
             frozen_params += param.numel()
         # return number of frozen parameters
         return frozen_params
-
-    def validation_step(
-        self, batch: K, batch_idx: int, dataloader_idx: Optional[int] = None
-    ) -> Union[Tensor, Mapping[str, Any], None]:
-        raise NotImplementedError
-
-    def test_step(
-        self, batch: K, batch_idx: int, dataloader_idx: Optional[int] = None
-    ) -> Union[Tensor, Mapping[str, Any], None]:
-        raise NotImplementedError
-
-    def training_step(
-        self, batch: K, batch_idx: int, dataloader_idx: Optional[int] = None
-    ) -> Union[Tensor, Mapping[str, Any], None]:
-        raise NotImplementedError
-
-    def predict_step(
-        self, batch: K, batch_idx: int, dataloader_idx: Optional[int] = None
-    ) -> V:
-        raise NotImplementedError
-
-    def compute_loss(
-        self, batch: K, output: V, **kwargs
-    ) -> Union[Tensor, Mapping[str, Any], None]:
-        raise NotImplementedError
-
-    def compute_metric_inputs(
-        self, batch: K, output: V, **kwargs
-    ) -> Dict[str, Any]:
-        raise NotImplementedError

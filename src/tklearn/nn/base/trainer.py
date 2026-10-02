@@ -1,229 +1,204 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from typing import Any, Callable, Generic, TypeVar, Union
+from typing import Any, Generic, TypeVar
 
 import torch
 from torch.optim import Optimizer
-from torch.optim.lr_scheduler import _LRScheduler as LRScheduler
-from torch.utils.data import DataLoader
+from torch.optim.lr_scheduler import LRScheduler
 
 from tklearn.nn.base.evaluator import Evaluator
 from tklearn.nn.base.module import Module
 from tklearn.nn.callbacks.base import Callback, CallbackList, CallbacksMixin
 from tklearn.nn.callbacks.history import History
-from tklearn.nn.loss import LossDict
+from tklearn.nn.loss import LossDict, LossFunction
 from tklearn.nn.optim import get_scheduler
 from tklearn.utils.array import move_to_device
 
-K = TypeVar("K")
-V = TypeVar("V")
-# L = torch.Tensor | Mapping[str, torch.Tensor] | LossDict | None
-L = Union[torch.Tensor, Mapping[str, torch.Tensor], LossDict, None]
+__all__ = [
+    "Trainer",
+]
+
+BatchT = TypeVar("BatchT")
+OutputT = TypeVar("OutputT")
 
 
-class Trainer(CallbacksMixin, Generic[K, V]):
+class Trainer(CallbacksMixin, Generic[BatchT, OutputT]):
+    """Train a model with an optimizer, optional scheduler and callbacks.
+
+    Parameters
+    ----------
+    model : Module
+        The model to train. The loss comes from `model.training_step`, or
+        from ``loss(batch, model.predict_step(batch))`` when `loss` is given.
+    optimizer : Optimizer
+        Optimizer over the model's parameters.
+    loss : callable, optional
+        ``loss(batch, output)``, overriding the model's own loss.
+    lr_scheduler : LRScheduler or str, optional
+        A scheduler, or the name of a `transformers` schedule (e.g.
+        ``"linear"``) built for the run's total number of steps. It is
+        stepped after every batch.
+    lr_scheduler_kwargs : Mapping, optional
+        Extra arguments for a named scheduler, e.g. ``num_warmup_steps``.
+    clip_grad_norm : float, optional
+        Clip the global gradient norm to this value before each step.
+    evaluator : Evaluator, optional
+        Evaluates the model after each epoch when `fit` gets an
+        ``eval_dataloader``.
+    callbacks : Callback or iterable of Callback, optional
+        Callbacks receiving the training hooks. A callback can stop training
+        after the current epoch by setting ``trainer.stop_training = True``.
+
+    Examples
+    --------
+    >>> trainer = Trainer(
+    ...     model,
+    ...     torch.optim.AdamW(model.parameters(), lr=2e-5),
+    ...     lr_scheduler="linear",
+    ...     evaluator=Evaluator(model, metrics={"f1": F1(average="macro")}),
+    ...     callbacks=[EarlyStopping(monitor="valid_loss", patience=2)],
+    ... )
+    >>> history = trainer.fit(train_loader, epochs=10, eval_dataloader=valid_loader)
+    >>> history.to_pandas()
+    """
+
     def __init__(
         self,
-        model: Module[K, V],
-        dataloader: DataLoader,
+        model: Module[BatchT, OutputT],
         optimizer: Optimizer,
-        loss: Callable[[K, V], L] | None = None,
-        epochs: int = 1,
+        *,
+        loss: LossFunction[BatchT, OutputT] | None = None,
         lr_scheduler: LRScheduler | str | None = None,
         lr_scheduler_kwargs: Mapping[str, Any] | None = None,
-        clip_grad_norm: (
-            int
-            | float
-            | bool
-            | dict[str, Any]
-            | Callable[[torch.Tensor | Iterable[torch.Tensor]], None]
-        ) = None,
-        evaluator: Evaluator | None = None,
-        callbacks: CallbackList | Iterable[Callback] | None = None,
+        clip_grad_norm: float | None = None,
+        evaluator: Evaluator[BatchT, OutputT] | None = None,
+        callbacks: CallbackList | Iterable[Callback] | Callback | None = None,
     ) -> None:
-        super().__init__()
         self.model = model
-        self.dataloader = dataloader
         self.optimizer = optimizer
-        self.epochs = epochs
+        self.loss = loss
         self.lr_scheduler = lr_scheduler
         self.lr_scheduler_kwargs = lr_scheduler_kwargs
         self.clip_grad_norm = clip_grad_norm
-        self.loss = loss
         self.evaluator = evaluator
         self.callbacks = callbacks
+        self.stop_training = False
 
-    def _training_step_grad(
-        self,
-        batch: K,
-        batch_idx: int | None = None,
-        dataloader_idx: int | None = None,
-    ) -> LossDict:
-        if self.loss is None:
-            # if loss is not defined, try to use the training_step method
-            # if that is not implemented, try to use the predict_step method
-            # with compute_loss
-            try:
-                batch_loss = self.model.training_step(
-                    batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
-                )
-            except NotImplementedError:
-                batch_output = self.model.predict_step(
-                    batch,
-                    batch_idx=batch_idx,
-                    dataloader_idx=dataloader_idx,
-                )
-                batch_loss = self.model.compute_loss(batch, batch_output)
-        else:
-            # if the loss is provided externally, use that instead with the
-            # predict_step method
-            batch_output = self.model.predict_step(
-                batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
-            )
-            batch_loss = self.loss(batch, batch_output)
-
-        if not isinstance(batch_loss, LossDict):
-            batch_loss = LossDict(batch_loss)
-
-        self.callbacks.on_before_zero_grad(self.optimizer)
-
-        self.optimizer.zero_grad()
-
-        self.callbacks.on_before_backward()
-
-        batch_loss.backward()
-
-        if self.clip_grad_norm:
-            if isinstance(self.clip_grad_norm, (int, float, bool)):
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(),
-                    max_norm=float(self.clip_grad_norm),
-                )
-            elif isinstance(self.clip_grad_norm, Mapping):
-                torch.nn.utils.clip_grad_norm_(
-                    self.model.parameters(), **self.clip_grad_norm
-                )
-            else:
-                self.clip_grad_norm(self.model.parameters())
-
-        self.callbacks.on_after_backward()
-
-        return batch_loss
-
-    def _training_step(
-        self,
-        batch: K,
-        batch_idx: int | None = None,
-        dataloader_idx: int | None = None,
-        device: torch.device | str | None = None,
-    ) -> LossDict[torch.Tensor]:
-        if device is None:
-            device = self.model.device
-
-        batch = move_to_device(batch, device, non_blocking=True)
-
-        if not self.model.training:
-            self.model.train()
-
-        # pre grad calculation here
-        self.callbacks.on_train_batch_begin(batch_idx)
-
-        batch_loss = self._training_step_grad(
-            batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
-        )
-
-        # post grad calculation here
-        self.callbacks.on_before_optimizer_step(self.optimizer)
-
-        self.optimizer.step()
-
-        if getattr(self, "_lr_scheduler", None) is not None:
-            # `_batch_lr_scheduler` is set during self.train() method
-            self._lr_scheduler.step()
-
-        self.callbacks.on_train_batch_end(batch_idx, logs={})
-
-        return batch_loss.detach()
-
-    def train(self) -> History:
-        # Move the model to device
-        device = self.model.device
-        move_to_device(self.model, device, non_blocking=True)
-
-        # get the number of steps per epoch
-        steps_per_epoch = len(self.dataloader)
-
-        # create the learning rate scheduler
+    def _build_scheduler(
+        self, epochs: int, steps_per_epoch: int
+    ) -> LRScheduler | None:
         if isinstance(self.lr_scheduler, str):
-            self._lr_scheduler = get_scheduler(
+            return get_scheduler(
                 name=self.lr_scheduler,
                 optimizer=self.optimizer,
-                epochs=self.epochs,
+                epochs=epochs,
                 steps_per_epoch=steps_per_epoch,
                 **(self.lr_scheduler_kwargs or {}),
             )
-        else:
-            self._lr_scheduler = self.lr_scheduler
+        return self.lr_scheduler
 
-        # change to train mode
-        self.model.train()
+    def _compute_training_loss(self, batch: BatchT) -> LossDict:
+        if self.loss is None:
+            return LossDict(self.model.training_step(batch))
+        return LossDict(self.loss(batch, self.model.predict_step(batch)))
 
-        try:
-            history = self.callbacks[History]
-        except KeyError:
-            # add the history callback
-            history = History()
-            self.callbacks.append(history)
+    def _train_batch(
+        self,
+        batch: BatchT,
+        batch_idx: int,
+        callbacks: CallbackList,
+        scheduler: LRScheduler | None,
+    ) -> LossDict:
+        callbacks.on_train_batch_begin(batch_idx, {})
+        loss = self._compute_training_loss(batch)
+        callbacks.on_before_zero_grad(self.optimizer)
+        self.optimizer.zero_grad()
+        callbacks.on_before_backward({})
+        loss.backward()
+        if self.clip_grad_norm is not None:
+            torch.nn.utils.clip_grad_norm_(
+                self.model.parameters(), max_norm=float(self.clip_grad_norm)
+            )
+        callbacks.on_after_backward({})
+        callbacks.on_before_optimizer_step(self.optimizer)
+        self.optimizer.step()
+        if scheduler is not None:
+            scheduler.step()
+        loss = loss.detach()
+        callbacks.on_train_batch_end(batch_idx, loss.item().to_dict())
+        return loss
 
-        # set the callback params
-        params = {
-            "batch_size": self.dataloader.batch_size,
-            "epochs": self.epochs,
+    def fit(
+        self,
+        dataloader: Iterable[BatchT],
+        epochs: int = 1,
+        *,
+        eval_dataloader: Iterable[BatchT] | None = None,
+        eval_prefix: str = "valid_",
+    ) -> History:
+        """Train the model.
+
+        Parameters
+        ----------
+        dataloader : iterable
+            Training batches; iterated once per epoch.
+        epochs : int, default=1
+            Maximum number of epochs.
+        eval_dataloader : iterable, optional
+            Evaluated with `evaluator` after each epoch.
+        eval_prefix : str, default="valid_"
+            Prefix for evaluation results in the epoch logs, so that
+            ``loss`` (training) and ``valid_loss`` do not collide.
+
+        Returns
+        -------
+        History
+            Per-epoch logs; ``history.to_pandas()`` gives a DataFrame.
+        """
+        if eval_dataloader is not None and self.evaluator is None:
+            msg = (
+                "'eval_dataloader' was given but the trainer has no evaluator"
+            )
+            raise ValueError(msg)
+        steps_per_epoch = len(dataloader)
+        scheduler = self._build_scheduler(epochs, steps_per_epoch)
+        history = History()
+        callbacks = CallbackList([*self.callbacks, history])
+        callbacks.set_model(self.model)
+        callbacks.set_trainer(self)
+        callbacks.set_params({
+            "epochs": epochs,
             "steps": steps_per_epoch,
-        }
-        self.callbacks.set_params(params)
-        self.callbacks.set_model(self.model)
-        self.callbacks.on_train_begin()
-
-        epoch_logs = {}
-        for epoch_idx in range(self.epochs):
-            self.callbacks.on_epoch_begin(epoch_idx)
-
-            total_loss, batch_idx = None, 0
-
-            dataloader_idx = None
-            for batch_idx, batch in enumerate(self.dataloader):
-                batch_loss = self._training_step(
-                    batch,
-                    batch_idx=batch_idx,
-                    dataloader_idx=dataloader_idx,
-                    device=device,
+            "batch_size": getattr(dataloader, "batch_size", None),
+        })
+        self.stop_training = False
+        device = self.model.device
+        callbacks.on_train_begin({})
+        epoch_logs: dict[str, Any] = {}
+        for epoch in range(epochs):
+            callbacks.on_epoch_begin(epoch, {})
+            self.model.train()
+            total_loss, n_batches = None, 0
+            for batch_idx, batch in enumerate(dataloader):
+                batch = move_to_device(batch, device, non_blocking=True)
+                loss = self._train_batch(
+                    batch, batch_idx, callbacks, scheduler
                 )
-                total_loss = batch_loss + total_loss
-
+                total_loss = loss + total_loss
+                n_batches += 1
             epoch_logs = {}
             if total_loss is not None:
-                # average the loss (dict)
-                epoch_logs = (total_loss / (batch_idx + 1)).item().to_dict()
-
-            # Run evaluation if configured
-            if self.evaluator:
-                eval_results = self.evaluator.evaluate()
-                epoch_logs.update(eval_results)
-
-            stop_training = getattr(self.model, "stop_training", False)
-
-            # End the epoch and update callbacks
-            self.callbacks.on_epoch_end(
-                epoch_idx,
-                logs={
-                    **epoch_logs,
-                    "stop_training": stop_training,
-                },
-            )
-
-            if stop_training:
+                epoch_logs.update((total_loss / n_batches).item())
+            if eval_dataloader is not None:
+                epoch_logs.update(
+                    self.evaluator.evaluate(
+                        eval_dataloader, prefix=eval_prefix
+                    )
+                )
+            callbacks.on_epoch_end(epoch, epoch_logs)
+            if self.stop_training:
                 break
-        self.callbacks.on_train_end(epoch_logs)
+        callbacks.on_train_end(epoch_logs)
+        callbacks.set_trainer(None)
         return history

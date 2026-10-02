@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from functools import partial
-from typing import Generator, Generic, TypeVar, Union, overload
+from typing import Generic, TypeVar, overload
 
 import numpy as np
 import torch
@@ -11,169 +11,151 @@ from torch.utils.data import DataLoader
 from typing_extensions import Literal
 
 from tklearn.nn.base.module import Module
+from tklearn.nn.base.predictor import iter_batch_outputs
 from tklearn.nn.callbacks.base import Callback, CallbackList, CallbacksMixin
-from tklearn.nn.loss import LossDict
 from tklearn.utils.array import move_to_device
 
-K = TypeVar("K")
-V = TypeVar("V")
-L = Union[torch.Tensor, Mapping[str, torch.Tensor], LossDict, None]
+__all__ = [
+    "Encoder",
+    "encode",
+]
+
+BatchT = TypeVar("BatchT")
+OutputT = TypeVar("OutputT")
 DEFAULT_BATCH_SIZE = 1000
 
 
-class Encoder(CallbacksMixin, Generic[K, V]):
-    """
-    A class for encoding data using a model and dataloader, with support for callbacks.
+def _to_format(
+    value: torch.Tensor | np.ndarray | list, return_tensors: str | None
+) -> torch.Tensor | np.ndarray | list:
+    if isinstance(value, torch.Tensor):
+        value = move_to_device(value.detach(), "cpu")
+        if return_tensors == "np":
+            return value.numpy()
+        if return_tensors is None:
+            return value.tolist()
+        return value
+    if isinstance(value, (np.ndarray, list)):
+        if return_tensors == "pt":
+            return torch.as_tensor(np.asarray(value))
+        if return_tensors == "np":
+            return np.asarray(value)
+        return np.asarray(value).tolist()
+    msg = (
+        "expected the encoded output to be a tensor, array or list, "
+        f"got {type(value).__name__}"
+    )
+    raise TypeError(msg)
+
+
+class Encoder(CallbacksMixin, Generic[BatchT, OutputT]):
+    """Encode batches into fixed-size vectors with a model.
 
     Parameters
     ----------
-    model : Module[K, V]
-        The model used for encoding.
-    dataloader : DataLoader
-        The dataloader providing batches of data to encode.
-    callbacks : CallbackList | Iterable[Callback] | None, optional
-        A list or iterable of callbacks to use during encoding, by default None.
+    model : Module
+        The model; its `predict_step` output must contain `output_key`.
+    output_key : str, default="pooler_output"
+        The output field holding one vector per example.
+    callbacks : Callback or iterable of Callback, optional
+        Callbacks receiving the ``on_predict_*`` hooks.
 
-    Methods
-    -------
-    iter_batches()
-        Iterates over batches of data, yielding batch index, batch data, model output, and loss dictionary.
-    encode(return_tensors="pt", return_list=False)
-        Encodes the data and returns the encodings in the specified format.
-
-    Notes
-    -----
-    - The `iter_batches` method ensures the model is in evaluation mode during batch iteration.
-    - The `encode` method supports multiple output formats, including PyTorch tensors, NumPy arrays, and Python lists.
+    Examples
+    --------
+    >>> Encoder(model).encode(dataloader, return_tensors="np").shape
+    (n_examples, hidden_size)
     """
 
     def __init__(
         self,
-        model: Module[K, V],
-        dataloader: DataLoader,
-        callbacks: CallbackList | Iterable[Callback] | None = None,
+        model: Module[BatchT, OutputT],
+        output_key: str = "pooler_output",
+        callbacks: CallbackList | Iterable[Callback] | Callback | None = None,
     ) -> None:
-        super().__init__()
         self.model = model
-        self.dataloader = dataloader
+        self.output_key = output_key
         self.callbacks = callbacks
-
-    @torch.no_grad()
-    def iter_batches(
-        self,
-    ) -> Generator[tuple[int, K, V, LossDict], None, None]:
-        if self.model.training:
-            self.model.eval()
-
-        # set the callback params
-        callback_params = {}
-
-        if self.callbacks.params is not None:
-            callback_params.update(self.callbacks.params)
-
-        callback_params.update({"pred_steps": len(self.dataloader)})
-
-        self.callbacks.set_params(callback_params)
-        self.callbacks.set_model(self.model)
-
-        # start the prediction
-        self.callbacks.on_predict_begin()
-
-        dataloader_idx = None
-        for batch_idx, batch in enumerate(self.dataloader):
-            batch = move_to_device(batch, self.model.device, non_blocking=True)
-            self.callbacks.on_predict_batch_begin(batch_idx)
-            output = self.model.predict_step(
-                batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
-            )
-            self.callbacks.on_predict_batch_end(batch_idx, logs={})
-            yield batch_idx, batch, output, None
-
-        self.callbacks.on_predict_end()
 
     @overload
     def encode(
         self,
-        return_tensors: Literal["pt"] | None,
-        return_list: Literal[False],
+        dataloader: Iterable[BatchT],
+        return_tensors: Literal["pt"] = ...,
+        return_list: Literal[False] = ...,
     ) -> torch.Tensor: ...
     @overload
     def encode(
         self,
+        dataloader: Iterable[BatchT],
         return_tensors: Literal["np"],
-        return_list: Literal[False],
+        return_list: Literal[False] = ...,
     ) -> np.ndarray: ...
     @overload
     def encode(
         self,
+        dataloader: Iterable[BatchT],
         return_tensors: Literal["pt"],
         return_list: Literal[True],
     ) -> list[torch.Tensor]: ...
     @overload
     def encode(
         self,
+        dataloader: Iterable[BatchT],
         return_tensors: Literal["np"],
         return_list: Literal[True],
     ) -> list[np.ndarray]: ...
     @overload
     def encode(
         self,
+        dataloader: Iterable[BatchT],
         return_tensors: None,
         return_list: Literal[True],
     ) -> list[list[float]]: ...
     def encode(
         self,
-        return_tensors: str | None = "pt",
+        dataloader: Iterable[BatchT],
+        return_tensors: Literal["pt", "np"] | None = "pt",
         return_list: bool = False,
-    ) -> torch.Tensor | np.ndarray | list[torch.Tensor | np.ndarray]:
-        if return_tensors is None:
-            if not return_list:
-                return_tensors = "pt"
-        elif return_tensors not in {"pt", "np"}:
-            ERR = f"return_tensors must be either 'pt' or 'np', got {return_tensors}."
-            raise ValueError(ERR)
+    ) -> torch.Tensor | np.ndarray | list:
+        """Encode every example in a dataloader.
 
-        self.model.eval()
+        Parameters
+        ----------
+        dataloader : iterable
+            Batches to encode.
+        return_tensors : {"pt", "np"} or None, default="pt"
+            Type of each vector: torch tensor, numpy array, or (with None)
+            a list of floats.
+        return_list : bool, default=False
+            Return a list with one vector per example instead of a single
+            stacked tensor/array. Required when `return_tensors` is None.
 
+        Returns
+        -------
+        torch.Tensor, np.ndarray or list
+            The encodings, on the CPU.
+        """
+        if return_tensors not in {"pt", "np", None}:
+            msg = (
+                "return_tensors must be 'pt', 'np' or None, "
+                f"got {return_tensors!r}"
+            )
+            raise ValueError(msg)
+        if return_tensors is None and not return_list:
+            msg = "return_tensors=None requires return_list=True"
+            raise ValueError(msg)
         encodings = []
-
-        for _, _, output, _ in self.iter_batches():
-            pooler_output = output["pooler_output"]  # tensor in device
-            if isinstance(pooler_output, torch.Tensor):
-                pooler_output = pooler_output.detach()
-                pooler_output = move_to_device(pooler_output, device="cpu")
-                if return_tensors == "np":
-                    pooler_output = pooler_output.numpy()
-                elif return_tensors is None:
-                    pooler_output = pooler_output.tolist()
-            elif isinstance(pooler_output, np.ndarray):
-                if return_tensors == "pt":
-                    pooler_output = torch.from_numpy(pooler_output)
-                elif return_tensors is None:
-                    pooler_output = pooler_output.tolist()
-            elif isinstance(pooler_output, list):
-                if return_tensors == "pt":
-                    pooler_output = torch.from_numpy(pooler_output)
-                elif return_tensors == "np":
-                    pooler_output = np.asarray(pooler_output)
-            else:
-                ERR = "expected '{k}' to be a `{e}`, got `{t}` instead".format(
-                    k="pooler_output",
-                    e=torch.Tensor.__name__,
-                    t=type(pooler_output).__name__,
-                )
-                raise TypeError(ERR)
-            encodings.extend(pooler_output)
-            del pooler_output
-
+        for _, output in iter_batch_outputs(
+            self.model, dataloader, self.callbacks, stage="predict"
+        ):
+            encodings.extend(
+                _to_format(output[self.output_key], return_tensors)
+            )
         if return_list:
-            pass  # do not convert to tensor or numpy array
-        elif return_tensors == "np":
-            encodings = np.asarray(encodings)
-        elif return_tensors == "pt":
-            encodings = torch.stack(encodings)
-
-        return encodings
+            return encodings
+        if return_tensors == "np":
+            return np.asarray(encodings)
+        return torch.stack(encodings)
 
 
 class BatchDataset(Sequence[Mapping[str, torch.Tensor]]):
@@ -205,11 +187,10 @@ def _encode_chunk(
         pin_memory=pin_memory,
         **kwargs,
     )
-    encoder = Encoder(model, dataloader)
+    encoder = Encoder(model)
     return {
         output_column_name: encoder.encode(
-            return_tensors="pt",
-            return_list=True,
+            dataloader, return_tensors="pt", return_list=True
         )
     }
 

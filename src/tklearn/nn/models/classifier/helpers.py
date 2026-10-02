@@ -166,13 +166,10 @@ def compute_prototypes(
 ) -> Tuple[torch.Tensor, set[int]] | torch.Tensor:
     if device is None:
         device = model.device
-    dataloader_idx = 0
     pooler_outputs, targets = [], []
-    for batch_idx, batch in enumerate(dataloader):
+    for batch in dataloader:
         batch = move_to_device(batch, device)
-        output = model.predict_step(
-            batch, batch_idx=batch_idx, dataloader_idx=dataloader_idx
-        )
+        output = model.predict_step(batch)
         pooler_output: torch.Tensor = output["pooler_output"]
         pooler_outputs.append(pooler_output)
         targets.append(batch["labels"])
@@ -220,31 +217,42 @@ def update_prototypes_(
 
 
 class PrototypeCallback(Callback):
+    """Recompute class prototypes before each evaluation or prediction.
+
+    Prototypes are the mean `pooler_output` of each label over `dataloader`.
+    Labels without examples there keep their value from `prototypes`. Models
+    without a ``prototypes`` attribute are left untouched.
+
+    Parameters
+    ----------
+    dataloader : iterable
+        Labelled batches used to compute prototypes.
+    device : torch.device or str, optional
+        Device for the computation; defaults to the model's device.
+    prototypes : torch.Tensor, optional
+        Fallback prototypes, one row per label.
+    """
+
     def __init__(
         self,
         dataloader: DataLoader | Iterable,
-        device: torch.device | str = None,
+        device: torch.device | str | None = None,
         prototypes: torch.Tensor | None = None,
     ) -> None:
-        # if the model does not have an attribute "prototypes"
-        # then we will not do anything
         super().__init__()
         self.dataloader = dataloader
         self.device = device
         self.prototypes = prototypes
 
-    def _on_test_or_predict_begin(self):
+    def _update_prototypes(self) -> None:
         if not hasattr(self.model, "prototypes"):
             return
-        # reset prototypes to the original prototypes
         self.model.prototypes = self.prototypes
-        # update prototypes based on the current model
-        # if there is no data supporting a prototype then this will pick that
-        # from the original prototypes
-        update_prototypes_(self.model, self.dataloader, device=self.device)
+        with torch.no_grad():
+            update_prototypes_(self.model, self.dataloader, device=self.device)
 
-    def on_test_begin(self, logs=None):
-        self._on_test_or_predict_begin()
+    def on_test_begin(self, logs=None) -> None:
+        self._update_prototypes()
 
-    def on_predict_begin(self, logs=None):
-        self._on_test_or_predict_begin()
+    def on_predict_begin(self, logs=None) -> None:
+        self._update_prototypes()

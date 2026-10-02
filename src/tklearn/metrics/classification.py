@@ -1,16 +1,8 @@
 from __future__ import annotations
 
-from typing import (
-    Any,
-    List,
-    Literal,
-    Optional,
-    TypedDict,
-    Union,
-)
+from typing import Any, Literal, TypedDict, Union
 
 import numpy as np
-import torch
 from numpy.typing import ArrayLike
 from sklearn.metrics import (
     accuracy_score,
@@ -23,42 +15,40 @@ from sklearn.metrics import (
     roc_curve,
 )
 
-from tklearn.metrics.base import MetricBase
-from tklearn.metrics.helpers import ArrayAccum
+from tklearn.metrics.base import Metric
 
 __all__ = [
-    "Accuracy",
     "AUC",
-    "Precision",
-    "Recall",
+    "Accuracy",
     "F1",
     "OptimalAUCThreshold",
     "OptimalPRThreshold",
+    "Precision",
+    "Recall",
 ]
 
+Average = Literal["binary", "micro", "macro", "samples", "weighted"]
 
-class Accuracy(MetricBase):
-    y_true = ArrayAccum("y_true")
-    y_pred = ArrayAccum("y_pred")
-    sample_weight = ArrayAccum("sample_weight")
+
+class Accuracy(Metric):
+    """Accuracy, or balanced accuracy when `balanced=True`.
+
+    Reads `y_true` and `y_pred`.
+    """
+
+    inputs = ("y_true", "y_pred")
 
     def __init__(
         self,
         normalize: bool = True,
         balanced: bool = False,
-        adjusted: Optional[bool] = None,
-    ):
-        super().__init__()
-        if balanced:
-            adjusted = False
+        adjusted: bool = False,
+    ) -> None:
         self.normalize = normalize
         self.balanced = balanced
         self.adjusted = adjusted
 
-    def result(self) -> torch.Tensor:
-        y_true = self.y_true.result()
-        y_pred = self.y_pred.result()
-        sample_weight = self.sample_weight.result()
+    def compute(self, y_true, y_pred, sample_weight=None) -> float:
         if self.balanced:
             return balanced_accuracy_score(
                 y_true,
@@ -74,45 +64,37 @@ class Accuracy(MetricBase):
         )
 
 
-class AUC(MetricBase):
-    y_true = ArrayAccum("y_true")
-    y_score = ArrayAccum("y_score")
-    sample_weight = ArrayAccum("sample_weight")
+class AUC(Metric):
+    """Area under the ROC curve.
+
+    Reads `y_true` and `y_score`. For multiclass scores with
+    `multi_class="ovr"`, classes without positive samples are skipped
+    (`average="macro"`) or reported as NaN (`average=None`) instead of
+    raising.
+    """
+
+    inputs = ("y_true", "y_score")
 
     def __init__(
         self,
-        average: Optional[
-            Literal["micro", "macro", "samples", "weighted"]
-        ] = "macro",
-        max_fpr: Optional[float] = None,
+        average: Literal["micro", "macro", "samples", "weighted"]
+        | None = "macro",
+        max_fpr: float | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "raise",
-        labels: Optional[ArrayLike] = None,
+        labels: ArrayLike | None = None,
     ) -> None:
-        super().__init__()
         self.average = average
         self.max_fpr = max_fpr
         self.multi_class = multi_class
         self.labels = labels
 
-    def result(self) -> torch.Tensor:
-        y_true = self.y_true.result()
-        y_score = self.y_score.result()
-        sample_weight = self.sample_weight.result()
-        is_multiclass = y_score.shape[1] > 1
-        if (
-            is_multiclass
-            and self.multi_class == "ovr"
-            and self.average == "macro"
-        ):
-            # more than 2 classes
-            return self._auc_roc_score_multiclass_ovr_macro(y_true, y_score)
-        if (
-            is_multiclass
-            and self.multi_class == "ovr"
-            and self.average is None
-        ):
-            # more than 2 classes
-            return self._auc_roc_score_multiclass_ovr_none(y_true, y_score)
+    def compute(self, y_true, y_score, sample_weight=None) -> Any:
+        is_multiclass = y_score.ndim == 2 and y_score.shape[1] > 1
+        if is_multiclass and self.multi_class == "ovr":
+            if self.average == "macro":
+                return float(np.nanmean(_per_class_auc(y_true, y_score)))
+            if self.average is None:
+                return _per_class_auc(y_true, y_score)
         return roc_auc_score(
             y_true,
             y_score,
@@ -121,60 +103,38 @@ class AUC(MetricBase):
             max_fpr=self.max_fpr,
             multi_class=self.multi_class,
             labels=self.labels,
-        ).item()
-
-    @staticmethod
-    def _auc_roc_score_multiclass_ovr_macro(y_true, y_score) -> float:
-        per_class_auc = []
-        for cls in np.unique(y_true):
-            y_true_binary = (y_true == cls).astype(int)
-            y_score_class = y_score[:, cls]  # Directly index by class label
-            if len(np.unique(y_true_binary)) != 2:
-                # found a class that has no positive samples (skip)
-                continue
-            auc = roc_auc_score(y_true_binary, y_score_class)
-            per_class_auc.append(auc)
-        return np.mean(per_class_auc)
-
-    @staticmethod
-    def _auc_roc_score_multiclass_ovr_none(y_true, y_score) -> np.ndarray:
-        per_class_auc = []
-        for cls in range(y_score.shape[1]):
-            y_true_binary = (y_true == cls).astype(int)
-            y_score_class = y_score[:, cls]
-            if len(np.unique(y_true_binary)) != 2:
-                per_class_auc.append(np.nan)
-                continue
-            auc = roc_auc_score(y_true_binary, y_score_class)
-            per_class_auc.append(auc)
-        return np.array(per_class_auc)
+        )
 
 
-class Precision(MetricBase):
-    y_true = ArrayAccum("y_true")
-    y_pred = ArrayAccum("y_pred")
-    sample_weight = ArrayAccum("sample_weight")
+def _per_class_auc(y_true: np.ndarray, y_score: np.ndarray) -> np.ndarray:
+    scores = []
+    for cls in range(y_score.shape[1]):
+        y_true_binary = (y_true == cls).astype(int)
+        if len(np.unique(y_true_binary)) != 2:
+            # no positive (or no negative) samples for this class
+            scores.append(np.nan)
+            continue
+        scores.append(roc_auc_score(y_true_binary, y_score[:, cls]))
+    return np.array(scores)
+
+
+class _PRFMetric(Metric):
+    inputs = ("y_true", "y_pred")
 
     def __init__(
         self,
-        average: Optional[
-            Literal["binary", "micro", "macro", "samples", "weighted"]
-        ] = "binary",
+        average: Average | None = "binary",
         pos_label: Union[int, str] = 1,
-        labels: Optional[ArrayLike] = None,
+        labels: ArrayLike | None = None,
         zero_division: Any = 0.0,
     ) -> None:
-        super().__init__()
-        self.labels = labels
-        self.pos_label = pos_label
         self.average = average
+        self.pos_label = pos_label
+        self.labels = labels
         self.zero_division = zero_division
 
-    def result(self) -> torch.Tensor:
-        y_true = self.y_true.result()
-        y_pred = self.y_pred.result()
-        sample_weight = self.sample_weight.result()
-        return precision_score(
+    def _score(self, func, y_true, y_pred, sample_weight) -> Any:
+        return func(
             y_true,
             y_pred,
             labels=self.labels,
@@ -185,127 +145,57 @@ class Precision(MetricBase):
         )
 
 
-class Recall(MetricBase):
-    y_true = ArrayAccum("y_true")
-    y_pred = ArrayAccum("y_pred")
-    sample_weight = ArrayAccum("sample_weight")
+class Precision(_PRFMetric):
+    """Precision. Reads `y_true` and `y_pred`."""
 
-    def __init__(
-        self,
-        average: Optional[
-            Literal["binary", "micro", "macro", "samples", "weighted"]
-        ] = "binary",
-        pos_label: Union[int, str] = 1,
-        labels: Optional[ArrayLike] = None,
-        zero_division: Any = 0.0,
-    ) -> None:
-        super().__init__()
-        self.labels = labels
-        self.pos_label = pos_label
-        self.average = average
-        self.zero_division = zero_division
-
-    def result(self) -> torch.Tensor:
-        y_true = self.y_true.result()
-        y_pred = self.y_pred.result()
-        sample_weight = self.sample_weight.result()
-        return recall_score(
-            y_true,
-            y_pred,
-            labels=self.labels,
-            pos_label=self.pos_label,
-            average=self.average,
-            sample_weight=sample_weight,
-            zero_division=self.zero_division,
-        )
+    def compute(self, y_true, y_pred, sample_weight=None) -> Any:
+        return self._score(precision_score, y_true, y_pred, sample_weight)
 
 
-class F1(MetricBase):
-    y_true = ArrayAccum("y_true")
-    y_pred = ArrayAccum("y_pred")
-    sample_weight = ArrayAccum("sample_weight")
+class Recall(_PRFMetric):
+    """Recall. Reads `y_true` and `y_pred`."""
 
-    def __init__(
-        self,
-        average: Optional[
-            Literal["binary", "micro", "macro", "samples", "weighted"]
-        ] = "binary",
-        labels: Optional[ArrayLike] = None,
-        pos_label: Union[int, str] = 1,
-        zero_division: Any = 0.0,
-    ) -> None:
-        super().__init__()
-        self.labels = labels
-        self.pos_label = pos_label
-        self.average = average
-        self.zero_division = zero_division
-
-    def result(self) -> torch.Tensor:
-        y_true = self.y_true.result()
-        y_pred = self.y_pred.result()
-        sample_weight = self.sample_weight.result()
-        return f1_score(
-            y_true,
-            y_pred,
-            labels=self.labels,
-            pos_label=self.pos_label,
-            average=self.average,
-            sample_weight=sample_weight,
-            zero_division=self.zero_division,
-        )
+    def compute(self, y_true, y_pred, sample_weight=None) -> Any:
+        return self._score(recall_score, y_true, y_pred, sample_weight)
 
 
-class OptimalAUCThreshold(MetricBase):
-    y_true = ArrayAccum("y_true")
-    y_score = ArrayAccum("y_score")
-    sample_weight = ArrayAccum("sample_weight")
+class F1(_PRFMetric):
+    """F1 score. Reads `y_true` and `y_pred`."""
 
-    class PR(TypedDict):
-        class PlotData(TypedDict):
-            fpr: float
-            tpr: float
-            thresholds: float
-            optimal: bool
+    def compute(self, y_true, y_pred, sample_weight=None) -> Any:
+        return self._score(f1_score, y_true, y_pred, sample_weight)
 
-        threshold: float
-        data: List[PlotData]
+
+class ROCPoint(TypedDict):
+    fpr: float
+    tpr: float
+    threshold: float
+    optimal: bool
+
+
+class ROCThreshold(TypedDict):
+    threshold: float
+    data: list[ROCPoint]
+
+
+class OptimalAUCThreshold(Metric):
+    """Decision threshold that maximizes Youden's J (TPR - FPR).
+
+    Reads `y_true` and `y_score` (binary scores). The result also carries the
+    ROC curve points for plotting.
+    """
+
+    inputs = ("y_true", "y_score")
 
     def __init__(
         self,
         pos_label: Union[int, str, None] = None,
         drop_intermediate: bool = True,
     ) -> None:
-        super().__init__()
         self.pos_label = pos_label
         self.drop_intermediate = drop_intermediate
 
-    def _get_plot_data(
-        self,
-        fpr: np.ndarray,
-        tpr: np.ndarray,
-        thresholds: np.ndarray,
-        optimal_idx: int,
-    ) -> List[PR.PlotData]:
-        return [
-            {
-                "fpr": f,
-                "tpr": t,
-                "thresholds": th,
-                "optimal": i == optimal_idx,
-            }
-            for i, (f, t, th) in enumerate(
-                zip(
-                    fpr.tolist(),
-                    tpr.tolist(),
-                    thresholds.tolist(),
-                )
-            )
-        ]
-
-    def result(self) -> List[PR]:
-        y_true = self.y_true.result()
-        y_score = self.y_score.result()
-        sample_weight = self.sample_weight.result()
+    def compute(self, y_true, y_score, sample_weight=None) -> ROCThreshold:
         fpr, tpr, thresholds = roc_curve(
             y_true,
             y_score,
@@ -313,30 +203,37 @@ class OptimalAUCThreshold(MetricBase):
             sample_weight=sample_weight,
             drop_intermediate=self.drop_intermediate,
         )
-        optimal_idx = np.argmax(tpr - fpr)
-        best_threshold = thresholds[optimal_idx].item()
-        plot_data = self._get_plot_data(fpr, tpr, thresholds, optimal_idx)
-        return {
-            "threshold": best_threshold,
-            "data": plot_data,
-        }
+        optimal_idx = int(np.argmax(tpr - fpr))
+        data: list[ROCPoint] = [
+            {"fpr": f, "tpr": t, "threshold": th, "optimal": i == optimal_idx}
+            for i, (f, t, th) in enumerate(
+                zip(fpr.tolist(), tpr.tolist(), thresholds.tolist())
+            )
+        ]
+        return {"threshold": thresholds[optimal_idx].item(), "data": data}
 
 
-class OptimalPRThreshold(MetricBase):
-    y_true = ArrayAccum("y_true")
-    y_score = ArrayAccum("y_score")
-    sample_weight = ArrayAccum("sample_weight")
+class PRPoint(TypedDict):
+    precision: float
+    recall: float
+    f1: float
+    threshold: float
+    optimal: bool
 
-    class PR(TypedDict):
-        class PlotData(TypedDict):
-            precision: float
-            recall: float
-            f1: float
-            thresholds: float
-            optimal: bool
 
-        threshold: float
-        data: List[PlotData]
+class PRThreshold(TypedDict):
+    threshold: float
+    data: list[PRPoint]
+
+
+class OptimalPRThreshold(Metric):
+    """Decision threshold that maximizes F1 on the precision-recall curve.
+
+    Reads `y_true` and `y_score` (binary scores). The result also carries the
+    precision-recall curve points for plotting.
+    """
+
+    inputs = ("y_true", "y_score")
 
     def __init__(
         self,
@@ -344,39 +241,11 @@ class OptimalPRThreshold(MetricBase):
         drop_intermediate: bool = True,
         zero_division: Any = 0.0,
     ) -> None:
-        super().__init__()
         self.pos_label = pos_label
         self.drop_intermediate = drop_intermediate
         self.zero_division = zero_division
 
-    def _get_plot_data(
-        self,
-        precision: np.ndarray,
-        recall: np.ndarray,
-        thresholds: np.ndarray,
-        optimal_idx: int,
-    ) -> List[PR.PlotData]:
-        return [
-            {
-                "precision": p,
-                "recall": r,
-                "f1": 2 * p * r / (p + r) if p + r > 0 else self.zero_division,
-                "thresholds": t,
-                "optimal": i == optimal_idx,
-            }
-            for i, (p, r, t) in enumerate(
-                zip(
-                    precision.tolist(),
-                    recall.tolist(),
-                    thresholds.tolist(),
-                )
-            )
-        ]
-
-    def result(self) -> PR:
-        y_true = self.y_true.result()
-        y_score = self.y_score.result()
-        sample_weight = self.sample_weight.result()
+    def compute(self, y_true, y_score, sample_weight=None) -> PRThreshold:
         precision, recall, thresholds = precision_recall_curve(
             y_true,
             y_score,
@@ -384,13 +253,30 @@ class OptimalPRThreshold(MetricBase):
             sample_weight=sample_weight,
             drop_intermediate=self.drop_intermediate,
         )
-        recall = 2 * precision * recall / (precision + recall + 1e-12)
-        optimal_idx = np.argmax(recall).item()
-        best_threshold = thresholds[optimal_idx].item()
-        plot_data = self._get_plot_data(
-            precision, recall, thresholds, optimal_idx
+        # the last precision/recall pair has no threshold
+        precision, recall = precision[:-1], recall[:-1]
+        denom = precision + recall
+        f1 = np.where(
+            denom > 0,
+            2 * precision * recall / np.where(denom > 0, denom, 1),
+            self.zero_division,
         )
-        return {
-            "threshold": best_threshold,
-            "data": plot_data,
-        }
+        optimal_idx = int(np.argmax(f1))
+        data: list[PRPoint] = [
+            {
+                "precision": p,
+                "recall": r,
+                "f1": f,
+                "threshold": t,
+                "optimal": i == optimal_idx,
+            }
+            for i, (p, r, f, t) in enumerate(
+                zip(
+                    precision.tolist(),
+                    recall.tolist(),
+                    f1.tolist(),
+                    thresholds.tolist(),
+                )
+            )
+        ]
+        return {"threshold": thresholds[optimal_idx].item(), "data": data}

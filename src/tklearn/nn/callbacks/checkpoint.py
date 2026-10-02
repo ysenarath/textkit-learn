@@ -1,12 +1,19 @@
-import logging
-import warnings
-from pathlib import Path
-from typing import Literal, Union
+from __future__ import annotations
 
-import numpy as np
+import logging
+from pathlib import Path
+from typing import Any, Literal, Union
+
 import torch
 from safetensors.torch import save_model
 
+from tklearn.nn.callbacks._monitor import (
+    Mode,
+    is_improvement,
+    is_valid_value,
+    resolve_mode,
+    worst_value,
+)
 from tklearn.nn.callbacks.base import Callback
 
 __all__ = [
@@ -14,41 +21,6 @@ __all__ = [
 ]
 
 logger = logging.getLogger(__name__)
-
-
-def _get_monitor_attrs(cls: type, monitor: str, mode: str, best: float = None):
-    if mode not in ["auto", "min", "max"]:
-        warnings.warn(
-            f"{cls.__name__} mode '{mode}' is unknown, fallback to auto mode.",
-            stacklevel=2,
-        )
-        mode = "auto"
-    if mode == "min":
-        monitor_op = np.less
-        if best is None:
-            best = np.Inf
-    elif mode == "max":
-        monitor_op = np.greater
-        if best is None:
-            best = -np.Inf
-    else:
-        if (
-            monitor.endswith("acc")
-            or monitor.endswith("accuracy")
-            or monitor.endswith("auc")
-            or monitor.endswith("_score")
-        ):
-            monitor_op = np.greater
-            if best is None:
-                best = -np.Inf
-        elif monitor.endswith("loss") or monitor.endswith("error"):
-            monitor_op = np.less
-            if best is None:
-                best = np.Inf
-        else:
-            msg = f"could not infer the metric direction for {monitor}."
-            raise ValueError(msg)
-    return monitor_op, best
 
 
 def _validate_save_freq(
@@ -65,77 +37,96 @@ def _validate_save_freq(
 
 
 def _validate_save_weights_only(
-    save_weights_only: bool, filepath: Union[Path, str]
-):
-    if not isinstance(save_weights_only, bool):
-        raise ValueError(
-            f"save_weights_only should be a boolean, got {save_weights_only}"
-        )
+    save_weights_only: bool, filepath: str
+) -> bool:
     if filepath.endswith(".pt"):
-        return save_weights_only
+        return bool(save_weights_only)
+    if filepath.endswith(".safetensors"):
+        if not save_weights_only:
+            msg = (
+                "'.safetensors' checkpoints hold weights only; "
+                "set save_weights_only=True"
+            )
+            raise ValueError(msg)
+        return True
     msg = (
-        "save_weights_only should be True when filepath"
-        f" is not a '.pt' file, got {save_weights_only}"
+        "checkpoint filepath must end in '.pt' or '.safetensors', "
+        f"got {filepath!r}"
     )
-    if save_weights_only:
-        if filepath.endswith(".safetensors"):
-            return save_weights_only
-        msg = (
-            "save_weights_only should be False when filepath"
-            f" is not a '.pt' or '.safetensors' file, got {save_weights_only}"
-        )
     raise ValueError(msg)
 
 
 class ModelCheckpoint(Callback):
+    """Save the model during training.
+
+    Parameters
+    ----------
+    filepath : str
+        Destination; may contain ``{epoch}``, ``{step}`` and any log key,
+        e.g. ``"ckpt/epoch={epoch}-{valid_loss:.3f}.pt"``. Use ``.pt`` (full
+        model, or state dict with `save_weights_only`) or ``.safetensors``
+        (weights only).
+    monitor : str, default="valid_loss"
+        Log key compared when `save_best_only` is set.
+    verbose : int, default=0
+        Log decisions at debug level when > 0.
+    save_best_only : bool, default=False
+        Only save when `monitor` improves.
+    save_weights_only : bool, default=False
+        Save the state dict instead of the whole model.
+    mode : {"auto", "min", "max"}, default="auto"
+        Whether lower or higher `monitor` is better.
+    save_freq : "epoch", "batch" or int, default="epoch"
+        Save after every epoch, every batch, or every N batches.
+    initial_value_threshold : float, optional
+        Only save once `monitor` beats this value.
+    """
+
     def __init__(
         self,
-        filepath: str,
-        monitor: str = "val_loss",
+        filepath: str | Path,
+        monitor: str = "valid_loss",
         verbose: int = 0,
         save_best_only: bool = False,
         save_weights_only: bool = False,
-        mode: Literal["auto", "min", "max"] = "auto",
-        save_freq: Union[
-            Literal["epoch", "batch"], int
-        ] = "epoch",  # "epoch" or "batch" or integer
-        initial_value_threshold: Union[float, int, None] = None,
-    ):
+        mode: Mode = "auto",
+        save_freq: Union[Literal["epoch", "batch"], int] = "epoch",
+        initial_value_threshold: float | None = None,
+    ) -> None:
         super().__init__()
-        cls = type(self)
-        self.filepath: str = str(filepath)
+        self.filepath = str(filepath)
         self.monitor = monitor
         self.verbose = verbose
         self.save_best_only = save_best_only
         self.save_weights_only = _validate_save_weights_only(
             save_weights_only, self.filepath
         )
-        self.mode = mode
-        self.save_freq = _validate_save_freq(cls, save_freq)
+        self.mode = resolve_mode(monitor, mode)
+        self.save_freq = _validate_save_freq(type(self), save_freq)
         self.initial_value_threshold = initial_value_threshold
-        # set mode and initialize the best value
-        self.monitor_op, self.best = _get_monitor_attrs(
-            cls, self.monitor, self.mode, self.initial_value_threshold
-        )
+        self._reset()
+
+    def _reset(self) -> None:
+        if self.initial_value_threshold is None:
+            self.best = worst_value(self.mode)
+        else:
+            self.best = self.initial_value_threshold
         self.step = 0
         self.epoch = 0
 
-    def on_train_begin(self, logs=None):
-        cls = type(self)
-        self.monitor_op, self.best = _get_monitor_attrs(
-            cls, self.monitor, self.mode, self.initial_value_threshold
-        )
-        self.step = 0
-        self.epoch = 0
+    def on_train_begin(self, logs: dict[str, Any] | None = None) -> None:
+        self._reset()
 
-    def on_train_batch_end(self, batch, logs=None):
+    def on_train_batch_end(
+        self, batch_idx: int, logs: dict[str, Any] | None = None
+    ) -> None:
         self.step += 1
-        if not isinstance(self.save_freq, int):
-            return
-        if self.step % self.save_freq == 0:
+        if isinstance(self.save_freq, int) and self.step % self.save_freq == 0:
             self._save_model(logs)
 
-    def on_epoch_end(self, epoch: int, logs=None):
+    def on_epoch_end(
+        self, epoch: int, logs: dict[str, Any] | None = None
+    ) -> None:
         self.epoch = epoch
         if self.save_freq == "epoch":
             self._save_model(logs)
@@ -148,9 +139,9 @@ class ModelCheckpoint(Callback):
         filepath.parent.mkdir(parents=True, exist_ok=True)
         if self.save_best_only:
             current = logs.get(self.monitor)
-            if current is None:
+            if not is_valid_value(current):
                 return
-            if self.monitor_op(current, self.best):
+            if is_improvement(current, self.best, self.mode):
                 if self.verbose > 0:
                     logger.debug(
                         f"Monitor {self.monitor} improved from {self.best:.5f} to {current:.5f}"

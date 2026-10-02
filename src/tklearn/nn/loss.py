@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Callable, TypeVar, Union
 
 import torch
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
@@ -11,15 +11,33 @@ from tklearn.utils.targets import TargetType, type_of_target
 
 __all__ = [
     "LossDict",
+    "LossFunction",
+    "LossLike",
     "TargetBasedLoss",
 ]
 
+BatchT = TypeVar("BatchT")
+OutputT = TypeVar("OutputT")
+
 
 class LossDict(TensorDict):
+    """Named loss terms that behave like a single loss.
+
+    A bare tensor is stored under the key ``"loss"``. `backward` sums all
+    terms, so a model can return several losses and have each one logged.
+    """
+
     def __init__(self, *args: Any, **kwargs: Any):
         if len(args) == 1 and not isinstance(args[0], Mapping):
             args = ({"loss": args[0]},)
         super().__init__(*args, **kwargs)
+
+
+#: A scalar loss tensor, or named loss terms.
+LossLike = Union[torch.Tensor, Mapping[str, torch.Tensor], LossDict]
+
+#: ``loss(batch, output)`` -> loss, used to override `Module.compute_loss`.
+LossFunction = Callable[[BatchT, OutputT], LossLike]
 
 
 class TargetBasedLoss(torch.nn.Module):
