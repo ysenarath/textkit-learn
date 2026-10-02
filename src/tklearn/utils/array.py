@@ -39,6 +39,17 @@ T = TypeVar("T")
 RT = Union[Mapping[Any, "RT"], Tuple["RT", ...], nt.NDArray[Any], torch.Tensor]
 
 
+def _rebuild_mapping(original: Mapping, data: Dict[Any, Any]) -> Mapping:
+    # keep the original mapping type (e.g. a transformers ModelOutput) when it
+    # can be built from keyword arguments, otherwise fall back to a dict
+    if type(original) is dict:
+        return data
+    try:
+        return type(original)(**data)
+    except TypeError:
+        return data
+
+
 def to_numpy(obj: object, *args) -> RT:
     """Convert an object to a numpy array.
 
@@ -112,8 +123,8 @@ def detach(obj: T) -> T:
     """
     if isinstance(obj, torch.Tensor):
         return obj.detach()
-    elif isinstance(obj, Dict):
-        return {k: detach(v) for k, v in obj.items()}
+    elif isinstance(obj, Mapping):
+        return _rebuild_mapping(obj, {k: detach(v) for k, v in obj.items()})
     elif isinstance(obj, List):
         return [detach(v) for v in obj]
     elif isinstance(obj, Tuple) and hasattr(obj, "_fields"):
@@ -155,9 +166,10 @@ def move_to_device(
 ) -> T:
     """Move an object to a device.
 
-    If the object is a torch tensor or module with the provided device, it is
-    returned as is. If the object is a mapping, list, or tuple, the function is
-    applied recursively to each element in the object.
+    Tensors, modules and objects implementing `MovableToDeviceMixin` are moved
+    with their `to` method. Mappings, lists and tuples (including named
+    tuples) are traversed recursively. Any other value (numpy arrays, numbers,
+    strings, None, ...) cannot live on a device and is returned unchanged.
 
     Parameters
     ----------
@@ -177,7 +189,7 @@ def move_to_device(
         data = {}
         for k, v in obj.items():
             data[k] = move_to_device(v, device, non_blocking=non_blocking)
-        return data
+        return _rebuild_mapping(obj, data)
     elif isinstance(obj, Tuple) and hasattr(obj, "_fields"):
         # namedtuple, e.g., RecordBatch
         dtype = type(obj)
@@ -192,11 +204,7 @@ def move_to_device(
         return [
             move_to_device(v, device, non_blocking=non_blocking) for v in obj
         ]
-    elif isinstance(obj, str):
-        return obj
-    raise ValueError(
-        f"cannot move object of type '{obj.__class__.__name__}' to device"
-    )
+    return obj
 
 
 def concat(objs: List[RT], /, axis: int = 0) -> RT:
@@ -226,14 +234,10 @@ def concat(objs: List[RT], /, axis: int = 0) -> RT:
     if len(objs) == 1:
         return elem
     if isinstance(elem, Mapping):
-        keys = set(elem.keys())
-        output = {k: concat([o[k] for o in objs], axis=axis) for k in keys}
-        try:
-            # try to convert to original type assuming dict style constructor
-            return type(elem)(**output)
-        except TypeError:
-            # if not possible, return as a dictionary
-            return output
+        output = {
+            k: concat([o[k] for o in objs], axis=axis) for k in elem.keys()
+        }
+        return _rebuild_mapping(elem, output)
     if isinstance(elem, Tuple) and hasattr(elem, "_fields"):  # namedtuple
         dtype = type(elem)
         size = len(elem)
