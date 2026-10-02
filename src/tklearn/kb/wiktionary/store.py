@@ -1,519 +1,553 @@
 from __future__ import annotations
 
+import functools
 import gzip
 import os
 import pickle
+import re
 import shutil
 import subprocess
+from collections import defaultdict
+from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar, Union
+from typing import Any
 
 import numpy as np
 import requests
+from datasets import Dataset
 from huggingface_hub import HfApi
-from setfit import SetFitModel
 from tqdm import auto as tqdm
 
 from tklearn import config, logging
-from tklearn.embeddings.base import AutoEmbedding
-from tklearn.kb.base import ArtifactStore, ArtifactStoreConfig
+from tklearn.embeddings import Embedding, SentenceTransformerEmbedding
+from tklearn.exceptions import UnexpectedValueError
+from tklearn.kb.base import KNOWLEDGE_STORES, KnowledgeStore
 from tklearn.kb.lexicon import Lexicon
-from tklearn.kb.triple_store import TripleStore
-from tklearn.kb.wiktionary.models import Word, parse_jsonl
+from tklearn.kb.triple_store import TripleStore, load_pickle
+from tklearn.kb.wiktionary.models import Sense, Word, parse_jsonl
+from tklearn.utils.hf import suppress_hf_output
+
+__all__ = [
+    "WiktionaryProcessor",
+    "WiktionaryStore",
+]
 
 logger = logging.get_logger(__name__)
+G = int | None
+WS = tuple[str, G]
+
+WIKTIONARY_URL = "https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz"
+# glosses are embedded with this model; the cached embeddings depend on it
+GLOSS_EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
+SUPPORTED_PREDICATES = {
+    "synonym",
+    "antonym",
+    "hypernym",
+    "hyponym",
+    "category",
+}
 
 
-_WIKTIONARY_URL = "https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz"
-
-
-def normalize(a: str, b: str, c: str) -> tuple[str, str, str]:
-    # convert to bottom-up relation if needed
-    if b == "hyponym" or b == "instance":
-        # here the original relation is top-down
-        #   i.e., c is hyponym of a / c is instance of a
-        return (c, b, a)
-    if b == "hypernym":
-        # c is hypernym of a (top-down, i.e., c is at the top)
-        b = "hyponym"
-        # a is hyponym of c (bottom-up)
-        return (a, b, c)
-    if b == "synonym" or b == "antonym":
-        # symmetrical (not DAG)
-        # a is synonym of b == b is synonym of a
-        return (a, b, c)
-    raise ValueError(f"relation type {b!r} is not recognized")
-
-
-def count_jsonl(path: Path) -> int:
+def count_lines_fast(path):
     return int(subprocess.check_output(f"wc -l {path}", shell=True).split()[0])
 
 
-def add_forms(w: Word, lexicon: Lexicon):
-    """Stores form mappings in LevelDB using batch writing."""
-    word = (w.word or "").strip()
-    if not word:
-        return
-    base_forms: set = lexicon.get(word, {word})
-    for form_of in w.form_of or []:
-        form_of_word = (form_of.word or "").strip()
-        base_forms.add(form_of_word)
-    lexicon[word] = base_forms
-    for form in w.forms or []:
-        form_form = (form.form or "").strip()
-        if not form_form:
+def setup_wiktionary_words(
+    extracted_path: Path, wiktionary_path: Path, language: str = "en"
+) -> bool:
+    words = []
+    data_iter = parse_jsonl(extracted_path)
+    num_lines = count_lines_fast(extracted_path)
+    if language in {"en", "english"}:
+        languages = {"en", "english"}
+    else:
+        raise NotImplementedError(f"Language {language} not supported.")
+    desc = "Caching Wiktionary"
+    for wd in tqdm.tqdm(data_iter, total=num_lines, desc=desc):
+        if wd.lang is not None and (
+            wd.lang.lower() not in languages
+            or wd.lang_code.lower() not in languages
+        ):
             continue
-        base_forms: set = lexicon.get(form_form, set())
-        base_forms.add(word)
-        lexicon[form_form] = base_forms
+        words.append(wd)
+    with open(wiktionary_path, "wb") as f:
+        pickle.dump(words, f)
+    return True
 
 
-class WiktionaryArtifactStoreConfigV1(ArtifactStoreConfig):
-    name: ClassVar[str] = "wiktionary:v0"
-    repo_id: str = "textkit-learn/wiktionary"
-    repo_type: str = "dataset"
-    private: bool = True
+def download_wiktionary(wiktionary_url: str, output_path: Path):
+    logger.info(f"Downloading from {wiktionary_url}")
+    response = requests.get(wiktionary_url, stream=True)
+    response.raise_for_status()  # Raise an exception for HTTP errors
+    total_size = response.headers.get("content-length")
+    # remove the file if it exists
+    if output_path.exists():
+        os.remove(output_path)
+    # Download the file in chunks
+    with open(output_path, "wb") as f:
+        if total_size is None:  # no content length header
+            f.write(response.content)
+        else:
+            total_size = int(total_size)
+            progress_bar = tqdm.tqdm(
+                total=total_size,
+                unit="B",
+                unit_scale=True,
+                desc=f"Downloading {os.path.basename(output_path)}",
+                ascii=True,
+            )
+            for chunk in response.iter_content(chunk_size=4096):
+                if chunk:  # filter out keep-alive chunks
+                    f.write(chunk)
+                    progress_bar.update(len(chunk))
+            progress_bar.close()
 
 
-class WiktionaryArtifactStoreV1(ArtifactStore):
-    config: WiktionaryArtifactStoreConfigV1
+def setup_wiktionary(
+    wiktionary_url: str,
+    temp_download_path: Path,
+    temp_extracted_path: Path,
+    wiktionary_path: Path,
+    language: str = "en",
+    remove_downloaded: bool = True,
+) -> Path:
+    logger.info("Downloading wiktionary data.")
+    if wiktionary_path is None or not wiktionary_path.exists():
+        logger.info("Wiktionary data not found.")
+        if not temp_extracted_path.exists():
+            # Download the gzip file
+            download_wiktionary(
+                wiktionary_url=wiktionary_url,
+                output_path=temp_download_path,
+            )
+            logger.info("Download complete.")
+            # Extract the gzip file
+            logger.info("Extracting wiktionary data.")
+            with gzip.open(temp_download_path, "rb") as f_in:
+                with open(temp_extracted_path, "wb") as f_out:
+                    # Create a progress bar for extraction (can't know size in advance for gzip)
+                    shutil.copyfileobj(f_in, f_out)
+            logger.info("Extraction complete.")
+            # remove the compressed file after extraction
+            os.remove(temp_download_path)
+        # Cache English words
+        if wiktionary_path is not None:
+            setup_wiktionary_words(
+                extracted_path=temp_extracted_path,
+                wiktionary_path=wiktionary_path,
+                language=language,
+            )
+        # remove the extracted jsonl file after caching
+        if remove_downloaded:
+            os.remove(temp_extracted_path)
+    else:
+        logger.info("Wiktionary data already exists.")
+    return temp_extracted_path
 
-    def __post_init__(self):
-        # local_dir is the directory where the repo will be downloaded
-        self.local_dir = Path(config.assets_dir) / "wiktionary"
-        self.local_dir.mkdir(parents=True, exist_ok=True)
-        # repo_id is the name of the repo on Hugging Face Hub
-        self.repo_id = self.config.repo_id
-        self.repo_type = self.config.repo_type
-        self.private = self.config.private
-        # must be compatible with wiktextract library (https://kaikki.org)
-        self.wiktionary_url = _WIKTIONARY_URL
-        # Hugging Face Hub API
-        self.api = HfApi()
-        # config
-        self.predicates = [
-            "synonym",
-            "antonym",
-            "hyponym",
-            "hypernym",
-            "instance",
-        ]
-        self.lang_code: str = "en"
-        # create the repo if it does not exist
-        self.api.create_repo(
-            repo_id=self.repo_id,
-            private=self.private,
-            repo_type=self.repo_type,
-            exist_ok=True,
+
+def load_from_cache(data: list[dict[str, Any]]):
+    for item in data:
+        yield item
+
+
+def batch_embedding_func(
+    batch: dict[str, list[Any]], *, encoder: Embedding
+) -> dict[str, list[np.ndarray]]:
+    return {"embedding": encoder.encode_document(batch["gloss"])}
+
+
+class EmbeddingsMapping(Mapping[int, np.ndarray]):
+    def __init__(self, dataset: Dataset, gloss2idx: dict[str, int]):
+        self.dataset = dataset
+        id2iloc = {}
+        DESC = "Loading Gloss Embeddings"
+        for index, gloss in enumerate(tqdm.tqdm(dataset["gloss"], desc=DESC)):
+            id2iloc[gloss2idx[gloss]] = index
+        self.id2iloc = id2iloc
+
+    def __getitem__(self, key: int) -> np.ndarray:
+        index = self.id2iloc[key]
+        return self.dataset[index]["embedding"]
+
+    def __iter__(self):
+        return iter(self.id2iloc.keys())
+
+    def __len__(self) -> int:
+        return len(self.id2iloc)
+
+    def __contains__(self, key: int) -> bool:
+        return key in self.id2iloc
+
+
+def compute_gloss_embeddings(
+    gloss2idx: dict[str, int], cache_file_name: str | Path
+) -> EmbeddingsMapping:
+    cache_file_name = Path(cache_file_name)
+    if not cache_file_name.exists():
+        ds = Dataset.from_generator(
+            load_from_cache,
+            gen_kwargs={
+                "data": [{"gloss": gloss} for gloss in gloss2idx.keys()]
+            },
         )
-        # download the repo to the local directory
-        self.api.snapshot_download(
-            repo_id=self.repo_id,
-            repo_type=self.repo_type,
-            local_dir=self.local_dir,
+        ds = ds.map(
+            batch_embedding_func,
+            batched=True,
+            batch_size=10_000,
+            num_proc=1,
+            load_from_cache_file=True,
+            fn_kwargs={
+                "encoder": SentenceTransformerEmbedding(GLOSS_EMBEDDING_MODEL),
+            },
+            desc="Computing Gloss Embeddings",
         )
-        filename = "wiktionary.jsonl"
-        lang = self.lang_code
-        self.download_path = self.local_dir / f"{filename}.gz"
-        self.extracted_path = self.local_dir / filename
-        self.gloss2idx_path = self.local_dir / "gloss2idx.pkl"
-        self.senses_path = self.local_dir / "senses.pkl"
-        self.idx2gloss_path = self.local_dir / "idx2gloss.pkl"
-        self.embeddings_path = self.local_dir / "embeddings.pkl"
-        self.triplet_path = self.local_dir / "triples.duckdb"
-        self.attrs_path = self.local_dir / "attrs.pkl"
-        self.forms_lexicon_path = self.local_dir / f"forms-{lang}.pkl"
-        gloss2idx, idx2gloss, senses, embeddings = self.setup_senses()
-        self.gloss2idx = gloss2idx
-        self.idx2gloss = idx2gloss
-        self.senses = senses
-        self.embeddings = embeddings
-        self.triples = self.setup_triple_store()
-        self.lexicon = self.setup_lexicon()
-        self.attrs = self.setup_attrs()
-        self.api.upload_folder(
-            folder_path=self.local_dir,
-            repo_id=self.repo_id,
-            repo_type=self.repo_type,
-            ignore_patterns=["*.jsonl", "*.jsonl.gz"],
+        ds = ds.save_to_disk(cache_file_name)
+        del ds
+    dataset = Dataset.load_from_disk(cache_file_name)
+    dataset.set_format("numpy")
+    return EmbeddingsMapping(dataset, gloss2idx=gloss2idx)
+
+
+def format_triple(triple: tuple[WS, str, WS]):
+    subject, predicate, object_ = triple
+    if subject[1] is None and object_[1] is None:
+        return
+    if predicate == "hyponym":
+        rev_triple = (object_, "hypernym", subject)
+        return rev_triple
+    return triple
+
+
+@dataclass
+class WordSense:
+    word: str
+    sense: str | None = None
+
+    def __init__(self, word: str, sense: str | None = None):
+        # asset word is str
+        if not isinstance(word, str):
+            raise UnexpectedValueError(
+                got=type(word).__name__,
+                expected="str",
+            )
+        self.word = word
+        self.sense = sense
+
+
+def predicate_getattr(subj: Word | Sense, predicate: str) -> list[WordSense]:
+    value = None
+    if predicate == "synonym":
+        value = subj.synonyms
+    elif predicate == "antonym":
+        value = subj.antonyms
+    elif predicate == "hypernym":
+        value = subj.hypernyms
+    elif predicate == "hyponym":
+        value = subj.hyponyms
+    elif predicate == "category":
+        if subj.categories:
+            value = list(map(WordSense, subj.categories))
+    else:
+        raise UnexpectedValueError(
+            got=predicate, expected=SUPPORTED_PREDICATES
         )
+    return value or []
+
+
+class WiktionaryProcessor:
+    """Build the knowledge store artifacts from a Wiktionary dump.
+
+    Each step caches its output in `cache_dir` (``processed-words.pkl``,
+    ``lexicon.pkl``, ``senses.pkl``, ``embeddings/``) and reuses it when
+    present. The raw dump is only downloaded when nothing is cached.
+    """
+
+    ANTI_PATTERNS = [
+        # antonym(s) of "{definition}" -> definition
+        # (see https://en.wiktionary.org/wiki/Template:antsense)
+        re.compile(r'antonym\(s\) of [“"](.*)[”"]')
+    ]
+
+    def __init__(
+        self,
+        wiktionary_path: Path,
+        cache_dir: Path,
+        language: str,
+        predicates: set[str] | None = None,
+    ):
+        self.language = language
+        self._wiktionary_path = wiktionary_path
+        if predicates is None:
+            predicates = SUPPORTED_PREDICATES
+        self.predicates = set(predicates)
+        self.cache_dir = cache_dir
 
     @property
     def wiktionary_path(self) -> Path:
-        if not hasattr(self, "_wiktionary_path"):
-            self._wiktionary_path = self.setup_wiktionary()
+        setup_wiktionary(
+            wiktionary_url=WIKTIONARY_URL,
+            temp_download_path=self.cache_dir / "wiktionary.jsonl.gz",
+            temp_extracted_path=self.cache_dir / "wiktionary.jsonl",
+            wiktionary_path=self._wiktionary_path,
+            language=self.language,
+        )
         return self._wiktionary_path
 
-    @property
-    def wiktionary_size(self) -> int:
-        if not hasattr(self, "_wiktionary_size"):
-            self._wiktionary_size = count_jsonl(self.wiktionary_path)
-        return self._wiktionary_size
-
-    def setup_wiktionary(self) -> Path:
-        logger.info("Downloading wiktionary data.")
-        if not self.extracted_path.exists():
-            response = requests.get(self.wiktionary_url, stream=True)
-            response.raise_for_status()  # Raise an exception for HTTP errors
-            total_size = response.headers.get("content-length")
-
-            # remove the file if it exists
-            if self.download_path.exists():
-                os.remove(self.download_path)
-
-            # Download the file in chunks
-            with open(self.download_path, "wb") as f:
-                if total_size is None:  # no content length header
-                    f.write(response.content)
-                else:
-                    total_size = int(total_size)
-                    progress_bar = tqdm.tqdm(
-                        total=total_size,
-                        unit="B",
-                        unit_scale=True,
-                        desc=f"Downloading {os.path.basename(self.download_path)}",
-                        ascii=True,
-                    )
-                    for chunk in response.iter_content(chunk_size=4096):
-                        if chunk:  # filter out keep-alive chunks
-                            f.write(chunk)
-                            progress_bar.update(len(chunk))
-                    progress_bar.close()
-            logger.info("Download complete.")
-
-            # Extract the gzip file
-            logger.info("Extracting wiktionary data.")
-            with gzip.open(self.download_path, "rb") as f_in:
-                with open(self.extracted_path, "wb") as f_out:
-                    # Create a progress bar for extraction (can't know size in advance for gzip)
-                    shutil.copyfileobj(f_in, f_out)
-
-            logger.info("Extraction complete.")
-
-            # Optionally, remove the compressed file after extraction
-            os.remove(self.download_path)
-        else:
-            logger.info("Wiktionary data already exists.")
-        return self.extracted_path
-
-    def setup_senses(self):
-        if self.gloss2idx_path.exists() and self.senses_path.exists():
-            logger.info("Gloss2idx and senses already exist.")
-            with open(self.gloss2idx_path, "rb") as f:
-                gloss2idx = pickle.load(f)
-            with open(self.senses_path, "rb") as f:
-                senses = pickle.load(f)
-        else:
-            senses: dict[str, set[int]] = {}
-            gloss2idx: dict[str, int] = {}
-
-            def add_to_index(
-                word: Union[Word, str], gloss: str, add_to_senses: bool = False
-            ):
-                if not isinstance(word, str):
-                    word = word.word
-                gloss_index = gloss2idx.setdefault(gloss, len(gloss2idx))
-                if add_to_senses:
-                    senses[word].add(gloss_index)
-
-            progress_bar = tqdm.tqdm(
-                total=self.wiktionary_size,
-                desc="Extracting glosses",
-                leave=True,
-            )
-
-            for word in parse_jsonl(self.wiktionary_path):
-                # skip non-English words
-                if word.lang_code and word.lang_code != "en":
-                    progress_bar.update(1)
-                    continue
-
-                for word_sense in word.senses or []:
-                    if word.word not in senses:
-                        senses[word.word] = set()
-                    word_sense_gloss = None
-                    if word_sense.glosses:
-                        word_sense_gloss = " ".join(
-                            word_sense.glosses or []
-                        ).strip()
-                    # DO NOT USE raw_glosses since those are either obsolete words
-                    #   or not properly defined terms
-                    if word_sense_gloss is None:
-                        continue
-                    add_to_index(word, word_sense_gloss, add_to_senses=True)
-
-                for predicate in self.predicates:
-                    # word level relations
-                    relations = getattr(word, f"{predicate}s") or []
-                    for relation in relations:
-                        if not relation.word:  # object
-                            continue
-                        relation_sense = getattr(relation, "sense", None)
-                        if relation_sense is None:
-                            continue
-                        add_to_index(word, relation_sense)
-                    # sense level relations
-                    for word_sense in word.senses or []:
-                        relations = getattr(word_sense, f"{predicate}s") or []
-                        for relation in relations:
-                            if not relation.word:  # object
-                                continue
-                            sense_gloss = None
-                            # `relation_sense` this is likely None
-                            relation_sense = getattr(relation, "sense", None)
-                            if word_sense.glosses:
-                                sense_gloss = " ".join(
-                                    word_sense.glosses or []
-                                ).strip()
-                            elif relation_sense:
-                                sense_gloss = relation_sense
-                            # don't use `word_sense.raw_glosses` because they are not good ones
-                            if sense_gloss is None:
-                                continue
-                            add_to_index(word, sense_gloss)
-
-                progress_bar.update(1)
-
-            progress_bar.close()
-
-            with open(self.gloss2idx_path, "wb") as f:
-                pickle.dump(gloss2idx, f)
-
-            with open(self.senses_path, "wb") as f:
-                pickle.dump(senses, f)
-
-            logger.info("Gloss2idx and senses created.")
-
-        if self.idx2gloss_path.exists() and self.embeddings_path.exists():
-            logger.info("Idx2gloss and embeddings already exist.")
-            with open(self.idx2gloss_path, "rb") as f:
-                idx2gloss = pickle.load(f)
-            with open(self.embeddings_path, "rb") as f:
-                embeddings = pickle.load(f)
-        else:
-            logger.info("Creating idx2gloss and embeddings.")
-
-            idx2gloss: dict[int, str] = {}
-            embeddings: dict[int, np.ndarray] = {}
-
-            model = AutoEmbedding.from_config({
-                "loader": "transformers",
-                "name": "sentence-transformers/all-MiniLM-L6-v2",
-            })
-
-            progress_bar = tqdm.tqdm(
-                total=len(gloss2idx),
-                desc="Creating idx2gloss and embeddings",
-                leave=True,
-            )
-
-            buffer = ([], [])
-
-            for gloss, index in gloss2idx.items():
-                buffer[0].append(index)
-                buffer[1].append(gloss)
-
-                idx2gloss[index] = gloss
-
-                if len(buffer[0]) >= 512:
-                    ex = model.encode(buffer[1], batch_size=256)
-                    embeddings.update(dict(zip(buffer[0], ex)))
-                    buffer = ([], [])
-
-                progress_bar.update(1)
-
-            if buffer[0]:
-                ex = model.encode(buffer[1], batch_size=256)
-                embeddings.update(dict(zip(buffer[0], ex)))
-                buffer = ([], [])
-
-            progress_bar.close()
-
-            with open(self.idx2gloss_path, "wb") as f:
-                pickle.dump(idx2gloss, f)
-
-            with open(self.embeddings_path, "wb") as f:
-                pickle.dump(embeddings, f)
-
-            logger.info("Idx2gloss and embeddings created.")
-
-        return gloss2idx, idx2gloss, senses, embeddings
-
-    def closest_sense(self, word: str, sense_gloss: Union[str, None]):
-        if word not in self.senses:
+    def get_or_set_sense_id(self, definition: str | None) -> int | None:
+        if definition is None:
             return None
-        word_sense_indexes: list[int] = list(self.senses[word])
-        if not word_sense_indexes:
-            return
-        sense_index = (
-            self.gloss2idx[sense_gloss] if sense_gloss is not None else None
-        )
-        if sense_index in word_sense_indexes:
-            return sense_index
-        sense_embeddings = np.array([
-            self.embeddings[index] for index in word_sense_indexes
-        ])
-        if sense_index is None:
-            sense_embedding = np.array([np.mean(sense_embeddings, axis=0)])
-        elif isinstance(sense_index, int):
-            sense_embedding = self.embeddings[sense_index]
-        else:
-            raise ValueError("sense_index must be int or None")
-        distances = np.linalg.norm(sense_embeddings - sense_embedding, axis=1)
-        return word_sense_indexes[np.argmin(distances)]
+        if not isinstance(definition, str):
+            raise UnexpectedValueError(
+                got=type(definition).__name__,
+                expected="str",
+            )
+        for pattern in self.ANTI_PATTERNS:
+            m = pattern.match(definition)
+            if m:
+                definition = m.group(1)
+                break
+        if definition not in self.gloss2idx:
+            self.gloss2idx[definition] = len(self.gloss2idx)
+        return self.gloss2idx[definition]
 
-    def get_relations(self, word: Word):
+    def process_sense(self, word: Word, sense: Sense):
+        # Determine sense ID based on glosses
+        definition = " ".join(sense.glosses or []).strip() or None
+        if not definition:
+            definition = " ".join(sense.raw_glosses or []).strip() or None
+        sense_id = None
+        if definition:
+            sense_id = self.get_or_set_sense_id(definition)
+            self.sense2words[sense_id].add(word.word)
+        # Add form-of relations
+        for form_of in sense.form_of or []:
+            self.form2senses[word.word].add((form_of.word, sense_id))
+        # Add other relations
         for predicate in self.predicates:
-            relations = getattr(word, f"{predicate}s") or []
-            for relation in relations:
-                if not relation.word:  # object
-                    continue
-                relation_sense = getattr(relation, "sense", None)
-                if relation_sense is None:
-                    continue
-                subject = (
-                    word.word,
-                    self.closest_sense(word.word, relation_sense),
-                )
-                object_ = (relation.word, None)
-                yield normalize(subject, predicate, object_)
-            for word_sense in word.senses or []:
-                relations = getattr(word_sense, f"{predicate}s") or []
-                for relation in relations:
-                    if not relation.word:  # object
-                        continue
-                    sense_gloss = None
-                    # `relation_sense` this is likely None
-                    relation_sense = getattr(relation, "sense", None)
-                    if word_sense.glosses:
-                        sense_gloss = " ".join(
-                            word_sense.glosses or []
-                        ).strip()
-                    elif relation_sense:
-                        sense_gloss = relation_sense
-                    # don't use `word_sense.raw_glosses` because they are not good ones
-                    subject = (
-                        word.word,
-                        self.closest_sense(word.word, sense_gloss),
+            objects = predicate_getattr(sense, predicate)
+            for obj in objects:
+                rel_sense_id = None
+                if obj.sense:
+                    assert isinstance(obj.sense, str), (
+                        "expected str, got {}".format(type(obj.sense).__name__)
                     )
-                    object_ = (relation.word, None)
-                    yield normalize(subject, predicate, object_)
-
-    def setup_triple_store(self):
-        if not self.triplet_path.exists():
-            logger.info("Creating triplet store.")
-            triples = TripleStore(self.triplet_path, read_only=False)
-
-            progress_bar = tqdm.tqdm(
-                total=self.wiktionary_size,
-                desc="Processing Wiktionary",
-                leave=True,
-            )
-
-            for word in parse_jsonl(self.wiktionary_path):
-                # skip non-English words
-                if word.lang_code and word.lang_code != "en":
-                    progress_bar.update(1)
+                    rel_sense_id = self.get_or_set_sense_id(obj.sense)
+                    self.sense2words[rel_sense_id].add(word.word)
+                triple = (
+                    (word.word, sense_id or rel_sense_id),
+                    predicate,
+                    (obj.word, None),
+                )
+                triple = format_triple(triple)
+                if triple is None:
                     continue
+                self.triples.add(triple)
 
-                for relation in self.get_relations(word):
-                    subject, predicate, object_ = relation
-                    subj_word, subj_sense = subject
-                    if subj_sense is None:
-                        continue
-                    triple = ((subj_word, subj_sense), predicate, object_)
-                    triples.insert(triple)
+    def process_word(self, word: Word):
+        self.form2senses[word.word].add((word.word, None))
+        for form in word.forms or []:
+            word_form: str = form.form
+            self.form2senses[word_form].add((word.word, None))
+        for predicate in self.predicates:
+            objects = predicate_getattr(word, predicate)
+            for obj in objects:
+                rel_sense_id = None
+                if obj.sense:
+                    rel_sense_id = self.get_or_set_sense_id(obj.sense)
+                    self.sense2words[rel_sense_id].add(word.word)
+                triple = (
+                    (word.word, rel_sense_id),
+                    predicate,
+                    (obj.word, None),
+                )
+                triple = format_triple(triple)
+                if triple is None:
+                    continue
+                self.triples.add(triple)
+        for sense in word.senses or []:
+            self.process_sense(word, sense)
 
-                progress_bar.update(1)
-
-            progress_bar.close()
-
-            triples.close()
-
-            logger.info("Triplet store created.")
-        return TripleStore(self.triplet_path, read_only=True)
-
-    def setup_lexicon(self) -> Lexicon[set[str]]:
-        """Returns the lexicon of forms."""
+    def process_words(self):
+        self.triples = TripleStore()
+        self.sense2words: defaultdict[G, set[str]] = defaultdict(set)
+        self.form2senses: defaultdict[str, set[WS]] = defaultdict(set)
+        self.gloss2idx: dict[str, int] = {}
         try:
-            return Lexicon.load(self.forms_lexicon_path)
+            logger.info("Loading processed words from cache.")
+            cache_data = load_pickle(self.cache_dir / "processed-words.pkl")
+            logger.info("Loaded processed words from cache.")
+            self.triples = cache_data["triples"]
+            self.sense2words = cache_data["sense2words"]
+            self.form2senses = cache_data["form2senses"]
+            self.gloss2idx = cache_data["gloss2idx"]
         except FileNotFoundError:
-            pass
-        lexicon = Lexicon()
-        progress_bar = tqdm.tqdm(
-            total=self.wiktionary_size, desc="Adding forms", unit="word"
-        )
-        for word in parse_jsonl(self.wiktionary_path):
-            if any([
-                self.lang_code == (word.lang_code or "").lower(),
-                self.lang_code == (word.lang or "").lower(),
-            ]):
-                add_forms(word, lexicon=lexicon)
-            progress_bar.update(1)
-        progress_bar.close()
-        lexicon.dump(self.forms_lexicon_path)
-        return lexicon
+            with open(self.wiktionary_path, "rb") as f:
+                words: list[Word] = pickle.load(f)
+            for word in tqdm.tqdm(words, desc="Processing Words"):
+                self.process_word(word)
+            # save intermediate cache
+            cache_data = {
+                "triples": self.triples,
+                "sense2words": self.sense2words,
+                "form2senses": self.form2senses,
+                "gloss2idx": self.gloss2idx,
+            }
+            with open(self.cache_dir / "processed-words.pkl", "wb") as f:
+                pickle.dump(cache_data, f)
 
-    def setup_attrs(self) -> dict[str, set[int]]:
-        if self.attrs_path.exists():
-            with open(self.attrs_path, "rb") as f:
-                attrs = pickle.load(f)
-        else:
-            attrs = {}
+    def build(self) -> dict[str, Any]:
+        self.process_words()
 
-        updated = False
-
-        attr_key = "hate_related"
-        if attr_key not in attrs:
-            hate_related_senses = set()
-            batch = []
-
-            # Download from the 🤗 Hub
-            model = SetFitModel.from_pretrained(
-                "ysenarath/all-MiniLM-L6-v2-hateful-definitions-full-bin-v1"
-            )
-
-            progress_bar = tqdm.tqdm(
-                total=len(self.idx2gloss),
-                desc="Detecting hate-related definitions",
-                leave=False,
-            )
-
-            for idx, gloss in self.idx2gloss.items():
-                batch.append((idx, gloss))
-                if len(batch) < 1000:
+        lexicon: Lexicon[set[tuple[str, int]]]
+        try:
+            logger.info("Loading lexicon from cache.")
+            lexicon = Lexicon.load(self.cache_dir / "lexicon.pkl")
+            logger.info("Loaded lexicon from cache.")
+        except FileNotFoundError:
+            logger.info("Failed to load lexicon from cache. Building lexicon.")
+            lexicon = Lexicon()
+            for form, words_set in self.form2senses.items():
+                if form is None:
                     continue
-                keys, values = zip(*batch)
-                labels = model(values)
-                hate_related_senses.update(
-                    (
-                        idx
-                        for idx, label in zip(keys, labels)
-                        if label != "normal"
-                    )
-                )
-                progress_bar.update(len(batch))
-                batch = []
+                form = form.strip()
+                if not form:
+                    continue
+                if form in lexicon:
+                    lexicon[form].update({
+                        word for word in words_set if word[0] is not None
+                    })
+                else:
+                    lexicon[form] = {
+                        word for word in words_set if word[0] is not None
+                    }
+            logger.info("Saving lexicon to cache.")
+            lexicon.dump(self.cache_dir / "lexicon.pkl")
+            logger.info("Completed building lexicon.")
 
-            if batch:
-                keys, values = zip(*batch)
-                labels = model(values)
-                hate_related_senses.update(
-                    (
-                        idx
-                        for idx, label in zip(keys, labels)
-                        if label != "normal"
-                    )
-                )
-                progress_bar.update(len(batch))
+        try:
+            logger.info("Loading senses from cache.")
+            with open(self.cache_dir / "senses.pkl", "rb") as f:
+                senses = pickle.load(f)
+            logger.info("Loaded senses from cache.")
+        except FileNotFoundError:
+            logger.info("Failed to load senses from cache. Building senses.")
+            senses = defaultdict(set)
+            for sense_id, words in self.sense2words.items():
+                for word in words:
+                    senses[word].add(sense_id)
+            logger.info("Saving senses to cache.")
+            with open(self.cache_dir / "senses.pkl", "wb") as f:
+                pickle.dump(senses, f)
+            logger.info("Completed building senses.")
 
-            progress_bar.close()
+        logger.info("Loading embeddings from cache.")
+        self.embeddings = compute_gloss_embeddings(
+            gloss2idx=self.gloss2idx,
+            cache_file_name=self.cache_dir / "embeddings",
+        )
+        logger.info("Completed loading embeddings from cache.")
 
-            attrs[attr_key] = hate_related_senses
-            updated = True
+        return {
+            "triples": self.triples,
+            "lexicon": lexicon,
+            "gloss2idx": self.gloss2idx,
+            "idx2gloss": {idx: gloss for gloss, idx in self.gloss2idx.items()},
+            "senses": senses,
+            "embeddings": self.embeddings,
+            "attrs": {},
+        }
 
-        if updated:
-            with open(self.attrs_path, "wb") as f:
-                pickle.dump(attrs, f)
 
-        return attrs
+@KNOWLEDGE_STORES.register("wiktionary")
+class WiktionaryStore(KnowledgeStore):
+    """English Wiktionary as a knowledge store.
+
+    Prebuilt artifacts are downloaded from the Hugging Face Hub into
+    ``config.assets_dir/wiktionary-<version>``. Anything missing is built
+    locally from the kaikki.org Wiktionary dump, which is a large download
+    and takes a long time to process.
+
+    Parameters
+    ----------
+    language : str, default="en"
+        Language of the entries to keep. Only English is supported.
+    version : str, default="v1.0"
+        Artifact version; selects the local directory and Hub repository.
+    repo_id : str, optional
+        Hub dataset repository; by default ``textkit-learn/wiktionary-<version>``.
+    offline : bool, default=False
+        Use only local files and never contact the Hub.
+    verbose : bool, default=False
+        Log progress at info level.
+
+    Notes
+    -----
+    Loading never writes to the Hub. Call `push_to_hub` to publish locally
+    built artifacts.
+    """
+
+    def __init__(
+        self,
+        language: str = "en",
+        version: str = "v1.0",
+        repo_id: str | None = None,
+        offline: bool = False,
+        verbose: bool = False,
+    ) -> None:
+        self._init_kwargs = dict(
+            language=language,
+            version=version,
+            repo_id=repo_id,
+            offline=offline,
+            verbose=verbose,
+        )
+        self.language = language
+        self.version = version
+        self.repo_id = repo_id or f"textkit-learn/wiktionary-{version}"
+        self.offline = offline
+        logger.setLevel(logging.INFO if verbose else logging.WARNING)
+        self.local_dir = Path(config.assets_dir) / f"wiktionary-{version}"
+        self.local_dir.mkdir(parents=True, exist_ok=True)
+        if not offline:
+            HfApi().snapshot_download(
+                repo_id=self.repo_id,
+                repo_type="dataset",
+                local_dir=self.local_dir,
+            )
+        processor = WiktionaryProcessor(
+            wiktionary_path=self.local_dir / "words.pkl",
+            cache_dir=self.local_dir,
+            language=language,
+        )
+        artifacts = processor.build()
+        self.triples = artifacts["triples"]
+        self.lexicon = artifacts["lexicon"]
+        self.gloss2idx = artifacts["gloss2idx"]
+        self.idx2gloss = artifacts["idx2gloss"]
+        self.senses = artifacts["senses"]
+        self.embeddings = artifacts["embeddings"]
+
+    def __reduce__(self):
+        return (functools.partial(type(self), **self._init_kwargs), ())
+
+    def __repr__(self) -> str:
+        args = ", ".join(f"{k}={v!r}" for k, v in self._init_kwargs.items())
+        return f"{type(self).__name__}({args})"
+
+    def push_to_hub(self, private: bool = True) -> None:
+        """Upload the local artifacts to `repo_id`, creating it if needed."""
+        api = HfApi()
+        api.create_repo(
+            repo_id=self.repo_id,
+            private=private,
+            repo_type="dataset",
+            exist_ok=True,
+        )
+        with suppress_hf_output():
+            api.upload_folder(
+                folder_path=self.local_dir,
+                repo_id=self.repo_id,
+                repo_type="dataset",
+                ignore_patterns=["*.jsonl", "*.jsonl.gz"],
+            )

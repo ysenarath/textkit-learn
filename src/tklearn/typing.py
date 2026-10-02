@@ -20,7 +20,7 @@ class Undefined:
         return cls.get_instance()
 
     def __repr__(self):
-        return "NULL"
+        return "UNDEFINED"
 
 
 UNDEFINED = Undefined()

@@ -1,109 +1,59 @@
 from __future__ import annotations
 
+import pickle
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Generator, Tuple, TypeVar
-
-import duckdb
-import networkx as nx
+from typing import Any
 
 from tklearn.kb.models import Triple
 
-T = TypeVar("T")
+__all__ = [
+    "TripleStore",
+    "load_pickle",
+]
 
-CREATE_TABLE_EXPR = """CREATE TABLE IF NOT EXISTS triples (
-    subject_word TEXT NOT NULL,
-    subject_sense INTEGER NOT NULL,
-    predicate TEXT NOT NULL,
-    object_word TEXT NOT NULL,
-    object_sense INTEGER NOT NULL
-)"""
+T = dict[str, set[str | tuple[str, int]]]
+V = dict[str, dict[int, T]]
 
-CREATE_INDEX_EXPR = """CREATE UNIQUE INDEX IF NOT EXISTS uk_triples ON triples (
-    subject_word, subject_sense, predicate, object_word, object_sense
-)"""
+# pickles written before 0.5 refer to the store by its old module path
+_RENAMED_MODULES = {"tklearn.kb.triple_store_v2": "tklearn.kb.triple_store"}
+
+
+class _Unpickler(pickle.Unpickler):
+    def find_class(self, module: str, name: str) -> Any:
+        return super().find_class(_RENAMED_MODULES.get(module, module), name)
+
+
+def load_pickle(path: str | Path) -> Any:
+    """Unpickle a file, accepting module paths used by older versions."""
+    with open(path, "rb") as f:
+        return _Unpickler(f).load()
 
 
 class TripleStore:
-    def __init__(self, path: str | Path = ":memory:", read_only: bool = False):
-        self.path = path
-        self.read_only = read_only
-        self.con = duckdb.connect(path, read_only=read_only)
-        if read_only:
-            return
-        self.create_table()
+    """In-memory index of triples by subject word and sense.
 
-    def __reduce__(self):
-        return (self.__class__, (self.path, self.read_only))
+    ``data[word][sense_id][predicate]`` is the set of ``(word, sense_id)``
+    objects. A sense id of None means the relation holds for the word in
+    general.
+    """
 
-    def close(self):
-        self.con.close()
-
-    def create_table(self):
-        self.con.execute(CREATE_TABLE_EXPR)
-        self.con.execute(CREATE_INDEX_EXPR)
-
-    def insert(self, triple: Triple, *args: Any):
-        if len(args) > 0:
-            triple = (triple, *args)
-        self.con.execute(
-            "INSERT OR IGNORE INTO triples VALUES (?, ?, ?, ?, ?)",
-            Triple.to_tuple(triple),
-        )
-
-    @staticmethod
-    def _add_filter_query(
-        q: str, params: list, triple: Triple
-    ) -> Tuple[str, list]:
-        triple = Triple.to_tuple(triple)
-        subject_word, subject_sense, predicate, object_word, object_sense = (
-            triple
-        )
-        q += " OR (1=1"
-        if subject_word is not None:
-            q += " AND subject_word COLLATE NOCASE.NOACCENT = ?"
-            params.append(subject_word)
-        if subject_sense >= 0:
-            q += " AND (subject_sense = ? OR subject_sense < 0)"
-            params.append(subject_sense)
-        if predicate is not None:
-            q += " AND predicate COLLATE NOCASE.NOACCENT = ?"
-            params.append(predicate)
-        if object_word is not None:
-            q += " AND object_word COLLATE NOCASE.NOACCENT = ?"
-            params.append(object_word)
-        if object_sense >= 0:
-            q += " AND (object_sense = ? OR object_sense < 0)"
-            params.append(object_sense)
-        q += ")"
-        return q, params
-
-    def query(self, *triples: Triple | tuple) -> Generator[Triple, None, None]:
-        # 1=0 always false, so we can start with OR
-        q = "SELECT * FROM triples"
-        params = []
-
-        if triples:
-            q += " WHERE 1=0"
-
-        for triple in triples:
-            q, params = self._add_filter_query(q, params, triple)
-
-        for row in self.con.execute(q, params).fetchall():
-            yield Triple.from_tuple(row)
+    def __init__(self):
+        self.data: V = {}
 
     def get(
         self, subject: str | tuple[str, int], default: T = None
     ) -> dict[str, set[tuple[str, int]]] | T:
-        """Return all triples in the store."""
-        if getattr(self, "_triples", None) is None:
-            self._triples = self._build_triples_cache()
+        """Return ``{predicate: objects}`` for a subject.
+
+        A bare word, or a ``(word, None)`` subject, merges the relations of
+        all its senses. Returns `default` when the subject is unknown.
+        """
         if isinstance(subject, str):
             subj_word, subj_sense = subject, None
         else:
             subj_word, subj_sense = subject
-        # subj_word = subj_word.lower()
-        senses = self._triples.get(subj_word)
+        senses = self.data.get(subj_word)
         if senses is None:
             return default
         if subj_sense is None:
@@ -119,26 +69,17 @@ class TripleStore:
             return default
         return dict(relations)
 
-    def _build_triples_cache(self):
-        # triple.subject: (str, int)
-        # triple.predicate: str
-        # triple.object: (str, int)
-        spo_dict = defaultdict(lambda: defaultdict(lambda: defaultdict(set)))
-        for t in self.query():
-            subj_word, subj_sense = t.subject
-            # subj_word = subj_word.lower()
-            spo_dict[subj_word][subj_sense][t.predicate].add(t.object)
-        return spo_dict
-
-    def __len__(self):
-        return self.con.execute("SELECT COUNT(*) FROM triples").fetchone()[0]
-
-    def __iter__(self):
-        return self.query()
-
-    def to_networkx(self):
-        G = nx.Graph()
-        for triple in self:
-            subject, predicate, object = triple
-            G.add_edge(subject, object, predicate=predicate)
-        return G
+    def add(self, triple: Triple | tuple):
+        """Append a triple to the store."""
+        if not isinstance(triple, Triple):
+            triple = Triple.from_tuple(triple)
+        sub, pred, obj = triple
+        subj_word, subj_sense_id = sub
+        # Initialize nested dictionaries and sets as needed
+        if subj_word not in self.data:
+            self.data[subj_word] = {}
+        if subj_sense_id not in self.data[subj_word]:
+            self.data[subj_word][subj_sense_id] = {}
+        if pred not in self.data[subj_word][subj_sense_id]:
+            self.data[subj_word][subj_sense_id][pred] = set()
+        self.data[subj_word][subj_sense_id][pred].add(obj)

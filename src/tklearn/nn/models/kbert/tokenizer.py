@@ -4,26 +4,26 @@ import json
 from collections import defaultdict
 from itertools import tee
 from pathlib import Path
-from typing import Generator, Optional, TypedDict
+from typing import Any, Generator
 
 import numpy as np
 import pandas as pd
-from nightjar import BaseConfig
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
 from tqdm import auto as tqdm
 from transformers import AutoTokenizer, PreTrainedTokenizer
 from typing_extensions import Literal, Self
 
-from tklearn.kb.base import ArtifactStoreConfig, KnowledgeBase
+from tklearn.kb.base import KnowledgeBase
 from tklearn.kb.models import Mention, Span, Triple
+from tklearn.nn.models.kbert.feature_scoring import (
+    FeatureScorer,
+    get_scorer,
+)
 from tklearn.nn.models.kbert.helpers import Injection, inject
-from tklearn.nn.models.kbert.metrics import FeatureScorer, get_scorer
 from tklearn.plotting.token_tree import TokenTree
 
 __all__ = [
-    "KBertTokenizerConfig",
-    "KBertTokenizerConfigDict",
     "KBertTokenizer",
 ]
 
@@ -264,77 +264,125 @@ ScorerLiteral = Literal[
 FeaturizerLiteral = Literal["count", "tfidf"]
 
 
-class KBertTokenizerConfig(BaseConfig):
-    model_name_or_path: str
-    predicates: Optional[list[str]] = None
-    augment_top_k: Optional[int] = 2
-    scorer: ScorerLiteral | str = "default"
-    scorer_kw: dict | None = None
-    sequence_length: int = 512
-    truncate: bool = True
-    knowledge_base: str | dict | ArtifactStoreConfig = "wiktionary"
-    featurizer: FeaturizerLiteral | str = "count"
-
-
-KBertTokenizerConfig._dispatch_registry.register(KBertTokenizerConfig, True)
-
-
-class KBertTokenizerConfigDict(TypedDict):
-    model_name_or_path: str
-    predicates: list[str] | None
-    augment_top_k: int | None
-    scorer: ScorerLiteral | str
-    sequence_length: int
-    truncate: bool
-    knowledge_base: str | dict | ArtifactStoreConfig
-    featurizer: FeaturizerLiteral | str
-
-
 class KBertTokenizer:
+    """Tokenize text with knowledge-base triples injected after mentions.
+
+    Mentions found by the knowledge base are followed by their related words
+    (K-BERT style), and a visibility matrix keeps injected tokens visible only
+    to their mention. After `fit`, injected triples are ranked by a feature
+    scorer trained on labelled text.
+
+    Parameters
+    ----------
+    model_name_or_path : str
+        Hugging Face tokenizer to build on.
+    knowledge_base : KnowledgeBase or str, default="wiktionary"
+        The knowledge base, or the name of a registered knowledge store.
+    predicates : list of str, optional
+        Relations to inject; by default all of them.
+    augment_top_k : int or None, default=2
+        Maximum number of triples injected per mention.
+    scorer : str, default="default"
+        Feature scorer used by `fit` (see `get_scorer`).
+    scorer_kw : dict, optional
+        Arguments for the scorer.
+    sequence_length : int, default=512
+        Maximum sequence length after injection.
+    truncate : bool, default=True
+        Truncate sequences to `sequence_length`.
+    featurizer : {"count", "tfidf"}, default="count"
+        How triples are turned into features for the scorer.
+    """
+
     tokenizer: PreTrainedTokenizer
     knowledge_base: KnowledgeBase
     scorer: FeatureScorer | None
 
     def __init__(
         self,
-        config: KBertTokenizerConfig | KBertTokenizerConfigDict,
-    ):
-        if isinstance(config, dict):
-            config = KBertTokenizerConfig.from_dict(config)
-        self.config = config
-        self.__post_init__()
-
-    def __post_init__(self):
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            self.config.model_name_or_path
+        model_name_or_path: str,
+        *,
+        knowledge_base: KnowledgeBase | str = "wiktionary",
+        predicates: list[str] | None = None,
+        augment_top_k: int | None = 2,
+        scorer: ScorerLiteral | str = "default",
+        scorer_kw: dict | None = None,
+        sequence_length: int = 512,
+        truncate: bool = True,
+        featurizer: FeaturizerLiteral | str = "count",
+    ) -> None:
+        self.model_name_or_path = model_name_or_path
+        self.predicates = predicates
+        self.augment_top_k = augment_top_k
+        self.scorer_name = scorer
+        self.scorer_kw = scorer_kw
+        self.sequence_length = sequence_length
+        self.truncate = truncate
+        self.featurizer = featurizer
+        self._knowledge_base_name = (
+            knowledge_base if isinstance(knowledge_base, str) else None
         )
-        self.knowledge_base = KnowledgeBase(self.config.knowledge_base)
-        # this may be uploaded when .fit is called
+        if isinstance(knowledge_base, str):
+            knowledge_base = KnowledgeBase(knowledge_base)
+        self.knowledge_base = knowledge_base
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+        # set by fit() or from_pretrained()
         self.scorer = None
 
+    def get_config(self) -> dict[str, Any]:
+        """The constructor arguments, as saved by `save_pretrained`."""
+        return {
+            "model_name_or_path": self.model_name_or_path,
+            "knowledge_base": self._knowledge_base_name,
+            "predicates": self.predicates,
+            "augment_top_k": self.augment_top_k,
+            "scorer": self.scorer_name,
+            "scorer_kw": self.scorer_kw,
+            "sequence_length": self.sequence_length,
+            "truncate": self.truncate,
+            "featurizer": self.featurizer,
+        }
+
     def save_pretrained(self, save_directory: str, **kwargs):
-        # _ = kwargs.pop("sort_values_by", None)
         self.tokenizer.save_pretrained(save_directory, **kwargs)
-        scorer_path = Path(save_directory) / "scorer"
         if self.scorer is not None:
-            self.scorer.dump(scorer_path)
+            self.scorer.dump(Path(save_directory) / "scorer")
         path = Path(save_directory) / "kb_tokenizer_config.json"
-        json_data = self.config.to_dict()
         with open(path, "w") as f:
-            json.dump(json_data, f, indent=4)
+            json.dump(self.get_config(), f, indent=4)
 
     @classmethod
     def from_pretrained(
-        cls, pretrained_model_name_or_path: str, **kwargs
+        cls,
+        pretrained_model_name_or_path: str,
+        knowledge_base: KnowledgeBase | str | None = None,
+        **kwargs,
     ) -> Self:
+        """Load a tokenizer saved with `save_pretrained`.
+
+        Parameters
+        ----------
+        pretrained_model_name_or_path : str
+            The directory passed to `save_pretrained`.
+        knowledge_base : KnowledgeBase or str, optional
+            Overrides the saved knowledge base. Required when the tokenizer
+            was saved with a `KnowledgeBase` instance rather than a name.
+        **kwargs
+            Passed to ``AutoTokenizer.from_pretrained``.
+        """
         base_path = Path(pretrained_model_name_or_path)
-        config_path = base_path / "kb_tokenizer_config.json"
-        config = {}
-        if config_path.exists():
-            with open(config_path, "r") as f:
-                config = json.load(f)
-        self = cls(config)
-        Scorer = get_scorer(self.config.scorer)
+        with open(base_path / "kb_tokenizer_config.json") as f:
+            config = json.load(f)
+        if knowledge_base is not None:
+            config["knowledge_base"] = knowledge_base
+        if config.get("knowledge_base") is None:
+            msg = (
+                "the saved tokenizer does not name its knowledge base; "
+                "pass knowledge_base="
+            )
+            raise ValueError(msg)
+        self = cls(**config)
+        Scorer = get_scorer(self.scorer_name)
         try:
             self.scorer = Scorer.load(base_path / "scorer")
         except FileNotFoundError:
@@ -402,10 +450,10 @@ class KBertTokenizer:
     def extract_triples(
         self, *, text: str, return_all: bool = False
     ) -> tuple[list[tuple[str, str, str]], list[Span]]:
-        top_k = None if return_all else self.config.augment_top_k
+        top_k = None if return_all else self.augment_top_k
         predicates = None
-        if self.config.predicates is not None:
-            predicates = set(self.config.predicates)
+        if self.predicates is not None:
+            predicates = set(self.predicates)
         mentions, feature_scores = self._extract_mention_triples(
             text=text, predicates=predicates
         )
@@ -565,7 +613,7 @@ class KBertTokenizer:
         return batch
 
     def truncate_batch(self, batch: dict) -> dict:
-        if not self.config.truncate:
+        if not self.truncate:
             return batch
         batch_input_ids = batch["input_ids"]
         batch_position_ids = batch["position_ids"]
@@ -579,7 +627,7 @@ class KBertTokenizer:
             # Get current sequence length
             seq_len = len(batch_input_ids[i])
             # Determine cut-off point
-            cut_off = min(seq_len, self.config.sequence_length)
+            cut_off = min(seq_len, self.sequence_length)
             # Truncate 1D sequences
             t_ids = batch_input_ids[i][:cut_off]
             t_pos = batch_position_ids[i][:cut_off]
@@ -642,8 +690,8 @@ class KBertTokenizer:
         encoder = LabelEncoder()
         y = encoder.fit_transform(raw_y)
         # Extract features from the predicate-object lists  (treating them like words)
-        is_discrete = self.config.featurizer == "count"
-        if self.config.featurizer == "tfidf":
+        is_discrete = self.featurizer == "count"
+        if self.featurizer == "tfidf":
             featurizer = TfidfVectorizer(
                 tokenizer=passthrough,
                 preprocessor=passthrough,
@@ -660,7 +708,7 @@ class KBertTokenizer:
                 # dtype=np.int32,
             )
         else:
-            msg = f"invalid featurizer: {self.config.featurizer}"
+            msg = f"invalid featurizer: {self.featurizer}"
             raise ValueError(msg)
         X = featurizer.fit_transform(temp_df["predicate_object"])
         # Feature names
@@ -691,8 +739,8 @@ class KBertTokenizer:
         feature_names = features["feature_names"]
         diversity = features["diversity"]
         # ------------------------------
-        Scorer = get_scorer(self.config.scorer)
-        scorer_kw = self.config.scorer_kw
+        Scorer = get_scorer(self.scorer_name)
+        scorer_kw = self.scorer_kw
         if scorer_kw is None:
             scorer_kw = {}
         scorer = Scorer(**scorer_kw)

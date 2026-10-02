@@ -1,18 +1,27 @@
 from __future__ import annotations
 
-import weakref
 from collections.abc import Iterable
-from dataclasses import dataclass
-from typing import Any, NamedTuple, TypeVar
+from dataclasses import dataclass, field
+from typing import NamedTuple, TypeVar
 
 import numpy as np
 from typing_extensions import Self
+
+__all__ = [
+    "Augmentation",
+    "Candidate",
+    "Mention",
+    "Span",
+    "Triple",
+]
 
 T = TypeVar("T")
 
 
 @dataclass(frozen=True, order=True)
 class Span:
+    """Character offsets ``[start, end)`` in a text."""
+
     start: int
     end: int
 
@@ -23,6 +32,8 @@ class Span:
 
 @dataclass(order=True)
 class Mention:
+    """A lexicon match in a text and the senses it may refer to."""
+
     form: str
     span: Span
     candidates: list[Candidate]
@@ -33,21 +44,12 @@ class Mention:
 
 @dataclass(order=True)
 class Candidate:
+    """One sense of a word that a mention may refer to."""
+
     word: str
     definition: str
     embedding: np.ndarray | None
     sense_id: int
-
-    def bind(self, wordex: Any) -> Candidate:
-        setattr(self, "_wordex", weakref.ref(wordex))
-        return self
-
-    @property
-    def wordex(self) -> Any:
-        get_wordex = getattr(self, "_wordex", None)
-        if get_wordex is None:
-            raise AttributeError("Candidate is not bound to a Wordex instance")
-        return get_wordex()
 
     def __repr__(self):
         return f"Candidate(word={self.word!r}, sense_id={self.sense_id}, definition={self.definition!r})"
@@ -119,3 +121,34 @@ class Triple(NamedTuple):
             object_word,
             object_sense,
         )
+
+
+@dataclass
+class Augmentation:
+    """A text with one mention replaced by a related word.
+
+    Attributes
+    ----------
+    text : str
+        The augmented text.
+    original : str
+        The text it was derived from.
+    span : Span
+        Character offsets of the replaced mention in `original`.
+    replacement : str
+        The word that replaced the mention.
+    relations : list of tuple
+        The triples ``(subject_word, subject_sense, predicate, object_word,
+        object_sense)`` that link the mention to `replacement`.
+    """
+
+    text: str
+    original: str
+    span: Span
+    replacement: str
+    relations: list[tuple] = field(default_factory=list)
+
+    @property
+    def support(self) -> int:
+        """Number of relations supporting the replacement."""
+        return len(self.relations)

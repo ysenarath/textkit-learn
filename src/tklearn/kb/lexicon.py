@@ -20,7 +20,7 @@ from typing import Any, Generic, Optional, TypeVar, Union, overload
 import unibreak
 from typing_extensions import Literal
 
-from tklearn.utils.constants import UNDEFINED
+from tklearn.typing import UNDEFINED
 
 T = TypeVar("T")
 
@@ -125,14 +125,18 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
     _case_sensitive: bool
 
     def dump(self, path: Union[str, Path]):
+        """Save the keywords and values (not the trie) to `path`."""
         with open(path, "wb") as f:
             pickle.dump(dict(self.items()), f)
 
     @classmethod
-    def load(cls, path: Union[str, Path]) -> Lexicon:
+    def load(
+        cls, path: Union[str, Path], case_sensitive: bool = False
+    ) -> Lexicon:
+        """Load a lexicon saved with `dump` and rebuild its trie."""
         with open(path, "rb") as f:
             data: dict = pickle.load(f)
-        lexicon = cls()
+        lexicon = cls(case_sensitive=case_sensitive)
         for key, value in data.items():
             lexicon[key] = value
         lexicon.build()
@@ -151,7 +155,7 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
         self._len = 0
         self._updated = False
 
-    def tokeinze(self, texts: list[str], return_offsets: bool = False):
+    def tokenize(self, texts: list[str], return_offsets: bool = False):
         """Tokenize input texts into words with optional position offsets.
 
         Parameters
@@ -177,10 +181,10 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
         --------
         >>> lexicon = Lexicon()
         >>> # Without offsets
-        >>> list(lexicon.tokeinze(["Hello World!"]))
+        >>> list(lexicon.tokenize(["Hello World!"]))
         [['hello', 'world']]
         >>> # With offsets
-        >>> list(lexicon.tokeinze(["Hello World!"], return_offsets=True))
+        >>> list(lexicon.tokenize(["Hello World!"], return_offsets=True))
         [(['hello', 'world'], [(0, 5), (6, 11)])]
         """
         if isinstance(texts, str):
@@ -240,7 +244,7 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
         The method tokenizes the key and follows the path in the trie.
         """
         trie = self._root
-        tokens = next(self.tokeinze([key]))
+        tokens = next(self.tokenize([key]))
         for token in tokens:
             if token not in trie.children:
                 return None
@@ -356,7 +360,7 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
             raise ValueError("only strings are allowed as keys")
 
         # Split word into tokens (similar to split_word_bounds in Rust)
-        tokens = next(self.tokeinze([key]))
+        tokens = next(self.tokenize([key]))
 
         for token in tokens:
             if token not in trie.children:
@@ -405,7 +409,7 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
         trie = self._root
 
         # Split word into tokens (similar to split_word_bounds in Rust)
-        tokens = next(self.tokeinze([key]))
+        tokens = next(self.tokenize([key]))
 
         for token in tokens:
             if token not in trie.children:
@@ -485,18 +489,24 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
         self._updated = False
 
     @overload
-    def extract(self, text: str) -> Iterator[tuple[T, int, int]]: ...
+    def extract(
+        self, text: str, nested: bool = True
+    ) -> Iterator[tuple[T, int, int]]: ...
     @overload
     def extract(
-        self, text: list[str]
+        self, text: list[str], nested: bool = True
     ) -> Iterator[Iterator[tuple[T, int, int]]]: ...
-    def extract(self, text: Any) -> Any:
+    def extract(self, text: Any, nested: bool = True) -> Any:
         """Extract keywords from text using the Aho-Corasick algorithm.
 
         Parameters
         ----------
         text : Union[str, list[str]]
             Input text or list of texts to search for keywords.
+        nested : bool, default=True
+            Also return keywords that lie inside an earlier, longer match
+            (e.g. "york" inside "new york"). With False, the search resumes
+            after the end of each match.
 
         Returns
         -------
@@ -526,11 +536,11 @@ class Lexicon(Generic[T], MutableMapping[str, T]):
         # build the failure links if needed
         self.build()
         if isinstance(text, str):
-            tokens, offsets = next(self.tokeinze([text], return_offsets=True))
-            return MatchIterator(self._root, tokens, offsets)
+            tokens, offsets = next(self.tokenize([text], return_offsets=True))
+            return MatchIterator(self._root, tokens, offsets, nested=nested)
         return (
-            MatchIterator(self._root, tokens, offsets)
-            for tokens, offsets in self.tokeinze(text, return_offsets=True)
+            MatchIterator(self._root, tokens, offsets, nested=nested)
+            for tokens, offsets in self.tokenize(text, return_offsets=True)
         )
 
     def display(self, node: Optional[TrieNode[T]] = None, depth: int = 0):
@@ -607,10 +617,12 @@ class MatchIterator(Generic[T]):
         trie: TrieNode[T],
         tokens: list[str],
         offsets: list[tuple[int, int]],
+        nested: bool = True,
     ):
         self.trie = trie
         self.tokens = tokens
         self.offsets = offsets
+        self.nested = nested
         self.idx = 0
         self.size = len(self.tokens)
 
@@ -689,7 +701,9 @@ class MatchIterator(Generic[T]):
         if longest_sequence is None:
             return
 
-        # self.idx = longest_sequence[2] + 1
+        if not self.nested:
+            # resume after the match so nothing inside it is reported again
+            self.idx = longest_sequence[2] + 1
 
         return (
             longest_sequence[0],

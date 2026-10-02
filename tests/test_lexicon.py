@@ -56,11 +56,20 @@ class TestLexicon(unittest.TestCase):
         self.assertListEqual(strings, ["a b c", "d e", "f g h"])
         self.assertListEqual(values, [1, 2, 3])
 
+    def test_extract_nested_matches(self):
+        self.lexicon["a b c d e"] = 0
+        self.lexicon["b c"] = 1
+        text = "a b c d e"
+        matches = list(self.lexicon.extract(text))
+        strings = [text[start:end] for _, start, end in matches]
+        self.assertListEqual(strings, ["a b c d e", "b c"])
+        self.assertListEqual([value for value, _, _ in matches], [0, 1])
+
     def test_extract_full_text_with_overlap(self):
         self.lexicon["a b c d e"] = 0
         self.lexicon["b c"] = 1
         text = "a b c d e"
-        matches = self.lexicon.extract(text)
+        matches = self.lexicon.extract(text, nested=False)
         strings = []
         values = []
         for match in matches:
