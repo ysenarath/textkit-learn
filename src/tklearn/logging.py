@@ -2,16 +2,15 @@ from __future__ import annotations
 
 import functools
 import logging
-from dataclasses import field
-from typing import Callable, Optional, TypeVar, Union, cast, overload
-
-from nightjar import BaseConfig
+from typing import Callable, Optional, TypeVar, overload
 
 from tklearn import config
 
 __all__ = [
     "get_logger",
+    "log_on_exception",
 ]
+
 _LOGGING_TEMPLATE = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 T = TypeVar("T")
@@ -26,49 +25,32 @@ DEBUG = logging.DEBUG
 NOTSET = logging.NOTSET
 
 
-def _get_default_log_level() -> str:
-    if config.debug:
-        return "DEBUG"
-    return "INFO"
-
-
-class LoggingFormatterConfig(BaseConfig):
-    fmt: str | None = _LOGGING_TEMPLATE
-    datefmt: Union[str, None] = None
-    style: str = "%"
-    validate: bool = True
-
-
-class LoggingConfig(BaseConfig):
-    level: str = field(default_factory=_get_default_log_level)
-    fmt: LoggingFormatterConfig = field(default_factory=LoggingFormatterConfig)
-
-    def __post_init__(self):
-        self.level = self.level.upper()
-
-
-class LoggerWithConfig(logging.Logger):
-    config: LoggingConfig
-
-
 def get_logger(
-    name: str | None = None, config: LoggingConfig | None = None
-) -> LoggerWithConfig:
-    if config is None:
-        config = LoggingConfig()
-    logger = cast(LoggerWithConfig, logging.getLogger(name))
-    logger.config = config
-    logger.setLevel(config.level)
-    console_hdlr = logging.StreamHandler()
-    console_hdlr.setLevel(config.level)
-    formatter = logging.Formatter(
-        config.fmt.fmt,
-        config.fmt.datefmt,
-        config.fmt.style,
-        config.fmt.validate,
-    )
-    console_hdlr.setFormatter(formatter)
-    logger.addHandler(console_hdlr)
+    name: str | None = None,
+    level: int | str | None = None,
+    fmt: str = _LOGGING_TEMPLATE,
+) -> logging.Logger:
+    """Return a logger with a console handler.
+
+    Parameters
+    ----------
+    name : str, optional
+        Logger name, usually ``__name__``.
+    level : int or str, optional
+        Log level; DEBUG when ``config.debug`` is set, otherwise INFO.
+    fmt : str
+        Format of console messages.
+    """
+    if level is None:
+        level = DEBUG if config.debug else INFO
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    # add the console handler once, however often the logger is requested
+    if not any(getattr(h, "_tklearn", False) for h in logger.handlers):
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(fmt))
+        handler._tklearn = True
+        logger.addHandler(handler)
     return logger
 
 
@@ -85,6 +67,7 @@ def log_on_exception(
 def log_on_exception(
     func_or_logger: T | logging.Logger, logger: Optional[logging.Logger] = None
 ) -> T | Callable[..., T]:
+    """Log exceptions raised by a function before re-raising them."""
     if isinstance(func_or_logger, logging.Logger):
         return functools.partial(log_on_exception, logger=func_or_logger)
 
@@ -95,22 +78,9 @@ def log_on_exception(
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            logger.error(f"Error in {func.__name__}: {e}")
-            raise e
+            (logger or get_logger(func.__module__)).error(
+                f"Error in {func.__name__}: {e}"
+            )
+            raise
 
     return wrapper
-
-
-def main():
-    logger = get_logger()
-    logger.info("Hello, World!")
-    # log the configuration
-    logger.info(f"Logger configuration: {logger.config.to_dict()}")
-    # recreate congig
-    config = logger.config.to_dict()
-    config = LoggingConfig.from_dict(config)
-    logger.info(f"Logger configuration: {config.to_dict()}")
-
-
-if __name__ == "__main__":
-    main()

@@ -1,11 +1,20 @@
+from __future__ import annotations
+
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from omegaconf import OmegaConf
+__all__ = [
+    "Config",
+    "config",
+]
 
-DEFAULT_CACHE_PATH: str = str((Path.home() / ".cache" / "tklearn").absolute())
-DEFAULT_DATASET_BATCH_SIZE: int = 1000
+DEFAULT_CACHE_PATH = Path.home() / ".cache" / "tklearn"
+DEFAULT_DATASET_BATCH_SIZE = 1000
+
+
+def _default_base_dir() -> Path:
+    return Path(os.getenv("TKLEARN_CACHE", DEFAULT_CACHE_PATH)).absolute()
 
 
 def is_debug_enabled() -> bool:
@@ -15,17 +24,36 @@ def is_debug_enabled() -> bool:
 
 @dataclass
 class Config:
-    base_dir: Path = f"${{oc.env:TKLEARN_CACHE,{DEFAULT_CACHE_PATH}}}"
-    # for cache files only (see utils.cache)
-    cache_dir: Path = "${base_dir}/cache"
-    # for temp files only (e.g. use with tempfile)
-    temp_dir: Path = "${base_dir}/temp"
-    # for resources files only (e.g. use with open)
-    assets_dir: Path = "${base_dir}/assets"
-    # for dataset files only (e.g. use with datasets)
+    """Global settings. Change them on `tklearn.config`.
+
+    Attributes
+    ----------
+    base_dir : Path
+        Root of all tklearn files; ``$TKLEARN_CACHE`` or ``~/.cache/tklearn``.
+    dataset_batch_size : int
+        Default batch size for dataset mapping utilities.
+    debug : bool
+        Debug logging; enabled by ``TKLEARN_DEBUG=1``.
+    """
+
+    base_dir: Path = field(default_factory=_default_base_dir)
     dataset_batch_size: int = DEFAULT_DATASET_BATCH_SIZE
-    # whether to enable debug mode
     debug: bool = field(default_factory=is_debug_enabled)
 
+    @property
+    def cache_dir(self) -> Path:
+        """Cache files (see `tklearn.utils.cache`)."""
+        return Path(self.base_dir) / "cache"
 
-config: Config = OmegaConf.structured(Config)
+    @property
+    def temp_dir(self) -> Path:
+        """Temporary files."""
+        return Path(self.base_dir) / "temp"
+
+    @property
+    def assets_dir(self) -> Path:
+        """Downloaded and generated resources (embeddings, knowledge bases)."""
+        return Path(self.base_dir) / "assets"
+
+
+config = Config()

@@ -8,7 +8,7 @@ from transformers.modelcard import TrainingSummary
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
 from tklearn import config, logging
-from tklearn.nn.models.base import Model
+from tklearn.nn.base.module import Module
 
 logger = logging.get_logger(__name__)
 
@@ -39,7 +39,7 @@ class ModelRepo:
     def add_model(
         self,
         config_name: str,
-        model: Model,  # not a huggerface model (just torch.nn.Module)
+        model: Module,  # not a huggerface model (just torch.nn.Module)
         model_card: Optional[ModelCard] = None,
         training_summary: Optional[TrainingSummary] = None,
     ) -> None:
@@ -47,8 +47,9 @@ class ModelRepo:
         # so we need to save the model manually
         model_dir = self.path / config_name
         model_dir.mkdir(parents=True, exist_ok=True)
-        with open(model_dir / "config.json", "w") as f:
-            json.dump(model.config.to_dict(), f)
+        if hasattr(model, "get_config"):
+            with open(model_dir / "config.json", "w") as f:
+                json.dump(model.get_config(), f)
         with open(model_dir / "model_state_dict.bin", "wb") as f:
             torch.save(model.state_dict(), f)
         if model_card is not None:
