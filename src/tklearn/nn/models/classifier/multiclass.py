@@ -1,4 +1,6 @@
-from typing import ClassVar, Optional, overload, runtime_checkable
+from __future__ import annotations
+
+from typing import Optional, overload, runtime_checkable
 
 import torch
 from torch import nn
@@ -6,7 +8,8 @@ from transformers.modeling_outputs import BaseModelOutput
 from typing_extensions import Literal, Protocol
 
 from tklearn.nn.loss import TargetBasedLoss
-from tklearn.nn.models.base import Model, ModelConfig
+from tklearn.nn.models.backbone import Backbone
+from tklearn.nn.models.base import MODELS, BackboneModel
 from tklearn.nn.models.classifier.helpers import (
     BatchPrototypeLoss,
     CosineSimilarity,
@@ -16,9 +19,7 @@ from tklearn.nn.utils.preprocessing import preprocess_logits, preprocess_target
 
 __all__ = [
     "LinearMulticlassClassifier",
-    "LinearMulticlassClassifierConfig",
     "PrototypeMulticlassClassifier",
-    "PrototypeMulticlassClassifierConfig",
 ]
 
 
@@ -44,29 +45,36 @@ class LinearClassifierLayer(nn.Module):
         return x, pooler_output
 
 
-class LinearMulticlassClassifierConfig(ModelConfig):
-    type: ClassVar[str] = "linear"
-    output_dropout: float = 0.2
-    num_labels: int = 0
+@MODELS.register("linear")
+class LinearMulticlassClassifier(BackboneModel):
+    """A backbone followed by dropout and a linear classification head.
 
+    Parameters
+    ----------
+    backbone : Backbone or str
+        The encoder, or a Hugging Face model id/path.
+    num_labels : int
+        Number of classes. Can be increased later by assigning `num_labels`,
+        which keeps the weights of existing classes.
+    dropout : float, default=0.2
+        Dropout applied to the pooled output before the head.
+    """
 
-class LinearMulticlassClassifier(Model):
-    config: LinearMulticlassClassifierConfig
-
-    def __post_init__(self) -> None:
-        super().__post_init__()
+    def __init__(
+        self,
+        backbone: Backbone | str,
+        num_labels: int,
+        dropout: float = 0.2,
+    ) -> None:
+        super().__init__(backbone)
         self.classifier = LinearClassifierLayer(
             hidden_size=self.hidden_size,
-            num_labels=self.config.num_labels,
-            dropout=self.config.output_dropout,
+            num_labels=num_labels,
+            dropout=dropout,
         )
         self.loss_func = TargetBasedLoss(
             "multiclass", num_labels=self.num_labels
         )
-
-    @property
-    def hidden_size(self) -> int:
-        return self.backbone.hidden_size
 
     @property
     def num_labels(self) -> int:
@@ -104,9 +112,7 @@ class LinearMulticlassClassifier(Model):
             "multiclass", num_labels=self.num_labels
         )
 
-    def predict_step(
-        self, batch, **kwargs
-    ) -> SequenceClassifierOutputWithPooling:
+    def predict_step(self, batch) -> SequenceClassifierOutputWithPooling:
         outputs = self.backbone(batch)
         logits, pooler_output = self.classifier(outputs.pooler_output)
         # results.logits /= self.temperature
@@ -115,16 +121,16 @@ class LinearMulticlassClassifier(Model):
         )
         return output
 
-    def compute_loss(self, batch, output, **kwargs) -> torch.Tensor:
+    def compute_loss(self, batch, output) -> torch.Tensor:
         if "labels" not in batch:
-            return super().compute_loss(batch, output, **kwargs)
+            return super().compute_loss(batch, output)
         targets, logits = batch["labels"], output["logits"]
         y_true = preprocess_target(
             "multiclass", targets, num_labels=self.num_labels
         )
         return self.loss_func(logits, y_true)
 
-    def compute_metric_inputs(self, batch, output, **kwargs) -> dict:
+    def compute_metric_inputs(self, batch, output) -> dict:
         targets, logits = batch["labels"], output["logits"]
         target_type = "multiclass"
         y_true = preprocess_target(
@@ -140,32 +146,39 @@ class LinearMulticlassClassifier(Model):
         }
 
 
-class PrototypeMulticlassClassifierConfig(ModelConfig):
-    type: ClassVar[str] = "prototype"
+@MODELS.register("prototype")
+class PrototypeMulticlassClassifier(BackboneModel):
+    """Classify by cosine similarity to per-class prototype embeddings.
 
+    Prototypes are the mean pooled embedding of each class; keep them current
+    with `PrototypeCallback`. Training uses a batch prototype loss, so the
+    number of classes does not need to be fixed up front.
 
-class PrototypeMulticlassClassifier(Model):
-    config: PrototypeMulticlassClassifierConfig
+    Parameters
+    ----------
+    backbone : Backbone or str
+        The encoder, or a Hugging Face model id/path.
+    """
 
-    def __post_init__(self) -> None:
-        super().__post_init__()
+    def __init__(self, backbone: Backbone | str) -> None:
+        super().__init__(backbone)
         self.prototypes: Optional[torch.Tensor] = None
         self.loss_func = BatchPrototypeLoss()
         self.similarity = CosineSimilarity()
 
-    def predict_step(self, batch, **kwargs) -> BaseModelOutput:
+    def predict_step(self, batch) -> BaseModelOutput:
         return self.backbone(batch)
 
-    def compute_loss(self, batch, output, **kwargs) -> torch.Tensor:
+    def compute_loss(self, batch, output) -> torch.Tensor:
         if "labels" not in batch:
-            return super().compute_loss(batch, output, **kwargs)
+            return super().compute_loss(batch, output)
         targets, pooler_output = batch["labels"], output["pooler_output"]
         # dynamic number of labels therefore do not pass num_labels
         y_true = preprocess_target("multiclass", targets)
         targets = y_true.to(torch.long)
         return self.loss_func(pooler_output, targets)
 
-    def compute_metric_inputs(self, batch, output, **kwargs) -> dict:
+    def compute_metric_inputs(self, batch, output) -> dict:
         targets, pooler_output = batch["labels"], output["pooler_output"]
         logits = self.similarity(pooler_output, self.prototypes)
         target_type = "multiclass"

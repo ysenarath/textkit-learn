@@ -1,86 +1,46 @@
 from __future__ import annotations
 
-from typing import ClassVar, TypeVar, Union
-
 import adapters
-from adapters.heads import ModelWithFlexibleHeadsAdaptersMixin
-from adapters.model_mixin import EmbeddingAdaptersWrapperMixin
-from transformers import AutoModel, AutoTokenizer, PreTrainedModel
-from transformers.modeling_outputs import BaseModelOutputWithPooling
+from transformers import AutoModel, PreTrainedModel
 
-from tklearn.nn.models.backbone.base import Backbone, BackboneConfig
-from tklearn.nn.models.backbone.transformer import get_features
+from tklearn.nn.models.backbone.base import BACKBONES
+from tklearn.nn.models.backbone.transformer import TransformerBackbone
 
-T = TypeVar("T", bound="Adapter")
-
-
-class AdapterConfig(BackboneConfig):
-    type: ClassVar[str] = "adapter"
-    model_name_or_path: str = "bert-base-uncased"
-    adapter: Union[dict, None, str] = None
+__all__ = [
+    "AdapterBackbone",
+]
 
 
-class AdapterModel(
-    EmbeddingAdaptersWrapperMixin,
-    ModelWithFlexibleHeadsAdaptersMixin,
-    PreTrainedModel,
-):
-    def __new__(cls, *args, **kwargs):
-        # this is not a real constructor, but a factory method
-        msg = "AdapterModel is not intended to be instantiated directly"
-        raise ValueError(msg)
+@BACKBONES.register("adapter")
+class AdapterBackbone(TransformerBackbone):
+    """A transformer with a trainable adapter; the base weights are frozen.
 
-    @staticmethod
-    def from_pretrained(*args, **kwargs) -> AdapterModel:
-        model = AutoModel.from_pretrained(*args, **kwargs)
+    Parameters
+    ----------
+    model_name_or_path : str
+        Hub id or local path of the base transformer.
+    adapter : str or dict
+        Adapter configuration accepted by ``adapters``' ``add_adapter``
+        (e.g. ``"seq_bn"`` or a config dict).
+    adapter_name : str, default="default"
+        Name of the adapter inside the model.
+    """
+
+    def __init__(
+        self,
+        model_name_or_path: str,
+        adapter: str | dict,
+        adapter_name: str = "default",
+    ) -> None:
+        self.adapter = adapter
+        self.adapter_name = adapter_name
+        super().__init__(model_name_or_path)
+
+    def _load_model(self, model_name_or_path: str) -> PreTrainedModel:
+        model = AutoModel.from_pretrained(model_name_or_path)
         adapters.init(model)
+        model.add_adapter(self.adapter_name, config=self.adapter)
+        model.set_active_adapters(self.adapter_name)
+        # train only the adapter; model.freeze_model(False) unfreezes the rest
+        model.train_adapter(self.adapter_name, train_embeddings=False)
         return model
-
-
-class Adapter(Backbone):
-    config: AdapterConfig
-
-    @property
-    def features(self) -> dict[str, type]:
-        """
-        Get the signature of the model using the tokenizer.
-        """
-        if not hasattr(self, "tokenizer"):
-            cls = self.tokenizer.__class__.__name__
-            msg = f"expected PreTrainedTokenizer, got {cls}"
-            raise TypeError(msg)
-        if getattr(self, "_features", None) is None:
-            self._features = get_features(self.tokenizer)
-        return self._features
-
-    def __post_init__(self) -> None:
-        self.model = AdapterModel.from_pretrained(
-            self.config.model_name_or_path
-        )
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            self.config.model_name_or_path
-        )
-        if self.config.adapter is None:
-            msg = "adapter config is not provided"
-            # import warnings
-            # warnings.warn(msg, stacklevel=2)
-            raise ValueError(msg)
-        self.model.add_adapter("default", config=self.config.adapter)
-        # model.set_active_adapters(adapter_name) for inference
-        self.model.set_active_adapters("default")
-        # disables training of all weights outside the task adapter
-        #   to unfreeze all model weights later on, you can use
-        #   self.model.freeze_model(False)
-        self.model.train_adapter("default", train_embeddings=False)
-
-    @property
-    def hidden_size(self) -> int:
-        return self.model.config.hidden_size
-
-    def forward(self, batch: dict) -> BaseModelOutputWithPooling:
-        kwargs = {}
-        for k, v in batch.items():
-            if k not in self.features:
-                continue
-            kwargs[k] = v
-        return self.model(**kwargs)

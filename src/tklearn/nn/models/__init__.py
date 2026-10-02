@@ -1,16 +1,32 @@
-from tklearn.nn.models.base import AutoModel, ModelConfig
+from tklearn.nn.models.backbone import (
+    BACKBONES,
+    AdapterBackbone,
+    Backbone,
+    TransformerBackbone,
+)
+from tklearn.nn.models.base import MODELS, BackboneModel
 from tklearn.nn.models.classifier import (
     LinearMulticlassClassifier,
-    LinearMulticlassClassifierConfig,
+    PrototypeCallback,
     PrototypeMulticlassClassifier,
-    PrototypeMulticlassClassifierConfig,
+    SequenceClassifierOutput,
+    SequenceClassifierOutputWithPooling,
 )
 
 __all__ = [
-    "AutoModel",
-    "ModelConfig",
+    # --- Registries ---
+    "BACKBONES",
+    "MODELS",
+    # --- Backbones ---
+    "AdapterBackbone",
+    "Backbone",
+    "TransformerBackbone",
+    # --- Models ---
+    "BackboneModel",
     "LinearMulticlassClassifier",
-    "LinearMulticlassClassifierConfig",
     "PrototypeMulticlassClassifier",
-    "PrototypeMulticlassClassifierConfig",
+    # --- Outputs and helpers ---
+    "PrototypeCallback",
+    "SequenceClassifierOutput",
+    "SequenceClassifierOutputWithPooling",
 ]

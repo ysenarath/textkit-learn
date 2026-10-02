@@ -8,7 +8,7 @@ from transformers import AutoTokenizer
 
 from tklearn.nn import Encoder
 from tklearn.nn.callbacks import ProgbarLogger
-from tklearn.nn.models import AutoModel
+from tklearn.nn.models import LinearMulticlassClassifier
 from tklearn.nn.utils import get_device
 
 MODEL_NAME_OR_PATH = "google-bert/bert-base-uncased"
@@ -18,14 +18,9 @@ DATASET = "yelp_review_full"
 class TestEncoder(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.model = AutoModel({
-            "type": "linear",
-            "backbone": {
-                "type": "transformer",
-                "model_name_or_path": MODEL_NAME_OR_PATH,
-            },
-            "num_labels": 5,
-        })
+        cls.model = LinearMulticlassClassifier(
+            MODEL_NAME_OR_PATH, num_labels=5
+        )
         cls.model.to(get_device())
         tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_OR_PATH)
         dataset = load_dataset(DATASET, split="train").select(range(8))

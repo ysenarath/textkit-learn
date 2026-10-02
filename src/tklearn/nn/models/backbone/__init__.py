@@ -1,17 +1,11 @@
-from tklearn.nn.models.backbone.adapter import AdapterConfig
-from tklearn.nn.models.backbone.base import (
-    AutoBackbone,
-    Backbone,
-    BackboneConfig,
-    Tokenizer,
-)
-from tklearn.nn.models.backbone.transformer import TransformerConfig
+from tklearn.nn.models.backbone.adapter import AdapterBackbone
+from tklearn.nn.models.backbone.base import BACKBONES, Backbone, Tokenizer
+from tklearn.nn.models.backbone.transformer import TransformerBackbone
 
 __all__ = [
-    "AdapterConfig",
-    "AutoBackbone",
-    "BackboneConfig",
+    "BACKBONES",
+    "AdapterBackbone",
     "Backbone",
-    "TransformerConfig",
     "Tokenizer",
+    "TransformerBackbone",
 ]

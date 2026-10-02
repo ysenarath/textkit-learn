@@ -1,13 +1,17 @@
+from tklearn.nn.models.classifier.helpers import (
+    PrototypeCallback,
+    SequenceClassifierOutput,
+    SequenceClassifierOutputWithPooling,
+)
 from tklearn.nn.models.classifier.multiclass import (
     LinearMulticlassClassifier,
-    LinearMulticlassClassifierConfig,
     PrototypeMulticlassClassifier,
-    PrototypeMulticlassClassifierConfig,
 )
 
 __all__ = [
     "LinearMulticlassClassifier",
-    "LinearMulticlassClassifierConfig",
+    "PrototypeCallback",
     "PrototypeMulticlassClassifier",
-    "PrototypeMulticlassClassifierConfig",
+    "SequenceClassifierOutput",
+    "SequenceClassifierOutputWithPooling",
 ]

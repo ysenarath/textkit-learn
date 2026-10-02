@@ -3,15 +3,14 @@ from __future__ import annotations
 from typing import (
     TYPE_CHECKING,
     Any,
-    ClassVar,
-    List,
     Protocol,
     Union,
     runtime_checkable,
 )
 
 import torch
-from nightjar import AutoModule, BaseConfig, BaseModule
+
+from tklearn.utils.registry import Registry
 
 if TYPE_CHECKING:
     from transformers.modeling_utils import PreTrainedModel
@@ -20,31 +19,27 @@ else:
     PreTrainedModel = Any
     PreTrainedTokenizerBase = Any
 
-
-class BackboneConfig(BaseConfig, dispatch=["type"]):
-    type: ClassVar[str]
-
-
-class AutoBackbone(AutoModule):
-    def __new__(cls, config: BackboneConfig) -> Backbone:
-        approach = super().__new__(cls, config)
-        if not isinstance(approach, Backbone):
-            msg = f"expected {Backbone.__name__}, got {approach.__class__.__name__}"
-            raise TypeError(msg)
-        return approach
+__all__ = [
+    "BACKBONES",
+    "Backbone",
+    "Tokenizer",
+]
 
 
 @runtime_checkable
 class Tokenizer(Protocol):
-    def tokenize(self, text: str | List[str], **kwargs) -> Any:
-        raise NotImplementedError
+    def tokenize(self, text: str | list[str], **kwargs) -> Any: ...
 
 
-class Backbone(BaseModule, torch.nn.Module):
-    config: BackboneConfig
+class Backbone(torch.nn.Module):
+    """An encoder that maps a batch to outputs with a ``pooler_output``.
+
+    Subclasses set `model` and `tokenizer` and implement `hidden_size` and
+    `forward`.
+    """
 
     model: Union[torch.nn.Module, PreTrainedModel]
-    tokenizer: Union[Tokenizer, PreTrainedTokenizerBase]
+    tokenizer: Union[Tokenizer, PreTrainedTokenizerBase, None] = None
 
     @property
     def hidden_size(self) -> int:
@@ -52,3 +47,7 @@ class Backbone(BaseModule, torch.nn.Module):
 
     def forward(self, batch: Any) -> Any:
         raise NotImplementedError
+
+
+#: Backbones by name, e.g. ``BACKBONES.create("transformer", "bert-base-uncased")``.
+BACKBONES: Registry[Backbone] = Registry("backbone")
