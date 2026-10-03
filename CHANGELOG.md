@@ -130,6 +130,10 @@ vectors = Encoder(model).encode(loader, return_tensors="np")
   `assets_dir` are `Path`s derived from `base_dir`.
 - `get_logger(name, level=None)`; repeated calls no longer add duplicate
   handlers.
+- `get_device` moved from `tklearn.nn.utils` to `tklearn.utils.devices`, so
+  `tklearn.embeddings` and `tklearn.kb` no longer load the training stack.
+- `tklearn.utils` and `tklearn.nn.utils` no longer re-export anything; import
+  from their modules (e.g. `tklearn.utils.hashing.get_content_hash`).
 - `tklearn.plotting` and `tklearn.nn.calibration` export their public
   functions.
 

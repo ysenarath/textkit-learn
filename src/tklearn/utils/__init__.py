@@ -1,5 +1,5 @@
-from tklearn.utils.hashing import get_content_hash
+"""General helpers (arrays, devices, caching, datasets, hashing, ...).
 
-__all__ = [
-    "get_content_hash",
-]
+Import them from their modules, e.g. ``from tklearn.utils.devices import
+get_device``, so that each import only loads what it needs.
+"""

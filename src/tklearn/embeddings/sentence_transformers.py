@@ -5,7 +5,7 @@ from collections.abc import Sequence
 import numpy as np
 
 from tklearn.embeddings.base import Embedding
-from tklearn.nn.utils import get_device
+from tklearn.utils.devices import get_device
 
 __all__ = [
     "SentenceTransformerEmbedding",

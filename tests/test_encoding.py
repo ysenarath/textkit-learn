@@ -9,7 +9,7 @@ from transformers import AutoTokenizer
 from tklearn.nn import Encoder
 from tklearn.nn.callbacks import ProgbarLogger
 from tklearn.nn.models import LinearMulticlassClassifier
-from tklearn.nn.utils import get_device
+from tklearn.utils.devices import get_device
 
 MODEL_NAME_OR_PATH = "google-bert/bert-base-uncased"
 DATASET = "yelp_review_full"

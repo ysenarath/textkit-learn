@@ -7,7 +7,15 @@ __all__ = [
 ]
 
 
-def get_device(device: str | None = None) -> torch.device:
+def get_device(device: str | int | torch.device | None = None) -> torch.device:
+    """Resolve a device specification to a `torch.device`.
+
+    Parameters
+    ----------
+    device : str, int, torch.device or None
+        None or ``"auto"`` picks CUDA, then MPS, then CPU. An int is a CUDA
+        device index; strings are passed to `torch.device`.
+    """
     if device is None or device == "auto":
         if torch.cuda.is_available():
             device = "cuda"

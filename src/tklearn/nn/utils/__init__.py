@@ -1,5 +1,2 @@
-from tklearn.nn.utils.devices import get_device
-
-__all__ = [
-    "get_device",
-]
+"""Helpers for models and training: collators, tensor collections and
+target preprocessing. Import them from their modules."""
