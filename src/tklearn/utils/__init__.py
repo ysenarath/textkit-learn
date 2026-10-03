@@ -1,5 +1,5 @@
-"""General helpers (arrays, devices, caching, datasets, hashing, ...).
+"""General helpers.
 
-Import them from their modules, e.g. ``from tklearn.utils.devices import
-get_device``, so that each import only loads what it needs.
+Import them from their modules, e.g. ``from tklearn.utils.lang import
+get_stopwords``, so that each import only loads what it needs.
 """

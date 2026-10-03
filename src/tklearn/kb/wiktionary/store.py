@@ -11,7 +11,7 @@ from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import requests
@@ -20,13 +20,15 @@ from huggingface_hub import HfApi
 from tqdm import auto as tqdm
 
 from tklearn import config, logging
-from tklearn.embeddings import Embedding, SentenceTransformerEmbedding
 from tklearn.exceptions import UnexpectedValueError
 from tklearn.kb.base import KnowledgeStore
 from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.triple_store import TripleStore, load_pickle
 from tklearn.kb.wiktionary.models import Sense, Word, parse_jsonl
 from tklearn.utils.hf import suppress_hf_output
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
 
 __all__ = [
     "WiktionaryProcessor",
@@ -152,9 +154,12 @@ def load_from_cache(data: list[dict[str, Any]]):
 
 
 def batch_embedding_func(
-    batch: dict[str, list[Any]], *, encoder: Embedding
+    batch: dict[str, list[Any]], *, encoder: SentenceTransformer
 ) -> dict[str, list[np.ndarray]]:
-    return {"embedding": encoder.encode_document(batch["gloss"])}
+    embeddings = encoder.encode_document(
+        batch["gloss"], show_progress_bar=False
+    )
+    return {"embedding": embeddings}
 
 
 class EmbeddingsMapping(Mapping[int, np.ndarray]):
@@ -185,6 +190,8 @@ def compute_gloss_embeddings(
 ) -> EmbeddingsMapping:
     cache_file_name = Path(cache_file_name)
     if not cache_file_name.exists():
+        from sentence_transformers import SentenceTransformer
+
         ds = Dataset.from_generator(
             load_from_cache,
             gen_kwargs={
@@ -198,7 +205,7 @@ def compute_gloss_embeddings(
             num_proc=1,
             load_from_cache_file=True,
             fn_kwargs={
-                "encoder": SentenceTransformerEmbedding(GLOSS_EMBEDDING_MODEL),
+                "encoder": SentenceTransformer(GLOSS_EMBEDDING_MODEL),
             },
             desc="Computing Gloss Embeddings",
         )

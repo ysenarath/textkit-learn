@@ -10,7 +10,6 @@ __all__ = [
 ]
 
 DEFAULT_CACHE_PATH = Path.home() / ".cache" / "tklearn"
-DEFAULT_DATASET_BATCH_SIZE = 1000
 
 
 def _default_base_dir() -> Path:
@@ -30,19 +29,16 @@ class Config:
     ----------
     base_dir : Path
         Root of all tklearn files; ``$TKLEARN_CACHE`` or ``~/.cache/tklearn``.
-    dataset_batch_size : int
-        Default batch size for dataset mapping utilities.
     debug : bool
         Debug logging; enabled by ``TKLEARN_DEBUG=1``.
     """
 
     base_dir: Path = field(default_factory=_default_base_dir)
-    dataset_batch_size: int = DEFAULT_DATASET_BATCH_SIZE
     debug: bool = field(default_factory=is_debug_enabled)
 
     @property
     def cache_dir(self) -> Path:
-        """Cache files (see `tklearn.utils.cache`)."""
+        """Cache files."""
         return Path(self.base_dir) / "cache"
 
     @property
