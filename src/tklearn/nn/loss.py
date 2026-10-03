@@ -41,68 +41,45 @@ LossFunction = Callable[[BatchT, OutputT], LossLike]
 
 
 class TargetBasedLoss(torch.nn.Module):
-    def __init__(self, target_type: str | TargetType, num_labels: int):
+    """The standard loss for a target type, applied to logits.
+
+    - ``continuous``, ``continuous-multioutput``: `MSELoss`
+    - ``multiclass``: `CrossEntropyLoss`
+    - ``binary``, ``multilabel-indicator``: `BCEWithLogitsLoss`
+
+    The target is reshaped and cast to match the input: multiclass targets
+    are class indices with one fewer dimension than the input, and all other
+    targets have as many elements as the input.
+
+    Parameters
+    ----------
+    target_type : str or TargetType
+        One of the target types in the table above.
+    **kwargs
+        Passed to the loss, e.g. ``weight``, ``pos_weight``,
+        ``label_smoothing`` or ``ignore_index``.
+    """
+
+    def __init__(self, target_type: str | TargetType, **kwargs: Any):
         super().__init__()
-        self.num_labels = num_labels
         self.target_type = type_of_target(target_type)
-        self._loss_func = None
+        label = self.target_type.label
+        if label in ("continuous", "continuous-multioutput"):
+            self._loss_func = MSELoss(**kwargs)
+        elif label == "multiclass":
+            self._loss_func = CrossEntropyLoss(**kwargs)
+        elif label in ("binary", "multilabel-indicator"):
+            self._loss_func = BCEWithLogitsLoss(**kwargs)
+        else:
+            msg = f"target type '{label}' is not supported"
+            raise ValueError(msg)
 
     def forward(
         self, input: torch.Tensor, target: torch.Tensor
     ) -> torch.Tensor:
-        if self._loss_func is None:
-            if self.target_type.label == "continuous":
-                loss_fct = MSELoss()
-            elif self.target_type.label == "multiclass":
-                # LogSoftmax on an input, followed by NLLLoss
-                # - input must be a Tensor of size either (minibatch, C) or
-                #   (minibatch, C, d1, d2, ..., dK)
-                # - target must be a class index in [0, C-1] (long)
-                loss_fct = CrossEntropyLoss()
-            elif self.target_type.label in ["binary", "multilabel-indicator"]:
-                # Sigmoid layer and the BCELoss
-                # - input and target must have same shape
-                loss_fct = BCEWithLogitsLoss()
-            else:
-                msg = (
-                    f"target type '{self.target_type.label}' is not supported"
-                )
-                raise ValueError(msg)
-            self._loss_func = loss_fct
-        if isinstance(self._loss_func, MSELoss):
-            if self.num_labels == 1:
-                loss = self._loss_func(
-                    input.squeeze(),
-                    target.squeeze(),
-                )
-            else:
-                loss = self._loss_func(input, target)
-        elif isinstance(self._loss_func, CrossEntropyLoss):
-            # >>> # Example of target with class indices
-            # >>> loss = nn.CrossEntropyLoss()
-            # >>> input = torch.randn(3, 5, requires_grad=True)
-            # >>> target = torch.empty(3, dtype=torch.long).random_(5)
-            # >>> output = loss(input, target)
-            # >>> output.backward()
-            # >>>
-            # >>> # Example of target with class probabilities
-            # >>> input = torch.randn(3, 5, requires_grad=True)
-            # >>> target = torch.randn(3, 5).softmax(dim=1)
-            # >>> output = loss(input, target)
-            # >>> output.backward()
-            loss = self._loss_func(
-                input.view(-1, self.num_labels), target.view(-1)
+        if isinstance(self._loss_func, CrossEntropyLoss):
+            return self._loss_func(
+                input.reshape(-1, input.size(-1)), target.reshape(-1).long()
             )
-        else:  # BCEWithLogitsLoss
-            # >>> loss = nn.BCEWithLogitsLoss()
-            # >>> input = torch.randn(3, requires_grad=True)
-            # >>> target = torch.empty(3).random_(2)
-            # >>> output = loss(input, target)
-            # >>> output.backward()
-            # shape of input and target must be the same
-            if len(target.shape) == 1:  # binary case
-                # 1 is the number of classes
-                target = target.view(-1, 1)
-            target = target.to(dtype=input.dtype)
-            loss = self._loss_func(input, target)
-        return loss
+        target = target.reshape(input.shape).to(dtype=input.dtype)
+        return self._loss_func(input, target)

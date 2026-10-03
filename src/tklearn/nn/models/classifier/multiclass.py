@@ -71,9 +71,7 @@ class LinearMulticlassClassifier(BackboneModel):
             num_labels=num_labels,
             dropout=dropout,
         )
-        self.loss_func = TargetBasedLoss(
-            "multiclass", num_labels=self.num_labels
-        )
+        self.loss_func = TargetBasedLoss("multiclass")
 
     @property
     def num_labels(self) -> int:
@@ -106,10 +104,6 @@ class LinearMulticlassClassifier(BackboneModel):
         self.classifier.output = output_layer
         # move back to original device
         self.to(original_device)
-        # update num_labels of loss function
-        self.loss_func = TargetBasedLoss(
-            "multiclass", num_labels=self.num_labels
-        )
 
     def predict_step(self, batch) -> SequenceClassifierOutputWithPooling:
         outputs = self.backbone(batch)

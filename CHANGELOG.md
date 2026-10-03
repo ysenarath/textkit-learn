@@ -65,6 +65,12 @@ vectors = Encoder(model).encode(loader, return_tensors="np")
   `ModelCheckpoint` monitors `"valid_loss"` by default and accepts only
   `.pt` and `.safetensors` paths.
 - `LossLike` and `LossFunction` types are exported from `tklearn.nn.loss`.
+- `TargetBasedLoss(target_type, **kwargs)` no longer takes `num_labels`; the
+  number of classes is read from the logits. Keyword arguments such as
+  `weight`, `pos_weight` or `label_smoothing` are passed to the underlying
+  torch loss. It also supports `continuous-multioutput` targets, and an
+  unsupported target type raises when the loss is created rather than on
+  its first call.
 
 ### Metrics (`tklearn.metrics`)
 
