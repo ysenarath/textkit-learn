@@ -5,7 +5,12 @@ from typing import Any, Literal
 import numpy as np
 from scipy.stats import rankdata
 
-from tklearn.metrics._utils import add_padded, check_option, to_numpy
+from tklearn.metrics._utils import (
+    add_padded,
+    check_option,
+    is_empty,
+    to_numpy,
+)
 from tklearn.metrics.base import Metric
 
 __all__ = [
@@ -139,6 +144,8 @@ class _ErrorSumMetric(_RegressionMetric):
         raise NotImplementedError
 
     def update(self, y_true: Any, y_pred: Any) -> None:
+        if is_empty(y_true, y_pred):
+            return
         y_true, y_pred = _as_2d(y_true, y_pred)
         self._check_outputs(self.error_sum, y_true.shape[1])
         errors = self._errors(y_true, y_pred).sum(axis=0)
@@ -199,12 +206,11 @@ class _MomentMetric(_RegressionMetric):
         self.add_state("moments", np.zeros((10, 0)), reduce=_merge_moments)
 
     def update(self, y_true: Any, y_pred: Any) -> None:
+        if is_empty(y_true, y_pred):
+            return
         y_true, y_pred = _as_2d(y_true, y_pred)
         self._check_outputs(self.moments, y_true.shape[1])
-        if len(y_true):
-            self.moments = _merge_moments(
-                self.moments, _moments(y_true, y_pred)
-            )
+        self.moments = _merge_moments(self.moments, _moments(y_true, y_pred))
 
     def _n(self) -> int:
         return int(self.moments[0, 0]) if self.moments.size else 0
@@ -223,6 +229,8 @@ class R2Score(_MomentMetric):
         self.add_state("squared_error_sum", np.zeros(0))
 
     def update(self, y_true: Any, y_pred: Any) -> None:
+        if is_empty(y_true, y_pred):
+            return
         y_true, y_pred = _as_2d(y_true, y_pred)
         super().update(y_true, y_pred)
         self.squared_error_sum = add_padded(
@@ -269,6 +277,8 @@ class SpearmanCorrelation(_RegressionMetric):
         self.add_state("y_pred", [], reduce="cat")
 
     def update(self, y_true: Any, y_pred: Any) -> None:
+        if is_empty(y_true, y_pred):
+            return
         y_true, y_pred = _as_2d(y_true, y_pred)
         if self.y_true:
             self._check_outputs(self.y_true[0], y_true.shape[1])

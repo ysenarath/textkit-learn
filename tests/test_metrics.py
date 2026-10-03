@@ -149,6 +149,16 @@ class TestClassification(unittest.TestCase):
             sk.accuracy_score(self.ml_true, self.ml_pred),
         )
 
+    def test_single_label_indicator_matrix(self):
+        # one column is one label; scikit-learn reads it as a binary target
+        # and scores both classes
+        y_true, y_pred = self.ml_true[:, :1], self.ml_pred[:, :1]
+        np.testing.assert_allclose(
+            Precision(average=None)(y_true, y_pred),
+            [sk.precision_score(y_true[:, 0], y_pred[:, 0])],
+        )
+        self.assertEqual(ConfusionMatrix()(y_true, y_pred).shape, (1, 2, 2))
+
     def test_balanced_accuracy(self):
         for adjusted in [False, True]:
             with self.subTest(adjusted=adjusted):
@@ -246,6 +256,32 @@ class TestMetric(unittest.TestCase):
         metric.update(self.y_true, self.y_pred)
         self.assertIn("average='macro'", repr(metric))
         self.assertNotIn("confmat", repr(metric))
+
+    def test_empty_batches_are_ignored(self):
+        rng = np.random.default_rng(5)
+        labels = rng.integers(0, 2, (40, 3))
+        predictions = rng.integers(0, 2, (40, 3))
+        scores = rng.random((40, 3))
+        values, estimates = rng.normal(size=(40, 2)), rng.normal(size=(40, 2))
+        cases = [
+            (F1(average="macro"), labels, predictions),
+            (Accuracy(), labels, predictions),
+            (AUROC(), labels, scores),
+            (MeanSquaredError(), values, estimates),
+            (R2Score(), values, estimates),
+            (SpearmanCorrelation(), values, estimates),
+        ]
+        for metric, a, b in cases:
+            with self.subTest(metric=type(metric).__name__):
+                expected = metric(a, b)
+                # an empty list cannot carry the 2-D shape of the other input
+                metric.update([], b[:0])
+                metric.update(a[:0], [])
+                with self.assertRaises(ValueError):
+                    metric.compute()
+                metric.update(a, b)
+                metric.update([], [])
+                self.assertEqual(metric.compute(), expected)
 
 
 class TestMetricCollection(unittest.TestCase):

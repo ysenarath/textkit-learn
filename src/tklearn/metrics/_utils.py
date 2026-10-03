@@ -16,6 +16,18 @@ def to_numpy(value: Any) -> np.ndarray:
     return np.asarray(value)
 
 
+def is_empty(*inputs: Any) -> bool:
+    """Whether every input is an empty batch.
+
+    Metrics skip empty batches: an empty list cannot tell a 2-D batch from
+    a 1-D one, so its shape would not match the other inputs.
+    """
+    try:
+        return all(len(x) == 0 for x in inputs)
+    except TypeError:  # 0-d inputs are rejected by the shape checks
+        return False
+
+
 def to_python(value: Any) -> Any:
     # numpy scalars become python numbers so results can be logged and
     # serialized without special handling

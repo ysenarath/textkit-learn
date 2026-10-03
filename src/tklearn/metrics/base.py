@@ -31,7 +31,7 @@ class Metric(abc.ABC):
     updated on different shards or processes.
 
     Calling a metric computes it for the given inputs alone and leaves the
-    accumulated state untouched.
+    accumulated state untouched. Empty batches are ignored.
 
     Subclasses register their state with `add_state` in ``__init__`` and
     implement `update` and `compute`.

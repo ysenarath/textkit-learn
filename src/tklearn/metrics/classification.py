@@ -8,6 +8,7 @@ from tklearn.metrics._utils import (
     add_padded,
     average_scores,
     check_option,
+    is_empty,
     prf_score,
     to_numpy,
 )
@@ -54,7 +55,8 @@ class _ConfusionMatrixMetric(Metric):
     ``(n_classes, n_classes)`` matrix of true (rows) by predicted (columns)
     counts, which grows as new labels appear unless `num_classes` is set.
     Indicator matrices (2-D, multilabel) fill one ``[[tn, fp], [fn, tp]]``
-    matrix per label.
+    matrix per label; one column is one label, where scikit-learn would
+    read it as a binary target.
     """
 
     def __init__(self, num_classes: int | None = None) -> None:
@@ -69,6 +71,8 @@ class _ConfusionMatrixMetric(Metric):
         return self.label_confmat.shape[0] > 0
 
     def update(self, y_true: Any, y_pred: Any) -> None:
+        if is_empty(y_true, y_pred):
+            return
         y_true, y_pred = to_numpy(y_true), to_numpy(y_pred)
         if y_true.shape != y_pred.shape:
             msg = (
@@ -170,6 +174,8 @@ class Accuracy(_ConfusionMatrixMetric):
         self.add_state("n_exact", 0)
 
     def update(self, y_true: Any, y_pred: Any) -> None:
+        if is_empty(y_true, y_pred):
+            return
         y_true, y_pred = to_numpy(y_true), to_numpy(y_pred)
         super().update(y_true, y_pred)
         if y_true.ndim == 2:
@@ -311,7 +317,8 @@ class Precision(_PRFMetric):
     """Precision: tp / (tp + fp).
 
     Reads ``y_true`` and ``y_pred``: class labels, or indicator matrices for
-    multilabel targets.
+    multilabel targets. An indicator matrix with one column is one label;
+    scikit-learn reads it as a binary target and scores both classes.
 
     Parameters
     ----------

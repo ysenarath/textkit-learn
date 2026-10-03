@@ -9,6 +9,7 @@ from tklearn.metrics._utils import (
     add_padded,
     check_option,
     divide,
+    is_empty,
     nanaverage,
     to_numpy,
 )
@@ -202,6 +203,8 @@ class _ScoreMetric(Metric):
         return self.scores[0].shape[1] if self.scores else 0
 
     def update(self, y_true: Any, y_score: Any) -> None:
+        if is_empty(y_true, y_score):
+            return
         task, targets, scores = _binarize(to_numpy(y_true), to_numpy(y_score))
         if self._n_classes not in (0, scores.shape[1]):
             msg = (
@@ -282,8 +285,9 @@ class AUROC(_AveragedScoreMetric):
 
     Reads ``y_true`` and ``y_score``: 1-D scores with 0/1 labels (binary),
     2-D scores with class labels (multiclass, one-vs-rest) or 2-D scores
-    with an indicator matrix (multilabel). A class without both positives
-    and negatives scores NaN and is left out of the average.
+    with an indicator matrix (multilabel; one column is one label, so
+    ``average=None`` returns one score in an array). A class without both
+    positives and negatives scores NaN and is left out of the average.
 
     Parameters
     ----------
