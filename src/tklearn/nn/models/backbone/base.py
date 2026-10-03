@@ -10,8 +10,6 @@ from typing import (
 
 import torch
 
-from tklearn.utils.registry import Registry
-
 if TYPE_CHECKING:
     from transformers.modeling_utils import PreTrainedModel
     from transformers.tokenization_utils_base import PreTrainedTokenizerBase
@@ -20,7 +18,6 @@ else:
     PreTrainedTokenizerBase = Any
 
 __all__ = [
-    "BACKBONES",
     "Backbone",
     "Tokenizer",
 ]
@@ -47,7 +44,3 @@ class Backbone(torch.nn.Module):
 
     def forward(self, batch: Any) -> Any:
         raise NotImplementedError
-
-
-#: Backbones by name, e.g. ``BACKBONES.create("transformer", "bert-base-uncased")``.
-BACKBONES: Registry[Backbone] = Registry("backbone")

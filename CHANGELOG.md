@@ -9,9 +9,8 @@ with 0.4; the sections below list how to migrate.
 
 - `tklearn.agents` (vendored smolagents). Use the `smolagents` package.
 - nightjar configs and `Auto*` factories (`AutoModel`, `AutoBackbone`,
-  `AutoEmbedding`, `AutoArtifactStore`, `*Config` classes). Objects are built
-  with plain constructors; name-based construction goes through registries
-  (see below).
+  `AutoEmbedding`, `AutoArtifactStore`, `*Config` classes) and lookup by
+  name. Import the class you need and call its constructor.
 - The v0 Wiktionary store (`"wiktionary:v0"`, `WiktionaryArtifactStoreV1`) and
   the DuckDB `TripleStore`.
 - `PlateauEarlyStopping` (its plateau check was never called).
@@ -86,19 +85,19 @@ vectors = Encoder(model).encode(loader, return_tensors="np")
 - Backbones are `TransformerBackbone(model_name_or_path)` and
   `AdapterBackbone(model_name_or_path, adapter)`. The base class `Model` is
   renamed `BackboneModel`.
-- Registries: `MODELS.create("linear", "bert-base-uncased", num_labels=3)`,
-  `BACKBONES.from_config({"type": "transformer", ...})`.
 - `PrototypeCallback` and the `SequenceClassifierOutput*` classes are
   exported from `tklearn.nn.models`.
-- `KBertTokenizer(model_name_or_path, knowledge_base="wiktionary", ...)`
-  takes keyword arguments; tokenizers saved by 0.4 still load with
-  `from_pretrained`. `kbert.metrics` is renamed `kbert.feature_scoring`.
+- `KBertTokenizer(model_name_or_path, knowledge_base=kb, ...)` takes
+  keyword arguments and a `KnowledgeBase` object. The knowledge base is no
+  longer saved, so pass it to `from_pretrained(path, knowledge_base=kb)`;
+  tokenizers saved by 0.4 still load. `kbert.metrics` is renamed
+  `kbert.feature_scoring`.
 
 ### Knowledge base (`tklearn.kb`)
 
-- `KnowledgeBase(store="wiktionary", **store_kwargs)` or
-  `KnowledgeBase(WiktionaryStore(...))`. Store data is exposed as typed
-  properties (`lexicon`, `triples`, `senses`, ...).
+- `KnowledgeBase("wiktionary")` is now `KnowledgeBase(WiktionaryStore())`.
+  Store data is exposed as typed properties (`lexicon`, `triples`,
+  `senses`, ...).
 - `WiktionaryStore` (was `WiktionaryArtifactStore`) no longer creates a Hub
   repository or uploads on load. Use `offline=True` to skip the Hub and
   `push_to_hub()` to publish. Existing local caches keep working.
@@ -120,8 +119,8 @@ vectors = Encoder(model).encode(loader, return_tensors="np")
 
 - `Embedding` defines `encode`, `encode_query`, `encode_document` and `dim`.
   `WordEmbedding` adds the vocabulary mapping. Use `GensimEmbedding(name)`,
-  `FastTextEmbedding(name)` and `SentenceTransformerEmbedding(name)`, or
-  `EMBEDDINGS.create("gensim", "glove-wiki-gigaword-100")`.
+  `FastTextEmbedding(name)` and `SentenceTransformerEmbedding(name)`
+  instead of `AutoEmbedding`.
 - `encode` returns a 1-D vector for a string and a 2-D array for a list of
   strings.
 
@@ -131,7 +130,6 @@ vectors = Encoder(model).encode(loader, return_tensors="np")
   `assets_dir` are `Path`s derived from `base_dir`.
 - `get_logger(name, level=None)`; repeated calls no longer add duplicate
   handlers.
-- `tklearn.utils.Registry` for name-based construction.
 - `tklearn.plotting` and `tklearn.nn.calibration` export their public
   functions.
 

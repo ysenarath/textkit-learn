@@ -4,14 +4,13 @@ import numpy as np
 from tqdm import auto as tqdm
 
 from tklearn.embeddings._utils import change_dir
-from tklearn.embeddings.base import EMBEDDINGS, WordEmbedding
+from tklearn.embeddings.base import WordEmbedding
 
 __all__ = [
     "GensimEmbedding",
 ]
 
 
-@EMBEDDINGS.register("gensim")
 class GensimEmbedding(WordEmbedding):
     """Word vectors from the gensim downloader.
 

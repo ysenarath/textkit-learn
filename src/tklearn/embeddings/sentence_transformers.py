@@ -4,7 +4,7 @@ from collections.abc import Sequence
 
 import numpy as np
 
-from tklearn.embeddings.base import EMBEDDINGS, Embedding
+from tklearn.embeddings.base import Embedding
 from tklearn.nn.utils import get_device
 
 __all__ = [
@@ -12,7 +12,6 @@ __all__ = [
 ]
 
 
-@EMBEDDINGS.register("sentence-transformers")
 class SentenceTransformerEmbedding(Embedding):
     """Sentence embeddings from a ``sentence-transformers`` model.
 

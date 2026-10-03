@@ -4,14 +4,13 @@ import numpy as np
 from tqdm import auto as tqdm
 
 from tklearn.embeddings._utils import change_dir
-from tklearn.embeddings.base import EMBEDDINGS, WordEmbedding
+from tklearn.embeddings.base import WordEmbedding
 
 __all__ = [
     "FastTextEmbedding",
 ]
 
 
-@EMBEDDINGS.register("fasttext")
 class FastTextEmbedding(WordEmbedding):
     """fastText word vectors, with subword vectors for unknown words.
 

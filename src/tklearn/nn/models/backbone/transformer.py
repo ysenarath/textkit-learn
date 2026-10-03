@@ -12,7 +12,7 @@ from transformers import (
 from transformers.modeling_outputs import BaseModelOutputWithPooling
 from transformers.tokenization_utils_base import BatchEncoding
 
-from tklearn.nn.models.backbone.base import BACKBONES, Backbone
+from tklearn.nn.models.backbone.base import Backbone
 
 __all__ = [
     "TransformerBackbone",
@@ -38,7 +38,6 @@ def get_features(
     return {key: type(value) for key, value in encoding.items()}
 
 
-@BACKBONES.register("transformer")
 class TransformerBackbone(Backbone):
     """A Hugging Face transformer encoder and its tokenizer.
 

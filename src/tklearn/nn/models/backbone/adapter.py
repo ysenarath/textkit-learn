@@ -3,7 +3,6 @@ from __future__ import annotations
 import adapters
 from transformers import AutoModel, PreTrainedModel
 
-from tklearn.nn.models.backbone.base import BACKBONES
 from tklearn.nn.models.backbone.transformer import TransformerBackbone
 
 __all__ = [
@@ -11,7 +10,6 @@ __all__ = [
 ]
 
 
-@BACKBONES.register("adapter")
 class AdapterBackbone(TransformerBackbone):
     """A transformer with a trainable adapter; the base weights are frozen.
 

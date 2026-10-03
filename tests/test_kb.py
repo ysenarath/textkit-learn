@@ -2,7 +2,6 @@ import pickle
 import unittest
 
 from tklearn.kb import (
-    KNOWLEDGE_STORES,
     Augmentation,
     KnowledgeBase,
     KnowledgeStore,
@@ -96,10 +95,9 @@ class TestKnowledgeBase(unittest.TestCase):
         kb = pickle.loads(pickle.dumps(self.kb))
         self.assertIsInstance(kb.store, TinyStore)
 
-    def test_store_by_name(self):
-        self.assertIn("wiktionary", KNOWLEDGE_STORES)
-        with self.assertRaises(TypeError):
-            KnowledgeBase(TinyStore(), offline=True)
+    def test_requires_a_store(self):
+        with self.assertRaisesRegex(TypeError, "WiktionaryStore"):
+            KnowledgeBase("wiktionary")
 
 
 class TestTripleStore(unittest.TestCase):

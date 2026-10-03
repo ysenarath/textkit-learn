@@ -1,4 +1,4 @@
-from tklearn.embeddings.base import EMBEDDINGS, Embedding, WordEmbedding
+from tklearn.embeddings.base import Embedding, WordEmbedding
 from tklearn.embeddings.fasttext import FastTextEmbedding
 from tklearn.embeddings.gensim import GensimEmbedding
 from tklearn.embeddings.sentence_transformers import (
@@ -6,7 +6,6 @@ from tklearn.embeddings.sentence_transformers import (
 )
 
 __all__ = [
-    "EMBEDDINGS",
     "Embedding",
     "FastTextEmbedding",
     "GensimEmbedding",

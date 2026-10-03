@@ -276,8 +276,8 @@ class KBertTokenizer:
     ----------
     model_name_or_path : str
         Hugging Face tokenizer to build on.
-    knowledge_base : KnowledgeBase or str, default="wiktionary"
-        The knowledge base, or the name of a registered knowledge store.
+    knowledge_base : KnowledgeBase
+        Source of the mentions and triples to inject.
     predicates : list of str, optional
         Relations to inject; by default all of them.
     augment_top_k : int or None, default=2
@@ -302,7 +302,7 @@ class KBertTokenizer:
         self,
         model_name_or_path: str,
         *,
-        knowledge_base: KnowledgeBase | str = "wiktionary",
+        knowledge_base: KnowledgeBase,
         predicates: list[str] | None = None,
         augment_top_k: int | None = 2,
         scorer: ScorerLiteral | str = "default",
@@ -319,21 +319,18 @@ class KBertTokenizer:
         self.sequence_length = sequence_length
         self.truncate = truncate
         self.featurizer = featurizer
-        self._knowledge_base_name = (
-            knowledge_base if isinstance(knowledge_base, str) else None
-        )
-        if isinstance(knowledge_base, str):
-            knowledge_base = KnowledgeBase(knowledge_base)
         self.knowledge_base = knowledge_base
         self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         # set by fit() or from_pretrained()
         self.scorer = None
 
     def get_config(self) -> dict[str, Any]:
-        """The constructor arguments, as saved by `save_pretrained`."""
+        """The constructor arguments saved by `save_pretrained`.
+
+        The knowledge base is not saved; pass it to `from_pretrained`.
+        """
         return {
             "model_name_or_path": self.model_name_or_path,
-            "knowledge_base": self._knowledge_base_name,
             "predicates": self.predicates,
             "augment_top_k": self.augment_top_k,
             "scorer": self.scorer_name,
@@ -355,7 +352,7 @@ class KBertTokenizer:
     def from_pretrained(
         cls,
         pretrained_model_name_or_path: str,
-        knowledge_base: KnowledgeBase | str | None = None,
+        knowledge_base: KnowledgeBase,
         **kwargs,
     ) -> Self:
         """Load a tokenizer saved with `save_pretrained`.
@@ -364,24 +361,17 @@ class KBertTokenizer:
         ----------
         pretrained_model_name_or_path : str
             The directory passed to `save_pretrained`.
-        knowledge_base : KnowledgeBase or str, optional
-            Overrides the saved knowledge base. Required when the tokenizer
-            was saved with a `KnowledgeBase` instance rather than a name.
+        knowledge_base : KnowledgeBase
+            The knowledge base to use; it is not part of the saved files.
         **kwargs
             Passed to ``AutoTokenizer.from_pretrained``.
         """
         base_path = Path(pretrained_model_name_or_path)
         with open(base_path / "kb_tokenizer_config.json") as f:
             config = json.load(f)
-        if knowledge_base is not None:
-            config["knowledge_base"] = knowledge_base
-        if config.get("knowledge_base") is None:
-            msg = (
-                "the saved tokenizer does not name its knowledge base; "
-                "pass knowledge_base="
-            )
-            raise ValueError(msg)
-        self = cls(**config)
+        # tokenizers saved by tklearn 0.4 also stored the knowledge base name
+        config.pop("knowledge_base", None)
+        self = cls(**config, knowledge_base=knowledge_base)
         Scorer = get_scorer(self.scorer_name)
         try:
             self.scorer = Scorer.load(base_path / "scorer")

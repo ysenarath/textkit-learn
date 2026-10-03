@@ -9,7 +9,7 @@ from typing_extensions import Literal, Protocol
 
 from tklearn.nn.loss import TargetBasedLoss
 from tklearn.nn.models.backbone import Backbone
-from tklearn.nn.models.base import MODELS, BackboneModel
+from tklearn.nn.models.base import BackboneModel
 from tklearn.nn.models.classifier.helpers import (
     BatchPrototypeLoss,
     CosineSimilarity,
@@ -45,7 +45,6 @@ class LinearClassifierLayer(nn.Module):
         return x, pooler_output
 
 
-@MODELS.register("linear")
 class LinearMulticlassClassifier(BackboneModel):
     """A backbone followed by dropout and a linear classification head.
 
@@ -146,7 +145,6 @@ class LinearMulticlassClassifier(BackboneModel):
         }
 
 
-@MODELS.register("prototype")
 class PrototypeMulticlassClassifier(BackboneModel):
     """Classify by cosine similarity to per-class prototype embeddings.
 

@@ -6,10 +6,8 @@ from tklearn.nn.models.backbone import (
     Tokenizer,
     TransformerBackbone,
 )
-from tklearn.utils.registry import Registry
 
 __all__ = [
-    "MODELS",
     "BackboneModel",
 ]
 
@@ -45,7 +43,3 @@ class BackboneModel(Module):
         if self.backbone.tokenizer is None:
             raise AttributeError("'tokenizer' is not available")
         return self.backbone.tokenizer
-
-
-#: Models by name, e.g. ``MODELS.create("linear", "bert-base-uncased", num_labels=3)``.
-MODELS: Registry[BackboneModel] = Registry("model")

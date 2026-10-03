@@ -8,10 +8,8 @@ from pathlib import Path
 import numpy as np
 
 from tklearn import config, logging
-from tklearn.utils.registry import Registry
 
 __all__ = [
-    "EMBEDDINGS",
     "Embedding",
     "WordEmbedding",
 ]
@@ -147,8 +145,3 @@ class WordEmbedding(Embedding, Mapping[str, np.ndarray]):
         np.save(path.with_suffix(".vectors.npy"), self.vectors)
         with open(path.with_suffix(".word_to_index.json"), "w") as f:
             json.dump(self.word_to_index, f)
-
-
-#: Embeddings by loader name, e.g.
-#: ``EMBEDDINGS.create("gensim", "glove-wiki-gigaword-100")``.
-EMBEDDINGS: Registry[Embedding] = Registry("embedding")

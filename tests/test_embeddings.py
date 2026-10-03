@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 
 from tklearn import config
-from tklearn.embeddings import EMBEDDINGS, WordEmbedding
+from tklearn.embeddings import WordEmbedding
 
 VECTORS = {
     "king": np.array([1.0, 0.0, 0.5], dtype=np.float32),
@@ -59,11 +59,6 @@ class TestWordEmbedding(unittest.TestCase):
         self.assertNotIn("pear", emb)
         with self.assertRaises(KeyError):
             emb["pear"]
-
-    def test_registry(self):
-        self.assertEqual(
-            EMBEDDINGS.names(), ["fasttext", "gensim", "sentence-transformers"]
-        )
 
 
 if __name__ == "__main__":

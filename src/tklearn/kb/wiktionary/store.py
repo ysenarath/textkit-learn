@@ -22,7 +22,7 @@ from tqdm import auto as tqdm
 from tklearn import config, logging
 from tklearn.embeddings import Embedding, SentenceTransformerEmbedding
 from tklearn.exceptions import UnexpectedValueError
-from tklearn.kb.base import KNOWLEDGE_STORES, KnowledgeStore
+from tklearn.kb.base import KnowledgeStore
 from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.triple_store import TripleStore, load_pickle
 from tklearn.kb.wiktionary.models import Sense, Word, parse_jsonl
@@ -459,7 +459,6 @@ class WiktionaryProcessor:
         }
 
 
-@KNOWLEDGE_STORES.register("wiktionary")
 class WiktionaryStore(KnowledgeStore):
     """English Wiktionary as a knowledge store.
 

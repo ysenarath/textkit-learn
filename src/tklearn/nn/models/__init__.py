@@ -1,10 +1,9 @@
 from tklearn.nn.models.backbone import (
-    BACKBONES,
     AdapterBackbone,
     Backbone,
     TransformerBackbone,
 )
-from tklearn.nn.models.base import MODELS, BackboneModel
+from tklearn.nn.models.base import BackboneModel
 from tklearn.nn.models.classifier import (
     LinearMulticlassClassifier,
     PrototypeCallback,
@@ -14,9 +13,6 @@ from tklearn.nn.models.classifier import (
 )
 
 __all__ = [
-    # --- Registries ---
-    "BACKBONES",
-    "MODELS",
     # --- Backbones ---
     "AdapterBackbone",
     "Backbone",

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Iterator, Mapping
-from typing import Any
 
 import numpy as np
 
@@ -10,10 +9,8 @@ from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.models import Augmentation, Candidate, Mention, Span, Triple
 from tklearn.kb.triple_store import TripleStore
 from tklearn.utils.lang import get_stopwords
-from tklearn.utils.registry import Registry
 
 __all__ = [
-    "KNOWLEDGE_STORES",
     "KnowledgeBase",
     "KnowledgeStore",
 ]
@@ -49,36 +46,29 @@ class KnowledgeStore:
     embeddings: Mapping[int, np.ndarray]
 
 
-#: Knowledge stores by name, e.g. ``KNOWLEDGE_STORES.create("wiktionary")``.
-KNOWLEDGE_STORES: Registry[KnowledgeStore] = Registry("knowledge store")
-
-
 class KnowledgeBase:
     """Find word senses in text and the relations between them.
 
     Parameters
     ----------
-    store : KnowledgeStore or str, default="wiktionary"
-        The store, or the name of a registered store.
-    **kwargs
-        Arguments for the store when it is given by name.
+    store : KnowledgeStore
+        The data to query, e.g. a `WiktionaryStore`.
 
     Examples
     --------
-    >>> kb = KnowledgeBase("wiktionary")
+    >>> kb = KnowledgeBase(WiktionaryStore())
     >>> for mention in kb.extract_mentions("The dog barked."):
     ...     print(mention.form, len(mention.candidates))
     >>> for aug in kb.augment("The dog barked."):
     ...     print(aug.text, aug.relations)
     """
 
-    def __init__(
-        self, store: KnowledgeStore | str = "wiktionary", **kwargs: Any
-    ) -> None:
-        if isinstance(store, str):
-            store = KNOWLEDGE_STORES.create(store, **kwargs)
-        elif kwargs:
-            msg = "keyword arguments are only used when 'store' is a name"
+    def __init__(self, store: KnowledgeStore) -> None:
+        if not isinstance(store, KnowledgeStore):
+            msg = (
+                "expected a KnowledgeStore such as WiktionaryStore(), got "
+                f"{type(store).__name__}"
+            )
             raise TypeError(msg)
         self.store = store
 
