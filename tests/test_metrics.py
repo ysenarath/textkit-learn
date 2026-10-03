@@ -479,6 +479,18 @@ class TestRegression(unittest.TestCase):
         self.assertEqual(R2Score()(y, y), sk.r2_score(y, y))
         self.assertEqual(R2Score()(y, y + 1), sk.r2_score(y, y + 1))
 
+    def test_constant_inputs_despite_rounding(self):
+        # the mean of seven 0.1s is not exactly 0.1, which leaves a tiny
+        # nonzero variance unless constant inputs are detected exactly
+        y = np.full(7, 0.1)
+        noisy = y + np.linspace(-1, 1, 7)
+        self.assertEqual(accumulate(R2Score(), y, noisy, batch_size=3), 0.0)
+        self.assertEqual(accumulate(R2Score(), y, y, batch_size=3), 1.0)
+        for cls in [PearsonCorrelation, SpearmanCorrelation]:
+            with self.subTest(metric=cls.__name__):
+                self.assertTrue(np.isnan(accumulate(cls(), y, noisy)))
+                self.assertTrue(np.isnan(accumulate(cls(), noisy, y)))
+
     def test_correlations(self):
         y_pred = np.round(self.y_pred, 1)  # ties for Spearman
         for i in range(3):

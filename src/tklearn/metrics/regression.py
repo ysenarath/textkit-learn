@@ -38,10 +38,10 @@ def _as_2d(y_true: Any, y_pred: Any) -> tuple[np.ndarray, np.ndarray]:
 
 
 def _moments(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
-    """Count, means, sums of squared deviations and co-deviation.
+    """Count, means, sums of squared deviations, co-deviation and ranges.
 
-    Rows are ``n, mean_true, mean_pred, m2_true, m2_pred, c``, one column
-    per output.
+    Rows are ``n, mean_true, mean_pred, m2_true, m2_pred, c, min_true,
+    max_true, min_pred, max_pred``, one column per output.
     """
     n = np.full(y_true.shape[1], float(len(y_true)))
     mean_true, mean_pred = y_true.mean(axis=0), y_pred.mean(axis=0)
@@ -53,6 +53,10 @@ def _moments(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
         (d_true**2).sum(axis=0),
         (d_pred**2).sum(axis=0),
         (d_true * d_pred).sum(axis=0),
+        y_true.min(axis=0),
+        y_true.max(axis=0),
+        y_pred.min(axis=0),
+        y_pred.max(axis=0),
     ])
 
 
@@ -73,13 +77,29 @@ def _merge_moments(a: np.ndarray, b: np.ndarray) -> np.ndarray:
         a[3] + b[3] + d_true**2 * scale,
         a[4] + b[4] + d_pred**2 * scale,
         a[5] + b[5] + d_true * d_pred * scale,
+        np.minimum(a[6], b[6]),
+        np.maximum(a[7], b[7]),
+        np.minimum(a[8], b[8]),
+        np.maximum(a[9], b[9]),
     ])
 
 
-def _pearson(m2_true: Any, m2_pred: Any, c: Any) -> np.ndarray:
+def _is_constant(moments: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Whether each output of y_true and of y_pred is constant.
+
+    Rounding in the means can leave a constant input with a tiny nonzero
+    sum of squares, so this compares the range instead.
+    """
+    return moments[6] == moments[7], moments[8] == moments[9]
+
+
+def _pearson(moments: np.ndarray) -> np.ndarray:
+    m2_true, m2_pred, c = moments[3:6]
     with np.errstate(divide="ignore", invalid="ignore"):
-        r = np.asarray(c) / np.sqrt(np.multiply(m2_true, m2_pred))
-    return np.clip(r, -1.0, 1.0)
+        r = np.clip(c / np.sqrt(m2_true * m2_pred), -1.0, 1.0)
+    const_true, const_pred = _is_constant(moments)
+    r[const_true | const_pred] = np.nan
+    return r
 
 
 class _RegressionMetric(Metric):
@@ -176,7 +196,7 @@ class MeanAbsoluteError(_ErrorSumMetric):
 class _MomentMetric(_RegressionMetric):
     def __init__(self, *, multioutput: MultiOutput = "uniform_average"):
         super().__init__(multioutput=multioutput)
-        self.add_state("moments", np.zeros((6, 0)), reduce=_merge_moments)
+        self.add_state("moments", np.zeros((10, 0)), reduce=_merge_moments)
 
     def update(self, y_true: Any, y_pred: Any) -> None:
         y_true, y_pred = _as_2d(y_true, y_pred)
@@ -214,7 +234,9 @@ class R2Score(_MomentMetric):
         self._check_updated(n)
         if n < 2:
             return self._average(np.full(self.moments.shape[1], np.nan))
-        residual, total = self.squared_error_sum, self.moments[3]
+        residual = self.squared_error_sum
+        const_true, _ = _is_constant(self.moments)
+        total = np.where(const_true, 0.0, self.moments[3])
         scores = np.ones_like(total)
         valid = (residual != 0) & (total != 0)
         scores[valid] = 1 - residual[valid] / total[valid]
@@ -231,8 +253,7 @@ class PearsonCorrelation(_MomentMetric):
 
     def compute(self) -> float | np.ndarray:
         self._check_updated(self._n())
-        _, _, _, m2_true, m2_pred, c = self.moments
-        return self._average(_pearson(m2_true, m2_pred, c))
+        return self._average(_pearson(self.moments))
 
 
 class SpearmanCorrelation(_RegressionMetric):
@@ -258,5 +279,4 @@ class SpearmanCorrelation(_RegressionMetric):
         self._check_updated(sum(len(y) for y in self.y_true))
         rank_true = rankdata(np.concatenate(self.y_true), axis=0)
         rank_pred = rankdata(np.concatenate(self.y_pred), axis=0)
-        _, _, _, m2_true, m2_pred, c = _moments(rank_true, rank_pred)
-        return self._average(_pearson(m2_true, m2_pred, c))
+        return self._average(_pearson(_moments(rank_true, rank_pred)))
