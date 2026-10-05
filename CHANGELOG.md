@@ -41,7 +41,7 @@ Removed.
 - Spans: `SpanPrecision`, `SpanRecall` and `SpanF1` score spans read from
   BIO/IOBES tags, matching seqeval's default mode.
 - `MetricCollection.update(**inputs)` passes each metric the inputs it
-  accepts; `result()` is now `compute()`.
+  accepts, and `input_names` lists them; `result()` is now `compute()`.
 
 ### Knowledge base (`tklearn.kb`)
 

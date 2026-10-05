@@ -72,13 +72,28 @@ class TestClassification(unittest.TestCase):
                     np.testing.assert_allclose(actual, expected)
 
     def test_fbeta(self):
-        actual = accumulate(
-            FBeta(2.0, average="macro"), self.y_true, self.y_pred
+        for beta in [0.0, 0.5, 1.0, 2.0]:
+            for average in ["micro", "macro", "weighted", None]:
+                with self.subTest(beta=beta, average=average):
+                    actual = accumulate(
+                        FBeta(beta, average=average), self.y_true, self.y_pred
+                    )
+                    expected = sk.fbeta_score(
+                        self.y_true,
+                        self.y_pred,
+                        beta=beta,
+                        average=average,
+                        zero_division=0.0,
+                    )
+                    np.testing.assert_allclose(actual, expected)
+        # beta=0 is precision
+        np.testing.assert_allclose(
+            accumulate(FBeta(0.0, average=None), self.y_true, self.y_pred),
+            accumulate(Precision(average=None), self.y_true, self.y_pred),
         )
-        expected = sk.fbeta_score(
-            self.y_true, self.y_pred, beta=2.0, average="macro"
-        )
-        self.assertAlmostEqual(actual, expected)
+        for beta in [-1.0, np.nan]:
+            with self.subTest(beta=beta), self.assertRaises(ValueError):
+                FBeta(beta)
 
     def test_zero_division(self):
         # class 3 is never predicted, so its precision is 0/0
@@ -237,6 +252,57 @@ class TestMetric(unittest.TestCase):
         with self.assertRaises(TypeError):
             first.merge(Precision(average="macro"))
 
+    def test_merge_rejects_different_columns(self):
+        # unlike class labels, columns are identified only by position, so
+        # states with different numbers of columns cannot be combined
+        rng = np.random.default_rng(7)
+
+        def labels(n):
+            return rng.integers(0, 2, (20, n)), rng.integers(0, 2, (20, n))
+
+        def scores(n):
+            return rng.integers(0, 2, (20, n)), rng.random((20, n))
+
+        def values(n):
+            return rng.normal(size=(20, n)), rng.normal(size=(20, n))
+
+        cases = [
+            (Accuracy, labels),
+            (lambda: F1(average="macro"), labels),
+            (ConfusionMatrix, labels),
+            (AUROC, scores),
+            (lambda: AUROC(thresholds=10), scores),
+            (MeanSquaredError, values),
+            (R2Score, values),
+            (PearsonCorrelation, values),
+            (SpearmanCorrelation, values),
+        ]
+        for make, inputs in cases:
+            first, second = make(), make()
+            with self.subTest(metric=repr(first)):
+                first.update(*inputs(3))
+                second.update(*inputs(5))
+                before = first.compute()
+                with self.assertRaisesRegex(ValueError, "cannot merge"):
+                    first.merge(second)
+                np.testing.assert_array_equal(first.compute(), before)
+
+        first, second = AUROC(thresholds=10), AUROC(thresholds=20)
+        first.update(*scores(3))
+        second.update(*scores(3))
+        with self.assertRaisesRegex(ValueError, "cannot merge"):
+            first.merge(second)
+
+    def test_merge_rejects_mixed_targets(self):
+        labels, multilabel = F1(average="macro"), F1(average="macro")
+        labels.update(self.y_true, self.y_pred)
+        multilabel.update([[0, 1], [1, 1]], [[0, 1], [1, 0]])
+        for first, second in [(labels, multilabel), (multilabel, labels)]:
+            before = first.compute()
+            with self.assertRaisesRegex(ValueError, "cannot merge"):
+                first.merge(second)
+            self.assertEqual(first.compute(), before)
+
     def test_call_leaves_state_untouched(self):
         metric = Accuracy()
         metric.update(self.y_true, self.y_pred)
@@ -283,6 +349,40 @@ class TestMetric(unittest.TestCase):
                 metric.update([], [])
                 self.assertEqual(metric.compute(), expected)
 
+    def test_inputs_without_columns_are_rejected(self):
+        # zero rows are an empty batch, but zero columns mean no labels or
+        # outputs, for which no metric is defined
+        rng = np.random.default_rng(6)
+        labels = rng.integers(0, 2, (40, 3))
+        predictions = rng.integers(0, 2, (40, 3))
+        classes = rng.integers(0, 3, 40)
+        scores = rng.random((40, 3))
+        values, estimates = rng.normal(size=(40, 2)), rng.normal(size=(40, 2))
+        cases = [
+            (Accuracy(), labels, predictions),
+            (F1(average="macro"), labels, predictions),
+            (ConfusionMatrix(), labels, predictions),
+            (AUROC(), labels, scores),
+            (AUROC(), classes, scores),
+            (AveragePrecision(thresholds=10), labels, scores),
+            (MeanSquaredError(), values, estimates),
+            (MeanAbsoluteError(), values, estimates),
+            (RootMeanSquaredError(), values, estimates),
+            (R2Score(), values, estimates),
+            (PearsonCorrelation(), values, estimates),
+            (SpearmanCorrelation(), values, estimates),
+        ]
+        for metric, a, b in cases:
+            with self.subTest(metric=type(metric).__name__, y_true=a.ndim):
+                expected = metric(a, b)
+                with self.assertRaisesRegex(ValueError, "at least one"):
+                    metric.update(a[:, :0] if a.ndim == 2 else a, b[:, :0])
+                # nothing was recorded, not even the number of rows
+                with self.assertRaises(ValueError):
+                    metric.compute()
+                metric.update(a, b)
+                np.testing.assert_array_equal(metric.compute(), expected)
+
 
 class TestMetricCollection(unittest.TestCase):
     def setUp(self):
@@ -318,6 +418,13 @@ class TestMetricCollection(unittest.TestCase):
             results["f1"],
             sk.f1_score(self.y_true, self.y_pred, average="macro"),
         )
+
+    def test_input_names(self):
+        self.assertEqual(
+            self._collection().input_names,
+            {"y_true", "y_pred", "y_score"},
+        )
+        self.assertEqual(MetricCollection().input_names, set())
 
     def test_missing_input(self):
         with self.assertRaisesRegex(KeyError, "y_score"):

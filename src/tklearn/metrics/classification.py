@@ -5,11 +5,12 @@ from typing import Any, ClassVar, Literal
 import numpy as np
 
 from tklearn.metrics._utils import (
-    add_padded,
     average_scores,
     check_option,
     is_empty,
     prf_score,
+    require_columns,
+    sum_states,
     to_numpy,
 )
 from tklearn.metrics.base import Metric
@@ -41,6 +42,20 @@ def _as_labels(y: np.ndarray, name: str) -> np.ndarray:
     return y
 
 
+def _add_padded(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Add two confusion matrices of class labels, zero-padding the smaller.
+
+    The matrix grows when a new class shows up, so the matrix of one batch
+    (or shard) can be smaller than another's.
+    """
+    if a.shape == b.shape:
+        return a + b
+    out = np.zeros(np.maximum(a.shape, b.shape), np.result_type(a, b))
+    out[tuple(slice(0, n) for n in a.shape)] += a
+    out[tuple(slice(0, n) for n in b.shape)] += b
+    return out
+
+
 def _as_indicator(y: np.ndarray, name: str) -> np.ndarray:
     if not np.isin(y, (0, 1)).all():
         msg = f"{name} must be a binary indicator matrix (0/1 values)"
@@ -63,12 +78,25 @@ class _ConfusionMatrixMetric(Metric):
         super().__init__()
         self.num_classes = num_classes
         n = num_classes or 0
-        self.add_state("confmat", np.zeros((n, n), np.int64))
+        self.add_state(
+            "confmat", np.zeros((n, n), np.int64), reduce=_add_padded
+        )
         self.add_state("label_confmat", np.zeros((0, 2, 2), np.int64))
 
     @property
     def _is_multilabel(self) -> bool:
         return self.label_confmat.shape[0] > 0
+
+    def _check_merge(self, other: _ConfusionMatrixMetric) -> None:
+        # class labels and indicator matrices fill different states
+        if (self._is_multilabel and other.confmat.any()) or (
+            other._is_multilabel and self.confmat.any()
+        ):
+            msg = (
+                f"cannot merge {type(self).__name__} of class labels and of "
+                "multilabel targets"
+            )
+            raise ValueError(msg)
 
     def update(self, y_true: Any, y_pred: Any) -> None:
         if is_empty(y_true, y_pred):
@@ -85,9 +113,11 @@ class _ConfusionMatrixMetric(Metric):
                 msg = "got class labels after multilabel targets"
                 raise ValueError(msg)
             self._update_labels(
-                _as_labels(y_true, "y_true"), _as_labels(y_pred, "y_pred")
+                _as_labels(y_true, "y_true"),
+                _as_labels(y_pred, "y_pred"),
             )
         elif y_true.ndim == 2:
+            require_columns(y_true, "label")
             if self.confmat.any():
                 msg = "got multilabel targets after class labels"
                 raise ValueError(msg)
@@ -111,7 +141,7 @@ class _ConfusionMatrixMetric(Metric):
             msg = f"class labels must be less than {self.num_classes}"
             raise ValueError(msg)
         batch = np.bincount(y_true * n + y_pred, minlength=n * n)
-        self.confmat = add_padded(self.confmat, batch.reshape(n, n))
+        self.confmat = _add_padded(self.confmat, batch.reshape(n, n))
 
     def _update_indicators(
         self, y_true: np.ndarray, y_pred: np.ndarray
@@ -131,7 +161,7 @@ class _ConfusionMatrixMetric(Metric):
         fn = (y_true & ~y_pred).sum(axis=0)
         tn = len(y_true) - tp - fp - fn
         batch = np.stack([tn, fp, fn, tp], axis=1).reshape(-1, 2, 2)
-        self.label_confmat = add_padded(self.label_confmat, batch)
+        self.label_confmat = sum_states(self.label_confmat, batch)
 
     def _check_updated(self) -> None:
         if not self._is_multilabel and not self.confmat.any():
@@ -153,6 +183,8 @@ class _ConfusionMatrixMetric(Metric):
         tp = np.diag(cm)
         fp, fn = cm.sum(axis=0) - tp, cm.sum(axis=1) - tp
         if self.num_classes is None:
+            # only consider classes that actually appear
+            # in y_true or y_pred
             mask = (cm.sum(axis=0) + cm.sum(axis=1)) > 0
         else:
             mask = np.ones(len(tp), bool)
@@ -209,11 +241,11 @@ class BalancedAccuracy(_ConfusionMatrixMetric):
         if self._is_multilabel:
             msg = "BalancedAccuracy does not support multilabel targets"
             raise ValueError(msg)
+        # number of true instances per class
         support = self.confmat.sum(axis=1)
         present = support > 0
-        score = float(
-            np.mean(np.diag(self.confmat)[present] / support[present])
-        )
+        tp = np.diag(self.confmat)  # true positives per class
+        score = float(np.mean(tp[present] / support[present]))
         if self.adjusted:
             chance = 1 / present.sum()
             score = (score - chance) / (1 - chance)
@@ -359,7 +391,8 @@ class FBeta(_PRFMetric):
     Parameters
     ----------
     beta : float
-        Weight of recall relative to precision.
+        Weight of recall relative to precision; at least 0, where 0 gives
+        precision.
     average, pos_label, num_classes, zero_division
         As in `Precision`.
     """
@@ -375,6 +408,9 @@ class FBeta(_PRFMetric):
         num_classes: int | None = None,
         zero_division: float = 0.0,
     ) -> None:
+        # `not beta >= 0` also rejects NaN
+        if not beta >= 0:
+            raise ValueError(f"beta must be at least 0, got {beta}")
         super().__init__(
             average=average,
             pos_label=pos_label,

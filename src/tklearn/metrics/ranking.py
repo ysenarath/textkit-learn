@@ -6,11 +6,12 @@ import numpy as np
 from sklearn.metrics import precision_recall_curve, roc_curve
 
 from tklearn.metrics._utils import (
-    add_padded,
     check_option,
     divide,
     is_empty,
     nanaverage,
+    require_columns,
+    sum_states,
     to_numpy,
 )
 from tklearn.metrics.base import Metric
@@ -65,6 +66,7 @@ def _binarize(
     y_true: np.ndarray, y_score: np.ndarray
 ) -> tuple[str, np.ndarray, np.ndarray]:
     """Return the task, and (n_samples, n_classes) targets and scores."""
+    require_columns(y_score, "class")
     y_score = y_score.astype(float)
     if y_score.ndim == 1:
         task, targets, y_score = "binary", y_true[:, None], y_score[:, None]
@@ -217,7 +219,7 @@ class _ScoreMetric(Metric):
             self.targets.append(targets)
             self.scores.append(scores)
         else:
-            self.histogram = add_padded(
+            self.histogram = sum_states(
                 self.histogram,
                 _histogram(targets, scores, self.thresholds),
             )
@@ -232,21 +234,22 @@ class _ScoreMetric(Metric):
         scores = np.concatenate(self.scores)
         return [(targets[:, i], scores[:, i]) for i in range(self._n_classes)]
 
-    def _pooled_data(self) -> _ClassData:
-        """All classes as one binary problem (micro average)."""
-        data = self._class_data()
-        if self.thresholds is not None:
-            return np.sum(data, axis=0)
-        return (
-            np.concatenate([t for t, _ in data]),
-            np.concatenate([s for _, s in data]),
-        )
+
+class _BinaryScoreMetric(_ScoreMetric):
+    def update(self, y_true: Any, y_score: Any) -> None:
+        if not is_empty(y_true, y_score) and np.ndim(y_score) != 1:
+            msg = (
+                f"{type(self).__name__} supports binary scores only; "
+                "pass 1-D scores for the positive class, e.g. y_score[:, 1]"
+            )
+            raise ValueError(msg)
+        super().update(y_true, y_score)
 
     def _binary_data(self) -> _ClassData:
-        data = self._class_data()
-        if self.task != "binary":
+        if self.task not in (None, "binary"):
             msg = f"{type(self).__name__} supports binary scores only"
             raise ValueError(msg)
+        data = self._class_data()
         return data[0]
 
 
@@ -264,6 +267,16 @@ class _AveragedScoreMetric(_ScoreMetric):
     @staticmethod
     def _score(data: _ClassData) -> float:
         raise NotImplementedError
+
+    def _pooled_data(self) -> _ClassData:
+        """All classes as one binary problem (micro average)."""
+        data = self._class_data()
+        if self.thresholds is not None:
+            return np.sum(data, axis=0)
+        return (
+            np.concatenate([t for t, _ in data]),
+            np.concatenate([s for _, s in data]),
+        )
 
     def compute(self) -> float | np.ndarray:
         data = self._class_data()
@@ -315,7 +328,7 @@ class AveragePrecision(_AveragedScoreMetric):
     _score = staticmethod(_average_precision)
 
 
-class ROCCurve(_ScoreMetric):
+class ROCCurve(_BinaryScoreMetric):
     """ROC curve of binary scores, as `ROCPoints`.
 
     Reads ``y_true`` (0/1) and 1-D ``y_score``.
@@ -331,17 +344,23 @@ class ROCCurve(_ScoreMetric):
         return _roc(self._binary_data())
 
 
-class PrecisionRecallCurve(_ScoreMetric):
+class PrecisionRecallCurve(_BinaryScoreMetric):
     """Precision-recall curve of binary scores, as `PRPoints`.
 
-    Inputs and parameters are as in `ROCCurve`.
+    Reads ``y_true`` (0/1) and 1-D ``y_score``.
+
+    Parameters
+    ----------
+    thresholds : int, optional
+        Number of bins for approximate, fixed-memory accumulation of
+        scores in [0, 1]. By default every score is kept (exact).
     """
 
     def compute(self) -> PRPoints:
         return _precision_recall(self._binary_data())
 
 
-class OptimalThreshold(_ScoreMetric):
+class OptimalThreshold(_BinaryScoreMetric):
     """Decision threshold that maximizes a criterion on binary scores.
 
     Reads ``y_true`` (0/1) and 1-D ``y_score``.

@@ -6,9 +6,10 @@ import numpy as np
 from scipy.stats import rankdata
 
 from tklearn.metrics._utils import (
-    add_padded,
     check_option,
     is_empty,
+    require_columns,
+    sum_states,
     to_numpy,
 )
 from tklearn.metrics.base import Metric
@@ -39,6 +40,7 @@ def _as_2d(y_true: Any, y_pred: Any) -> tuple[np.ndarray, np.ndarray]:
     if y_true.ndim != 2:
         msg = f"expected 1-D or 2-D inputs, got {y_true.ndim}-D"
         raise ValueError(msg)
+    require_columns(y_true, "output")
     return y_true, y_pred
 
 
@@ -71,6 +73,9 @@ def _merge_moments(a: np.ndarray, b: np.ndarray) -> np.ndarray:
         return b
     if b.size == 0:
         return a
+    if a.shape != b.shape:
+        msg = f"states have different shapes: {a.shape} and {b.shape}"
+        raise ValueError(msg)
     n_a, n_b = a[0], b[0]
     n = n_a + n_b
     d_true, d_pred = b[1] - a[1], b[2] - a[2]
@@ -149,7 +154,7 @@ class _ErrorSumMetric(_RegressionMetric):
         y_true, y_pred = _as_2d(y_true, y_pred)
         self._check_outputs(self.error_sum, y_true.shape[1])
         errors = self._errors(y_true, y_pred).sum(axis=0)
-        self.error_sum = add_padded(self.error_sum, errors)
+        self.error_sum = sum_states(self.error_sum, errors)
         self.n += len(y_true)
 
     def _mean_error(self) -> np.ndarray:
@@ -233,7 +238,7 @@ class R2Score(_MomentMetric):
             return
         y_true, y_pred = _as_2d(y_true, y_pred)
         super().update(y_true, y_pred)
-        self.squared_error_sum = add_padded(
+        self.squared_error_sum = sum_states(
             self.squared_error_sum, ((y_true - y_pred) ** 2).sum(axis=0)
         )
 

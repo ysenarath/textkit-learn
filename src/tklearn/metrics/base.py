@@ -6,10 +6,11 @@ from collections.abc import Iterator, Mapping
 from typing import Any, Callable, Literal, Union
 
 from tklearn.metrics._utils import (
-    add_padded,
+    cat_states,
+    get_required_and_optional_params,
+    sum_states,
     to_numpy,
     to_python,
-    update_params,
 )
 
 __all__ = [
@@ -17,8 +18,10 @@ __all__ = [
     "MetricCollection",
 ]
 
-#: How two values of a state are combined: added (``"sum"``), concatenated
-#: as lists (``"cat"``), or by a function of the two values.
+#: How two values of a state are combined:
+# 1. added (``"sum"``),
+# 2. concatenated (``"cat"``), or by a
+# 3. function of the two values.
 Reduction = Union[Literal["sum", "cat"], Callable[[Any, Any], Any]]
 
 
@@ -73,22 +76,37 @@ class Metric(abc.ABC):
         """Compute the metric over everything added since the last reset."""
 
     def merge(self, other: Metric) -> None:
-        """Add the state of another metric of the same type to this one."""
+        """Add the state of another metric of the same type to this one.
+
+        Raises ValueError, leaving this metric unchanged, if the states do
+        not fit together, e.g. different numbers of labels or outputs.
+        """
         if type(other) is not type(self):
             msg = (
                 f"cannot merge {type(other).__name__} into "
                 f"{type(self).__name__}"
             )
             raise TypeError(msg)
+        self._check_merge(other)
+        values = {}
         for name, reduce in self._reductions.items():
             a, b = getattr(self, name), getattr(other, name)
-            if reduce == "sum":
-                value = add_padded(a, b)
-            elif reduce == "cat":
-                value = a + b
-            else:
-                value = reduce(a, b)
+            try:
+                if reduce == "sum":
+                    values[name] = sum_states(a, b)
+                elif reduce == "cat":
+                    values[name] = cat_states(a, b)
+                else:
+                    values[name] = reduce(a, b)
+            except ValueError as e:
+                msg = f"cannot merge {type(self).__name__}: {e}"
+                raise ValueError(msg) from e
+        # set the states only once all of them were combined
+        for name, value in values.items():
             setattr(self, name, value)
+
+    def _check_merge(self, other: Metric) -> None:
+        """Raise ValueError if `other` cannot be merged into this metric."""
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Compute the metric for these inputs only."""
@@ -138,7 +156,7 @@ class MetricCollection(Mapping[str, Metric]):
                 )
                 raise TypeError(msg)
             self._metrics[name] = metric
-            self._params[name] = update_params(metric)
+            self._params[name] = get_required_and_optional_params(metric)
 
     def __getitem__(self, name: str) -> Metric:
         return self._metrics[name]
@@ -151,6 +169,15 @@ class MetricCollection(Mapping[str, Metric]):
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self._metrics!r})"
+
+    @property
+    def input_names(self) -> frozenset[str]:
+        """Names of the inputs that any metric accepts."""
+        return frozenset(
+            name
+            for required, optional in self._params.values()
+            for name in required | optional
+        )
 
     def update(self, **inputs: Any) -> None:
         """Update every metric with the inputs it accepts.

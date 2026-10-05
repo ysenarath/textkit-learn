@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Sequence
 
 import numpy as np
 
@@ -28,6 +28,18 @@ def is_empty(*inputs: Any) -> bool:
         return False
 
 
+def require_columns(y: np.ndarray, name: str) -> None:
+    """Reject a 2-D input without columns.
+
+    No metric is defined without labels or outputs, and such a batch would
+    count its rows while adding nothing per column. Empty batches (no rows)
+    are skipped instead, see `is_empty`.
+    """
+    if y.ndim == 2 and y.shape[1] == 0:
+        msg = f"expected at least one {name} column, got shape {y.shape}"
+        raise ValueError(msg)
+
+
 def to_python(value: Any) -> Any:
     # numpy scalars become python numbers so results can be logged and
     # serialized without special handling
@@ -36,7 +48,9 @@ def to_python(value: Any) -> Any:
     return value
 
 
-def update_params(metric: Metric) -> tuple[set[str], set[str]]:
+def get_required_and_optional_params(
+    metric: Metric,
+) -> tuple[set[str], set[str]]:
     """Names of the required and optional inputs of ``metric.update``."""
     required, optional = set(), set()
     for param in inspect.signature(metric.update).parameters.values():
@@ -53,18 +67,28 @@ def update_params(metric: Metric) -> tuple[set[str], set[str]]:
     return required, optional
 
 
-def add_padded(a: Any, b: Any) -> np.ndarray:
-    """Add two states, zero-padding arrays whose shapes differ.
+def sum_states(a: Any, b: Any) -> Any:
+    """Add two states of the same shape.
 
-    Count tables such as confusion matrices grow when a new class shows up,
-    so the state of one batch (or shard) can be smaller than another's.
+    An empty array is the state before the first batch, when the number of
+    columns is not known yet, so it takes the shape of the other.
     """
     if not isinstance(a, np.ndarray) or a.shape == b.shape:
         return a + b
-    out = np.zeros(np.maximum(a.shape, b.shape), np.result_type(a, b))
-    out[tuple(slice(0, n) for n in a.shape)] += a
-    out[tuple(slice(0, n) for n in b.shape)] += b
-    return out
+    if a.size == 0:
+        return b.copy()
+    if b.size == 0:
+        return a.copy()
+    msg = f"states have different shapes: {a.shape} and {b.shape}"
+    raise ValueError(msg)
+
+
+def cat_states(a: Sequence[np.ndarray], b: Sequence[np.ndarray]) -> list:
+    """Concatenate two lists of batches with the same columns."""
+    if a and b and a[0].shape[1:] != b[0].shape[1:]:
+        msg = f"batches have different shapes: {a[0].shape} and {b[0].shape}"
+        raise ValueError(msg)
+    return a + b
 
 
 def divide(num: Any, den: Any, zero_division: float) -> np.ndarray:
@@ -99,9 +123,14 @@ def prf_score(
         return divide(tp, np.add(tp, fp), zero_division)
     if kind == "recall":
         return divide(tp, np.add(tp, fn), zero_division)
+    if kind not in ("f", "f1", "fbeta"):
+        err = "expected one of 'precision', 'recall', 'f', 'f1', 'fbeta'"
+        raise ValueError(f"unknown kind {kind!r}; {err}")
+    if kind == "f1" and beta != 1.0:
+        raise ValueError("f1 score must have beta=1.0")
     beta2 = beta**2
     num = np.multiply(1 + beta2, tp)
-    return divide(num, num + np.multiply(beta2, fn) + fp, zero_division)
+    return divide(num, num + fp + np.multiply(beta2, fn), zero_division)
 
 
 def average_scores(
@@ -115,15 +144,33 @@ def average_scores(
 ) -> float | np.ndarray:
     """Average per-class precision, recall or F-beta.
 
-    ``"micro"`` pools the counts, ``"macro"`` averages the per-class scores
-    (ignoring NaN), ``"weighted"`` weights them by support and None returns
+    ``"micro"`` pools the counts,
+    ``"macro"`` averages the per-class scores (ignoring NaN),
+    ``"weighted"`` weights them by support and None returns
     them unaveraged.
     """
+    if average not in (None, "micro", "macro", "weighted"):
+        err = "expected one of None, 'micro', 'macro', 'weighted'"
+        raise ValueError(f"unknown average {average!r}; {err}")
     if average == "micro":
         return float(
-            prf_score(kind, tp.sum(), fp.sum(), fn.sum(), zero_division, beta)
+            prf_score(
+                kind,
+                tp.sum(),
+                fp.sum(),
+                fn.sum(),
+                zero_division,
+                beta,
+            )
         )
-    scores = prf_score(kind, tp, fp, fn, zero_division, beta)
+    scores = prf_score(
+        kind,
+        tp,
+        fp,
+        fn,
+        zero_division,
+        beta,
+    )
     if average is None:
         return scores
     weights = tp + fn if average == "weighted" else None
