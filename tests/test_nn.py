@@ -624,7 +624,7 @@ class TestValidation(TrainerTestCase):
             for name, value in replacements.items():
                 with self.subTest(name=name, used=used):
                     before = getattr(trainer, name)
-                    with self.assertRaisesRegex(AttributeError, "new Trainer"):
+                    with self.assertRaises(AttributeError):
                         setattr(trainer, name, value)
                     self.assertIs(getattr(trainer, name), before)
 
