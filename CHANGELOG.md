@@ -3,13 +3,16 @@
 ## 0.5.0
 
 A redesign that keeps the knowledge base (`tklearn.kb`) and rewrites the
-metrics. Pin `textkit-learn<0.5` if you need the modules listed under
-Removed.
+metrics and the training loop. Pin `textkit-learn<0.5` if you need the
+modules listed under Removed.
 
 ### Removed
 
-- `tklearn.nn`, `tklearn.embeddings`, `tklearn.plotting` and most of
-  `tklearn.utils`. They are being redesigned.
+- `tklearn.embeddings`, `tklearn.plotting` and most of `tklearn.utils`.
+  They are being redesigned.
+- From `tklearn.nn`: the built-in callbacks, models (backbones,
+  classifiers, K-BERT), calibration, `ModelRepo`, `Encoder`,
+  `TargetBasedLoss` and the data collators. They are being redesigned.
 - `tklearn.agents` (vendored smolagents). Use the `smolagents` package.
 - nightjar configs, `Auto*` factories and lookup by name. Import the class
   you need and call its constructor.
@@ -42,6 +45,30 @@ Removed.
   BIO/IOBES tags, matching seqeval's default mode.
 - `MetricCollection.update(**inputs)` passes each metric the inputs it
   accepts, and `input_names` lists them; `result()` is now `compute()`.
+
+### Neural networks (`tklearn.nn`)
+
+- One `Trainer` with `fit`, `evaluate` and `predict` replaces `Trainer`,
+  `Evaluator` and `Predictor`. It runs on Hugging Face Accelerate: CPU,
+  CUDA or MPS, mixed precision (`mixed_precision="bf16"`), gradient
+  accumulation and multi-GPU with `accelerate launch`. It takes torch
+  `DataLoader`s.
+- `Module` has two hooks. `predict_step(batch)` returns the metric inputs
+  (`y_true`, `y_pred`, `y_score`, ...) and optionally a `"loss"`.
+  `training_step(batch)` defaults to that loss. It replaces
+  `compute_loss` and `compute_metric_inputs`.
+- `training_step` can return `{"loss": ..., **terms}`: `"loss"` is
+  minimized and the other terms are logged. This replaces `LossDict`.
+- `Trainer(metrics=...)` feeds a `MetricCollection`, and
+  `evaluate(loader, metrics=...)` uses other metrics for one call. Results
+  from evaluation during `fit` are logged with a `valid_` prefix, and
+  `fit` returns the logs of each epoch as a list of dicts.
+- Callback hooks receive the trainer (`on_epoch_end(trainer, logs)`), and
+  setting `trainer.should_stop = True` stops training, on every process
+  when set on one. `set_model`, `set_trainer` and `set_params` are gone.
+- `lr_scheduler` accepts a scheduler, a name with `warmup` (steps or a
+  fraction), or `f(optimizer, num_training_steps)`. `get_scheduler`
+  builds named schedules. Schedules count optimizer steps.
 
 ### Knowledge base (`tklearn.kb`)
 

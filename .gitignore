@@ -157,3 +157,4 @@ agentic_examples/*
 /cache
 /ops
 /projects/
+examples/hf_trainer_comparison/
