@@ -5,6 +5,7 @@ from typing import Any
 
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
+from transformers import get_scheduler as get_hf_scheduler
 
 __all__ = [
     "get_scheduler",
@@ -42,8 +43,6 @@ def get_scheduler(
     LRScheduler
         A scheduler to step after every optimizer step.
     """
-    from transformers import get_scheduler as get_hf_scheduler
-
     return get_hf_scheduler(
         name,
         optimizer,
