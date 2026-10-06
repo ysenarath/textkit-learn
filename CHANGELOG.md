@@ -72,6 +72,12 @@ modules listed under Removed.
   `ModelCheckpoint` (`.safetensors` or `.pt` state dicts),
   `ReduceLROnPlateau`, `TerminateOnNaN`, `CSVLogger`, `ProgbarLogger` and
   `LambdaCallback`.
+- `RunLogger` records runs as plain files, for shared storage without a
+  database (NFS, SLURM jobs on several machines): a `config.json` and
+  JSON-lines events with per-step loss, learning rate, gradient norm,
+  step time and memory, and the epoch logs. `load_runs` reads every run
+  under a directory into a DataFrame. `Trainer.grad_norm` holds the
+  gradient norm before clipping.
 - `lr_scheduler` accepts a scheduler, a name with `warmup` (steps or a
   fraction), or `f(optimizer, num_training_steps)`. `get_scheduler`
   builds named schedules. Schedules count optimizer steps.

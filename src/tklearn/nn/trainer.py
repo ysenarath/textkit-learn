@@ -100,6 +100,10 @@ class Trainer:
     num_batches : int or None
         Batches in the dataloader of the running loop (a training epoch,
         `evaluate` or `predict`), or None when it has no length.
+    grad_norm : Tensor or None
+        Total gradient norm before clipping at the last optimizer step,
+        when `max_grad_norm` is set; a tensor, so that reading it is the
+        only thing that waits for the device.
     should_stop : bool
         Set to True (e.g. by a callback) to stop `fit` after the current
         batch. On several processes, setting it on one stops them all.
@@ -175,6 +179,7 @@ class Trainer:
         self.epoch = 0
         self.global_step = 0
         self.num_batches: int | None = None
+        self.grad_norm: torch.Tensor | None = None
         self.should_stop = False
         # prepared lazily, on the first fit, evaluate or predict
         self._prepared_runner: torch.nn.Module | None = None
@@ -256,12 +261,14 @@ class Trainer:
         self.history = []
         self.epochs = epochs
         self.epoch = self.global_step = 0
+        self.grad_norm = None
         self.should_stop = False
         # a stopped fit can end inside a gradient accumulation window, where
         # Accelerate skips zero_grad; start a new window without gradients
         self.accelerator.step = 0
         self.accelerator.sync_gradients = True
         optimizer.zero_grad()
+        self.num_batches = _num_batches(dataloader)
         self._callback("on_train_begin")
         for epoch in range(epochs):
             self.epoch = epoch
@@ -299,7 +306,7 @@ class Trainer:
                 # true at the end of accumulation
                 if self.accelerator.sync_gradients:
                     if self.max_grad_norm is not None:
-                        self.accelerator.clip_grad_norm_(
+                        self.grad_norm = self.accelerator.clip_grad_norm_(
                             self.model.parameters(), self.max_grad_norm
                         )
                     self._callback("on_before_optimizer_step")
