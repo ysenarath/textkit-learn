@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from tklearn.nn.trainer import Trainer
 
 __all__ = [
     "Callback",
+    "LambdaCallback",
 ]
 
 
@@ -16,7 +17,8 @@ class Callback:
 
     Override the hooks you need; every hook receives the trainer first,
     which exposes the run's state (``model``, ``optimizer``,
-    ``accelerator``, ``epoch``, ``global_step``, ``history``). A callback
+    ``accelerator``, ``epochs``, ``epoch``, ``global_step``,
+    ``num_batches``, ``history``). A callback
     stops training by setting ``trainer.should_stop = True``; training then
     ends after the current batch, once the epoch has been evaluated and
     ``on_epoch_end`` has run.
@@ -102,3 +104,37 @@ class Callback:
 
     def on_predict_end(self, trainer: Trainer) -> None:
         """Called after prediction ends."""
+
+
+#: Names of the hooks a callback can implement.
+HOOKS = tuple(name for name in vars(Callback) if name.startswith("on_"))
+
+
+class LambdaCallback(Callback):
+    """A callback made of functions passed as hooks.
+
+    Parameters
+    ----------
+    **hooks : callable
+        Functions keyed by hook name, taking the hook's arguments, e.g.
+        ``on_epoch_end=lambda trainer, logs: ...``.
+
+    Examples
+    --------
+    >>> log_steps = LambdaCallback(
+    ...     on_train_batch_end=lambda trainer, batch, logs: print(
+    ...         trainer.global_step, logs["loss"]
+    ...     )
+    ... )
+    """
+
+    def __init__(self, **hooks: Callable[..., None]) -> None:
+        for name, hook in hooks.items():
+            if name not in HOOKS:
+                msg = f"{name!r} is not a hook of Callback"
+                raise TypeError(msg)
+            if not callable(hook):
+                msg = f"the {name} hook must be callable, got {hook!r}"
+                raise TypeError(msg)
+            # the trainer calls getattr(callback, name)(trainer, ...)
+            setattr(self, name, hook)

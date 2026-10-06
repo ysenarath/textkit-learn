@@ -91,10 +91,15 @@ class Trainer:
     ----------
     history : list of dict
         Logs of each epoch of the last `fit` call.
+    epochs : int
+        Maximum number of epochs of the last `fit` call.
     epoch : int
         Current (zero-based) epoch.
     global_step : int
         Optimizer steps taken in the current `fit` call.
+    num_batches : int or None
+        Batches in the dataloader of the running loop (a training epoch,
+        `evaluate` or `predict`), or None when it has no length.
     should_stop : bool
         Set to True (e.g. by a callback) to stop `fit` after the current
         batch. On several processes, setting it on one stops them all.
@@ -166,8 +171,10 @@ class Trainer:
         self.callbacks = callbacks
         self.max_grad_norm = max_grad_norm
         self.history: list[dict[str, Any]] = []
+        self.epochs = 0
         self.epoch = 0
         self.global_step = 0
+        self.num_batches: int | None = None
         self.should_stop = False
         # prepared lazily, on the first fit, evaluate or predict
         self._prepared_runner: torch.nn.Module | None = None
@@ -247,6 +254,7 @@ class Trainer:
         dataloader = self._prepare_dataloader(train_dataloader)
         scheduler = self._build_scheduler(dataloader, epochs)
         self.history = []
+        self.epochs = epochs
         self.epoch = self.global_step = 0
         self.should_stop = False
         # a stopped fit can end inside a gradient accumulation window, where
@@ -261,6 +269,7 @@ class Trainer:
                 # required for synchronized shuffling across epochs
                 dataloader = cast(IterableDataset, dataloader)
                 dataloader.set_epoch(epoch)
+            self.num_batches = _num_batches(dataloader)
             self._callback("on_epoch_begin")
             logs = self._train_epoch(runner, optimizer, scheduler, dataloader)
             if eval_dataloader is not None:
@@ -371,6 +380,8 @@ class Trainer:
         metrics.reset()
         input_names = metrics.input_names
         loss_sum, num_losses, num_batches = 0.0, 0, 0
+        # restored at the end, as fit evaluates in the middle of its epoch
+        previous, self.num_batches = self.num_batches, _num_batches(dataloader)
         self._callback("on_evaluate_begin")
         with self._eval_mode(runner):
             for batch in dataloader:
@@ -401,6 +412,7 @@ class Trainer:
         results.update(metrics.compute())
         results = {f"{prefix}{k}": v for k, v in results.items()}
         self._callback("on_evaluate_end", results)
+        self.num_batches = previous
         return results
 
     # --- predict -----------------------------------------------------------
@@ -426,6 +438,7 @@ class Trainer:
         runner, _ = self._prepare()
         dataloader = self._prepare_dataloader(dataloader)
         chunks = []
+        previous, self.num_batches = self.num_batches, _num_batches(dataloader)
         self._callback("on_predict_begin")
         with self._eval_mode(runner):
             for batch in dataloader:
@@ -436,6 +449,7 @@ class Trainer:
                     outputs = {k: v for k, v in outputs.items() if k != "loss"}
                 chunks.append(send_to_device(self._gather(outputs), "cpu"))
         self._callback("on_predict_end")
+        self.num_batches = previous
         if not chunks:
             msg = "cannot predict on an empty dataloader"
             raise ValueError(msg)
@@ -524,6 +538,14 @@ class Trainer:
             totals = dict(zip(keys, values[: len(keys)]))
             counts = dict(zip(keys, values[len(keys) :]))
         return {k: v / counts[k] for k, v in totals.items() if counts[k]}
+
+
+def _num_batches(dataloader: DataLoader) -> int | None:
+    """Length of a dataloader; None for an iterable dataset without one."""
+    try:
+        return len(dataloader)
+    except TypeError:
+        return None
 
 
 def _split_loss(loss: Loss) -> tuple[torch.Tensor, dict[str, float]]:
