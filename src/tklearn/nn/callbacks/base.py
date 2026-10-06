@@ -18,37 +18,36 @@ class Callback:
     Override the hooks you need; every hook receives the trainer first,
     which exposes the run's state (``model``, ``optimizer``,
     ``accelerator``, ``epochs``, ``epoch``, ``global_step``,
-    ``num_batches``, ``history``). A callback
-    stops training by setting ``trainer.should_stop = True``; training then
-    ends after the current batch, once the epoch has been evaluated and
-    ``on_epoch_end`` has run.
+    ``num_batches``, ``history``). A callback stops training by setting
+    ``trainer.should_stop = True``; training then ends after the current
+    batch, once the epoch has been evaluated and ``on_epoch_end`` has run.
 
     Hooks run on every process. Callbacks that write files or print should
     check ``trainer.accelerator.is_main_process``.
 
-    `fit` runs::
+    The hooks are named as in Keras. `fit` runs::
 
-        on_fit_begin
+        on_train_begin
         for each epoch:
             on_epoch_begin
             for each batch:
                 on_train_batch_begin
                 on_before_optimizer_step   # when the optimizer steps
                 on_train_batch_end
-            on_evaluate_*                  # with an eval dataloader
+            on_test_*                      # with an eval dataloader
             on_epoch_end
-        on_fit_end
+        on_train_end
 
-    and `evaluate` and `predict` run their own ``on_evaluate_*`` and
+    and `evaluate` and `predict` run their own ``on_test_*`` and
     ``on_predict_*`` hooks.
     """
 
     # --- fit ---------------------------------------------------------------
 
-    def on_fit_begin(self, trainer: Trainer) -> None:
+    def on_train_begin(self, trainer: Trainer) -> None:
         """Called once before the first epoch."""
 
-    def on_fit_end(self, trainer: Trainer) -> None:
+    def on_train_end(self, trainer: Trainer) -> None:
         """Called once after the last epoch."""
 
     def on_epoch_begin(self, trainer: Trainer) -> None:
@@ -73,19 +72,19 @@ class Callback:
 
     # --- evaluate ----------------------------------------------------------
 
-    def on_evaluate_begin(self, trainer: Trainer) -> None:
+    def on_test_begin(self, trainer: Trainer) -> None:
         """Called before evaluation starts."""
 
-    def on_evaluate_batch_begin(self, trainer: Trainer, batch: Any) -> None:
+    def on_test_batch_begin(self, trainer: Trainer, batch: Any) -> None:
         """Called before each evaluation batch."""
 
-    def on_evaluate_batch_end(
+    def on_test_batch_end(
         self, trainer: Trainer, batch: Any, outputs: Any
     ) -> None:
         """Called after each evaluation batch with its `predict_step`
         outputs."""
 
-    def on_evaluate_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
+    def on_test_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
         """Called with the evaluation results."""
 
     # --- predict -----------------------------------------------------------

@@ -55,7 +55,7 @@ class TestTrainerState(TrainerTestCase):
 
             return hook
 
-        hooks = ["on_epoch_begin", "on_evaluate_begin", "on_epoch_end"]
+        hooks = ["on_epoch_begin", "on_test_begin", "on_epoch_end"]
         callback = LambdaCallback(**{name: record(name) for name in hooks})
         trainer = self.trainer(callbacks=[callback])
         # 6 training batches, 2 evaluation batches
@@ -64,7 +64,7 @@ class TestTrainerState(TrainerTestCase):
             seen,
             [
                 ("on_epoch_begin", 2, 6),
-                ("on_evaluate_begin", 2, 2),
+                ("on_test_begin", 2, 2),
                 ("on_epoch_end", 2, 6),
             ]
             * 2,
@@ -80,7 +80,7 @@ class TestLambdaCallback(TrainerTestCase):
     def test_calls_hooks(self):
         calls = []
         callback = LambdaCallback(
-            on_fit_begin=lambda trainer: calls.append("begin"),
+            on_train_begin=lambda trainer: calls.append("begin"),
             on_epoch_end=lambda trainer, logs: calls.append(logs["loss"]),
         )
         history = self.trainer(callbacks=[callback]).fit(
@@ -89,10 +89,10 @@ class TestLambdaCallback(TrainerTestCase):
         self.assertEqual(calls, ["begin", *(logs["loss"] for logs in history)])
 
     def test_rejects_unknown_hooks(self):
-        with self.assertRaisesRegex(TypeError, "on_train_end"):
-            LambdaCallback(on_train_end=print)
+        with self.assertRaisesRegex(TypeError, "on_fit_end"):
+            LambdaCallback(on_fit_end=print)
         with self.assertRaisesRegex(TypeError, "callable"):
-            LambdaCallback(on_fit_end=1)
+            LambdaCallback(on_train_end=1)
 
 
 class TestEarlyStopping(TrainerTestCase):

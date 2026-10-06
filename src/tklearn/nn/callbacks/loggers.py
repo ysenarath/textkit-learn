@@ -51,7 +51,7 @@ class CSVLogger(Callback):
         self._writer: csv.DictWriter | None = None
         self._write_header = True
 
-    def on_fit_begin(self, trainer: Trainer) -> None:
+    def on_train_begin(self, trainer: Trainer) -> None:
         self._close()
         if not trainer.accelerator.is_main_process:
             return
@@ -80,7 +80,7 @@ class CSVLogger(Callback):
         self._writer.writerow({**row, "epoch": trainer.epoch})
         self._file.flush()
 
-    def on_fit_end(self, trainer: Trainer) -> None:
+    def on_train_end(self, trainer: Trainer) -> None:
         self._close()
 
     def _close(self) -> None:
@@ -117,7 +117,7 @@ class ProgbarLogger(Callback):
         self._totals: dict[str, float] = {}
         self._counts: dict[str, int] = {}
 
-    def on_fit_begin(self, trainer: Trainer) -> None:
+    def on_train_begin(self, trainer: Trainer) -> None:
         # bars left open by a run that raised
         while self._bars:
             self._bars.pop().close()
@@ -143,15 +143,15 @@ class ProgbarLogger(Callback):
         bar.set_postfix(_format(logs), refresh=False)
         bar.close()
 
-    def on_evaluate_begin(self, trainer: Trainer) -> None:
+    def on_test_begin(self, trainer: Trainer) -> None:
         self._open(trainer, "Evaluating", leave=False)
 
-    def on_evaluate_batch_end(
+    def on_test_batch_end(
         self, trainer: Trainer, batch: Any, outputs: Any
     ) -> None:
         self._bars[-1].update()
 
-    def on_evaluate_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
+    def on_test_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
         self._bars.pop().close()
 
     def on_predict_begin(self, trainer: Trainer) -> None:

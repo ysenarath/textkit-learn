@@ -286,7 +286,7 @@ class TestStopping(TrainerTestCase):
         self.assertIn("valid_loss", history[0])
         self.assertEqual(trainer.global_step, 2)
         self.assertEqual(recorder.calls.count("on_train_batch_end"), 2)
-        self.assertEqual(recorder.calls[-2:], ["on_epoch_end", "on_fit_end"])
+        self.assertEqual(recorder.calls[-2:], ["on_epoch_end", "on_train_end"])
 
     def test_next_fit_starts_a_new_accumulation_window(self):
         # a fit that ends after 1 of 4 accumulated batches must not carry
@@ -330,14 +330,14 @@ class TestCallbacks(TrainerTestCase):
             "on_train_batch_end",
         ]
         evaluate = [
-            "on_evaluate_begin",
-            "on_evaluate_batch_begin",
-            "on_evaluate_batch_end",
-            "on_evaluate_end",
+            "on_test_begin",
+            "on_test_batch_begin",
+            "on_test_batch_end",
+            "on_test_end",
         ]
         epoch = ["on_epoch_begin", *train_batch * 2, *evaluate, "on_epoch_end"]
         self.assertEqual(
-            recorder.calls, ["on_fit_begin", *epoch * 2, "on_fit_end"]
+            recorder.calls, ["on_train_begin", *epoch * 2, "on_train_end"]
         )
 
         recorder.calls = []
@@ -435,7 +435,7 @@ class TestEvaluate(TrainerTestCase):
             def __init__(self):
                 self.done = False
 
-            def on_evaluate_batch_end(self, trainer, batch, outputs):
+            def on_test_batch_end(self, trainer, batch, outputs):
                 if not self.done:
                     self.done = True
                     trainer.evaluate(inner)

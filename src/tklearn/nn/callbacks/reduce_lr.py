@@ -80,7 +80,7 @@ class ReduceLROnPlateau(MonitorCallback):
         self.wait = 0
         self.cooldown_counter = 0
 
-    def on_fit_begin(self, trainer: Trainer) -> None:
+    def on_train_begin(self, trainer: Trainer) -> None:
         if trainer.lr_scheduler is not None:
             msg = (
                 "ReduceLROnPlateau sets the learning rate, which the "

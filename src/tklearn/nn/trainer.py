@@ -262,7 +262,7 @@ class Trainer:
         self.accelerator.step = 0
         self.accelerator.sync_gradients = True
         optimizer.zero_grad()
-        self._callback("on_fit_begin")
+        self._callback("on_train_begin")
         for epoch in range(epochs):
             self.epoch = epoch
             if hasattr(dataloader, "set_epoch"):  # reshuffle each epoch
@@ -278,7 +278,7 @@ class Trainer:
             self._callback("on_epoch_end", logs)
             if self._sync_should_stop():
                 break
-        self._callback("on_fit_end")
+        self._callback("on_train_end")
         return self.history
 
     def _train_epoch(
@@ -382,10 +382,10 @@ class Trainer:
         loss_sum, num_losses, num_batches = 0.0, 0, 0
         # restored at the end, as fit evaluates in the middle of its epoch
         previous, self.num_batches = self.num_batches, _num_batches(dataloader)
-        self._callback("on_evaluate_begin")
+        self._callback("on_test_begin")
         with self._eval_mode(runner):
             for batch in dataloader:
-                self._callback("on_evaluate_batch_begin", batch)
+                self._callback("on_test_batch_begin", batch)
                 outputs = runner("predict_step", batch)
                 if not isinstance(outputs, Mapping):
                     msg = (
@@ -402,7 +402,7 @@ class Trainer:
                     }
                     metrics.update(**self._gather(inputs))
                 num_batches += 1
-                self._callback("on_evaluate_batch_end", batch, outputs)
+                self._callback("on_test_batch_end", batch, outputs)
         if num_batches == 0:
             msg = "cannot evaluate on an empty dataloader"
             raise ValueError(msg)
@@ -411,7 +411,7 @@ class Trainer:
         )
         results.update(metrics.compute())
         results = {f"{prefix}{k}": v for k, v in results.items()}
-        self._callback("on_evaluate_end", results)
+        self._callback("on_test_end", results)
         self.num_batches = previous
         return results
 

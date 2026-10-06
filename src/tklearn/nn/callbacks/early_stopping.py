@@ -99,7 +99,7 @@ class EarlyStopping(MonitorCallback):
         self.best_epoch = 0
         self.best_weights: dict[str, torch.Tensor] | None = None
 
-    def on_fit_begin(self, trainer: Trainer) -> None:
+    def on_train_begin(self, trainer: Trainer) -> None:
         self._reset()
 
     def on_epoch_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
@@ -126,7 +126,7 @@ class EarlyStopping(MonitorCallback):
             self.stopped_epoch = trainer.epoch
             trainer.should_stop = True
 
-    def on_fit_end(self, trainer: Trainer) -> None:
+    def on_train_end(self, trainer: Trainer) -> None:
         verbose = self.verbose and trainer.accelerator.is_main_process
         if self.stopped_epoch is not None and verbose:
             # epochs are zero-based, but shown one-based like ProgbarLogger

@@ -10,9 +10,10 @@ modules listed under Removed.
 
 - `tklearn.embeddings`, `tklearn.plotting` and most of `tklearn.utils`.
   They are being redesigned.
-- From `tklearn.nn`: the built-in callbacks, models (backbones,
-  classifiers, K-BERT), calibration, `ModelRepo`, `Encoder`,
-  `TargetBasedLoss` and the data collators. They are being redesigned.
+- From `tklearn.nn`: models (backbones, classifiers, K-BERT),
+  calibration, `ModelRepo`, `Encoder`, `TargetBasedLoss` and the data
+  collators. They are being redesigned. The `History` callback is gone
+  (use `trainer.history`), and so is `TrackingCallback` (MLflow).
 - `tklearn.agents` (vendored smolagents). Use the `smolagents` package.
 - nightjar configs, `Auto*` factories and lookup by name. Import the class
   you need and call its constructor.
@@ -66,6 +67,11 @@ modules listed under Removed.
 - Callback hooks receive the trainer (`on_epoch_end(trainer, logs)`), and
   setting `trainer.should_stop = True` stops training, on every process
   when set on one. `set_model`, `set_trainer` and `set_params` are gone.
+  Hooks keep their Keras names (`on_train_begin`, `on_test_end`, ...).
+- Built-in callbacks follow `keras.callbacks`: `EarlyStopping`,
+  `ModelCheckpoint` (`.safetensors` or `.pt` state dicts),
+  `ReduceLROnPlateau`, `TerminateOnNaN`, `CSVLogger`, `ProgbarLogger` and
+  `LambdaCallback`.
 - `lr_scheduler` accepts a scheduler, a name with `warmup` (steps or a
   fraction), or `f(optimizer, num_training_steps)`. `get_scheduler`
   builds named schedules. Schedules count optimizer steps.
