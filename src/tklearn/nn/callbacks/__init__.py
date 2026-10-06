@@ -14,11 +14,14 @@ The rest are ready-made:
 ``LearningRateScheduler``).
 """
 
-from tklearn.nn.callbacks.base import Callback, LambdaCallback
+from tklearn.nn.callbacks.base import Callback
 from tklearn.nn.callbacks.checkpoint import ModelCheckpoint
-from tklearn.nn.callbacks.early_stopping import EarlyStopping, TerminateOnNaN
-from tklearn.nn.callbacks.loggers import CSVLogger, ProgbarLogger
+from tklearn.nn.callbacks.csv_logger import CSVLogger
+from tklearn.nn.callbacks.early_stopping import EarlyStopping
+from tklearn.nn.callbacks.lambda_callback import LambdaCallback
+from tklearn.nn.callbacks.progbar_logger import ProgbarLogger
 from tklearn.nn.callbacks.reduce_lr import ReduceLROnPlateau
+from tklearn.nn.callbacks.terminate_on_nan import TerminateOnNaN
 
 __all__ = [
     "CSVLogger",
