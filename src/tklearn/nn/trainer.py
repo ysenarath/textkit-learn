@@ -40,6 +40,8 @@ class _StepRunner(torch.nn.Module):
     def __init__(self, module: Module) -> None:
         super().__init__()
         self.module = module
+        # training_step
+        # predict_step
 
     def forward(self, step: str, batch: Any) -> Any:
         return getattr(self.module, step)(batch)
