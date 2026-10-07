@@ -8,6 +8,8 @@ The rest are ready-made:
 - `ReduceLROnPlateau` lowers the learning rate when progress stalls.
 - `ProgbarLogger` shows progress bars, and `CSVLogger` writes the epoch
   logs to a file.
+- `OpenTelemetryCallback` traces `fit`, `evaluate` and `predict` as
+  OpenTelemetry spans, for any backend an OpenTelemetry SDK exports to.
 
 `Trainer.history` holds the epoch logs (Keras' ``History``), and
 ``Trainer(lr_scheduler=...)`` schedules the learning rate (Keras'
@@ -19,6 +21,7 @@ from tklearn.nn.callbacks.checkpoint import ModelCheckpoint
 from tklearn.nn.callbacks.csv_logger import CSVLogger
 from tklearn.nn.callbacks.early_stopping import EarlyStopping
 from tklearn.nn.callbacks.lambda_callback import LambdaCallback
+from tklearn.nn.callbacks.otel import OpenTelemetryCallback
 from tklearn.nn.callbacks.progbar_logger import ProgbarLogger
 from tklearn.nn.callbacks.reduce_lr import ReduceLROnPlateau
 from tklearn.nn.callbacks.terminate_on_nan import TerminateOnNaN
@@ -29,6 +32,7 @@ __all__ = [
     "EarlyStopping",
     "LambdaCallback",
     "ModelCheckpoint",
+    "OpenTelemetryCallback",
     "ProgbarLogger",
     "ReduceLROnPlateau",
     "TerminateOnNaN",
