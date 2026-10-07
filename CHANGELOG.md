@@ -79,7 +79,10 @@ modules listed under Removed.
   `predict` outside `fit` get their own spans. The application chooses
   the backend by configuring an OpenTelemetry SDK. Its spans are current
   while they run, so other callbacks and the model can add events and
-  child spans.
+  child spans; `ModelCheckpoint`, `EarlyStopping`, `ReduceLROnPlateau`
+  and `TerminateOnNaN` add events for what they do (`checkpoint`,
+  `early_stopping`, `restore_best_weights`, `reduce_lr`,
+  `terminate_on_nan`).
 - `Callback.wrapper`: a wrapper callback's `*_begin` hooks run before,
   and its `*_end` hooks after, those of the other callbacks, so that what
   it opens encloses their work; wrappers nest in the order given. Other

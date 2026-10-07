@@ -55,7 +55,11 @@ class OpenTelemetryCallback(Callback):
     the hooks of the other callbacks, whatever their order. The
     ``"fit"``, ``"epoch"``, ``"evaluate"`` and ``"predict"`` spans are
     current while they run, so the other callbacks and the model can add
-    events and spans to them through ``trace.get_current_span()``.
+    events and spans to them through ``trace.get_current_span()``. The
+    built-in callbacks add events: ``"checkpoint"`` (`ModelCheckpoint`),
+    ``"early_stopping"`` and ``"restore_best_weights"``
+    (`EarlyStopping`), ``"reduce_lr"`` (`ReduceLROnPlateau`) and
+    ``"terminate_on_nan"`` (`TerminateOnNaN`).
 
     Nested values become dotted attributes, as by
     `tklearn.utils.flatten.flatten`; values that attributes cannot hold,

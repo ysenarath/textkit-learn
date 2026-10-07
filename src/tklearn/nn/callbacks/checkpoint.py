@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Union
 
 import torch
+from opentelemetry import trace
 from safetensors.torch import save_model
 
 from tklearn.logging import get_logger
@@ -140,6 +141,10 @@ class ModelCheckpoint(MonitorCallback):
             save_model(trainer.model, path)
         else:
             torch.save(trainer.model.state_dict(), path)
+        event = {"path": str(path), "step": trainer.global_step}
+        if self.save_best_only:
+            event[self.monitor] = self.best
+        trace.get_current_span().add_event("checkpoint", event)
         if self.verbose:
             logger.info(
                 f"Step {trainer.global_step}: saved the model to {path}"

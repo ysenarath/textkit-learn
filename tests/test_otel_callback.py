@@ -1,6 +1,8 @@
 import json
 import math
+import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 from accelerate import Accelerator
@@ -11,10 +13,18 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
     InMemorySpanExporter,
 )
 from opentelemetry.trace import StatusCode
+from test_callbacks import Feed
 from test_nn import Classifier, TrainerTestCase
 
 from tklearn.metrics import Accuracy, ConfusionMatrix
-from tklearn.nn.callbacks import LambdaCallback, OpenTelemetryCallback
+from tklearn.nn.callbacks import (
+    EarlyStopping,
+    LambdaCallback,
+    ModelCheckpoint,
+    OpenTelemetryCallback,
+    ReduceLROnPlateau,
+    TerminateOnNaN,
+)
 from tklearn.nn.callbacks.otel import _attribute_value
 
 
@@ -296,6 +306,78 @@ class TestOpenTelemetryCallback(TrainerTestCase):
         self.assertEqual(len(forwards), 6)
         for span in forwards:
             self.assert_parent(span, epoch)
+
+    def test_events_of_the_built_in_callbacks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            callbacks = [
+                # valid_score improves once, then stalls
+                Feed([0.5, 0.9, 0.9, 0.9], key="valid_score"),
+                ModelCheckpoint(
+                    Path(tmp) / "best.pt",
+                    monitor="valid_score",
+                    save_best_only=True,
+                ),
+                ReduceLROnPlateau("valid_score", patience=1, factor=0.5),
+                EarlyStopping(
+                    "valid_score", patience=2, restore_best_weights=True
+                ),
+                self.callback(),
+            ]
+            trainer = self.trainer(callbacks=callbacks)
+            trainer.fit(self.loader(), self.loader(), epochs=4)
+        (fit,) = self.spans("fit")
+        epochs = self.spans("epoch")
+        self.assertEqual(len(epochs), 4)
+        events = [[e.name for e in span.events] for span in epochs]
+        self.assertEqual(
+            events,
+            [
+                ["checkpoint"],
+                ["checkpoint"],
+                ["reduce_lr"],
+                # patience 1, so reduced again before stopping
+                ["reduce_lr", "early_stopping"],
+            ],
+        )
+        checkpoint = epochs[1].events[0].attributes
+        self.assertTrue(checkpoint["path"].endswith("best.pt"))
+        self.assertEqual(checkpoint["valid_score"], 0.9)
+        self.assertEqual(checkpoint["step"], 12)
+        reduce = epochs[2].events[0].attributes
+        self.assertEqual(
+            dict(reduce), {"group": 0, "old_lr": 0.5, "new_lr": 0.25}
+        )
+        again = epochs[3].events[0].attributes
+        self.assertEqual((again["old_lr"], again["new_lr"]), (0.25, 0.125))
+        stop = epochs[3].events[1].attributes
+        self.assertEqual(
+            dict(stop),
+            {
+                "monitor": "valid_score",
+                "best": 0.9,
+                "best_epoch": 1,
+                "wait": 2,
+            },
+        )
+        (restore,) = fit.events
+        self.assertEqual(restore.name, "restore_best_weights")
+        self.assertEqual(restore.attributes["epoch"], 1)
+        self.assertIs(fit.attributes["stopped"], True)
+
+    def test_terminate_on_nan_event(self):
+        class NaN(Classifier):
+            def training_step(self, batch):
+                return super().training_step(batch) * math.nan
+
+        trainer = self.trainer(
+            NaN(), callbacks=[TerminateOnNaN(), self.callback()]
+        )
+        trainer.fit(self.loader(), epochs=2)
+        (epoch,) = self.spans("epoch")
+        (event,) = epoch.events
+        self.assertEqual(event.name, "terminate_on_nan")
+        self.assertEqual(event.attributes["step"], 1)
+        self.assertTrue(math.isnan(event.attributes["loss"]))
 
     def test_validates_log_every_n_steps(self):
         for value in (-1, True):

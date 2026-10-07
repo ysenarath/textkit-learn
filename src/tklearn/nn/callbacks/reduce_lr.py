@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from opentelemetry import trace
+
 from tklearn.logging import get_logger
 from tklearn.nn.callbacks._monitor import Mode, MonitorCallback
 
@@ -116,6 +118,10 @@ class ReduceLROnPlateau(MonitorCallback):
             if old_lr - new_lr > _EPS:
                 group["lr"] = new_lr
                 reduced = True
+                trace.get_current_span().add_event(
+                    "reduce_lr",
+                    {"group": i, "old_lr": old_lr, "new_lr": new_lr},
+                )
                 if self.verbose and trainer.accelerator.is_main_process:
                     logger.info(
                         f"Epoch {trainer.epoch + 1}: reduced the learning "

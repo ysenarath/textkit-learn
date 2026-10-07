@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import torch
+from opentelemetry import trace
 
 from tklearn.logging import get_logger
 from tklearn.nn.callbacks._monitor import Mode, MonitorCallback
@@ -122,6 +123,15 @@ class EarlyStopping(MonitorCallback):
         if self.wait >= max(self.patience, 1):
             self.stopped_epoch = trainer.epoch
             trainer.should_stop = True
+            trace.get_current_span().add_event(
+                "early_stopping",
+                {
+                    "monitor": self.monitor,
+                    "best": self.best,
+                    "best_epoch": self.best_epoch,
+                    "wait": self.wait,
+                },
+            )
 
     def on_train_end(self, trainer: Trainer) -> None:
         verbose = self.verbose and trainer.accelerator.is_main_process
@@ -139,6 +149,14 @@ class EarlyStopping(MonitorCallback):
                     f"{self.monitor}={self.best:.4g}"
                 )
             trainer.model.load_state_dict(self.best_weights)
+            trace.get_current_span().add_event(
+                "restore_best_weights",
+                {
+                    "epoch": self.best_epoch,
+                    "monitor": self.monitor,
+                    "best": self.best,
+                },
+            )
 
 
 def _copy_state(model: torch.nn.Module) -> dict[str, torch.Tensor]:
