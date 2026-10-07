@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
     from tklearn.nn.trainer import Trainer
@@ -39,7 +39,22 @@ class Callback:
 
     and `evaluate` and `predict` run their own ``on_test_*`` and
     ``on_predict_*`` hooks.
+
+    Callbacks get each hook in the order they were given, except
+    wrappers (`wrapper`), which enclose the others.
+
+    Attributes
+    ----------
+    wrapper : bool
+        Whether the callback wraps the others: its ``*_begin`` hooks run
+        before theirs and its ``*_end`` hooks after theirs, so that what
+        it opens, such as a span or a timer, encloses their work. Several
+        wrappers nest in the order they were given: the first is the
+        outermost. Other hooks, such as `on_before_optimizer_step`, run
+        in the order given. False by default.
     """
+
+    wrapper: ClassVar[bool] = False
 
     # --- fit ---------------------------------------------------------------
 

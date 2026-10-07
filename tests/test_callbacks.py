@@ -95,6 +95,78 @@ class TestLambdaCallback(TrainerTestCase):
             LambdaCallback(on_train_end=1)
 
 
+class Recorder(Callback):
+    """Records ``(name, hook)`` of every hook it gets into `calls`."""
+
+    def __init__(self, name, calls, wrapper=False):
+        self.name, self.calls = name, calls
+        self.wrapper = wrapper
+
+    def __getattribute__(self, attr):
+        if attr.startswith("on_"):
+            calls, name = self.calls, self.name
+            return lambda trainer, *args: calls.append((name, attr))
+        return super().__getattribute__(attr)
+
+
+class TestWrapperCallbacks(TrainerTestCase):
+    def order(self, hook, calls):
+        return [name for name, h in calls if h == hook]
+
+    def test_wrappers_enclose_the_others(self):
+        calls = []
+        callbacks = [
+            Recorder("a", calls),
+            Recorder("outer", calls, wrapper=True),
+            Recorder("b", calls),
+            Recorder("inner", calls, wrapper=True),
+        ]
+        trainer = self.trainer(callbacks=callbacks)
+        trainer.fit(self.loader(), self.loader(), epochs=1)
+        trainer.predict(self.loader())
+        begin = ["outer", "inner", "a", "b"]
+        end = ["a", "b", "inner", "outer"]
+        for kind in ("train", "epoch", "train_batch", "test", "predict"):
+            with self.subTest(kind=kind):
+                self.assertEqual(
+                    self.order(f"on_{kind}_begin", calls)[:4], begin
+                )
+                self.assertEqual(self.order(f"on_{kind}_end", calls)[:4], end)
+        # other hooks run in the order given
+        self.assertEqual(
+            self.order("on_before_optimizer_step", calls)[:4],
+            ["a", "outer", "b", "inner"],
+        )
+
+    def test_changes_to_the_callbacks_apply_from_the_next_hook(self):
+        for wrapper in (False, True):
+            with self.subTest(wrapper=wrapper):
+                calls = []
+                added = Recorder("added", calls)
+
+                def add(trainer):
+                    trainer.callbacks.append(added)
+
+                callbacks = [
+                    LambdaCallback(on_train_begin=add),
+                    Recorder("first", calls, wrapper=wrapper),
+                ]
+                trainer = self.trainer(callbacks=callbacks)
+                trainer.fit(self.loader(), epochs=1)
+                # not this hook, but the ones after it
+                self.assertEqual(
+                    self.order("on_train_begin", calls), ["first"]
+                )
+                self.assertIn("added", self.order("on_epoch_begin", calls))
+
+    def test_without_wrappers_hooks_run_in_order(self):
+        calls = []
+        callbacks = [Recorder("a", calls), Recorder("b", calls)]
+        self.trainer(callbacks=callbacks).fit(self.loader(), epochs=1)
+        self.assertEqual(self.order("on_train_end", calls), ["a", "b"])
+        self.assertFalse(Callback.wrapper)
+
+
 class TestEarlyStopping(TrainerTestCase):
     def fit(self, values, epochs=None, **kwargs):
         feed = Feed(values)

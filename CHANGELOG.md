@@ -72,6 +72,10 @@ modules listed under Removed.
   `ModelCheckpoint` (`.safetensors` or `.pt` state dicts),
   `ReduceLROnPlateau`, `TerminateOnNaN`, `CSVLogger`, `ProgbarLogger` and
   `LambdaCallback`.
+- `Callback.wrapper`: a wrapper callback's `*_begin` hooks run before,
+  and its `*_end` hooks after, those of the other callbacks, so that what
+  it opens encloses their work; wrappers nest in the order given. Other
+  callbacks keep the order given.
 - `Trainer.grad_norm` holds the gradient norm before clipping.
 - `lr_scheduler` accepts a scheduler, a name with `warmup` (steps or a
   fraction), or `f(optimizer, num_training_steps)`. `get_scheduler`

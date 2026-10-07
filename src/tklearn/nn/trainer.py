@@ -74,6 +74,10 @@ class Trainer:
         `predict_step` outputs.
     callbacks : iterable of Callback, optional
         Callbacks receiving the hooks of `fit`, `evaluate` and `predict`.
+        Each hook goes to them in the order given, except for wrapper
+        callbacks (`Callback.wrapper`), which get ``*_begin`` hooks before
+        and ``*_end`` hooks after the others. Kept as the `callbacks`
+        list; a change to it during a hook applies from the next hook.
     max_grad_norm : float, optional
         Clip the gradient norm to this value before each optimizer step.
     mixed_precision : {"no", "fp16", "bf16"}, optional
@@ -465,7 +469,7 @@ class Trainer:
     # --- helpers -----------------------------------------------------------
 
     def _callback(self, hook: str, *args: Any) -> None:
-        for callback in self.callbacks:
+        for callback in _hook_order(self.callbacks, hook):
             getattr(callback, hook)(self, *args)
 
     def _sync_should_stop(self) -> bool:
@@ -545,6 +549,23 @@ class Trainer:
             totals = dict(zip(keys, values[: len(keys)]))
             counts = dict(zip(keys, values[len(keys) :]))
         return {k: v / counts[k] for k, v in totals.items() if counts[k]}
+
+
+def _hook_order(callbacks: list[Callback], hook: str) -> tuple[Callback, ...]:
+    """The callbacks in the order they get `hook`: wrappers first on
+    ``*_begin`` hooks and last, in reverse, on ``*_end`` hooks.
+
+    A copy, so that a callback changing `Trainer.callbacks` during the
+    hook changes who gets the next hook, not this one.
+    """
+    wrappers = tuple(c for c in callbacks if c.wrapper)
+    if wrappers and hook.endswith("_begin"):
+        others = tuple(c for c in callbacks if not c.wrapper)
+        return (*wrappers, *others)
+    if wrappers and hook.endswith("_end"):
+        others = tuple(c for c in callbacks if not c.wrapper)
+        return (*others, *reversed(wrappers))
+    return tuple(callbacks)
 
 
 def _num_batches(dataloader: DataLoader) -> int | None:
