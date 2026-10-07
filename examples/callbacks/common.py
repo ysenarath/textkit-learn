@@ -84,6 +84,12 @@ def make_loaders(
 
 def parse_args(doc: str | None, name: str) -> Path:
     """The output directory of an example, emptied for a fresh run."""
+    return prepare_output(argument_parser(doc, name).parse_args().out)
+
+
+def argument_parser(doc: str | None, name: str) -> argparse.ArgumentParser:
+    """A parser of an example's options, with ``--out``; add others to
+    it."""
     parser = argparse.ArgumentParser(
         description=doc, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -93,7 +99,11 @@ def parse_args(doc: str | None, name: str) -> Path:
         default=OUTPUT_DIR / name,
         help="directory to write to (default: %(default)s)",
     )
-    out = parser.parse_args().out
+    return parser
+
+
+def prepare_output(out: Path) -> Path:
+    """`out`, emptied for a fresh run."""
     shutil.rmtree(out, ignore_errors=True)
     out.mkdir(parents=True)
     return out

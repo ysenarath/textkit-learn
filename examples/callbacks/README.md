@@ -9,6 +9,7 @@ the callbacks did what they claim and prints a line per check.
 | [`early_stopping.py`](early_stopping.py) | `EarlyStopping`, `ModelCheckpoint`, `ReduceLROnPlateau`, `CSVLogger` and `ProgbarLogger` on a model that overfits |
 | [`custom_callbacks.py`](custom_callbacks.py) | Writing callbacks: the hook order, a `Callback` subclass that freezes layers, stopping with `trainer.should_stop`, and `LambdaCallback` |
 | [`terminate_on_nan.py`](terminate_on_nan.py) | `TerminateOnNaN` stopping on a corrupted example, with step checkpoints to fall back to |
+| [`trace_training.py`](trace_training.py) | `OpenTelemetryCallback` tracing a learning rate sweep into `tklearn.tracing.FileTracerProvider`, read back with `load_spans`, `load_events` and `tklearn runs monitor` |
 | [`common.py`](common.py) | The data, model and checks shared by the examples |
 
 ## Running
@@ -17,9 +18,19 @@ the callbacks did what they claim and prints a line per check.
 python examples/callbacks/early_stopping.py
 python examples/callbacks/custom_callbacks.py
 python examples/callbacks/terminate_on_nan.py
+python examples/callbacks/trace_training.py
 ```
 
-Each example writes its files (checkpoints, CSV) to
+`trace_training.py` takes a few seconds. To follow its runs live, slow
+it down with a pause after each training batch, and watch from another
+terminal:
+
+```sh
+python examples/callbacks/trace_training.py --delay 0.5
+python -m tklearn runs monitor examples/outputs/callbacks/trace_training -n 1
+```
+
+Each example writes its files (checkpoints, CSV, spans) to
 `examples/outputs/callbacks/<example>/`, emptied at the start; pass
 `--out DIR` to write elsewhere. A failed check raises an
 `AssertionError`.
@@ -44,6 +55,10 @@ rate of 1e-3.
 - **The optimizer steps at the end of every epoch** with gradient
   accumulation, even when the last window is short: 3 batches with
   `gradient_accumulation_steps=2` take 2 steps.
+- **A wrapper callback encloses the others, whatever their order.** In
+  `trace_training.py`, `ModelCheckpoint` and `EarlyStopping` come before
+  `OpenTelemetryCallback`, yet their `checkpoint`, `early_stopping` and
+  `restore_best_weights` events land in its epoch and fit spans.
 - **`TerminateOnNaN` sees only the loss.** On Apple MPS, ReLU turns NaN
   into 0. A NaN input then turns the weights NaN while the loss stays
   finite, so `terminate_on_nan.py` runs on the CPU.
