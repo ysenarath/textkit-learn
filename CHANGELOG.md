@@ -100,3 +100,13 @@ modules listed under Removed.
 - `tklearn.config` is a plain dataclass; `cache_dir`, `temp_dir` and
   `assets_dir` are `Path`s derived from `base_dir`.
 - Repeated `get_logger(name)` calls no longer add duplicate handlers.
+- New. `tklearn.utils.flatten.flatten` flattens nested values into one
+  level of keys, e.g. for a table of runs. Nested mappings and named
+  tuples become dotted keys (`optim.lr`, `roc.fpr`), lists and arrays of
+  values are kept whole as tuples, lists of mappings become a tuple per
+  key (`layers.*.size: (4, 8)`), and an empty mapping stays a read-only,
+  hashable `{}`. Path objects become absolute paths, without resolving
+  symlinks. `freeze` gives the value stored for a single value.
+  `unflatten` rebuilds the nested values; `flatten` raises a
+  `ValueError` for values it could not rebuild, e.g. when only None
+  tells apart the forms that the items of a list hold a key in.
