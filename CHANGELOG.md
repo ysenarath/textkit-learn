@@ -104,6 +104,14 @@ modules listed under Removed.
   to OpenTelemetry's types. `load_spans` and `load_events` read every run
   under a directory into a DataFrame, with `resource.<key>` columns to
   compare runs. It does not import torch.
+- New. `tklearn runs monitor DIR` shows the progress of every run under a
+  directory, at any depth, live or `--once`: the status of its latest fit
+  (running, stalled, finished, stopped early or failed), epoch, step,
+  training loss, the latest epoch's metrics and an ETA. It reads only
+  what the runs add, so it can follow jobs on other machines over NFS;
+  `--slurm` asks `sacct` whether a quiet job is still alive.
+  `tklearn.tracing.monitor.RunMonitor` does the same from Python.
+- New. The `tklearn` command (also `python -m tklearn`).
 
 ### Knowledge base (`tklearn.kb`)
 
