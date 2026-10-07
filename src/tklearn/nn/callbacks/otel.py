@@ -28,9 +28,10 @@ class OpenTelemetryCallback(Callback):
     """Trace `Trainer.fit`, `evaluate` and `predict` with OpenTelemetry.
 
     The callback uses only the OpenTelemetry API: the application decides
-    where the spans go by configuring an SDK, e.g. ``opentelemetry-sdk``
-    with an OTLP exporter for Jaeger or a collector. Without one, the
-    spans are not recorded.
+    where the spans go by configuring an SDK, e.g.
+    `tklearn.tracing.FileTracerProvider` for plain files on shared storage
+    such as NFS, or ``opentelemetry-sdk`` with an OTLP exporter for Jaeger
+    or a collector. Without one, the spans are not recorded.
 
     `fit` gives a ``"fit"`` span, holding
 

@@ -92,6 +92,19 @@ modules listed under Removed.
   fraction), or `f(optimizer, num_training_steps)`. `get_scheduler`
   builds named schedules. Schedules count optimizer steps.
 
+### Tracing (`tklearn.tracing`)
+
+- New. `FileTracerProvider(root_dir, name, resource)` is an OpenTelemetry
+  tracing SDK that writes plain files, for shared storage without a
+  database, such as NFS used by SLURM jobs on several machines. Each span
+  is written when it starts and ends, and each event when it is added,
+  so a killed job loses nothing and its open spans stay visible. Each
+  provider writes its own file, and runs are named after the SLURM job,
+  so a requeued job continues its run. Attribute values are not limited
+  to OpenTelemetry's types. `load_spans` and `load_events` read every run
+  under a directory into a DataFrame, with `resource.<key>` columns to
+  compare runs. It does not import torch.
+
 ### Knowledge base (`tklearn.kb`)
 
 - `KnowledgeBase("wiktionary")` is now `KnowledgeBase(WiktionaryStore())`.
