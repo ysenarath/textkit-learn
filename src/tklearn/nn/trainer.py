@@ -481,9 +481,9 @@ class Trainer:
             The outputs for the whole dataloader, structured like the
             output of one batch.
         """
+        chunks = []
         with self._run(training=False) as (runner, _):
             dataloader = self._prepare_dataloader(dataloader)
-            chunks = []
             self.num_batches = _num_batches(dataloader)
             self._callback("on_predict_begin")
             with self._eval_mode(runner):
@@ -720,18 +720,15 @@ def _concat(chunks: list[Any]) -> Any:
     if first is None:
         return None
     if isinstance(first, torch.Tensor):
-        if first.ndim == 0:
-            msg = (
-                "cannot concatenate scalar outputs; predict_step must return "
-                "one value per example"
-            )
-            raise ValueError(msg)
+        _validate_tensor_chunks(first, chunks)
         return torch.cat(chunks)
     if isinstance(first, np.ndarray):
         return np.concatenate(chunks)
     if isinstance(first, Mapping):
+        _validate_mapping_chunks(first, chunks)
         return {k: _concat([chunk[k] for chunk in chunks]) for k in first}
     if isinstance(first, tuple):
+        _validate_tuple_chunks(first, chunks)
         values = [_concat(list(items)) for items in zip(*chunks)]
         if hasattr(first, "_fields"):  # namedtuple
             return type(first)(*values)
@@ -740,3 +737,38 @@ def _concat(chunks: list[Any]) -> Any:
         return [item for chunk in chunks for item in chunk]
     msg = f"cannot concatenate outputs of type {type(first).__name__}"
     raise TypeError(msg)
+
+
+def _validate_mapping_chunks(first: Mapping, chunks: list[Mapping]) -> None:
+    for chunk in chunks[1:]:
+        missing = [k for k in first if k not in chunk]
+        extra = [k for k in chunk if k not in first]
+        if missing or extra:
+            diffs = [f"lacks {missing}"] if missing else []
+            diffs += [f"has the extra {extra}"] if extra else []
+            msg = (
+                "predict_step must return the same keys for every "
+                f"batch; a batch {' and '.join(diffs)}"
+            )
+            raise ValueError(msg)
+
+
+def _validate_tuple_chunks(first: tuple, chunks: list[tuple]) -> None:
+    lengths = {len(chunk) for chunk in chunks}
+    if len(lengths) > 1:
+        msg = (
+            "predict_step must return tuples of the same length for "
+            f"every batch; got lengths {sorted(lengths)}"
+        )
+        raise ValueError(msg)
+
+
+def _validate_tensor_chunks(
+    first: torch.Tensor, chunks: list[torch.Tensor]
+) -> None:
+    if first.ndim == 0:
+        msg = (
+            "cannot concatenate scalar outputs; predict_step must return "
+            "one value per example"
+        )
+        raise ValueError(msg)

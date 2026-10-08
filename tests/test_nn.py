@@ -601,6 +601,30 @@ class TestPredict(TrainerTestCase):
         with self.assertRaisesRegex(ValueError, "one value per example"):
             self.trainer(model).predict(self.loader())
 
+    def test_rejects_a_missing_key(self):
+        # the last batch has no labels, so the Classifier returns no y_true
+        data = self.data[:80] + [{"x": e["x"]} for e in self.data[80:]]
+        with self.assertRaisesRegex(ValueError, r"lacks \['y_true'\]"):
+            self.trainer().predict(self.loader(data))
+
+    def test_rejects_an_extra_key(self):
+        def outputs(batch):
+            x = batch["x"]
+            return {"x": x, "z": x} if batch["index"][0] >= 80 else {"x": x}
+
+        model = OutputModel(outputs)
+        with self.assertRaisesRegex(ValueError, r"extra \['z'\]"):
+            self.trainer(model).predict(self.loader(INDEXED_DATA))
+
+    def test_rejects_tuples_of_different_lengths(self):
+        def outputs(batch):
+            x = batch["x"]
+            return (x, x) if batch["index"][0] >= 80 else (x,)
+
+        model = OutputModel(outputs)
+        with self.assertRaisesRegex(ValueError, r"lengths \[1, 2\]"):
+            self.trainer(model).predict(self.loader(INDEXED_DATA))
+
     def test_empty_dataloader(self):
         with self.assertRaisesRegex(ValueError, "empty"):
             self.trainer().predict(self.loader([]))
