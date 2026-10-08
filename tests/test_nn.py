@@ -1,19 +1,21 @@
+import gc
 import json
 import socket
 import subprocess
 import sys
 import unittest
+import weakref
 from collections import namedtuple
 
 import numpy as np
 import torch
 import torch.nn.functional as F
-from accelerate import Accelerator
+from accelerate import PartialState
 from accelerate.state import AcceleratorState, GradientState
 from accelerate.utils import gather_object
 from sklearn import metrics as sk
 from torch.optim.lr_scheduler import LambdaLR
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from tklearn.metrics import F1, Accuracy, ConfusionMatrix, MetricCollection
 from tklearn.nn import Callback, Module, Trainer, get_scheduler
@@ -67,6 +69,18 @@ class SomeTermsClassifier(Classifier):
 
 
 INDEXED_DATA = [dict(d, index=i) for i, d in enumerate(make_data())]
+
+
+class ListDataset(Dataset):
+    # a dataset object (unlike a list, it can be weakly referenced)
+    def __init__(self, items):
+        self.items = items
+
+    def __len__(self):
+        return len(self.items)
+
+    def __getitem__(self, i):
+        return self.items[i]
 
 
 class OutputModel(Classifier):
@@ -144,13 +158,15 @@ class TrainerTestCase(unittest.TestCase):
         **kwargs,
     ):
         model = Classifier() if model is None else model
-        accelerator = Accelerator(
+        optimizer = torch.optim.SGD(model.parameters(), lr=lr)
+        return Trainer(
+            model,
+            optimizer,
             cpu=True,
             mixed_precision=mixed_precision,
             gradient_accumulation_steps=accumulation,
+            **kwargs,
         )
-        optimizer = torch.optim.SGD(model.parameters(), lr=lr)
-        return Trainer(model, optimizer, accelerator=accelerator, **kwargs)
 
 
 class TestFit(TrainerTestCase):
@@ -215,7 +231,7 @@ class TestFit(TrainerTestCase):
         model = OutputModel(lambda batch: batch["x"])
         with self.assertRaisesRegex(NotImplementedError, "training_step"):
             self.trainer(model).fit(self.loader())
-        trainer = Trainer(Module(), accelerator=Accelerator(cpu=True))
+        trainer = Trainer(Module(), cpu=True)
         with self.assertRaisesRegex(NotImplementedError, "predict_step"):
             trainer.predict(self.loader())
 
@@ -418,11 +434,29 @@ class TestEvaluate(TrainerTestCase):
             self.trainer().evaluate(self.loader([]))
 
     def test_prepares_each_dataloader_once(self):
-        trainer = self.trainer()
+        # across runs too, so that persistent workers are reused
         loader = self.loader()
+        prepared = []
+
+        class Capture(Callback):
+            def on_test_begin(self, trainer):
+                prepared.append(trainer._prepare_dataloader(loader))
+
+        trainer = self.trainer(callbacks=[Capture()])
         trainer.evaluate(loader)
         trainer.evaluate(loader)
-        self.assertEqual(len(trainer.accelerator._dataloaders), 1)
+        self.assertIsNot(prepared[0], loader)
+        self.assertIs(prepared[0], prepared[1])
+
+    def test_releases_dataloaders(self):
+        # a trainer used on many temporary dataloaders must not keep them
+        trainer = self.trainer()
+        loader = self.loader(ListDataset(self.data))
+        dataset = weakref.ref(loader.dataset)
+        trainer.evaluate(loader)
+        del loader
+        gc.collect()
+        self.assertIsNone(dataset())
 
     def test_nested_evaluate(self):
         # an evaluation started during another must not reset its metrics
@@ -521,7 +555,7 @@ class TestPredict(TrainerTestCase):
 
     def test_without_optimizer(self):
         AcceleratorState._reset_state(reset_partial_state=True)
-        trainer = Trainer(Classifier(), accelerator=Accelerator(cpu=True))
+        trainer = Trainer(Classifier(), cpu=True)
         self.assertEqual(len(trainer.predict(self.loader())["y_pred"]), 96)
         with self.assertRaisesRegex(ValueError, "optimizer"):
             trainer.fit(self.loader())
@@ -590,16 +624,20 @@ class TestValidation(TrainerTestCase):
     def test_constructor(self):
         model = Classifier()
         optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
-        accelerator = Accelerator(cpu=True)
         cases = [
             (dict(model=torch.nn.Linear(1, 1)), TypeError, "Module"),
             (dict(lr_scheduler="linear"), ValueError, "optimizer"),
             (dict(optimizer=optimizer, warmup=2), ValueError, "named"),
             (dict(callbacks=[object()]), TypeError, "Callback"),
             (
-                dict(accelerator=accelerator, mixed_precision="bf16"),
+                dict(gradient_accumulation_steps=0),
                 ValueError,
-                "accelerator",
+                "gradient_accumulation_steps",
+            ),
+            (
+                dict(gradient_accumulation_steps=2.0),
+                ValueError,
+                "gradient_accumulation_steps",
             ),
         ]
         for kwargs, error, message in cases:
@@ -608,15 +646,36 @@ class TestValidation(TrainerTestCase):
                 with self.assertRaisesRegex(error, message):
                     Trainer(**kwargs)
 
-    def test_model_optimizer_and_accelerator_are_fixed(self):
-        # the accelerator wraps them on first use and the trainer keeps the
-        # wrapped versions, so a replacement would be silently ignored
+    def test_accelerator_exists_during_a_run(self):
+        seen = []
+
+        class Capture(Callback):
+            def on_train_begin(self, trainer):
+                seen.append(trainer.accelerator)
+
+            def on_test_begin(self, trainer):
+                seen.append(trainer.accelerator)
+
+        trainer = self.trainer(callbacks=[Capture()])
+        with self.assertRaisesRegex(RuntimeError, "during a fit"):
+            trainer.accelerator
+        trainer.fit(self.loader(), self.loader())
+        trainer.evaluate(self.loader())
+        with self.assertRaisesRegex(RuntimeError, "during a fit"):
+            trainer.accelerator
+        # the evaluation inside fit shares its accelerator; evaluate gets one
+        self.assertIs(seen[0], seen[1])
+        self.assertIsNot(seen[1], seen[2])
+        self.assertIsNone(trainer.num_batches)
+
+    def test_model_and_optimizer_are_fixed(self):
+        # a run uses prepared versions of them, so a replacement would be
+        # silently ignored
         trainer = self.trainer()
         model = Classifier()
         replacements = {
             "model": model,
             "optimizer": torch.optim.SGD(model.parameters(), lr=0.1),
-            "accelerator": Accelerator(cpu=True),
         }
         for used in (False, True):
             if used:
@@ -700,19 +759,17 @@ def _free_port():
 
 
 def _run_on_two_processes(scenario):
-    accelerator = Accelerator(cpu=True)
-    assert accelerator.num_processes == 2, accelerator.num_processes
     model = SomeTermsClassifier()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.5)
     callbacks = [StopOnMainProcess()] if scenario == "stop" else []
-    trainer = Trainer(
-        model, optimizer, callbacks=callbacks, accelerator=accelerator
-    )
+    trainer = Trainer(model, optimizer, callbacks=callbacks, cpu=True)
+    state = PartialState(cpu=True)
+    assert state.num_processes == 2, state.num_processes
     history = trainer.fit(DataLoader(INDEXED_DATA, batch_size=16), epochs=2)
     output = trainer.global_step if scenario == "stop" else history[:1]
     # print from one process, as lines printed at once can interleave
     outputs = gather_object([output])
-    if accelerator.is_main_process:
+    if state.is_main_process:
         print("outputs: " + json.dumps(outputs), flush=True)
 
 

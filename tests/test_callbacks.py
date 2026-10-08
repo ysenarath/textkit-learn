@@ -73,7 +73,8 @@ class TestTrainerState(TrainerTestCase):
         trainer.callbacks = [LambdaCallback(on_predict_begin=record("p"))]
         trainer.predict(self.loader(batch_size=48))
         self.assertEqual(seen, [("p", 2, 2)])
-        self.assertEqual(trainer.num_batches, 6)
+        # of the running loop only
+        self.assertIsNone(trainer.num_batches)
 
 
 class TestLambdaCallback(TrainerTestCase):

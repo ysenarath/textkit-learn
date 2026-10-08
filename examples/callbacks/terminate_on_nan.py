@@ -18,7 +18,6 @@ import math
 from pathlib import Path
 
 import torch
-from accelerate import Accelerator
 from common import Classifier, check, make_splits, parse_args
 from torch.utils.data import DataLoader
 
@@ -41,7 +40,7 @@ def fit(out: Path, callbacks: list) -> tuple[Trainer, list[dict]]:
         model,
         torch.optim.AdamW(model.parameters(), lr=1e-3),
         callbacks=callbacks,
-        accelerator=Accelerator(cpu=True),
+        cpu=True,
     )
     # not shuffled, so the bad example is always in the same batch
     history = trainer.fit(
