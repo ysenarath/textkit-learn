@@ -23,9 +23,9 @@ class Module(torch.nn.Module):
     training loss is not the ``"loss"`` that `predict_step` returns.
 
     - `fit` minimizes the loss from `training_step`.
-    - `evaluate` averages the ``"loss"`` from `predict_step` and passes its
-      other entries to the metrics, e.g. ``y_true``, ``y_pred`` and
-      ``y_score``.
+    - `evaluate` averages the ``"loss"`` from `predict_step` over the
+      examples and passes its other entries to the metrics, e.g.
+      ``y_true``, ``y_pred`` and ``y_score``.
     - `predict` concatenates the `predict_step` outputs of every batch.
 
     Batches arrive on the model's device. Steps run in the model's
@@ -65,11 +65,15 @@ class Module(torch.nn.Module):
 
         Returns a scalar loss, or a mapping with the loss under ``"loss"``
         and other scalars to log, e.g. the terms of a combined loss. By
-        default it returns the ``"loss"`` from `predict_step`.
+        default it returns the ``"loss"`` from `predict_step`, averaged
+        over the batch when there is one per example.
         """
         outputs = self.predict_step(batch)
         if isinstance(outputs, Mapping) and outputs.get("loss") is not None:
-            return outputs["loss"]
+            loss = outputs["loss"]
+            if isinstance(loss, torch.Tensor) and loss.ndim == 1:
+                return loss.mean()
+            return loss
         msg = (
             f"{type(self).__name__} must implement training_step, or return "
             "a mapping with a 'loss' from predict_step"
@@ -79,9 +83,13 @@ class Module(torch.nn.Module):
     def predict_step(self, batch: Any) -> Any:
         """Run the model on one batch.
 
-        To be evaluated, return a mapping of metric inputs, and the batch
-        loss under ``"loss"`` to report it. `predict` accepts any tensor,
-        array, list, tuple or mapping of them with one entry per example.
+        Called with a whole batch; the outputs hold the batch's examples
+        along their first dimension (a tensor of one prediction per
+        example, a list of one string per example, ...). To be evaluated,
+        return a mapping of metric inputs, and the loss under ``"loss"``
+        to report it: either the mean over the batch, or one loss per
+        example, which `evaluate` averages exactly on several processes.
+        `predict` accepts any tensor, array, list, tuple or mapping of them.
         """
         msg = f"{type(self).__name__} must implement predict_step"
         raise NotImplementedError(msg)

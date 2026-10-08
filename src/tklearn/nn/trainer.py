@@ -400,8 +400,12 @@ class Trainer:
         Returns
         -------
         dict
-            ``loss``, the mean of the batch losses (when `predict_step`
-            returns one), followed by one entry per metric.
+            ``loss``, the mean loss over the examples (when `predict_step`
+            returns a loss), followed by one entry per metric. A loss per
+            example is averaged as it is; a scalar one, the mean over the
+            batch, counts once per example of its batch. On several
+            processes, the duplicates that pad the last batch are left
+            out, which is exact with a loss per example.
         """
         with self._run(training=False) as (runner, _):
             dataloader = self._prepare_dataloader(dataloader)
@@ -413,7 +417,7 @@ class Trainer:
             )
             metrics.reset()
             input_names = metrics.input_names
-            loss_sum, num_losses, num_batches = 0.0, 0, 0
+            loss_sum, num_examples, num_batches = 0.0, 0, 0
             self.num_batches = _num_batches(dataloader)
             self._callback("on_test_begin")
             with self._eval_mode(runner):
@@ -428,8 +432,15 @@ class Trainer:
                         )
                         raise TypeError(msg)
                     if outputs.get("loss") is not None:
-                        loss_sum += float(outputs["loss"])
-                        num_losses += 1
+                        # one loss per example, without the duplicates that
+                        # pad the last batch on several processes
+                        losses = self._gather(
+                            _example_losses(
+                                outputs, batch, self.accelerator.device
+                            )
+                        )
+                        loss_sum += float(losses.float().sum())
+                        num_examples += losses.numel()
                     if input_names:
                         inputs = {
                             k: v
@@ -442,9 +453,9 @@ class Trainer:
             if num_batches == 0:
                 msg = "cannot evaluate on an empty dataloader"
                 raise ValueError(msg)
-            results: dict[str, Any] = self._mean(
-                {"loss": loss_sum}, {"loss": num_losses}
-            )
+            results: dict[str, Any] = {}
+            if num_examples:
+                results["loss"] = loss_sum / num_examples
             results.update(metrics.compute())
             results = {f"{prefix}{k}": v for k, v in results.items()}
             self._callback("on_test_end", results)
@@ -630,6 +641,52 @@ def _num_batches(dataloader: DataLoader) -> int | None:
         return len(dataloader)
     except TypeError:
         return None
+
+
+def _example_losses(
+    outputs: Mapping[str, Any], batch: Any, device: torch.device
+) -> torch.Tensor:
+    """The loss of each example of a batch, from the ``loss`` that
+    `predict_step` returned: one per example as it is, or a scalar (the
+    mean over the batch) repeated for each example of the batch, counted
+    from the per-example outputs or, without one, from the batch.
+    """
+    loss = torch.as_tensor(outputs["loss"]).detach().to(device)
+    if loss.ndim == 1:
+        return loss
+    if loss.ndim > 1:
+        msg = (
+            "predict_step must return a scalar loss or one loss per "
+            f"example, got one of shape {tuple(loss.shape)}"
+        )
+        raise ValueError(msg)
+    num_examples = _num_examples({
+        k: v for k, v in outputs.items() if k != "loss"
+    })
+    if num_examples is None:
+        num_examples = _num_examples(batch)
+    if num_examples is None:
+        msg = (
+            "cannot count the examples of a batch without a tensor in it or "
+            "in the predict_step outputs; return one loss per example instead"
+        )
+        raise ValueError(msg)
+    return loss.repeat(num_examples)
+
+
+def _num_examples(data: Any) -> int | None:
+    """Examples in a batch or in per-example outputs: the first dimension
+    of the first tensor or array in `data`; None when there is none."""
+    if isinstance(data, (torch.Tensor, np.ndarray)):
+        return len(data) if data.ndim else None
+    if isinstance(data, Mapping):
+        data = list(data.values())
+    if isinstance(data, (tuple, list)):
+        for item in data:
+            num_examples = _num_examples(item)
+            if num_examples is not None:
+                return num_examples
+    return None
 
 
 def _split_loss(loss: Loss) -> tuple[torch.Tensor, dict[str, float]]:

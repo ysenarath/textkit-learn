@@ -68,6 +68,17 @@ class SomeTermsClassifier(Classifier):
         return logs
 
 
+class ExampleLossClassifier(Classifier):
+    # returns one loss per example instead of the mean over the batch
+    def predict_step(self, batch):
+        outputs = super().predict_step(batch)
+        if "loss" in outputs:
+            outputs["loss"] = F.cross_entropy(
+                self(batch["x"]), batch["labels"], reduction="none"
+            )
+        return outputs
+
+
 INDEXED_DATA = [dict(d, index=i) for i, d in enumerate(make_data())]
 
 
@@ -182,6 +193,16 @@ class TestFit(TrainerTestCase):
         self.assertGreater(history[-1]["valid_acc"], 0.9)
         self.assertEqual(trainer.global_step, 5 * 6)
         self.assertEqual(trainer.epoch, 4)
+
+    def test_trains_with_a_loss_per_example(self):
+        # the default training_step averages it, so this trains exactly
+        # like the model returning the mean over the batch
+        expected = self.trainer().fit(self.loader(), epochs=2)
+        history = self.trainer(ExampleLossClassifier()).fit(
+            self.loader(), epochs=2
+        )
+        for logs, expected_logs in zip(history, expected):
+            self.assertAlmostEqual(logs["loss"], expected_logs["loss"])
 
     def test_epoch_loss_is_mean_of_batch_losses(self):
         recorder = Recorder()
@@ -405,6 +426,37 @@ class TestEvaluate(TrainerTestCase):
         self.assertAlmostEqual(
             results["test_loss"], float(torch.stack(losses).mean()), places=6
         )
+
+    def test_loss_is_mean_over_examples(self):
+        # batches of 40, 40 and 16: each batch loss counts once per example
+        trainer = self.trainer()
+        loader = self.loader(batch_size=40)
+        with torch.no_grad():
+            outputs = [trainer.model.predict_step(batch) for batch in loader]
+        expected = sum(float(o["loss"]) * len(o["y_true"]) for o in outputs)
+        self.assertAlmostEqual(
+            trainer.evaluate(loader)["loss"], expected / 96, places=6
+        )
+
+    def test_loss_per_example(self):
+        trainer = self.trainer(ExampleLossClassifier())
+        loader = self.loader(batch_size=40)
+        with torch.no_grad():
+            losses = [trainer.model.predict_step(b)["loss"] for b in loader]
+        self.assertAlmostEqual(
+            trainer.evaluate(loader)["loss"],
+            float(torch.cat(losses).mean()),
+            places=6,
+        )
+
+    def test_invalid_losses(self):
+        model = OutputModel(lambda batch: {"loss": torch.zeros(2, 3)})
+        with self.assertRaisesRegex(ValueError, "per example"):
+            self.trainer(model).evaluate(self.loader())
+        # a scalar loss counts per example, which need a tensor to be counted
+        model = OutputModel(lambda batch: {"loss": torch.tensor(1.0)})
+        with self.assertRaisesRegex(ValueError, "count the examples"):
+            self.trainer(model).evaluate(DataLoader(["a"] * 8, batch_size=4))
 
     def test_without_loss_or_metrics(self):
         model = OutputModel(lambda batch: {"y_true": batch["labels"]})
@@ -745,6 +797,17 @@ class TestMultipleProcesses(unittest.TestCase):
         for steps in self.run_on_two_processes("stop"):
             self.assertEqual(steps, 1)
 
+    def test_evaluate_leaves_out_padding(self):
+        # 40 examples in batches of 16: Accelerate pads the last batch with
+        # duplicates, which must not count in the loss
+        AcceleratorState._reset_state(reset_partial_state=True)
+        GradientState._reset_state()
+        trainer = Trainer(ExampleLossClassifier(), cpu=True)
+        loader = DataLoader(INDEXED_DATA[:40], batch_size=16)
+        expected = trainer.evaluate(loader)["loss"]
+        for loss in self.run_on_two_processes("evaluate"):
+            self.assertAlmostEqual(loss, expected, places=6)
+
 
 class StopOnMainProcess(Callback):
     def on_train_batch_end(self, trainer, batch, logs):
@@ -759,14 +822,20 @@ def _free_port():
 
 
 def _run_on_two_processes(scenario):
-    model = SomeTermsClassifier()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.5)
-    callbacks = [StopOnMainProcess()] if scenario == "stop" else []
-    trainer = Trainer(model, optimizer, callbacks=callbacks, cpu=True)
     state = PartialState(cpu=True)
     assert state.num_processes == 2, state.num_processes
-    history = trainer.fit(DataLoader(INDEXED_DATA, batch_size=16), epochs=2)
-    output = trainer.global_step if scenario == "stop" else history[:1]
+    if scenario == "evaluate":
+        trainer = Trainer(ExampleLossClassifier(), cpu=True)
+        loader = DataLoader(INDEXED_DATA[:40], batch_size=16)
+        output = trainer.evaluate(loader)["loss"]
+    else:
+        model = SomeTermsClassifier()
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.5)
+        callbacks = [StopOnMainProcess()] if scenario == "stop" else []
+        trainer = Trainer(model, optimizer, callbacks=callbacks, cpu=True)
+        loader = DataLoader(INDEXED_DATA, batch_size=16)
+        history = trainer.fit(loader, epochs=2)
+        output = trainer.global_step if scenario == "stop" else history[:1]
     # print from one process, as lines printed at once can interleave
     outputs = gather_object([output])
     if state.is_main_process:
