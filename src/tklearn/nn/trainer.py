@@ -280,10 +280,11 @@ class Trainer:
             raise ValueError(msg)
         with self._run(training=True) as (runner, optimizer):
             dataloader = self._prepare_dataloader(train_dataloader)
-            if _num_batches(dataloader) == 0:
+            num_batches = _num_batches(dataloader)
+            if num_batches == 0:
                 msg = "cannot fit on an empty dataloader"
                 raise ValueError(msg)
-            scheduler = self._build_scheduler(dataloader, epochs)
+            scheduler = self._build_scheduler(num_batches, epochs)
             self.history = []
             self.epochs = epochs
             self.epoch = self.global_step = 0
@@ -294,7 +295,8 @@ class Trainer:
             # state, so start a new window without gradients
             self.accelerator.sync_gradients = True
             optimizer.zero_grad()
-            self.num_batches = _num_batches(dataloader)
+            # also the length at each epoch: a nested evaluate restores it
+            self.num_batches = num_batches
             self._callback("on_train_begin")
             for epoch in range(epochs):
                 self.epoch = epoch
@@ -302,7 +304,6 @@ class Trainer:
                     # required for synchronized shuffling across epochs
                     dataloader = cast(IterableDataset, dataloader)
                     dataloader.set_epoch(epoch)
-                self.num_batches = _num_batches(dataloader)
                 self._callback("on_epoch_begin")
                 logs = self._train_epoch(
                     runner, optimizer, scheduler, dataloader
@@ -359,19 +360,17 @@ class Trainer:
         return self._mean(totals, counts)
 
     def _build_scheduler(
-        self, dataloader: DataLoader, epochs: int
+        self, num_batches: int | None, epochs: int
     ) -> LRScheduler | None:
         lr_scheduler = self.lr_scheduler
         if lr_scheduler is None or isinstance(lr_scheduler, LRScheduler):
             return lr_scheduler
-        try:
-            num_batches = len(dataloader)
-        except TypeError:
+        if num_batches is None:
             msg = (
                 "a named or callable lr_scheduler needs a dataloader with a "
                 "length to count the training steps"
             )
-            raise ValueError(msg) from None
+            raise ValueError(msg)
         num_steps = epochs * math.ceil(
             num_batches / self.accelerator.gradient_accumulation_steps
         )
