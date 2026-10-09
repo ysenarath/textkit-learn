@@ -303,7 +303,7 @@ class OpenTelemetryCallback(Callback):
     def _record_steps(self, trainer: Trainer) -> None:
         step = trainer.global_step
         # reduces over processes, so every process takes part
-        means = trainer._mean(self._totals, self._counts)
+        means = trainer.reduce_mean(self._totals, self._counts)
         step_time = (
             time.perf_counter() - self._window_start - self._paused
         ) / (step - self._window_step)

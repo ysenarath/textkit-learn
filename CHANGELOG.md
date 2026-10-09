@@ -88,6 +88,9 @@ modules listed under Removed.
   it opens encloses their work; wrappers nest in the order given. Other
   callbacks keep the order given. `OpenTelemetryCallback` is a wrapper.
 - `Trainer.grad_norm` holds the gradient norm before clipping.
+- `Trainer.reduce_mean(totals, counts)` averages values that a callback
+  logs over several batches, over every process. On several processes,
+  every process must call it.
 - `lr_scheduler` accepts a scheduler, a name with `warmup` (steps or a
   fraction), or `f(optimizer, num_training_steps)`. `get_scheduler`
   builds named schedules. Schedules count optimizer steps.

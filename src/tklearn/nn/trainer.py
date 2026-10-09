@@ -357,7 +357,7 @@ class Trainer:
             self._callback("on_train_batch_end", batch, logs)
             if self._sync_should_stop():
                 break
-        return self._mean(totals, counts)
+        return self.reduce_mean(totals, counts)
 
     def _build_scheduler(
         self, num_batches: int | None, epochs: int
@@ -508,6 +508,51 @@ class Trainer:
             raise ValueError(msg)
         return _concat(chunks)
 
+    # --- for callbacks -----------------------------------------------------
+
+    def reduce_mean(
+        self, totals: dict[str, float], counts: dict[str, int]
+    ) -> dict[str, float]:
+        """Mean of each logged value over the batches of every process.
+
+        For callbacks that average logged values over several batches, as
+        `fit` does for the epoch logs. Only available during a run.
+
+        On several processes this is a collective: every process must call
+        it at the same point, or the others hang. Processes may pass
+        different keys; each process gets the means of all of them.
+
+        Parameters
+        ----------
+        totals : dict of str to float
+            Sum of each value over the batches of this process.
+        counts : dict of str to int
+            Number of batches of this process that logged each value, with
+            the same keys as `totals`.
+
+        Returns
+        -------
+        dict of str to float
+            The sum over every process of each total, divided by the sum
+            of its counts. Values with a count of 0 are left out.
+        """
+        if self.accelerator.num_processes > 1:
+            # processes can log different keys, but must reduce tensors of
+            # the same keys in the same order; gather_object orders the keys
+            # by rank, then by first appearance
+            gathered = gather_object([list(totals)])
+            keys = list(dict.fromkeys(k for ks in gathered for k in ks))
+            values = torch.tensor(
+                [totals.get(k, 0.0) for k in keys]
+                + [counts.get(k, 0) for k in keys],
+                dtype=torch.float64,
+                device=self.accelerator.device,
+            )
+            values = self.accelerator.reduce(values, reduction="sum").tolist()
+            totals = dict(zip(keys, values[: len(keys)]))
+            counts = dict(zip(keys, values[len(keys) :]))
+        return {k: v / counts[k] for k, v in totals.items() if counts[k]}
+
     # --- helpers -----------------------------------------------------------
 
     def _callback(self, hook: str, *args: Any) -> None:
@@ -601,27 +646,6 @@ class Trainer:
         if isinstance(data, Mapping):
             return {k: self._gather(v) for k, v in data.items()}
         return self.accelerator.gather_for_metrics(data)
-
-    def _mean(
-        self, totals: dict[str, float], counts: dict[str, int]
-    ) -> dict[str, float]:
-        """Mean of each value over the batches that logged it."""
-        if self.accelerator.num_processes > 1:
-            # processes can log different keys, but must reduce tensors of
-            # the same keys in the same order; gather_object orders the keys
-            # by rank, then by first appearance
-            gathered = gather_object([list(totals)])
-            keys = list(dict.fromkeys(k for ks in gathered for k in ks))
-            values = torch.tensor(
-                [totals.get(k, 0.0) for k in keys]
-                + [counts.get(k, 0) for k in keys],
-                dtype=torch.float64,
-                device=self.accelerator.device,
-            )
-            values = self.accelerator.reduce(values, reduction="sum").tolist()
-            totals = dict(zip(keys, values[: len(keys)]))
-            counts = dict(zip(keys, values[len(keys) :]))
-        return {k: v / counts[k] for k, v in totals.items() if counts[k]}
 
 
 def _hook_order(callbacks: list[Callback], hook: str) -> tuple[Callback, ...]:
