@@ -280,6 +280,9 @@ class Trainer:
             raise ValueError(msg)
         with self._run(training=True) as (runner, optimizer):
             dataloader = self._prepare_dataloader(train_dataloader)
+            if _num_batches(dataloader) == 0:
+                msg = "cannot fit on an empty dataloader"
+                raise ValueError(msg)
             scheduler = self._build_scheduler(dataloader, epochs)
             self.history = []
             self.epochs = epochs

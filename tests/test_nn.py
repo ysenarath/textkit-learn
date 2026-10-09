@@ -18,7 +18,7 @@ from accelerate.state import AcceleratorState, GradientState
 from accelerate.utils import gather_object
 from sklearn import metrics as sk
 from torch.optim.lr_scheduler import LambdaLR
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, IterableDataset
 
 from tklearn.metrics import F1, Accuracy, ConfusionMatrix, MetricCollection
 from tklearn.nn import Callback, Module, Trainer, get_scheduler
@@ -95,6 +95,12 @@ class ListDataset(Dataset):
 
     def __getitem__(self, i):
         return self.items[i]
+
+
+class EmptyIterable(IterableDataset):
+    # an iterable dataset without a length, like a filtered stream
+    def __iter__(self):
+        return iter(())
 
 
 class OutputModel(Classifier):
@@ -328,6 +334,28 @@ class TestFit(TrainerTestCase):
         self.assertEqual(len(norms), 6)
         for norm in norms:
             self.assertLessEqual(float(norm), 1e-3 + 1e-6)
+
+    def test_empty_dataloader(self):
+        # a named schedule would otherwise be built for 0 steps
+        recorder = Recorder()
+        trainer = self.trainer(lr_scheduler="linear", callbacks=[recorder])
+        with mock.patch.object(AcceleratedOptimizer, "step") as step:
+            with self.assertRaisesRegex(ValueError, "empty"):
+                trainer.fit(self.loader([]), self.loader(), epochs=3)
+        step.assert_not_called()
+        self.assertEqual(recorder.calls, [])
+        self.assertEqual(trainer.global_step, 0)
+
+    def test_empty_dataloader_without_a_length(self):
+        # empty only once iterated; Accelerate dispatches the batches of an
+        # iterable dataset, and raises when there are none
+        recorder = Recorder()
+        trainer = self.trainer(callbacks=[recorder])
+        with self.assertRaises(ValueError):
+            trainer.fit(self.loader(EmptyIterable()), self.loader(), epochs=3)
+        self.assertNotIn("on_test_begin", recorder.calls)
+        self.assertNotIn("on_epoch_end", recorder.calls)
+        self.assertEqual(trainer.history, [])
 
     def test_mixed_precision(self):
         trainer = self.trainer(
