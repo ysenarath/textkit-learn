@@ -1,4 +1,5 @@
 import gc
+import itertools
 import json
 import socket
 import subprocess
@@ -6,11 +7,13 @@ import sys
 import unittest
 import weakref
 from collections import namedtuple
+from unittest import mock
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from accelerate import PartialState
+from accelerate.optimizer import AcceleratedOptimizer
 from accelerate.state import AcceleratorState, GradientState
 from accelerate.utils import gather_object
 from sklearn import metrics as sk
@@ -144,6 +147,22 @@ class StopAt(Callback):
             self.count -= 1
             if self.count == 0:
                 trainer.should_stop = True
+
+
+def skip_steps(*skipped):
+    """Report the given optimizer step attempts (one-based) as skipped.
+
+    fp16 skips a step whose gradients overflowed; this fakes it on CPU,
+    where the step still runs. The trainer reads `step_was_skipped` once
+    per attempt.
+    """
+    attempts = itertools.count(1)
+    return mock.patch.object(
+        AcceleratedOptimizer,
+        "step_was_skipped",
+        new_callable=mock.PropertyMock,
+        side_effect=lambda: next(attempts) in skipped,
+    )
 
 
 class TrainerTestCase(unittest.TestCase):
@@ -281,6 +300,19 @@ class TestFit(TrainerTestCase):
         trainer = self.trainer(accumulation=2)
         trainer.fit(self.loader(self.data[:40], batch_size=8), epochs=2)
         self.assertEqual(trainer.global_step, 2 * 3)
+
+    def test_skipped_steps_are_not_counted(self):
+        built = []
+
+        def schedule(optimizer, num_training_steps):
+            built.append(LambdaLR(optimizer, lambda step: 1.0))
+            return built[0]
+
+        trainer = self.trainer(lr_scheduler=schedule)
+        with skip_steps(1, 8):
+            trainer.fit(self.loader(), epochs=2)
+        self.assertEqual(trainer.global_step, 2 * 6 - 2)
+        self.assertEqual(built[0].last_epoch, trainer.global_step)
 
     def test_clips_gradients(self):
         norms = []

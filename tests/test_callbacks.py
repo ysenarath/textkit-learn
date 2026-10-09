@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from safetensors.torch import load_model
-from test_nn import Classifier, TrainerTestCase
+from test_nn import Classifier, TrainerTestCase, skip_steps
 
 from tklearn.metrics import ConfusionMatrix
 from tklearn.nn.callbacks import (
@@ -374,6 +374,18 @@ class TestModelCheckpoint(TrainerTestCase):
         trainer = self.trainer(accumulation=2, callbacks=[checkpoint])
         trainer.fit(self.loader(), epochs=2)
         self.assertEqual(self.files(), ["step2.pt", "step4.pt", "step6.pt"])
+
+    def test_saves_each_step_once_when_steps_are_skipped(self):
+        # a skipped step keeps global_step, which a save may have just used
+        checkpoint = ModelCheckpoint(
+            self.dir / "step{step}.pt", save_freq=2, verbose=True
+        )
+        trainer = self.trainer(callbacks=[checkpoint])
+        logger = "tklearn.nn.callbacks.checkpoint"
+        with skip_steps(1, 4), self.assertLogs(logger) as logs:
+            trainer.fit(self.loader(), epochs=2)
+        steps = [int(r.getMessage().split()[1][:-1]) for r in logs.records]
+        self.assertEqual(steps, [2, 4, 6, 8, 10])
 
     def test_missing_format_key(self):
         checkpoint = ModelCheckpoint(self.dir / "{valid_f1}.pt")

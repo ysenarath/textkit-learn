@@ -103,7 +103,8 @@ class Trainer:
     epoch : int
         Current (zero-based) epoch.
     global_step : int
-        Optimizer steps taken in the current `fit` call.
+        Optimizer steps taken in the current `fit` call; steps that fp16
+        skipped for overflowing gradients do not count.
     num_batches : int or None
         Batches in the dataloader of the running loop (a training epoch,
         `evaluate` or `predict`), or None when it has no length.
@@ -338,10 +339,13 @@ class Trainer:
                     self._callback("on_before_optimizer_step")
                     optimizer.step()
                     optimizer.zero_grad()
-            if self.accelerator.sync_gradients:
+            # fp16 skips steps whose gradients overflowed
+            if (
+                self.accelerator.sync_gradients
+                and not optimizer.step_was_skipped
+            ):
                 self.global_step += 1
-                # fp16 skips steps whose gradients overflowed
-                if scheduler is not None and not optimizer.step_was_skipped:
+                if scheduler is not None:
                     scheduler.step()
             for key, value in logs.items():
                 totals[key] = totals.get(key, 0.0) + value

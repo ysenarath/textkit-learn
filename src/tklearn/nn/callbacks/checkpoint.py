@@ -111,15 +111,21 @@ class ModelCheckpoint(MonitorCallback):
         else:
             self.best = float(initial_value_threshold)
 
+    def on_train_begin(self, trainer: Trainer) -> None:
+        self._saved_step = trainer.global_step
+
     def on_train_batch_end(
         self, trainer: Trainer, batch: Any, logs: dict[str, float]
     ) -> None:
-        # global_step only advances on batches that step the optimizer
+        # global_step only advances on batches that step the optimizer, and
+        # stays put when fp16 skips the step, so save each step number once
+        step = trainer.global_step
         if (
             self.save_freq != "epoch"
-            and trainer.accelerator.sync_gradients
-            and trainer.global_step % self.save_freq == 0
+            and step != self._saved_step
+            and step % self.save_freq == 0
         ):
+            self._saved_step = step
             self._save(trainer, logs)
 
     def on_epoch_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
