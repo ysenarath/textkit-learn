@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import copy
 import math
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from typing import Any, Callable, Generator, Union, cast
 from weakref import WeakKeyDictionary
 
@@ -327,7 +327,11 @@ class Trainer:
         dataloader: DataLoader,
     ) -> dict[str, float]:
         runner.train()
-        totals: dict[str, float] = {}
+        # summed on the device, so that only the end of the epoch waits for
+        # it; MPS has no float64
+        device = self.accelerator.device
+        dtype = torch.float32 if device.type == "mps" else torch.float64
+        totals: dict[str, torch.Tensor] = {}
         counts: dict[str, int] = {}
         for batch in dataloader:
             self._callback("on_train_batch_begin", batch)
@@ -352,12 +356,15 @@ class Trainer:
                 if scheduler is not None:
                     scheduler.step()
             for key, value in logs.items():
-                totals[key] = totals.get(key, 0.0) + value
+                if key not in totals:
+                    totals[key] = torch.zeros((), dtype=dtype, device=device)
+                totals[key] += value
                 counts[key] = counts.get(key, 0) + 1
-            self._callback("on_train_batch_end", batch, logs)
+            self._callback("on_train_batch_end", batch, _BatchLogs(logs))
             if self._sync_should_stop():
                 break
-        return self.reduce_mean(totals, counts)
+        sums = torch.stack(list(totals.values())).tolist() if totals else []
+        return self.reduce_mean(dict(zip(totals, sums)), counts)
 
     def _build_scheduler(
         self, num_batches: int | None, epochs: int
@@ -719,8 +726,14 @@ def _num_examples(data: Any) -> int | None:
     return None
 
 
-def _split_loss(loss: Loss) -> tuple[torch.Tensor, dict[str, float]]:
-    """The loss to minimize and the values to log."""
+def _split_loss(
+    loss: Loss,
+) -> tuple[torch.Tensor, dict[str, torch.Tensor | float]]:
+    """The loss to minimize and the values to log.
+
+    Tensors are logged as detached 0-d tensors: converting them to floats
+    would wait for the device on every batch.
+    """
     if isinstance(loss, Mapping):
         if loss.get("loss") is None:
             msg = "training_step returned a mapping without a 'loss'"
@@ -732,16 +745,44 @@ def _split_loss(loss: Loss) -> tuple[torch.Tensor, dict[str, float]]:
     if not isinstance(total, torch.Tensor) or total.numel() != 1:
         msg = f"the loss must be a scalar tensor, got {total!r}"
         raise ValueError(msg)
-    logs = {}
+    logs: dict[str, torch.Tensor | float] = {}
     for key, value in terms.items():
-        if isinstance(value, torch.Tensor):
-            value = value.detach()
+        if isinstance(value, torch.Tensor) and value.numel() == 1:
+            logs[key] = value.detach().reshape(())
+            continue
         try:
             logs[key] = float(value)
         except (TypeError, ValueError, RuntimeError):
             msg = f"training_step returned {key!r}, which is not a scalar"
             raise ValueError(msg) from None
     return total, logs
+
+
+class _BatchLogs(Mapping[str, float]):
+    """The logs of a training batch, read-only, each value converted to a
+    float on first access.
+
+    Converting a tensor waits for the device, so a batch whose logs no
+    callback reads does not.
+    """
+
+    def __init__(self, values: Mapping[str, torch.Tensor | float]) -> None:
+        self._values = values
+        self._floats: dict[str, float] = {}
+
+    def __getitem__(self, key: str) -> float:
+        if key not in self._floats:
+            self._floats[key] = float(self._values[key])
+        return self._floats[key]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._values)
+
+    def __len__(self) -> int:
+        return len(self._values)
+
+    def __repr__(self) -> str:
+        return repr(dict(self))
 
 
 def _concat(chunks: list[Any]) -> Any:

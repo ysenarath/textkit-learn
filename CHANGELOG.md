@@ -60,6 +60,9 @@ modules listed under Removed.
   `compute_loss` and `compute_metric_inputs`.
 - `training_step` can return `{"loss": ..., **terms}`: `"loss"` is
   minimized and the other terms are logged. This replaces `LossDict`.
+  `on_train_batch_end` gets them as a read-only mapping that converts
+  each value to a float when it is first read, so a batch whose logs no
+  callback reads does not wait for the device.
 - `Trainer(metrics=...)` feeds a `MetricCollection`, and
   `evaluate(loader, metrics=...)` uses other metrics for one call. Results
   from evaluation during `fit` are logged with a `valid_` prefix, and

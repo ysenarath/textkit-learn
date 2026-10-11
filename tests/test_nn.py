@@ -71,6 +71,25 @@ class SomeTermsClassifier(Classifier):
         return logs
 
 
+class FloatCounter(torch.Tensor):
+    # counts the conversions to float, which wait for the device on a GPU
+    reads = 0
+
+    def __float__(self):
+        FloatCounter.reads += 1
+        return super().__float__()
+
+
+class ProbeClassifier(Classifier):
+    # logs a "probe" term that counts its conversions to float
+    def training_step(self, batch):
+        loss = F.cross_entropy(self(batch["x"]), batch["labels"])
+        return {
+            "loss": loss,
+            "probe": torch.tensor(1.0).as_subclass(FloatCounter),
+        }
+
+
 class ExampleLossClassifier(Classifier):
     # returns one loss per example instead of the mean over the batch
     def predict_step(self, batch):
@@ -253,6 +272,25 @@ class TestFit(TrainerTestCase):
         history = trainer.fit(self.loader(INDEXED_DATA), epochs=1)
         self.assertEqual(list(history[0]), ["loss", "odd"])
         self.assertAlmostEqual(history[0]["odd"], 1.0)
+
+    def test_batch_logs_are_converted_when_read(self):
+        FloatCounter.reads = 0
+        history = self.trainer(ProbeClassifier()).fit(self.loader())
+        self.assertEqual(FloatCounter.reads, 0)
+        self.assertAlmostEqual(history[0]["probe"], 1.0)
+
+        recorder = Recorder()
+        self.trainer(ProbeClassifier(), callbacks=[recorder]).fit(
+            self.loader()
+        )
+        self.assertEqual(FloatCounter.reads, 0)
+        for logs in recorder.batch_logs:
+            self.assertIs(type(logs["probe"]), float)
+            self.assertIs(type(logs["loss"]), float)
+            logs["probe"]  # converted once
+        self.assertEqual(FloatCounter.reads, 6)
+        with self.assertRaises(TypeError):
+            recorder.batch_logs[0]["probe"] = 2.0
 
     def test_invalid_training_losses(self):
         cases = [
