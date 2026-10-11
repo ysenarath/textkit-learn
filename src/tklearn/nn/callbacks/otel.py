@@ -79,8 +79,8 @@ class OpenTelemetryCallback(Callback):
     Notes
     -----
     A span is ended by the hook that closes it. When `fit`, `evaluate`
-    or `predict` raises, the spans it opened stay open, and current,
-    until the next `fit` begins, which ends them with an error status.
+    or `predict` raises, `on_exception` ends the spans it opened with an
+    error status, and records the exception on the innermost one.
 
     Computing ``grad_norm`` without `Trainer.max_grad_norm` reads every
     gradient on the steps that are recorded. Like `ModelCheckpoint`, it
@@ -139,7 +139,6 @@ class OpenTelemetryCallback(Callback):
     # --- fit ---------------------------------------------------------------
 
     def on_train_begin(self, trainer: Trainer) -> None:
-        self._end_open_spans()
         self._reset_window(0)
         self._grad_norm = None
         if not trainer.accelerator.is_main_process:
@@ -235,6 +234,11 @@ class OpenTelemetryCallback(Callback):
     def on_predict_end(self, trainer: Trainer) -> None:
         self._end_span({})
 
+    # --- errors ------------------------------------------------------------
+
+    def on_exception(self, trainer: Trainer, exception: BaseException) -> None:
+        self._end_open_spans(exception)
+
     # --- helpers -----------------------------------------------------------
 
     def _context(self) -> Context | None:
@@ -273,16 +277,19 @@ class OpenTelemetryCallback(Callback):
     def _exit(self) -> None:
         otel_context.detach(self._tokens.pop())
 
-    def _end_open_spans(self) -> None:
-        # spans of a fit, evaluate or predict that raised, innermost first
+    def _end_open_spans(self, exception: BaseException) -> None:
+        # spans of a fit, evaluate or predict that raised, innermost first;
+        # the innermost holds the exception
         while self._tokens:
             self._exit()
         open_spans = [*reversed(self._spans), self._epoch_span, self._fit_span]
-        for span in open_spans:
-            if span is not None and span.is_recording():
-                span.set_status(
-                    Status(StatusCode.ERROR, "ended without finishing")
-                )
+        open_spans = [s for s in open_spans if s is not None]
+        description = f"{type(exception).__name__}: {exception}"
+        for i, span in enumerate(open_spans):
+            if span.is_recording():
+                if i == 0:
+                    span.record_exception(exception)
+                span.set_status(Status(StatusCode.ERROR, description))
                 span.end()
         self._spans = []
         self._epoch_span = self._fit_span = None

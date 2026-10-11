@@ -90,6 +90,11 @@ modules listed under Removed.
   and its `*_end` hooks after, those of the other callbacks, so that what
   it opens encloses their work; wrappers nest in the order given. Other
   callbacks keep the order given. `OpenTelemetryCallback` is a wrapper.
+- `Callback.on_exception(trainer, exception)` runs when `fit`,
+  `evaluate` or `predict` raises, including on `KeyboardInterrupt`, in
+  place of the `*_end` hooks of the unfinished run. `ProgbarLogger`,
+  `CSVLogger` and `OpenTelemetryCallback` close their bars, file and
+  spans there.
 - `Trainer.grad_norm` holds the gradient norm before clipping.
 - `Trainer.reduce_mean(totals, counts)` averages values that a callback
   logs over several batches, over every process. On several processes,

@@ -17,6 +17,7 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
 
+from tklearn.logging import get_logger
 from tklearn.metrics import Metric, MetricCollection
 from tklearn.nn.callbacks import Callback
 from tklearn.nn.module import Loss, Module
@@ -25,6 +26,8 @@ from tklearn.nn.schedules import get_scheduler
 __all__ = [
     "Trainer",
 ]
+
+logger = get_logger(__name__)
 
 #: A scheduler, the name of a `get_scheduler` schedule, or
 #: ``f(optimizer, num_training_steps)`` returning a scheduler.
@@ -566,6 +569,18 @@ class Trainer:
         for callback in _hook_order(self.callbacks, hook):
             getattr(callback, hook)(self, *args)
 
+    def _on_exception(self, exception: BaseException) -> None:
+        # every callback gets the hook, so that each releases what it
+        # opened, and the run's exception is the one that goes on
+        for callback in _hook_order(self.callbacks, "on_exception"):
+            try:
+                callback.on_exception(self, exception)
+            except Exception:
+                logger.exception(
+                    f"{type(callback).__name__}.on_exception raised while "
+                    f"handling {type(exception).__name__}"
+                )
+
     def _sync_should_stop(self) -> bool:
         # a callback may stop training on one process only (e.g. on rank 0
         # metrics); stop all of them, or the others hang in the next
@@ -589,6 +604,7 @@ class Trainer:
         outlives the run. A run started from another, e.g. the evaluation
         after each epoch of fit, reuses them. `num_batches` is restored
         when the run ends, as fit evaluates in the middle of its epoch.
+        When the outermost run raises, the callbacks get `on_exception`.
         """
         previous = self.num_batches
         created = self._accelerator is None
@@ -611,6 +627,11 @@ class Trainer:
             raise RuntimeError(msg)
         try:
             yield self._runner, self._prepared_optimizer
+        except BaseException as e:
+            # once, from the outermost run, while the accelerator exists
+            if created:
+                self._on_exception(e)
+            raise
         finally:
             self.num_batches = previous
             if created:
@@ -657,7 +678,8 @@ class Trainer:
 
 def _hook_order(callbacks: list[Callback], hook: str) -> tuple[Callback, ...]:
     """The callbacks in the order they get `hook`: wrappers first on
-    ``*_begin`` hooks and last, in reverse, on ``*_end`` hooks.
+    ``*_begin`` hooks and last, in reverse, on ``*_end`` hooks and
+    ``on_exception``.
 
     A copy, so that a callback changing `Trainer.callbacks` during the
     hook changes who gets the next hook, not this one.
@@ -666,7 +688,7 @@ def _hook_order(callbacks: list[Callback], hook: str) -> tuple[Callback, ...]:
     if wrappers and hook.endswith("_begin"):
         others = tuple(c for c in callbacks if not c.wrapper)
         return (*wrappers, *others)
-    if wrappers and hook.endswith("_end"):
+    if wrappers and (hook.endswith("_end") or hook == "on_exception"):
         others = tuple(c for c in callbacks if not c.wrapper)
         return (*others, *reversed(wrappers))
     return tuple(callbacks)

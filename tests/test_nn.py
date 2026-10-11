@@ -381,7 +381,8 @@ class TestFit(TrainerTestCase):
             with self.assertRaisesRegex(ValueError, "empty"):
                 trainer.fit(self.loader([]), self.loader(), epochs=3)
         step.assert_not_called()
-        self.assertEqual(recorder.calls, [])
+        # raised before on_train_begin, so no hook but on_exception
+        self.assertEqual(recorder.calls, ["on_exception"])
         self.assertEqual(trainer.global_step, 0)
 
     def test_empty_dataloader_without_a_length(self):
@@ -497,6 +498,158 @@ class TestCallbacks(TrainerTestCase):
         trainer.fit(self.loader(), epochs=2)
         self.assertEqual([s[:2] for s in seen], [(0, 6), (1, 12)])
         self.assertEqual([s[2] for s in seen], trainer.history)
+
+
+class RaisingClassifier(Classifier):
+    """Raises `exception` on the `count`-th call of the hook `step`;
+    ``"predict_step"`` counts the calls of evaluate and predict."""
+
+    def __init__(self, step, count, exception=None):
+        super().__init__()
+        self.step, self.count = step, count
+        self.exception = exception or RuntimeError("raised by the model")
+
+    def training_step(self, batch):
+        self._tick("training_step")
+        return super().training_step(batch)
+
+    def predict_step(self, batch):
+        # the default training_step calls it too
+        if not self.training:
+            self._tick("predict_step")
+        return super().predict_step(batch)
+
+    def _tick(self, step):
+        if step == self.step:
+            self.count -= 1
+            if self.count == 0:
+                raise self.exception
+
+
+class ExceptionRecorder(Recorder):
+    """Also keeps the exceptions and accelerators `on_exception` gets."""
+
+    def __init__(self):
+        super().__init__()
+        self.exceptions = []
+        self.accelerators = []
+
+    def on_exception(self, trainer, exception):
+        self.calls.append("on_exception")
+        self.exceptions.append(exception)
+        self.accelerators.append(trainer.accelerator)
+
+
+class TestExceptions(TrainerTestCase):
+    def run_raising(self, model, run):
+        recorder = ExceptionRecorder()
+        trainer = self.trainer(model, callbacks=[recorder])
+        with self.assertRaises(BaseException) as raised:
+            run(trainer)
+        self.assertIs(raised.exception, model.exception)
+        self.assertEqual(recorder.exceptions, [model.exception])
+        self.assertEqual(recorder.calls[-1], "on_exception")
+        self.assertIsNotNone(recorder.accelerators[0])
+        return recorder.calls
+
+    def test_fit_that_raises(self):
+        calls = self.run_raising(
+            RaisingClassifier("training_step", 3),
+            lambda t: t.fit(self.loader(), epochs=2),
+        )
+        train_batch = [
+            "on_train_batch_begin",
+            "on_before_optimizer_step",
+            "on_train_batch_end",
+        ]
+        self.assertEqual(
+            calls,
+            [
+                "on_train_begin",
+                "on_epoch_begin",
+                *train_batch * 2,
+                "on_train_batch_begin",
+                "on_exception",
+            ],
+        )
+
+    def test_evaluation_in_fit_that_raises(self):
+        # once, from fit, and no on_test_end, on_epoch_end or on_train_end
+        calls = self.run_raising(
+            RaisingClassifier("predict_step", 2),
+            lambda t: t.fit(self.loader(), self.loader(), epochs=2),
+        )
+        self.assertEqual(
+            calls[-6:],
+            [
+                "on_train_batch_end",
+                "on_test_begin",
+                "on_test_batch_begin",
+                "on_test_batch_end",
+                "on_test_batch_begin",
+                "on_exception",
+            ],
+        )
+        self.assertEqual(calls.count("on_exception"), 1)
+
+    def test_evaluate_and_predict_that_raise(self):
+        for name in ("evaluate", "predict"):
+            with self.subTest(name=name):
+                calls = self.run_raising(
+                    RaisingClassifier("predict_step", 2),
+                    lambda t, name=name: getattr(t, name)(self.loader()),
+                )
+                kind = "test" if name == "evaluate" else "predict"
+                self.assertEqual(
+                    calls,
+                    [
+                        f"on_{kind}_begin",
+                        f"on_{kind}_batch_begin",
+                        f"on_{kind}_batch_end",
+                        f"on_{kind}_batch_begin",
+                        "on_exception",
+                    ],
+                )
+
+    def test_keyboard_interrupt(self):
+        calls = self.run_raising(
+            RaisingClassifier("training_step", 2, KeyboardInterrupt()),
+            lambda t: t.fit(self.loader()),
+        )
+        self.assertEqual(calls.count("on_exception"), 1)
+
+    def test_raised_before_any_begin_hook(self):
+        recorder = ExceptionRecorder()
+        trainer = self.trainer(callbacks=[recorder])
+        with self.assertRaisesRegex(ValueError, "empty"):
+            trainer.fit(self.loader([]))
+        self.assertEqual(recorder.calls, ["on_exception"])
+
+    def test_on_exception_that_raises(self):
+        # the other callbacks still get it, and the run's exception goes on
+        class Broken(Callback):
+            def on_exception(self, trainer, exception):
+                raise OSError("cannot clean up")
+
+        recorder = ExceptionRecorder()
+        model = RaisingClassifier("training_step", 1)
+        trainer = self.trainer(model, callbacks=[Broken(), recorder])
+        with (
+            self.assertLogs("tklearn.nn.trainer", "ERROR") as logs,
+            self.assertRaises(RuntimeError) as raised,
+        ):
+            trainer.fit(self.loader())
+        self.assertIs(raised.exception, model.exception)
+        self.assertEqual(recorder.exceptions, [model.exception])
+        self.assertIn("Broken.on_exception raised", logs.output[0])
+        self.assertIn("cannot clean up", logs.output[0])
+
+    def test_a_finished_run_does_not_call_it(self):
+        recorder = ExceptionRecorder()
+        trainer = self.trainer(callbacks=[recorder])
+        trainer.fit(self.loader(), self.loader())
+        trainer.predict(self.loader())
+        self.assertNotIn("on_exception", recorder.calls)
 
 
 class TestEvaluate(TrainerTestCase):

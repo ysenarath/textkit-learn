@@ -38,11 +38,6 @@ class ProgbarLogger(Callback):
         self._totals: dict[str, float] = {}
         self._counts: dict[str, int] = {}
 
-    def on_train_begin(self, trainer: Trainer) -> None:
-        # bars left open by a run that raised
-        while self._bars:
-            self._bars.pop().close()
-
     def on_epoch_begin(self, trainer: Trainer) -> None:
         self._totals, self._counts = {}, {}
         desc = f"Epoch {trainer.epoch + 1}/{trainer.epochs}"
@@ -85,6 +80,11 @@ class ProgbarLogger(Callback):
 
     def on_predict_end(self, trainer: Trainer) -> None:
         self._bars.pop().close()
+
+    def on_exception(self, trainer: Trainer, exception: BaseException) -> None:
+        # the bars of the unfinished run, innermost first
+        while self._bars:
+            self._bars.pop().close()
 
     def _open(self, trainer: Trainer, desc: str, leave: bool) -> None:
         kwargs = {

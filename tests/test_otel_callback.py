@@ -14,7 +14,7 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
 )
 from opentelemetry.trace import StatusCode
 from test_callbacks import Feed
-from test_nn import Classifier, TrainerTestCase
+from test_nn import Classifier, RaisingClassifier, TrainerTestCase
 
 from tklearn.metrics import Accuracy, ConfusionMatrix
 from tklearn.nn.callbacks import (
@@ -209,22 +209,32 @@ class TestOpenTelemetryCallback(TrainerTestCase):
         )
         with self.assertRaises(RuntimeError):
             trainer.fit(self.loader(), epochs=2)
-        self.assertEqual(self.spans(), [])
-        # still current, as no hook ran after the error
-        self.assertTrue(trace.get_current_span().is_recording())
-        trainer.callbacks = [callback]
-        trainer.fit(self.loader(), epochs=1)
+        # ended by on_exception, innermost first, and no longer current
         self.assertFalse(trace.get_current_span().get_span_context().is_valid)
-        statuses = [(s.name, s.status.status_code) for s in self.spans()]
+        spans = [s for s in self.spans() if s.name != "steps"]
         self.assertEqual(
-            statuses,
-            [
-                ("epoch", StatusCode.ERROR),
-                ("fit", StatusCode.ERROR),
-                ("epoch", StatusCode.UNSET),
-                ("fit", StatusCode.UNSET),
-            ],
+            [(s.name, s.status.status_code) for s in spans],
+            [("epoch", StatusCode.ERROR), ("fit", StatusCode.ERROR)],
         )
+        for span in spans:
+            self.assertEqual(span.status.description, "RuntimeError: stop")
+        epoch, fit = spans
+        self.assertEqual([e.name for e in epoch.events], ["exception"])
+        attributes = epoch.events[0].attributes
+        self.assertEqual(attributes["exception.type"], "RuntimeError")
+        self.assertEqual(attributes["exception.message"], "stop")
+        self.assertEqual(list(fit.events), [])
+
+    def test_spans_of_an_evaluate_that_raised_end_with_an_error(self):
+        model = RaisingClassifier("predict_step", 2)
+        trainer = self.trainer(model, callbacks=[self.callback()])
+        with self.assertRaises(RuntimeError):
+            trainer.evaluate(self.loader())
+        self.assertFalse(trace.get_current_span().get_span_context().is_valid)
+        [span] = self.spans()
+        self.assertEqual(span.name, "evaluate")
+        self.assertEqual(span.status.status_code, StatusCode.ERROR)
+        self.assertEqual([e.name for e in span.events], ["exception"])
 
     def test_epochs_only(self):
         trainer = self.trainer(callbacks=[self.callback(log_every_n_steps=0)])

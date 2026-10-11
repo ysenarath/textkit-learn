@@ -41,6 +41,11 @@ class Callback:
     and `evaluate` and `predict` run their own ``on_test_*`` and
     ``on_predict_*`` hooks.
 
+    When a run raises, including on ``KeyboardInterrupt``, the hooks of
+    the unfinished run, such as ``on_epoch_end`` and ``on_train_end``,
+    do not run; `on_exception` runs instead, then the exception goes on
+    to the caller. Release there what the ``*_begin`` hooks opened.
+
     Callbacks get each hook in the order they were given, except
     wrappers (`wrapper`), which enclose the others.
 
@@ -52,7 +57,8 @@ class Callback:
         it opens, such as a span or a timer, encloses their work. Several
         wrappers nest in the order they were given: the first is the
         outermost. Other hooks, such as `on_before_optimizer_step`, run
-        in the order given. False by default.
+        in the order given. False by default. A wrapper gets
+        `on_exception` after the others too.
     """
 
     wrapper: ClassVar[bool] = False
@@ -124,3 +130,22 @@ class Callback:
 
     def on_predict_end(self, trainer: Trainer) -> None:
         """Called after prediction ends."""
+
+    # --- errors ------------------------------------------------------------
+
+    def on_exception(self, trainer: Trainer, exception: BaseException) -> None:
+        """Called when `fit`, `evaluate` or `predict` raises, before the
+        exception goes on to the caller.
+
+        It runs once, for the outermost of these calls: an exception in
+        the evaluation after an epoch of `fit` reaches it once, from
+        `fit`. It also runs when the run raises before any ``*_begin``
+        hook. ``trainer.accelerator`` is still available.
+
+        On several processes, the others may not have raised, so it must
+        not call collectives such as `Trainer.reduce_mean`: they would
+        wait for processes that never call them.
+
+        An exception raised here is logged, and does not keep the other
+        callbacks from getting the hook or replace the run's exception.
+        """

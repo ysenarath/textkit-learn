@@ -8,7 +8,12 @@ from pathlib import Path
 import numpy as np
 import torch
 from safetensors.torch import load_model
-from test_nn import Classifier, TrainerTestCase, skip_steps
+from test_nn import (
+    Classifier,
+    RaisingClassifier,
+    TrainerTestCase,
+    skip_steps,
+)
 
 from tklearn.metrics import ConfusionMatrix
 from tklearn.nn.callbacks import (
@@ -137,6 +142,22 @@ class TestWrapperCallbacks(TrainerTestCase):
         self.assertEqual(
             self.order("on_before_optimizer_step", calls)[:4],
             ["a", "outer", "b", "inner"],
+        )
+
+    def test_wrappers_get_on_exception_last(self):
+        calls = []
+        callbacks = [
+            Recorder("a", calls),
+            Recorder("outer", calls, wrapper=True),
+            Recorder("b", calls),
+            Recorder("inner", calls, wrapper=True),
+        ]
+        model = RaisingClassifier("training_step", 2)
+        trainer = self.trainer(model, callbacks=callbacks)
+        with self.assertRaises(RuntimeError):
+            trainer.fit(self.loader())
+        self.assertEqual(
+            self.order("on_exception", calls), ["a", "b", "inner", "outer"]
         )
 
     def test_changes_to_the_callbacks_apply_from_the_next_hook(self):
@@ -499,6 +520,16 @@ class TestCSVLogger(TrainerTestCase):
         self.assertEqual(rows[1][4], "1.0")
         self.assertEqual(rows[2][4], "NA")
 
+    def test_closes_the_file_when_fit_raises(self):
+        logger = CSVLogger(self.path)
+        model = RaisingClassifier("training_step", 8)
+        trainer = self.trainer(model, callbacks=[logger])
+        with self.assertRaises(RuntimeError):
+            trainer.fit(self.loader(), epochs=2)
+        self.assertIsNone(logger._file)
+        # the finished epoch was written
+        self.assertEqual([row[0] for row in self.read()], ["epoch", "0"])
+
 
 class TestProgbarLogger(TrainerTestCase):
     def test_shows_progress(self):
@@ -534,6 +565,23 @@ class TestProgbarLogger(TrainerTestCase):
         )
         trainer.predict(batches)
         self.assertEqual(progbar._bars, [])
+
+    def test_closes_the_bars_when_a_run_raises(self):
+        cases = [
+            ("fit", RaisingClassifier("training_step", 3)),
+            ("fit", RaisingClassifier("predict_step", 2)),
+            ("evaluate", RaisingClassifier("predict_step", 2)),
+            ("predict", RaisingClassifier("predict_step", 2)),
+        ]
+        for name, model in cases:
+            with self.subTest(name=name, step=model.step):
+                progbar = ProgbarLogger(file=io.StringIO())
+                trainer = self.trainer(model, callbacks=[progbar])
+                run = getattr(trainer, name)
+                args = (self.loader(),) * (2 if name == "fit" else 1)
+                with self.assertRaises(RuntimeError):
+                    run(*args)
+                self.assertEqual(progbar._bars, [])
 
 
 class _Unsized(torch.utils.data.IterableDataset):

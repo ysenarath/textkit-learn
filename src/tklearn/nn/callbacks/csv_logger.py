@@ -47,7 +47,6 @@ class CSVLogger(Callback):
         self._write_header = True
 
     def on_train_begin(self, trainer: Trainer) -> None:
-        self._close()
         if not trainer.accelerator.is_main_process:
             return
         self._write_header = not (
@@ -76,6 +75,9 @@ class CSVLogger(Callback):
         self._file.flush()
 
     def on_train_end(self, trainer: Trainer) -> None:
+        self._close()
+
+    def on_exception(self, trainer: Trainer, exception: BaseException) -> None:
         self._close()
 
     def _close(self) -> None:
