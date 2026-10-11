@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
@@ -75,10 +76,16 @@ class Callback:
         """Called before each training batch."""
 
     def on_train_batch_end(
-        self, trainer: Trainer, batch: Any, logs: dict[str, float]
+        self, trainer: Trainer, batch: Any, logs: Mapping[str, float]
     ) -> None:
         """Called after each training batch with its loss and logged
-        terms."""
+        terms.
+
+        `logs` is a read-only mapping that converts each value to a float
+        the first time it is read. On a GPU, that read waits for the
+        batch's forward and backward passes to finish, so read the values
+        only on the batches that need them.
+        """
 
     def on_before_optimizer_step(self, trainer: Trainer) -> None:
         """Called before each optimizer step, after gradients are

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Union
 
@@ -115,7 +116,7 @@ class ModelCheckpoint(MonitorCallback):
         self._saved_step = trainer.global_step
 
     def on_train_batch_end(
-        self, trainer: Trainer, batch: Any, logs: dict[str, float]
+        self, trainer: Trainer, batch: Any, logs: Mapping[str, float]
     ) -> None:
         # global_step only advances on batches that step the optimizer, and
         # stays put when fp16 skips the step, so save each step number once
@@ -132,7 +133,7 @@ class ModelCheckpoint(MonitorCallback):
         if self.save_freq == "epoch":
             self._save(trainer, logs)
 
-    def _save(self, trainer: Trainer, logs: dict[str, Any]) -> None:
+    def _save(self, trainer: Trainer, logs: Mapping[str, Any]) -> None:
         if self.save_best_only:
             current = self._get_monitor_value(logs)
             if current is None or not self._is_improvement(current, self.best):
@@ -156,7 +157,7 @@ class ModelCheckpoint(MonitorCallback):
                 f"Step {trainer.global_step}: saved the model to {path}"
             )
 
-    def _format_path(self, trainer: Trainer, logs: dict[str, Any]) -> Path:
+    def _format_path(self, trainer: Trainer, logs: Mapping[str, Any]) -> Path:
         fields = {
             **logs,
             "epoch": trainer.epoch + 1,

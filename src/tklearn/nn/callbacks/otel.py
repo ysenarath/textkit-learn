@@ -178,7 +178,7 @@ class OpenTelemetryCallback(Callback):
             self._grad_norm = _grad_norm(trainer.model)
 
     def on_train_batch_end(
-        self, trainer: Trainer, batch: Any, logs: dict[str, float]
+        self, trainer: Trainer, batch: Any, logs: Mapping[str, float]
     ) -> None:
         for key, value in logs.items():
             self._totals[key] = self._totals.get(key, 0.0) + value

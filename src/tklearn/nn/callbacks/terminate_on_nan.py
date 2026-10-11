@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
 from opentelemetry import trace
@@ -26,7 +27,7 @@ class TerminateOnNaN(Callback):
     """
 
     def on_train_batch_end(
-        self, trainer: Trainer, batch: Any, logs: dict[str, float]
+        self, trainer: Trainer, batch: Any, logs: Mapping[str, float]
     ) -> None:
         loss = logs.get("loss")
         if loss is not None and not math.isfinite(loss):
