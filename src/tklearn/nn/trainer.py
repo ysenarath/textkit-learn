@@ -17,9 +17,8 @@ from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
 
 from tklearn.metrics import Metric, MetricCollection
-from tklearn.nn._dispatch import Dispatcher
 from tklearn.nn._outputs import BatchLogs, concat, example_losses, split_loss
-from tklearn.nn.callbacks import Callback
+from tklearn.nn.callbacks import Callback, Dispatcher
 from tklearn.nn.module import Module
 from tklearn.nn.schedules import get_scheduler
 

@@ -3,12 +3,18 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from tklearn.logging import get_logger
+
 if TYPE_CHECKING:
     from tklearn.nn.trainer import Trainer
 
 __all__ = [
     "Callback",
+    "Dispatcher",
 ]
+
+# errors of the trainer's runs, so logged as the trainer's
+logger = get_logger("tklearn.nn.trainer")
 
 
 class Callback:
@@ -70,7 +76,7 @@ class Callback:
     wrapper: ClassVar[bool] = False
 
     # the trainer whose run the callback is in, set by the trainer for the
-    # run (see tklearn.nn._dispatch)
+    # run (see Dispatcher)
     _trainer: Trainer | None = None
 
     @property
@@ -170,3 +176,108 @@ class Callback:
         An exception raised here is logged, and does not keep the other
         callbacks from getting the hook or replace the run's exception.
         """
+
+
+class Dispatcher:
+    """Calls the hooks of a trainer's callbacks for one run.
+
+    `Trainer` creates one for each outermost `fit`, `evaluate` or
+    `predict`; a custom training loop can use one the same way.
+
+    Each callback gets the trainer as `Callback.trainer` for the run: when
+    the run starts, and a callback added during the run before its first
+    hook. A callback keeps the state of its run, so it can be in one at a
+    time; taking one that is in the run of another trainer raises a
+    RuntimeError. `close` gives every callback back when the run ends,
+    and must be called even when the run raises, or the callbacks stay in
+    it and every later run of them raises.
+
+    Parameters
+    ----------
+    trainer : Trainer
+        The trainer whose `callbacks` get the hooks.
+
+    Examples
+    --------
+    >>> dispatcher = Dispatcher(trainer)
+    >>> try:
+    ...     dispatcher("on_train_begin")
+    ...     ...
+    ...     dispatcher("on_train_end")
+    ... except BaseException as e:
+    ...     dispatcher.on_exception(e)
+    ...     raise
+    ... finally:
+    ...     dispatcher.close()
+    """
+
+    def __init__(self, trainer: Trainer) -> None:
+        self._trainer = trainer
+        self._taken: list[Callback] = []
+        try:
+            for callback in trainer.callbacks:
+                self._take(callback)
+        except BaseException:
+            self.close()
+            raise
+
+    def __call__(self, hook: str, *args: Any) -> None:
+        """Call `hook` of every callback with `args`."""
+        for callback in _hook_order(self._trainer.callbacks, hook):
+            self._take(callback)
+            getattr(callback, hook)(*args)
+
+    def on_exception(self, exception: BaseException) -> None:
+        """Call `on_exception` of every callback.
+
+        Every callback gets the hook, so that each releases what it
+        opened, and the run's exception is the one that goes on: one
+        raised by a callback is logged.
+        """
+        for callback in _hook_order(self._trainer.callbacks, "on_exception"):
+            if callback._trainer not in (None, self._trainer):
+                continue  # in the run of another trainer
+            try:
+                self._take(callback)
+                callback.on_exception(exception)
+            except Exception:
+                logger.exception(
+                    f"{type(callback).__name__}.on_exception raised while "
+                    f"handling {type(exception).__name__}"
+                )
+
+    def close(self) -> None:
+        """Give back every callback taken for the run."""
+        for callback in self._taken:
+            callback._trainer = None
+        self._taken = []
+
+    def _take(self, callback: Callback) -> None:
+        if callback._trainer is self._trainer:
+            return
+        if callback._trainer is not None:
+            msg = (
+                f"{type(callback).__name__} is in a run of another "
+                "trainer; give each trainer its own callback"
+            )
+            raise RuntimeError(msg)
+        callback._trainer = self._trainer
+        self._taken.append(callback)
+
+
+def _hook_order(callbacks: list[Callback], hook: str) -> tuple[Callback, ...]:
+    """The callbacks in the order they get `hook`: wrappers first on
+    ``*_begin`` hooks and last, in reverse, on ``*_end`` hooks and
+    ``on_exception``.
+
+    A copy, so that a callback changing `Trainer.callbacks` during the
+    hook changes who gets the next hook, not this one.
+    """
+    wrappers = tuple(c for c in callbacks if c.wrapper)
+    if wrappers and hook.endswith("_begin"):
+        others = tuple(c for c in callbacks if not c.wrapper)
+        return (*wrappers, *others)
+    if wrappers and (hook.endswith("_end") or hook == "on_exception"):
+        others = tuple(c for c in callbacks if not c.wrapper)
+        return (*others, *reversed(wrappers))
+    return tuple(callbacks)

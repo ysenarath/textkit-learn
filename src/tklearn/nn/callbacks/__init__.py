@@ -1,7 +1,8 @@
 """Callbacks of `Trainer`, modelled on ``keras.callbacks``.
 
 `Callback` is the base class; `LambdaCallback` builds one from functions.
-The rest are ready-made:
+`Dispatcher` calls the hooks of a trainer's callbacks during a run. The
+rest are ready-made:
 
 - `EarlyStopping` and `TerminateOnNaN` stop training.
 - `ModelCheckpoint` saves the model weights.
@@ -16,7 +17,7 @@ The rest are ready-made:
 ``LearningRateScheduler``).
 """
 
-from tklearn.nn.callbacks.base import Callback
+from tklearn.nn.callbacks.base import Callback, Dispatcher
 from tklearn.nn.callbacks.checkpoint import ModelCheckpoint
 from tklearn.nn.callbacks.csv_logger import CSVLogger
 from tklearn.nn.callbacks.early_stopping import EarlyStopping
@@ -29,6 +30,7 @@ from tklearn.nn.callbacks.terminate_on_nan import TerminateOnNaN
 __all__ = [
     "CSVLogger",
     "Callback",
+    "Dispatcher",
     "EarlyStopping",
     "LambdaCallback",
     "ModelCheckpoint",
