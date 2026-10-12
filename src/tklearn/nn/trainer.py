@@ -634,6 +634,8 @@ class Trainer:
                         "trainer; give each trainer its own callback"
                     )
                     raise RuntimeError(msg)
+            # Accelerate fixes cpu and mixed_precision for the process at the
+            # first accelerator, and raises when a later one asks otherwise
             accelerator = Accelerator(**self._accelerator_args)
             runner = _StepRunner(self.model)
             if training:
