@@ -345,6 +345,30 @@ class TestFit(TrainerTestCase):
         trainer.fit(self.loader(self.data[:40], batch_size=8), epochs=2)
         self.assertEqual(trainer.global_step, 2 * 3)
 
+    def test_another_trainer_does_not_change_the_accumulation(self):
+        # accelerate keeps the accumulation steps process-wide, and every
+        # accelerator sets its own; another trainer evaluating during fit
+        # must not change this one's
+        other = self.trainer()
+        inner = self.loader(self.data[:16])
+
+        class EvaluateOther(Callback):
+            def on_train_batch_begin(self, trainer, batch):
+                other.evaluate(inner)
+
+        expected = Classifier()
+        self.trainer(expected, accumulation=2).fit(
+            self.loader(batch_size=8), epochs=2
+        )
+        model = Classifier()
+        trainer = self.trainer(
+            model, accumulation=2, callbacks=[EvaluateOther()]
+        )
+        trainer.fit(self.loader(batch_size=8), epochs=2)
+        self.assertEqual(trainer.global_step, 2 * 6)
+        for a, b in zip(model.parameters(), expected.parameters()):
+            torch.testing.assert_close(a, b)
+
     def test_skipped_steps_are_not_counted(self):
         built = []
 

@@ -288,6 +288,11 @@ class Trainer:
                 msg = "cannot fit on an empty dataloader"
                 raise ValueError(msg)
             scheduler = self._build_scheduler(num_batches, epochs)
+            # Accelerate keeps the accumulation steps process-wide, and an
+            # accelerator of another trainer (e.g. one evaluating from a
+            # callback) sets its own; read ours before any callback runs,
+            # and set them again before each batch
+            accumulation_steps = self.accelerator.gradient_accumulation_steps
             self.history = []
             self.epochs = epochs
             self.epoch = self.global_step = 0
@@ -309,7 +314,11 @@ class Trainer:
                     dataloader.set_epoch(epoch)
                 self._callback("on_epoch_begin")
                 logs = self._train_epoch(
-                    runner, optimizer, scheduler, dataloader
+                    runner,
+                    optimizer,
+                    scheduler,
+                    dataloader,
+                    accumulation_steps,
                 )
                 if eval_dataloader is not None:
                     logs.update(
@@ -328,6 +337,7 @@ class Trainer:
         optimizer: AcceleratedOptimizer,
         scheduler: LRScheduler | None,
         dataloader: DataLoader,
+        accumulation_steps: int,
     ) -> dict[str, float]:
         runner.train()
         # summed on the device, so that only the end of the epoch waits for
@@ -338,6 +348,7 @@ class Trainer:
         counts: dict[str, int] = {}
         for batch in dataloader:
             self._callback("on_train_batch_begin", batch)
+            self.accelerator.gradient_accumulation_steps = accumulation_steps
             with self.accelerator.accumulate(runner):
                 loss, logs = split_loss(runner("training_step", batch))
                 self.accelerator.backward(loss)
