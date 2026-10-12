@@ -36,13 +36,13 @@ class FreezeEncoder(Callback):
     def __init__(self, epochs: int) -> None:
         self.epochs = epochs
 
-    def on_epoch_begin(self, trainer: Trainer) -> None:
-        trainable = trainer.epoch >= self.epochs
-        for param in trainer.model.encoder.parameters():
+    def on_epoch_begin(self) -> None:
+        trainable = self.trainer.epoch >= self.epochs
+        for param in self.trainer.model.encoder.parameters():
             param.requires_grad_(trainable)
 
-    def on_train_end(self, trainer: Trainer) -> None:
-        for param in trainer.model.encoder.parameters():
+    def on_train_end(self) -> None:
+        for param in self.trainer.model.encoder.parameters():
             param.requires_grad_(True)
 
 
@@ -52,10 +52,10 @@ class StopAfterSteps(Callback):
     def __init__(self, max_steps: int) -> None:
         self.max_steps = max_steps
 
-    def on_train_batch_end(self, trainer, batch, logs) -> None:
-        if trainer.global_step >= self.max_steps:
+    def on_train_batch_end(self, batch, logs) -> None:
+        if self.trainer.global_step >= self.max_steps:
             # fit ends after this batch, once the epoch is evaluated
-            trainer.should_stop = True
+            self.trainer.should_stop = True
 
 
 def hook_order() -> None:
@@ -127,7 +127,7 @@ def freeze_encoder() -> None:
         callbacks=[
             FreezeEncoder(epochs=2),
             LambdaCallback(
-                on_epoch_end=lambda trainer, logs: snapshots.append({
+                on_epoch_end=lambda logs: snapshots.append({
                     k: v.detach().cpu().clone()
                     for k, v in trainer.model.state_dict().items()
                 })
@@ -169,7 +169,7 @@ def stop_after_steps() -> None:
         callbacks=[
             StopAfterSteps(7),
             LambdaCallback(
-                on_train_batch_end=lambda trainer, batch, logs: losses.append(
+                on_train_batch_end=lambda batch, logs: losses.append(
                     logs["loss"]
                 )
             ),

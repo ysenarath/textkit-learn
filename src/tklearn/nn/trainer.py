@@ -16,8 +16,8 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
 
-from tklearn.logging import get_logger
 from tklearn.metrics import Metric, MetricCollection
+from tklearn.nn._dispatch import Dispatcher
 from tklearn.nn._outputs import BatchLogs, concat, example_losses, split_loss
 from tklearn.nn.callbacks import Callback
 from tklearn.nn.module import Module
@@ -26,12 +26,6 @@ from tklearn.nn.schedules import get_scheduler
 __all__ = [
     "Trainer",
 ]
-
-logger = get_logger(__name__)
-
-# ids of the callbacks of every running trainer; a callback keeps the state
-# of its run, so it can be in one at a time (see Trainer._run)
-_running_callbacks: set[int] = set()
 
 #: A scheduler, the name of a `get_scheduler` schedule, or
 #: ``f(optimizer, num_training_steps)`` returning a scheduler.
@@ -199,8 +193,10 @@ class Trainer:
         self.grad_norm: torch.Tensor | None = None
         self.should_stop = False
         # the accelerator of the running fit, evaluate or predict, with the
-        # model and optimizer it prepared; see _run
+        # model and optimizer it prepared, and the dispatcher that calls
+        # the callbacks; see _run
         self._accelerator: Accelerator | None = None
+        self._dispatcher: Dispatcher | None = None
         self._runner: _StepRunner | None = None
         self._prepared_optimizer: AcceleratedOptimizer | None = None
         # prepared dataloaders, kept as long as the caller keeps the originals
@@ -581,20 +577,8 @@ class Trainer:
     # --- helpers -----------------------------------------------------------
 
     def _callback(self, hook: str, *args: Any) -> None:
-        for callback in _hook_order(self.callbacks, hook):
-            getattr(callback, hook)(self, *args)
-
-    def _on_exception(self, exception: BaseException) -> None:
-        # every callback gets the hook, so that each releases what it
-        # opened, and the run's exception is the one that goes on
-        for callback in _hook_order(self.callbacks, "on_exception"):
-            try:
-                callback.on_exception(self, exception)
-            except Exception:
-                logger.exception(
-                    f"{type(callback).__name__}.on_exception raised while "
-                    f"handling {type(exception).__name__}"
-                )
+        # only called during a run, which creates the dispatcher
+        cast(Dispatcher, self._dispatcher)(hook, *args)
 
     def _sync_should_stop(self) -> bool:
         # a callback may stop training on one process only (e.g. on rank 0
@@ -620,36 +604,40 @@ class Trainer:
         after each epoch of fit, reuses them. `num_batches` is restored
         when the run ends, as fit evaluates in the middle of its epoch.
         When the outermost run raises, the callbacks get `on_exception`.
-        The outermost run also holds the callbacks until it ends, so that
-        the run of another trainer cannot share one.
+        The outermost run also gives the callbacks this trainer as
+        `Callback.trainer` until it ends, so that the run of another
+        trainer cannot share one.
         """
         previous = self.num_batches
         created = self._accelerator is None
-        callbacks = tuple(self.callbacks)
         if created:
-            for callback in callbacks:
-                if id(callback) in _running_callbacks:
-                    msg = (
-                        f"{type(callback).__name__} is in a run of another "
-                        "trainer; give each trainer its own callback"
+            # gives the callbacks this trainer, or raises when one is in the
+            # run of another
+            dispatcher = Dispatcher(self)
+            try:
+                # Accelerate fixes cpu and mixed_precision for the process
+                # at the first accelerator, and raises when a later one
+                # asks otherwise
+                accelerator = Accelerator(**self._accelerator_args)
+                runner = _StepRunner(self.model)
+                if training:
+                    runner, optimizer = accelerator.prepare(
+                        runner, self.optimizer
                     )
-                    raise RuntimeError(msg)
-            # Accelerate fixes cpu and mixed_precision for the process at the
-            # first accelerator, and raises when a later one asks otherwise
-            accelerator = Accelerator(**self._accelerator_args)
-            runner = _StepRunner(self.model)
-            if training:
-                runner, optimizer = accelerator.prepare(runner, self.optimizer)
-            else:
-                # device placement and autocast, without the distributed
-                # wrapping (and its parameter broadcast) only training needs
-                runner = accelerator.prepare_model(
-                    runner, evaluation_mode=True
-                )
-                optimizer = None
+                else:
+                    # device placement and autocast, without the distributed
+                    # wrapping (and its parameter broadcast) only training
+                    # needs
+                    runner = accelerator.prepare_model(
+                        runner, evaluation_mode=True
+                    )
+                    optimizer = None
+            except BaseException:
+                dispatcher.close()
+                raise
+            self._dispatcher = dispatcher
             self._accelerator = accelerator
             self._runner, self._prepared_optimizer = runner, optimizer
-            _running_callbacks.update(id(c) for c in callbacks)
         elif training and self._prepared_optimizer is None:
             msg = "fit cannot be started from within evaluate or predict"
             raise RuntimeError(msg)
@@ -658,14 +646,14 @@ class Trainer:
         except BaseException as e:
             # once, from the outermost run, while the accelerator exists
             if created:
-                self._on_exception(e)
+                self._dispatcher.on_exception(e)
             raise
         finally:
             self.num_batches = previous
             if created:
-                self._accelerator = None
+                self._dispatcher.close()
+                self._dispatcher = self._accelerator = None
                 self._runner = self._prepared_optimizer = None
-                _running_callbacks.difference_update(id(c) for c in callbacks)
 
     def _prepare_dataloader(self, dataloader: DataLoader) -> DataLoader:
         if not isinstance(dataloader, DataLoader):
@@ -703,24 +691,6 @@ class Trainer:
         if isinstance(data, Mapping):
             return {k: self._gather(v) for k, v in data.items()}
         return self.accelerator.gather_for_metrics(data)
-
-
-def _hook_order(callbacks: list[Callback], hook: str) -> tuple[Callback, ...]:
-    """The callbacks in the order they get `hook`: wrappers first on
-    ``*_begin`` hooks and last, in reverse, on ``*_end`` hooks and
-    ``on_exception``.
-
-    A copy, so that a callback changing `Trainer.callbacks` during the
-    hook changes who gets the next hook, not this one.
-    """
-    wrappers = tuple(c for c in callbacks if c.wrapper)
-    if wrappers and hook.endswith("_begin"):
-        others = tuple(c for c in callbacks if not c.wrapper)
-        return (*wrappers, *others)
-    if wrappers and (hook.endswith("_end") or hook == "on_exception"):
-        others = tuple(c for c in callbacks if not c.wrapper)
-        return (*others, *reversed(wrappers))
-    return tuple(callbacks)
 
 
 def _num_batches(dataloader: DataLoader) -> int | None:

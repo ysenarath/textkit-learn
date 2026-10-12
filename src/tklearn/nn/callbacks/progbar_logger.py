@@ -2,14 +2,11 @@ from __future__ import annotations
 
 import numbers
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from tqdm.auto import tqdm
 
 from tklearn.nn.callbacks.base import Callback
-
-if TYPE_CHECKING:
-    from tklearn.nn.trainer import Trainer
 
 __all__ = [
     "ProgbarLogger",
@@ -38,13 +35,13 @@ class ProgbarLogger(Callback):
         self._totals: dict[str, float] = {}
         self._counts: dict[str, int] = {}
 
-    def on_epoch_begin(self, trainer: Trainer) -> None:
+    def on_epoch_begin(self) -> None:
         self._totals, self._counts = {}, {}
-        desc = f"Epoch {trainer.epoch + 1}/{trainer.epochs}"
-        self._open(trainer, desc, leave=True)
+        desc = f"Epoch {self.trainer.epoch + 1}/{self.trainer.epochs}"
+        self._open(desc, leave=True)
 
     def on_train_batch_end(
-        self, trainer: Trainer, batch: Any, logs: Mapping[str, float]
+        self, batch: Any, logs: Mapping[str, float]
     ) -> None:
         for key, value in logs.items():
             self._totals[key] = self._totals.get(key, 0.0) + value
@@ -54,46 +51,42 @@ class ProgbarLogger(Callback):
         bar.set_postfix(_format(means), refresh=False)
         bar.update()
 
-    def on_epoch_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
+    def on_epoch_end(self, logs: dict[str, Any]) -> None:
         bar = self._bars.pop()
         bar.set_postfix(_format(logs), refresh=False)
         bar.close()
 
-    def on_test_begin(self, trainer: Trainer) -> None:
-        self._open(trainer, "Evaluating", leave=False)
+    def on_test_begin(self) -> None:
+        self._open("Evaluating", leave=False)
 
-    def on_test_batch_end(
-        self, trainer: Trainer, batch: Any, outputs: Any
-    ) -> None:
+    def on_test_batch_end(self, batch: Any, outputs: Any) -> None:
         self._bars[-1].update()
 
-    def on_test_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
+    def on_test_end(self, logs: dict[str, Any]) -> None:
         self._bars.pop().close()
 
-    def on_predict_begin(self, trainer: Trainer) -> None:
-        self._open(trainer, "Predicting", leave=False)
+    def on_predict_begin(self) -> None:
+        self._open("Predicting", leave=False)
 
-    def on_predict_batch_end(
-        self, trainer: Trainer, batch: Any, outputs: Any
-    ) -> None:
+    def on_predict_batch_end(self, batch: Any, outputs: Any) -> None:
         self._bars[-1].update()
 
-    def on_predict_end(self, trainer: Trainer) -> None:
+    def on_predict_end(self) -> None:
         self._bars.pop().close()
 
-    def on_exception(self, trainer: Trainer, exception: BaseException) -> None:
+    def on_exception(self, exception: BaseException) -> None:
         # the bars of the unfinished run, innermost first
         while self._bars:
             self._bars.pop().close()
 
-    def _open(self, trainer: Trainer, desc: str, leave: bool) -> None:
+    def _open(self, desc: str, leave: bool) -> None:
         kwargs = {
             "desc": desc,
-            "total": trainer.num_batches,
+            "total": self.trainer.num_batches,
             "unit": "batch",
             "leave": leave,
             "dynamic_ncols": True,
-            "disable": not trainer.accelerator.is_main_process,
+            "disable": not self.trainer.accelerator.is_main_process,
             **self.kwargs,
         }
         self._bars.append(tqdm(**kwargs))

@@ -138,74 +138,77 @@ class OpenTelemetryCallback(Callback):
 
     # --- fit ---------------------------------------------------------------
 
-    def on_train_begin(self, trainer: Trainer) -> None:
+    def on_train_begin(self) -> None:
         self._reset_window(0)
         self._grad_norm = None
-        if not trainer.accelerator.is_main_process:
+        if not self.trainer.accelerator.is_main_process:
             return
-        device = trainer.accelerator.device
+        device = self.trainer.accelerator.device
         if device.type == "cuda":
             torch.cuda.reset_peak_memory_stats(device)
         attributes = _attributes({
-            "model": _describe_model(trainer.model),
-            "optimizer": _describe_optimizer(trainer.optimizer),
-            "trainer": _describe_trainer(trainer),
+            "model": _describe_model(self.trainer.model),
+            "optimizer": _describe_optimizer(self.trainer.optimizer),
+            "trainer": _describe_trainer(self.trainer),
         })
         self._fit_span = self.tracer.start_span("fit", attributes=attributes)
         self._enter(self._fit_span)
 
-    def on_epoch_begin(self, trainer: Trainer) -> None:
+    def on_epoch_begin(self) -> None:
         if self._fit_span is None:
             return
         self._epoch_span = self.tracer.start_span(
             "epoch",
             context=trace.set_span_in_context(self._fit_span),
-            attributes={"epoch": trainer.epoch},
+            attributes={"epoch": self.trainer.epoch},
         )
         self._enter(self._epoch_span)
 
-    def on_before_optimizer_step(self, trainer: Trainer) -> None:
+    def on_before_optimizer_step(self) -> None:
         # the step about to be taken is global_step + 1
-        if not self._is_recorded_step(trainer.global_step + 1):
+        if not self._is_recorded_step(self.trainer.global_step + 1):
             return
-        if trainer.max_grad_norm is not None and trainer.grad_norm is not None:
-            self._grad_norm = trainer.grad_norm
+        if (
+            self.trainer.max_grad_norm is not None
+            and self.trainer.grad_norm is not None
+        ):
+            self._grad_norm = self.trainer.grad_norm
         else:
             # fp16 gradients are scaled until the optimizer steps; unscaling
             # them here keeps the optimizer from doing it again
-            trainer.accelerator.unscale_gradients()
-            self._grad_norm = _grad_norm(trainer.model)
+            self.trainer.accelerator.unscale_gradients()
+            self._grad_norm = _grad_norm(self.trainer.model)
 
     def on_train_batch_end(
-        self, trainer: Trainer, batch: Any, logs: Mapping[str, float]
+        self, batch: Any, logs: Mapping[str, float]
     ) -> None:
         for key, value in logs.items():
             self._totals[key] = self._totals.get(key, 0.0) + value
             self._counts[key] = self._counts.get(key, 0) + 1
-        step = trainer.global_step
+        step = self.trainer.global_step
         if (
-            trainer.accelerator.sync_gradients
+            self.trainer.accelerator.sync_gradients
             and step > self._window_step
             and self._is_recorded_step(step)
         ):
-            self._record_steps(trainer)
+            self._record_steps()
 
-    def on_epoch_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
+    def on_epoch_end(self, logs: dict[str, Any]) -> None:
         if self._epoch_span is None:
             return
         self._epoch_span.set_attributes(
-            _attributes({**logs, "step": trainer.global_step})
+            _attributes({**logs, "step": self.trainer.global_step})
         )
         self._exit()
         self._epoch_span.end()
         self._epoch_span = None
 
-    def on_train_end(self, trainer: Trainer) -> None:
+    def on_train_end(self) -> None:
         if self._fit_span is None:
             return
         self._fit_span.set_attributes({
-            "step": trainer.global_step,
-            "stopped": trainer.should_stop,
+            "step": self.trainer.global_step,
+            "stopped": self.trainer.should_stop,
         })
         self._exit()
         self._fit_span.end()
@@ -213,13 +216,13 @@ class OpenTelemetryCallback(Callback):
 
     # --- evaluate ----------------------------------------------------------
 
-    def on_test_begin(self, trainer: Trainer) -> None:
+    def on_test_begin(self) -> None:
         if self._test_depth == 0:
             self._test_start = time.perf_counter()
         self._test_depth += 1
-        self._start_span("evaluate", trainer)
+        self._start_span("evaluate")
 
-    def on_test_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
+    def on_test_end(self, logs: dict[str, Any]) -> None:
         self._test_depth -= 1
         if self._test_depth == 0:
             # step_time leaves out evaluation during fit
@@ -228,15 +231,15 @@ class OpenTelemetryCallback(Callback):
 
     # --- predict -----------------------------------------------------------
 
-    def on_predict_begin(self, trainer: Trainer) -> None:
-        self._start_span("predict", trainer)
+    def on_predict_begin(self) -> None:
+        self._start_span("predict")
 
-    def on_predict_end(self, trainer: Trainer) -> None:
+    def on_predict_end(self) -> None:
         self._end_span({})
 
     # --- errors ------------------------------------------------------------
 
-    def on_exception(self, trainer: Trainer, exception: BaseException) -> None:
+    def on_exception(self, exception: BaseException) -> None:
         self._end_open_spans(exception)
 
     # --- helpers -----------------------------------------------------------
@@ -249,12 +252,12 @@ class OpenTelemetryCallback(Callback):
                 return trace.set_span_in_context(span)
         return None
 
-    def _start_span(self, name: str, trainer: Trainer) -> None:
-        if not trainer.accelerator.is_main_process:
+    def _start_span(self, name: str) -> None:
+        if not self.trainer.accelerator.is_main_process:
             return
         attributes = {}
-        if trainer.num_batches is not None:
-            attributes["num_batches"] = trainer.num_batches
+        if self.trainer.num_batches is not None:
+            attributes["num_batches"] = self.trainer.num_batches
         span = self.tracer.start_span(
             name, context=self._context(), attributes=attributes
         )
@@ -307,10 +310,10 @@ class OpenTelemetryCallback(Callback):
         self._window_start_ns = time.time_ns()
         self._paused = 0.0
 
-    def _record_steps(self, trainer: Trainer) -> None:
-        step = trainer.global_step
+    def _record_steps(self) -> None:
+        step = self.trainer.global_step
         # reduces over processes, so every process takes part
-        means = trainer.reduce_mean(self._totals, self._counts)
+        means = self.trainer.reduce_mean(self._totals, self._counts)
         step_time = (
             time.perf_counter() - self._window_start - self._paused
         ) / (step - self._window_step)
@@ -319,7 +322,7 @@ class OpenTelemetryCallback(Callback):
         self._grad_norm = None
         if self._fit_span is None:  # not the main process
             return
-        groups = trainer.optimizer.param_groups
+        groups = self.trainer.optimizer.param_groups
         if len(groups) == 1:
             lrs = {"lr": float(groups[0]["lr"])}
         else:
@@ -328,10 +331,10 @@ class OpenTelemetryCallback(Callback):
             **means,
             **lrs,
             "step": step,
-            "epoch": trainer.epoch,
+            "epoch": self.trainer.epoch,
             "grad_norm": None if grad_norm is None else float(grad_norm),
             "step_time": step_time,
-            "memory_gb": _memory_gb(trainer.accelerator.device),
+            "memory_gb": _memory_gb(self.trainer.accelerator.device),
         }
         span = self.tracer.start_span(
             "steps",

@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import torch
 from opentelemetry import trace
 
 from tklearn.logging import get_logger
 from tklearn.nn.callbacks._monitor import Mode, MonitorCallback
-
-if TYPE_CHECKING:
-    from tklearn.nn.trainer import Trainer
 
 __all__ = [
     "EarlyStopping",
@@ -97,32 +94,32 @@ class EarlyStopping(MonitorCallback):
         self.best_epoch = 0
         self.best_weights: dict[str, torch.Tensor] | None = None
 
-    def on_train_begin(self, trainer: Trainer) -> None:
+    def on_train_begin(self) -> None:
         self._reset()
 
-    def on_epoch_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
-        if trainer.epoch < self.start_from_epoch:
+    def on_epoch_end(self, logs: dict[str, Any]) -> None:
+        if self.trainer.epoch < self.start_from_epoch:
             return
         current = self._get_monitor_value(logs)
         if current is None:
             return
         if self.restore_best_weights and self.best_weights is None:
             # restore the first monitored weights if no epoch improves
-            self.best_weights = _copy_state(trainer.model)
-            self.best_epoch = trainer.epoch
+            self.best_weights = _copy_state(self.trainer.model)
+            self.best_epoch = self.trainer.epoch
         self.wait += 1
         if self._is_improvement(current, self.best):
-            self.best, self.best_epoch = current, trainer.epoch
+            self.best, self.best_epoch = current, self.trainer.epoch
             if self.restore_best_weights:
-                self.best_weights = _copy_state(trainer.model)
+                self.best_weights = _copy_state(self.trainer.model)
             if self.baseline is None or self._is_improvement(
                 current, self.baseline
             ):
                 self.wait = 0
         # unlike Keras, this also stops when improving short of the baseline
         if self.wait >= max(self.patience, 1):
-            self.stopped_epoch = trainer.epoch
-            trainer.should_stop = True
+            self.stopped_epoch = self.trainer.epoch
+            self.trainer.should_stop = True
             trace.get_current_span().add_event(
                 "early_stopping",
                 {
@@ -133,8 +130,8 @@ class EarlyStopping(MonitorCallback):
                 },
             )
 
-    def on_train_end(self, trainer: Trainer) -> None:
-        verbose = self.verbose and trainer.accelerator.is_main_process
+    def on_train_end(self) -> None:
+        verbose = self.verbose and self.trainer.accelerator.is_main_process
         if self.stopped_epoch is not None and verbose:
             # epochs are zero-based, but shown one-based like ProgbarLogger
             logger.info(
@@ -148,7 +145,7 @@ class EarlyStopping(MonitorCallback):
                     f"{self.best_epoch + 1}, the best with "
                     f"{self.monitor}={self.best:.4g}"
                 )
-            trainer.model.load_state_dict(self.best_weights)
+            self.trainer.model.load_state_dict(self.best_weights)
             trace.get_current_span().add_event(
                 "restore_best_weights",
                 {

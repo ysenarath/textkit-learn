@@ -105,9 +105,7 @@ class TestOpenTelemetryCallback(TrainerTestCase):
     def test_steps_hold_the_mean_of_their_batches(self):
         losses = []
         record = LambdaCallback(
-            on_train_batch_end=lambda trainer, batch, logs: losses.append(
-                logs["loss"]
-            )
+            on_train_batch_end=lambda batch, logs: losses.append(logs["loss"])
         )
         callback = self.callback(log_every_n_steps=4)
         trainer = self.trainer(callbacks=[record, callback])
@@ -137,7 +135,7 @@ class TestOpenTelemetryCallback(TrainerTestCase):
     def test_grad_norm_before_clipping(self):
         norms = []
 
-        def record(trainer, batch, logs):
+        def record(batch, logs):
             if trainer.global_step % 2 == 0:
                 norms.append(float(trainer.grad_norm))
 
@@ -199,7 +197,7 @@ class TestOpenTelemetryCallback(TrainerTestCase):
                 self.assertEqual(_attribute_value(value), expected)
 
     def test_spans_of_a_fit_that_raised_end_with_an_error(self):
-        def fail(trainer, batch, logs):
+        def fail(batch, logs):
             if trainer.global_step == 3:
                 raise RuntimeError("stop")
 
@@ -264,7 +262,7 @@ class TestOpenTelemetryCallback(TrainerTestCase):
         seen = []
 
         def note(hook):
-            def record(trainer, *args):
+            def record(*args):
                 span = trace.get_current_span()
                 span.add_event(hook)
                 seen.append((hook, span))

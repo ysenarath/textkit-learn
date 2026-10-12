@@ -15,15 +15,16 @@ class Callback:
     """Code that runs at fixed points of `Trainer.fit`, `evaluate` and
     `predict`.
 
-    Override the hooks you need; every hook receives the trainer first,
-    which exposes the run's state (``model``, ``optimizer``,
-    ``accelerator``, ``epochs``, ``epoch``, ``global_step``,
-    ``num_batches``, ``history``). A callback stops training by setting
-    ``trainer.should_stop = True``; training then ends after the current
-    batch, once the epoch has been evaluated and ``on_epoch_end`` has run.
+    Override the hooks you need. In a hook, `trainer` is the trainer whose
+    run the callback is in, which exposes the run's state (``model``,
+    ``optimizer``, ``accelerator``, ``epochs``, ``epoch``,
+    ``global_step``, ``num_batches``, ``history``). A callback stops
+    training by setting ``self.trainer.should_stop = True``; training then
+    ends after the current batch, once the epoch has been evaluated and
+    ``on_epoch_end`` has run.
 
     Hooks run on every process. Callbacks that write files or print should
-    check ``trainer.accelerator.is_main_process``.
+    check ``self.trainer.accelerator.is_main_process``.
 
     The hooks are named as in Keras. `fit` runs::
 
@@ -50,9 +51,9 @@ class Callback:
     wrappers (`wrapper`), which enclose the others.
 
     A callback keeps the state of the run it is in, so it can be in one
-    at a time: a trainer raises when it starts a run while one of its
-    callbacks is in the run of another trainer, e.g. one evaluating from
-    a callback. One callback can serve several trainers in turn.
+    at a time: a trainer raises when one of its callbacks is in the run
+    of another trainer, e.g. one evaluating from a callback. One callback
+    can serve several trainers in turn.
 
     Attributes
     ----------
@@ -68,26 +69,45 @@ class Callback:
 
     wrapper: ClassVar[bool] = False
 
+    # the trainer whose run the callback is in, set by the trainer for the
+    # run (see tklearn.nn._dispatch)
+    _trainer: Trainer | None = None
+
+    @property
+    def trainer(self) -> Trainer:
+        """The trainer whose run the callback is in.
+
+        Set by the trainer when its `fit`, `evaluate` or `predict` starts,
+        and unset when it ends; only available in hooks.
+        """
+        if self._trainer is None:
+            msg = (
+                f"{type(self).__name__} has a trainer only during a fit, "
+                "evaluate or predict"
+            )
+            raise RuntimeError(msg)
+        return self._trainer
+
     # --- fit ---------------------------------------------------------------
 
-    def on_train_begin(self, trainer: Trainer) -> None:
+    def on_train_begin(self) -> None:
         """Called once before the first epoch."""
 
-    def on_train_end(self, trainer: Trainer) -> None:
+    def on_train_end(self) -> None:
         """Called once after the last epoch."""
 
-    def on_epoch_begin(self, trainer: Trainer) -> None:
-        """Called at the start of epoch ``trainer.epoch`` (zero-based)."""
+    def on_epoch_begin(self) -> None:
+        """Called at the start of epoch ``self.trainer.epoch`` (zero-based)."""
 
-    def on_epoch_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
+    def on_epoch_end(self, logs: dict[str, Any]) -> None:
         """Called with the epoch's mean training losses and, when there is
         an eval dataloader, its ``valid_``-prefixed results."""
 
-    def on_train_batch_begin(self, trainer: Trainer, batch: Any) -> None:
+    def on_train_batch_begin(self, batch: Any) -> None:
         """Called before each training batch."""
 
     def on_train_batch_end(
-        self, trainer: Trainer, batch: Any, logs: Mapping[str, float]
+        self, batch: Any, logs: Mapping[str, float]
     ) -> None:
         """Called after each training batch with its loss and logged
         terms.
@@ -98,54 +118,50 @@ class Callback:
         only on the batches that need them.
         """
 
-    def on_before_optimizer_step(self, trainer: Trainer) -> None:
+    def on_before_optimizer_step(self) -> None:
         """Called before each optimizer step, after gradients are
         accumulated and clipped."""
 
     # --- evaluate ----------------------------------------------------------
 
-    def on_test_begin(self, trainer: Trainer) -> None:
+    def on_test_begin(self) -> None:
         """Called before evaluation starts."""
 
-    def on_test_batch_begin(self, trainer: Trainer, batch: Any) -> None:
+    def on_test_batch_begin(self, batch: Any) -> None:
         """Called before each evaluation batch."""
 
-    def on_test_batch_end(
-        self, trainer: Trainer, batch: Any, outputs: Any
-    ) -> None:
+    def on_test_batch_end(self, batch: Any, outputs: Any) -> None:
         """Called after each evaluation batch with its `predict_step`
         outputs."""
 
-    def on_test_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
+    def on_test_end(self, logs: dict[str, Any]) -> None:
         """Called with the evaluation results."""
 
     # --- predict -----------------------------------------------------------
 
-    def on_predict_begin(self, trainer: Trainer) -> None:
+    def on_predict_begin(self) -> None:
         """Called before prediction starts."""
 
-    def on_predict_batch_begin(self, trainer: Trainer, batch: Any) -> None:
+    def on_predict_batch_begin(self, batch: Any) -> None:
         """Called before each prediction batch."""
 
-    def on_predict_batch_end(
-        self, trainer: Trainer, batch: Any, outputs: Any
-    ) -> None:
+    def on_predict_batch_end(self, batch: Any, outputs: Any) -> None:
         """Called after each prediction batch with its `predict_step`
         outputs."""
 
-    def on_predict_end(self, trainer: Trainer) -> None:
+    def on_predict_end(self) -> None:
         """Called after prediction ends."""
 
     # --- errors ------------------------------------------------------------
 
-    def on_exception(self, trainer: Trainer, exception: BaseException) -> None:
+    def on_exception(self, exception: BaseException) -> None:
         """Called when `fit`, `evaluate` or `predict` raises, before the
         exception goes on to the caller.
 
         It runs once, for the outermost of these calls: an exception in
         the evaluation after an epoch of `fit` reaches it once, from
         `fit`. It also runs when the run raises before any ``*_begin``
-        hook. ``trainer.accelerator`` is still available.
+        hook. ``self.trainer.accelerator`` is still available.
 
         On several processes, the others may not have raised, so it must
         not call collectives such as `Trainer.reduce_mean`: they would

@@ -138,13 +138,13 @@ class Recorder(Callback):
         self.calls = []
         self.batch_logs = []
 
-    def on_train_batch_end(self, trainer, batch, logs):
+    def on_train_batch_end(self, batch, logs):
         self.calls.append("on_train_batch_end")
         self.batch_logs.append(logs)
 
 
 def _record(name):
-    def hook(self, trainer, *args):
+    def hook(self, *args):
         self.calls.append(name)
 
     return hook
@@ -161,17 +161,17 @@ class StopAt(Callback):
     def __init__(self, hook, count):
         self.hook, self.count = hook, count
 
-    def on_epoch_end(self, trainer, logs):
-        self._tick(trainer, "on_epoch_end")
+    def on_epoch_end(self, logs):
+        self._tick("on_epoch_end")
 
-    def on_train_batch_end(self, trainer, batch, logs):
-        self._tick(trainer, "on_train_batch_end")
+    def on_train_batch_end(self, batch, logs):
+        self._tick("on_train_batch_end")
 
-    def _tick(self, trainer, hook):
+    def _tick(self, hook):
         if hook == self.hook:
             self.count -= 1
             if self.count == 0:
-                trainer.should_stop = True
+                self.trainer.should_stop = True
 
 
 def skip_steps(*skipped):
@@ -353,7 +353,7 @@ class TestFit(TrainerTestCase):
         inner = self.loader(self.data[:16])
 
         class EvaluateOther(Callback):
-            def on_train_batch_begin(self, trainer, batch):
+            def on_train_batch_begin(self, batch):
                 other.evaluate(inner)
 
         expected = Classifier()
@@ -386,8 +386,8 @@ class TestFit(TrainerTestCase):
         norms = []
 
         class GradNorm(Callback):
-            def on_before_optimizer_step(self, trainer):
-                params = trainer.model.parameters()
+            def on_before_optimizer_step(self):
+                params = self.trainer.model.parameters()
                 grads = torch.cat([p.grad.flatten() for p in params])
                 norms.append(torch.linalg.vector_norm(grads))
 
@@ -453,7 +453,7 @@ class TestStopping(TrainerTestCase):
         # that batch's gradients, or its place in the window, into the next
 
         class Interrupt(Callback):
-            def on_train_batch_end(self, trainer, batch, logs):
+            def on_train_batch_end(self, batch, logs):
                 raise KeyboardInterrupt
 
         def stop(trainer):
@@ -515,8 +515,12 @@ class TestCallbacks(TrainerTestCase):
         seen = []
 
         class Epochs(Callback):
-            def on_epoch_end(self, trainer, logs):
-                seen.append((trainer.epoch, trainer.global_step, logs))
+            def on_epoch_end(self, logs):
+                seen.append((
+                    self.trainer.epoch,
+                    self.trainer.global_step,
+                    logs,
+                ))
 
         trainer = self.trainer(callbacks=[Epochs()])
         trainer.fit(self.loader(), epochs=2)
@@ -531,7 +535,7 @@ class TestCallbacks(TrainerTestCase):
         loader = self.loader(self.data[:16])
 
         class EvaluateOther(Callback):
-            def on_epoch_begin(self, trainer):
+            def on_epoch_begin(self):
                 other.evaluate(loader)
 
         trainer = self.trainer(callbacks=[shared, EvaluateOther()])
@@ -544,6 +548,59 @@ class TestCallbacks(TrainerTestCase):
         other.evaluate(loader)
         trainer.callbacks = [shared]
         trainer.fit(loader)
+
+    def test_callback_trainer_during_a_run(self):
+        seen = []
+
+        class Note(Callback):
+            def on_train_begin(self):
+                seen.append(("train", self.trainer))
+
+            def on_test_begin(self):
+                seen.append(("test", self.trainer))
+
+            def on_exception(self, exception):
+                seen.append(("exception", self.trainer))
+
+        note = Note()
+        with self.assertRaisesRegex(RuntimeError, "Note has a trainer only"):
+            note.trainer
+        trainer = self.trainer(callbacks=[note])
+        trainer.fit(self.loader(), self.loader(), epochs=1)
+        self.assertEqual(seen, [("train", trainer), ("test", trainer)])
+        with self.assertRaisesRegex(RuntimeError, "Note has a trainer only"):
+            note.trainer
+
+        # also given back after a run that raised
+        seen.clear()
+        trainer = self.trainer(
+            RaisingClassifier("predict_step", 1), callbacks=[note]
+        )
+        with self.assertRaises(RuntimeError):
+            trainer.evaluate(self.loader())
+        self.assertEqual(seen, [("test", trainer), ("exception", trainer)])
+        with self.assertRaisesRegex(RuntimeError, "Note has a trainer only"):
+            note.trainer
+
+    def test_callback_added_during_a_run(self):
+        epochs = []
+
+        class Read(Callback):
+            def on_epoch_end(self, logs):
+                epochs.append(self.trainer.epoch)
+
+        read = Read()
+
+        class Add(Callback):
+            def on_train_begin(self):
+                self.trainer.callbacks.append(read)
+
+        trainer = self.trainer(callbacks=[Add()])
+        trainer.fit(self.loader(), epochs=2)
+        self.assertEqual(epochs, [0, 1])
+        # given back at the end of the run, though not there at its start
+        with self.assertRaisesRegex(RuntimeError, "Read has a trainer only"):
+            read.trainer
 
 
 class RaisingClassifier(Classifier):
@@ -580,10 +637,10 @@ class ExceptionRecorder(Recorder):
         self.exceptions = []
         self.accelerators = []
 
-    def on_exception(self, trainer, exception):
+    def on_exception(self, exception):
         self.calls.append("on_exception")
         self.exceptions.append(exception)
-        self.accelerators.append(trainer.accelerator)
+        self.accelerators.append(self.trainer.accelerator)
 
 
 class TestExceptions(TrainerTestCase):
@@ -674,7 +731,7 @@ class TestExceptions(TrainerTestCase):
     def test_on_exception_that_raises(self):
         # the other callbacks still get it, and the run's exception goes on
         class Broken(Callback):
-            def on_exception(self, trainer, exception):
+            def on_exception(self, exception):
                 raise OSError("cannot clean up")
 
         recorder = ExceptionRecorder()
@@ -788,8 +845,8 @@ class TestEvaluate(TrainerTestCase):
         prepared = []
 
         class Capture(Callback):
-            def on_test_begin(self, trainer):
-                prepared.append(trainer._prepare_dataloader(loader))
+            def on_test_begin(self):
+                prepared.append(self.trainer._prepare_dataloader(loader))
 
         trainer = self.trainer(callbacks=[Capture()])
         trainer.evaluate(loader)
@@ -818,10 +875,10 @@ class TestEvaluate(TrainerTestCase):
             def __init__(self):
                 self.done = False
 
-            def on_test_batch_end(self, trainer, batch, outputs):
+            def on_test_batch_end(self, batch, outputs):
                 if not self.done:
                     self.done = True
-                    trainer.evaluate(inner)
+                    self.trainer.evaluate(inner)
 
         trainer.callbacks = [Nested()]
         np.testing.assert_array_equal(trainer.evaluate(outer)["cm"], expected)
@@ -939,8 +996,8 @@ class TestSchedules(TrainerTestCase):
         lrs = []
 
         class LearningRate(Callback):
-            def on_before_optimizer_step(self, trainer):
-                lrs.append(trainer.optimizer.param_groups[0]["lr"])
+            def on_before_optimizer_step(self):
+                lrs.append(self.trainer.optimizer.param_groups[0]["lr"])
 
         trainer = self.trainer(
             lr=1.0,
@@ -1023,11 +1080,11 @@ class TestValidation(TrainerTestCase):
         seen = []
 
         class Capture(Callback):
-            def on_train_begin(self, trainer):
-                seen.append(trainer.accelerator)
+            def on_train_begin(self):
+                seen.append(self.trainer.accelerator)
 
-            def on_test_begin(self, trainer):
-                seen.append(trainer.accelerator)
+            def on_test_begin(self):
+                seen.append(self.trainer.accelerator)
 
         trainer = self.trainer(callbacks=[Capture()])
         with self.assertRaisesRegex(RuntimeError, "during a fit"):
@@ -1131,9 +1188,9 @@ class TestMultipleProcesses(unittest.TestCase):
 
 
 class StopOnMainProcess(Callback):
-    def on_train_batch_end(self, trainer, batch, logs):
-        if trainer.accelerator.is_main_process:
-            trainer.should_stop = True
+    def on_train_batch_end(self, batch, logs):
+        if self.trainer.accelerator.is_main_process:
+            self.trainer.should_stop = True
 
 
 def _free_port():

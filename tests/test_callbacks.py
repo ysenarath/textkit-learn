@@ -38,10 +38,10 @@ class Feed(Callback):
         self.values, self.key = values, key
         self.weights = []
 
-    def on_epoch_end(self, trainer, logs):
-        logs[self.key] = self.values[trainer.epoch]
+    def on_epoch_end(self, logs):
+        logs[self.key] = self.values[self.trainer.epoch]
         self.weights.append({
-            k: v.clone() for k, v in trainer.model.state_dict().items()
+            k: v.clone() for k, v in self.trainer.model.state_dict().items()
         })
 
 
@@ -55,7 +55,7 @@ class TestTrainerState(TrainerTestCase):
         seen = []
 
         def record(name):
-            def hook(trainer, *args):
+            def hook(*args):
                 seen.append((name, trainer.epochs, trainer.num_batches))
 
             return hook
@@ -86,8 +86,8 @@ class TestLambdaCallback(TrainerTestCase):
     def test_calls_hooks(self):
         calls = []
         callback = LambdaCallback(
-            on_train_begin=lambda trainer: calls.append("begin"),
-            on_epoch_end=lambda trainer, logs: calls.append(logs["loss"]),
+            on_train_begin=lambda: calls.append("begin"),
+            on_epoch_end=lambda logs: calls.append(logs["loss"]),
         )
         history = self.trainer(callbacks=[callback]).fit(
             self.loader(), epochs=2
@@ -111,7 +111,7 @@ class Recorder(Callback):
     def __getattribute__(self, attr):
         if attr.startswith("on_"):
             calls, name = self.calls, self.name
-            return lambda trainer, *args: calls.append((name, attr))
+            return lambda *args: calls.append((name, attr))
         return super().__getattribute__(attr)
 
 
@@ -166,7 +166,7 @@ class TestWrapperCallbacks(TrainerTestCase):
                 calls = []
                 added = Recorder("added", calls)
 
-                def add(trainer):
+                def add():
                     trainer.callbacks.append(added)
 
                 callbacks = [
@@ -429,7 +429,7 @@ class TestReduceLROnPlateau(TrainerTestCase):
         feed = Feed(values, key="valid_loss")
         reduce_lr = ReduceLROnPlateau(**kwargs)
         record = LambdaCallback(
-            on_epoch_end=lambda trainer, logs: lrs.append(
+            on_epoch_end=lambda logs: lrs.append(
                 trainer.optimizer.param_groups[0]["lr"]
             )
         )
@@ -502,7 +502,7 @@ class TestCSVLogger(TrainerTestCase):
         feed = Feed([1.0, None], key="extra")
 
         class DropNone(Callback):
-            def on_epoch_end(self, trainer, logs):
+            def on_epoch_end(self, logs):
                 if logs["extra"] is None:
                     del logs["extra"]
 
@@ -550,7 +550,7 @@ class TestProgbarLogger(TrainerTestCase):
 
     def test_stopped_and_unsized_runs(self):
         stop = LambdaCallback(
-            on_train_batch_end=lambda trainer, batch, logs: setattr(
+            on_train_batch_end=lambda batch, logs: setattr(
                 trainer, "should_stop", True
             )
         )

@@ -19,15 +19,16 @@ class LambdaCallback(Callback):
     ----------
     **hooks : callable
         Functions keyed by hook name, taking the hook's arguments, e.g.
-        ``on_epoch_end=lambda trainer, logs: ...``.
+        ``on_epoch_end=lambda logs: ...``.
 
     Examples
     --------
     >>> log_steps = LambdaCallback(
-    ...     on_train_batch_end=lambda trainer, batch, logs: print(
+    ...     on_train_batch_end=lambda batch, logs: print(
     ...         trainer.global_step, logs["loss"]
     ...     )
     ... )
+    >>> trainer = Trainer(model, optimizer, callbacks=[log_steps])
     """
 
     def __init__(self, **hooks: Callable[..., None]) -> None:
@@ -38,5 +39,5 @@ class LambdaCallback(Callback):
             if not callable(hook):
                 msg = f"the {name} hook must be callable, got {hook!r}"
                 raise TypeError(msg)
-            # the trainer calls getattr(callback, name)(trainer, ...)
+            # the trainer calls getattr(callback, name)(*args)
             setattr(self, name, hook)

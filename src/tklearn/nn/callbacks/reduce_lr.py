@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from opentelemetry import trace
 
 from tklearn.logging import get_logger
 from tklearn.nn.callbacks._monitor import Mode, MonitorCallback
-
-if TYPE_CHECKING:
-    from tklearn.nn.trainer import Trainer
 
 __all__ = [
     "ReduceLROnPlateau",
@@ -82,8 +79,8 @@ class ReduceLROnPlateau(MonitorCallback):
         self.wait = 0
         self.cooldown_counter = 0
 
-    def on_train_begin(self, trainer: Trainer) -> None:
-        if trainer.lr_scheduler is not None:
+    def on_train_begin(self) -> None:
+        if self.trainer.lr_scheduler is not None:
             msg = (
                 "ReduceLROnPlateau sets the learning rate, which the "
                 "trainer's lr_scheduler would overwrite; use one of them"
@@ -91,7 +88,7 @@ class ReduceLROnPlateau(MonitorCallback):
             raise ValueError(msg)
         self._reset()
 
-    def on_epoch_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
+    def on_epoch_end(self, logs: dict[str, Any]) -> None:
         current = self._get_monitor_value(logs)
         if current is None:
             return
@@ -105,14 +102,14 @@ class ReduceLROnPlateau(MonitorCallback):
             self.wait = 0
         else:
             self.wait += 1
-            if self.wait >= self.patience and self._reduce(trainer):
+            if self.wait >= self.patience and self._reduce():
                 self.cooldown_counter = self.cooldown
                 self.wait = 0
 
-    def _reduce(self, trainer: Trainer) -> bool:
+    def _reduce(self) -> bool:
         """Reduce the learning rates; whether any changed."""
         reduced = False
-        for i, group in enumerate(trainer.optimizer.param_groups):
+        for i, group in enumerate(self.trainer.optimizer.param_groups):
             old_lr = float(group["lr"])
             new_lr = max(old_lr * self.factor, self.min_lr)
             if old_lr - new_lr > _EPS:
@@ -122,9 +119,10 @@ class ReduceLROnPlateau(MonitorCallback):
                     "reduce_lr",
                     {"group": i, "old_lr": old_lr, "new_lr": new_lr},
                 )
-                if self.verbose and trainer.accelerator.is_main_process:
+                if self.verbose and self.trainer.accelerator.is_main_process:
                     logger.info(
-                        f"Epoch {trainer.epoch + 1}: reduced the learning "
-                        f"rate of group {i} from {old_lr:.4g} to {new_lr:.4g}"
+                        f"Epoch {self.trainer.epoch + 1}: reduced the "
+                        f"learning rate of group {i} from {old_lr:.4g} to "
+                        f"{new_lr:.4g}"
                     )
         return reduced

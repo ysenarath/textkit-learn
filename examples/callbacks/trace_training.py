@@ -73,9 +73,7 @@ def train(out: Path, lr: float, delay: float) -> tuple[list[dict], dict]:
             EarlyStopping("valid_loss", patience=3, restore_best_weights=True),
             # a stand-in for a slower model, to follow the run live
             LambdaCallback(
-                on_train_batch_end=lambda trainer, batch, logs: time.sleep(
-                    delay
-                )
+                on_train_batch_end=lambda batch, logs: time.sleep(delay)
             ),
             # last in the list, but it encloses the callbacks above
             OpenTelemetryCallback(

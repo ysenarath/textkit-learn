@@ -65,7 +65,7 @@ def main(out: Path) -> None:
     # the learning rate each epoch trains with
     lrs = []
     record_lr = LambdaCallback(
-        on_epoch_begin=lambda trainer: lrs.append(
+        on_epoch_begin=lambda: lrs.append(
             trainer.optimizer.param_groups[0]["lr"]
         )
     )

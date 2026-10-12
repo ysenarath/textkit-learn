@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import Any, Literal, Union
 
 import torch
 from opentelemetry import trace
@@ -11,9 +11,6 @@ from safetensors.torch import save_model
 
 from tklearn.logging import get_logger
 from tklearn.nn.callbacks._monitor import Mode, MonitorCallback
-
-if TYPE_CHECKING:
-    from tklearn.nn.trainer import Trainer
 
 __all__ = [
     "ModelCheckpoint",
@@ -115,56 +112,56 @@ class ModelCheckpoint(MonitorCallback):
         else:
             self.best = float(initial_value_threshold)
 
-    def on_train_begin(self, trainer: Trainer) -> None:
-        self._saved_step = trainer.global_step
+    def on_train_begin(self) -> None:
+        self._saved_step = self.trainer.global_step
 
     def on_train_batch_end(
-        self, trainer: Trainer, batch: Any, logs: Mapping[str, float]
+        self, batch: Any, logs: Mapping[str, float]
     ) -> None:
         # global_step only advances on batches that step the optimizer, and
         # stays put when fp16 skips the step, so save each step number once
-        step = trainer.global_step
+        step = self.trainer.global_step
         if (
             self.save_freq != "epoch"
             and step != self._saved_step
             and step % self.save_freq == 0
         ):
             self._saved_step = step
-            self._save(trainer, logs)
+            self._save(logs)
 
-    def on_epoch_end(self, trainer: Trainer, logs: dict[str, Any]) -> None:
+    def on_epoch_end(self, logs: dict[str, Any]) -> None:
         if self.save_freq == "epoch":
-            self._save(trainer, logs)
+            self._save(logs)
 
-    def _save(self, trainer: Trainer, logs: Mapping[str, Any]) -> None:
+    def _save(self, logs: Mapping[str, Any]) -> None:
         if self.save_best_only:
             current = self._get_monitor_value(logs)
             if current is None or not self._is_improvement(current, self.best):
                 return
             self.best = current
-        path = self._format_path(trainer, logs)
-        if not trainer.accelerator.is_main_process:
+        path = self._format_path(logs)
+        if not self.trainer.accelerator.is_main_process:
             return
         path.parent.mkdir(parents=True, exist_ok=True)
         if path.suffix == ".safetensors":
             # unlike save_file, save_model handles tied weights
-            save_model(trainer.model, path)
+            save_model(self.trainer.model, path)
         else:
-            torch.save(trainer.model.state_dict(), path)
-        event = {"path": str(path), "step": trainer.global_step}
+            torch.save(self.trainer.model.state_dict(), path)
+        event = {"path": str(path), "step": self.trainer.global_step}
         if self.save_best_only:
             event[self.monitor] = self.best
         trace.get_current_span().add_event("checkpoint", event)
         if self.verbose:
             logger.info(
-                f"Step {trainer.global_step}: saved the model to {path}"
+                f"Step {self.trainer.global_step}: saved the model to {path}"
             )
 
-    def _format_path(self, trainer: Trainer, logs: Mapping[str, Any]) -> Path:
+    def _format_path(self, logs: Mapping[str, Any]) -> Path:
         fields = {
             **logs,
-            "epoch": trainer.epoch + 1,
-            "step": trainer.global_step,
+            "epoch": self.trainer.epoch + 1,
+            "step": self.trainer.global_step,
         }
         try:
             return Path(self.filepath.format_map(fields))
