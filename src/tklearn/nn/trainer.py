@@ -39,7 +39,7 @@ SchedulerLike = Union[
 ]
 
 
-class _StepRunner(torch.nn.Module):
+class ModuleWrapper(torch.nn.Module):
     # Calls the step hooks through ``forward``, so that what `Accelerator`
     # wraps around forward (DDP gradient sync, autocast) applies to them.
 
@@ -202,7 +202,7 @@ class Trainer:
         # the callbacks; see _run
         self._accelerator: Accelerator | None = None
         self._dispatcher: Dispatcher | None = None
-        self._runner: _StepRunner | None = None
+        self._runner: ModuleWrapper | None = None
         self._prepared_optimizer: AcceleratedOptimizer | None = None
         # prepared dataloaders, kept as long as the caller keeps the originals
         self._dataloaders: WeakKeyDictionary[DataLoader, DataLoader] = (
@@ -338,7 +338,7 @@ class Trainer:
 
     def _train_epoch(
         self,
-        runner: _StepRunner,
+        runner: ModuleWrapper,
         optimizer: AcceleratedOptimizer,
         scheduler: LRScheduler | None,
         dataloader: DataLoader,
@@ -546,7 +546,7 @@ class Trainer:
     @contextlib.contextmanager
     def _run(
         self, training: bool
-    ) -> Generator[tuple[_StepRunner, AcceleratedOptimizer | None]]:
+    ) -> Generator[tuple[ModuleWrapper, AcceleratedOptimizer | None]]:
         """A `fit` (training) or an `evaluate` or `predict` run.
 
         The outermost run creates the accelerator and prepares the model
@@ -571,7 +571,7 @@ class Trainer:
                 # at the first accelerator, and raises when a later one
                 # asks otherwise
                 accelerator = Accelerator(**self._accelerator_args)
-                runner = _StepRunner(self.model)
+                runner = ModuleWrapper(self.model)
                 if training:
                     runner, optimizer = accelerator.prepare(
                         runner, self.optimizer
