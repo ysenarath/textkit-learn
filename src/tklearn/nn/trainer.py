@@ -444,7 +444,7 @@ class Trainer:
             loss_sum, num_examples, num_batches = 0.0, 0, 0
             self.num_batches = _num_batches(dataloader)
             self._callback("on_test_begin")
-            with self._eval_mode(runner):
+            with _eval_mode(self.model):
                 for batch in dataloader:
                     self._callback("on_test_batch_begin", batch)
                     outputs = runner("predict_step", batch)
@@ -510,7 +510,7 @@ class Trainer:
             dataloader = self._prepare_dataloader(dataloader)
             self.num_batches = _num_batches(dataloader)
             self._callback("on_predict_begin")
-            with self._eval_mode(runner):
+            with _eval_mode(self.model):
                 for batch in dataloader:
                     self._callback("on_predict_batch_begin", batch)
                     outputs = runner("predict_step", batch)
@@ -624,17 +624,6 @@ class Trainer:
             self._dataloaders[dataloader] = prepared
         return prepared
 
-    @contextlib.contextmanager
-    def _eval_mode(self, runner: torch.nn.Module) -> Generator[None]:
-        """Context manager to temporarily set the model to evaluation mode."""
-        training = self.model.training
-        runner.eval()
-        try:
-            with torch.no_grad():
-                yield
-        finally:
-            runner.train(training)
-
     def _gather(self, data: Any) -> Any:
         # collect the outputs of every process, without the duplicates
         # that pad the last batch
@@ -643,6 +632,19 @@ class Trainer:
         if isinstance(data, Mapping):
             return {k: self._gather(v) for k, v in data.items()}
         return self.accelerator.gather_for_metrics(data)
+
+
+@contextlib.contextmanager
+def _eval_mode(model: Module) -> Generator[None]:
+    """Put the model in evaluation mode, without gradients, and restore its
+    mode afterwards."""
+    training = model.training
+    model.eval()
+    try:
+        with torch.no_grad():
+            yield
+    finally:
+        model.train(training)
 
 
 def _num_batches(dataloader: DataLoader) -> int | None:
