@@ -170,7 +170,7 @@ class Callback:
         hook. ``self.trainer.accelerator`` is still available.
 
         On several processes, the others may not have raised, so it must
-        not call collectives such as `Trainer.reduce_mean`: they would
+        not call collectives such as `RunningMean.compute`: they would
         wait for processes that never call them.
 
         An exception raised here is logged, and does not keep the other

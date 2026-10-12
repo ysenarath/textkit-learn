@@ -14,7 +14,13 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
 )
 from opentelemetry.trace import StatusCode
 from test_callbacks import Feed
-from test_nn import Classifier, RaisingClassifier, TrainerTestCase
+from test_nn import (
+    Classifier,
+    FloatCounter,
+    ProbeClassifier,
+    RaisingClassifier,
+    TrainerTestCase,
+)
 
 from tklearn.metrics import Accuracy, ConfusionMatrix
 from tklearn.nn.callbacks import (
@@ -124,6 +130,19 @@ class TestOpenTelemetryCallback(TrainerTestCase):
             self.assertLess(span.start_time, span.end_time)
             # no CUDA or MPS memory on the CPU
             self.assertNotIn("memory_gb", span.attributes)
+
+    def test_steps_do_not_convert_the_batch_logs(self):
+        # converting a logged tensor to a float waits for the device, so
+        # the means are summed on it and converted once per steps span
+        FloatCounter.reads = 0
+        callback = self.callback(log_every_n_steps=2)
+        trainer = self.trainer(ProbeClassifier(), callbacks=[callback])
+        trainer.fit(self.loader(), epochs=1)
+        self.assertEqual(FloatCounter.reads, 0)
+        steps = self.spans("steps")
+        self.assertEqual(len(steps), 3)
+        for span in steps:
+            self.assertAlmostEqual(span.attributes["probe"], 1.0)
 
     def test_steps_with_gradient_accumulation(self):
         callback = self.callback(log_every_n_steps=1)

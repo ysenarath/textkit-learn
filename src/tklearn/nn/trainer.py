@@ -10,14 +10,20 @@ from weakref import WeakKeyDictionary
 import torch
 from accelerate import Accelerator
 from accelerate.optimizer import AcceleratedOptimizer
-from accelerate.utils import gather_object, send_to_device
+from accelerate.utils import send_to_device
 from datasets import IterableDataset
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
 
 from tklearn.metrics import Metric, MetricCollection
-from tklearn.nn._outputs import BatchLogs, concat, example_losses, split_loss
+from tklearn.nn._outputs import (
+    BatchLogs,
+    RunningMean,
+    concat,
+    example_losses,
+    split_loss,
+)
 from tklearn.nn.callbacks import Callback, Dispatcher
 from tklearn.nn.module import Module
 from tklearn.nn.schedules import get_scheduler
@@ -340,11 +346,8 @@ class Trainer:
     ) -> dict[str, float]:
         runner.train()
         # summed on the device, so that only the end of the epoch waits for
-        # it; MPS has no float64
-        device = self.accelerator.device
-        dtype = torch.float32 if device.type == "mps" else torch.float64
-        totals: dict[str, torch.Tensor] = {}
-        counts: dict[str, int] = {}
+        # it
+        means = RunningMean(self.accelerator)
         for batch in dataloader:
             self._callback("on_train_batch_begin", batch)
             self.accelerator.gradient_accumulation_steps = accumulation_steps
@@ -368,16 +371,11 @@ class Trainer:
                 self.global_step += 1
                 if scheduler is not None:
                     scheduler.step()
-            for key, value in logs.items():
-                if key not in totals:
-                    totals[key] = torch.zeros((), dtype=dtype, device=device)
-                totals[key] += value
-                counts[key] = counts.get(key, 0) + 1
+            means.update(logs)
             self._callback("on_train_batch_end", batch, BatchLogs(logs))
             if self._sync_should_stop():
                 break
-        sums = torch.stack(list(totals.values())).tolist() if totals else []
-        return self.reduce_mean(dict(zip(totals, sums)), counts)
+        return means.compute()
 
     def _build_scheduler(
         self, num_batches: int | None, epochs: int
@@ -527,51 +525,6 @@ class Trainer:
             msg = "cannot predict on an empty dataloader"
             raise ValueError(msg)
         return concat(chunks)
-
-    # --- for callbacks -----------------------------------------------------
-
-    def reduce_mean(
-        self, totals: dict[str, float], counts: dict[str, int]
-    ) -> dict[str, float]:
-        """Mean of each logged value over the batches of every process.
-
-        For callbacks that average logged values over several batches, as
-        `fit` does for the epoch logs. Only available during a run.
-
-        On several processes this is a collective: every process must call
-        it at the same point, or the others hang. Processes may pass
-        different keys; each process gets the means of all of them.
-
-        Parameters
-        ----------
-        totals : dict of str to float
-            Sum of each value over the batches of this process.
-        counts : dict of str to int
-            Number of batches of this process that logged each value, with
-            the same keys as `totals`.
-
-        Returns
-        -------
-        dict of str to float
-            The sum over every process of each total, divided by the sum
-            of its counts. Values with a count of 0 are left out.
-        """
-        if self.accelerator.num_processes > 1:
-            # processes can log different keys, but must reduce tensors of
-            # the same keys in the same order; gather_object orders the keys
-            # by rank, then by first appearance
-            gathered = gather_object([list(totals)])
-            keys = list(dict.fromkeys(k for ks in gathered for k in ks))
-            values = torch.tensor(
-                [totals.get(k, 0.0) for k in keys]
-                + [counts.get(k, 0) for k in keys],
-                dtype=torch.float64,
-                device=self.accelerator.device,
-            )
-            values = self.accelerator.reduce(values, reduction="sum").tolist()
-            totals = dict(zip(keys, values[: len(keys)]))
-            counts = dict(zip(keys, values[len(keys) :]))
-        return {k: v / counts[k] for k, v in totals.items() if counts[k]}
 
     # --- helpers -----------------------------------------------------------
 

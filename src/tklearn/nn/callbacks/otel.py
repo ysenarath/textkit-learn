@@ -13,6 +13,7 @@ from opentelemetry.trace import Span, Status, StatusCode, TracerProvider
 from torch.optim.lr_scheduler import LRScheduler
 
 import tklearn
+from tklearn.nn._outputs import RunningMean
 from tklearn.nn.callbacks.base import Callback
 from tklearn.utils.flatten import flatten, freeze
 
@@ -182,16 +183,17 @@ class OpenTelemetryCallback(Callback):
     def on_train_batch_end(
         self, batch: Any, logs: Mapping[str, float]
     ) -> None:
-        for key, value in logs.items():
-            self._totals[key] = self._totals.get(key, 0.0) + value
-            self._counts[key] = self._counts.get(key, 0) + 1
+        if self._means is None:
+            self._means = RunningMean(self.trainer.accelerator)
+        # summed on the device, without waiting for it
+        self._means.update(logs)
         step = self.trainer.global_step
         if (
             self.trainer.accelerator.sync_gradients
             and step > self._window_step
             and self._is_recorded_step(step)
         ):
-            self._record_steps()
+            self._record_steps(self._means)
 
     def on_epoch_end(self, logs: dict[str, Any]) -> None:
         if self._epoch_span is None:
@@ -303,17 +305,17 @@ class OpenTelemetryCallback(Callback):
         return n > 0 and step % n == 0
 
     def _reset_window(self, step: int) -> None:
-        self._totals: dict[str, float] = {}
-        self._counts: dict[str, int] = {}
+        # the means of the window's batches, from its first batch
+        self._means: RunningMean | None = None
         self._window_step = step
         self._window_start = time.perf_counter()
         self._window_start_ns = time.time_ns()
         self._paused = 0.0
 
-    def _record_steps(self) -> None:
+    def _record_steps(self, window: RunningMean) -> None:
         step = self.trainer.global_step
         # reduces over processes, so every process takes part
-        means = self.trainer.reduce_mean(self._totals, self._counts)
+        means = window.compute()
         step_time = (
             time.perf_counter() - self._window_start - self._paused
         ) / (step - self._window_step)

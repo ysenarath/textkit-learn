@@ -12,7 +12,7 @@ from unittest import mock
 import numpy as np
 import torch
 import torch.nn.functional as F
-from accelerate import PartialState
+from accelerate import Accelerator, PartialState
 from accelerate.optimizer import AcceleratedOptimizer
 from accelerate.state import AcceleratorState, GradientState
 from accelerate.utils import gather_object
@@ -21,7 +21,8 @@ from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader, Dataset, IterableDataset
 
 from tklearn.metrics import F1, Accuracy, ConfusionMatrix, MetricCollection
-from tklearn.nn import Callback, Module, Trainer, get_scheduler
+from tklearn.nn import Callback, Module, RunningMean, Trainer, get_scheduler
+from tklearn.nn._outputs import BatchLogs
 from tklearn.nn.schedules import warmup_steps
 
 HOOKS = [name for name in vars(Callback) if name.startswith("on_")]
@@ -428,6 +429,40 @@ class TestFit(TrainerTestCase):
         self.assertGreater(history[-1]["valid_f1"], 0.5)
         outputs = trainer.predict(self.loader())
         self.assertEqual(outputs["y_score"].dtype, torch.float32)
+
+
+class TestRunningMean(unittest.TestCase):
+    def setUp(self):
+        AcceleratorState._reset_state(reset_partial_state=True)
+        GradientState._reset_state()
+        self.accelerator = Accelerator(cpu=True)
+
+    def test_means_of_the_batches_that_logged_each_value(self):
+        means = RunningMean(self.accelerator)
+        means.update({"loss": torch.tensor(1.0), "odd": 4.0})
+        means.update({"loss": torch.tensor(2.0)})
+        means.update({"loss": torch.tensor(6.0), "odd": torch.tensor(2.0)})
+        self.assertEqual(means.compute(), {"loss": 3.0, "odd": 3.0})
+
+    def test_without_values(self):
+        self.assertEqual(RunningMean(self.accelerator).compute(), {})
+
+    def test_does_not_convert_the_values(self):
+        FloatCounter.reads = 0
+        means = RunningMean(self.accelerator)
+        for _ in range(3):
+            value = torch.tensor(2.0).as_subclass(FloatCounter)
+            means.update({"probe": value})
+        self.assertEqual(FloatCounter.reads, 0)
+        self.assertEqual(means.compute(), {"probe": 2.0})
+
+    def test_reads_batch_logs_without_converting_them(self):
+        FloatCounter.reads = 0
+        value = torch.tensor(5.0).as_subclass(FloatCounter)
+        means = RunningMean(self.accelerator)
+        means.update(BatchLogs({"probe": value}))
+        self.assertEqual(FloatCounter.reads, 0)
+        self.assertEqual(means.compute(), {"probe": 5.0})
 
 
 class TestStopping(TrainerTestCase):
