@@ -40,7 +40,10 @@ class ModelCheckpoint(MonitorCallback):
         Key of the value compared when `save_best_only` is set.
     save_best_only : bool, default=False
         Save only when the monitored value improves on the best seen by
-        this callback, across `fit` calls.
+        this callback, across `fit` calls, so that `best` stays the score
+        of the saved checkpoint. A callback shared by several trainers
+        compares each with the best of all of them; give each trainer
+        its own callback to save its own best.
     mode : {"auto", "min", "max"}, default="auto"
         Whether lower or higher values are better; ``"auto"`` infers it
         from the key.
