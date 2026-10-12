@@ -49,6 +49,11 @@ class Callback:
     Callbacks get each hook in the order they were given, except
     wrappers (`wrapper`), which enclose the others.
 
+    A callback keeps the state of the run it is in, so it can be in one
+    at a time: a trainer raises when it starts a run while one of its
+    callbacks is in the run of another trainer, e.g. one evaluating from
+    a callback. One callback can serve several trainers in turn.
+
     Attributes
     ----------
     wrapper : bool

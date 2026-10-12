@@ -523,6 +523,28 @@ class TestCallbacks(TrainerTestCase):
         self.assertEqual([s[:2] for s in seen], [(0, 6), (1, 12)])
         self.assertEqual([s[2] for s in seen], trainer.history)
 
+    def test_callback_in_two_runs_at_once(self):
+        # a callback keeps the state of its run (e.g. the patience of
+        # EarlyStopping), which the run of another trainer would change
+        shared = Recorder()
+        other = self.trainer(callbacks=[shared])
+        loader = self.loader(self.data[:16])
+
+        class EvaluateOther(Callback):
+            def on_epoch_begin(self, trainer):
+                other.evaluate(loader)
+
+        trainer = self.trainer(callbacks=[shared, EvaluateOther()])
+        with self.assertRaisesRegex(
+            RuntimeError, "Recorder is in a run of another trainer"
+        ):
+            trainer.fit(loader)
+        self.assertNotIn("on_test_begin", shared.calls)
+        # each run releases its callbacks when it ends, even when it raises
+        other.evaluate(loader)
+        trainer.callbacks = [shared]
+        trainer.fit(loader)
+
 
 class RaisingClassifier(Classifier):
     """Raises `exception` on the `count`-th call of the hook `step`;

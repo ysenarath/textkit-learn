@@ -29,6 +29,10 @@ __all__ = [
 
 logger = get_logger(__name__)
 
+# ids of the callbacks of every running trainer; a callback keeps the state
+# of its run, so it can be in one at a time (see Trainer._run)
+_running_callbacks: set[int] = set()
+
 #: A scheduler, the name of a `get_scheduler` schedule, or
 #: ``f(optimizer, num_training_steps)`` returning a scheduler.
 SchedulerLike = Union[
@@ -616,10 +620,20 @@ class Trainer:
         after each epoch of fit, reuses them. `num_batches` is restored
         when the run ends, as fit evaluates in the middle of its epoch.
         When the outermost run raises, the callbacks get `on_exception`.
+        The outermost run also holds the callbacks until it ends, so that
+        the run of another trainer cannot share one.
         """
         previous = self.num_batches
         created = self._accelerator is None
+        callbacks = tuple(self.callbacks)
         if created:
+            for callback in callbacks:
+                if id(callback) in _running_callbacks:
+                    msg = (
+                        f"{type(callback).__name__} is in a run of another "
+                        "trainer; give each trainer its own callback"
+                    )
+                    raise RuntimeError(msg)
             accelerator = Accelerator(**self._accelerator_args)
             runner = _StepRunner(self.model)
             if training:
@@ -633,6 +647,7 @@ class Trainer:
                 optimizer = None
             self._accelerator = accelerator
             self._runner, self._prepared_optimizer = runner, optimizer
+            _running_callbacks.update(id(c) for c in callbacks)
         elif training and self._prepared_optimizer is None:
             msg = "fit cannot be started from within evaluate or predict"
             raise RuntimeError(msg)
@@ -648,6 +663,7 @@ class Trainer:
             if created:
                 self._accelerator = None
                 self._runner = self._prepared_optimizer = None
+                _running_callbacks.difference_update(id(c) for c in callbacks)
 
     def _prepare_dataloader(self, dataloader: DataLoader) -> DataLoader:
         if not isinstance(dataloader, DataLoader):
