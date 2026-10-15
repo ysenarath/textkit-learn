@@ -13,7 +13,8 @@ modules listed under Removed.
 - From `tklearn.nn`: models (backbones, classifiers, K-BERT),
   calibration, `ModelRepo`, `Encoder`, `TargetBasedLoss` and the data
   collators. They are being redesigned. The `History` callback is gone
-  (use `trainer.history`), and so is `TrackingCallback` (MLflow).
+  (`fit` returns the logs of each epoch), and so is `TrackingCallback`
+  (MLflow).
 - `tklearn.agents` (vendored smolagents). Use the `smolagents` package.
 - nightjar configs, `Auto*` factories and lookup by name. Import the class
   you need and call its constructor.
@@ -54,6 +55,12 @@ modules listed under Removed.
   CUDA or MPS, mixed precision (`mixed_precision="bf16"`), gradient
   accumulation and multi-GPU with `accelerate launch`. It takes torch
   `DataLoader`s.
+- A `Trainer` holds configuration only, read-only once created. It takes
+  the optimizer as a factory, e.g.
+  `functools.partial(torch.optim.AdamW, lr=2e-5)`. Each `fit`, `evaluate`
+  or `predict` runs with a new `TrainerState`, which builds the optimizer
+  and scheduler, holds the run's progress, and is dropped when the call
+  returns, so one run does not affect the next.
 - `Module` has two hooks. `predict_step(batch)` returns the metric inputs
   (`y_true`, `y_pred`, `y_score`, ...) and optionally a `"loss"`.
   `training_step(batch)` defaults to that loss. It replaces
@@ -67,10 +74,16 @@ modules listed under Removed.
   `evaluate(loader, metrics=...)` uses other metrics for one call. Results
   from evaluation during `fit` are logged with a `valid_` prefix, and
   `fit` returns the logs of each epoch as a list of dicts.
-- Callback hooks receive the trainer (`on_epoch_end(trainer, logs)`), and
-  setting `trainer.should_stop = True` stops training, on every process
-  when set on one. `set_model`, `set_trainer` and `set_params` are gone.
-  Hooks keep their Keras names (`on_train_begin`, `on_test_end`, ...).
+- Callbacks read the state of their run as `self.state` (`model`,
+  `optimizer`, `epoch`, `global_step`, `history`, ...; `self.state.trainer`
+  is the configuration), and setting `self.state.should_stop = True`
+  stops training, on every process when set on one. Hooks take no
+  trainer (`on_epoch_end(logs)`). `set_model`, `set_trainer` and
+  `set_params` are gone. Hooks keep their Keras names (`on_train_begin`,
+  `on_test_end`, ...).
+- A callback is in one run at a time, and evaluates within its run with
+  `self.state.evaluate`. `Dispatcher` calls the hooks of a run's
+  callbacks, also from a custom training loop.
 - Built-in callbacks follow `keras.callbacks`: `EarlyStopping`,
   `ModelCheckpoint` (`.safetensors` or `.pt` state dicts),
   `ReduceLROnPlateau`, `TerminateOnNaN`, `CSVLogger`, `ProgbarLogger` and
@@ -90,18 +103,21 @@ modules listed under Removed.
   and its `*_end` hooks after, those of the other callbacks, so that what
   it opens encloses their work; wrappers nest in the order given. Other
   callbacks keep the order given. `OpenTelemetryCallback` is a wrapper.
-- `Callback.on_exception(trainer, exception)` runs when `fit`,
+- `Callback.on_exception(exception)` runs when `fit`,
   `evaluate` or `predict` raises, including on `KeyboardInterrupt`, in
   place of the `*_end` hooks of the unfinished run. `ProgbarLogger`,
   `CSVLogger` and `OpenTelemetryCallback` close their bars, file and
   spans there.
-- `Trainer.grad_norm` holds the gradient norm before clipping.
-- `Trainer.reduce_mean(totals, counts)` averages values that a callback
-  logs over several batches, over every process. On several processes,
-  every process must call it.
-- `lr_scheduler` accepts a scheduler, a name with `warmup` (steps or a
-  fraction), or `f(optimizer, num_training_steps)`. `get_scheduler`
-  builds named schedules. Schedules count optimizer steps.
+- `TrainerState.grad_norm` holds the gradient norm before clipping.
+- `RunningMean` (`tklearn.nn.running_mean`) averages logged values over
+  batches and every process, as `fit` does for each epoch; a callback can
+  average the batch logs over a window the same way. It sums on the
+  device, so only `compute` waits for it; on several processes, every
+  process must call `compute`.
+- `lr_scheduler` accepts a name with `warmup` (steps or a fraction), or
+  `f(optimizer, num_training_steps)`, built at the start of each `fit`.
+  `get_scheduler` builds named schedules. Schedules count optimizer
+  steps.
 
 ### Tracing (`tklearn.tracing`)
 
