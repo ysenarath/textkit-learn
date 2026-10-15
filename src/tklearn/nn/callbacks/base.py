@@ -22,10 +22,10 @@ class Callback:
     `predict`.
 
     Override the hooks you need. In a hook, `state` is the `TrainerState`
-    of the run the callback is in (``model``, ``optimizer``,
-    ``accelerator``, ``epochs``, ``epoch``, ``global_step``,
-    ``num_batches``, ``history``), and ``state.trainer`` its
-    configuration. A callback stops training by setting
+    of the run the callback is in (``model``, ``callbacks``,
+    ``optimizer``, ``scheduler``, ``accelerator``, ``history``,
+    ``epochs``, ``epoch``, ``global_step``, ``num_batches``,
+    ``grad_norm``), and ``state.trainer`` its configuration. A callback stops training by setting
     ``self.state.should_stop = True``; training then ends after the
     current batch, once the epoch has been evaluated and ``on_epoch_end``
     has run.
