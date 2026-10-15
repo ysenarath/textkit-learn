@@ -22,7 +22,14 @@ from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader, Dataset, IterableDataset
 
 from tklearn.metrics import F1, Accuracy, ConfusionMatrix, MetricCollection
-from tklearn.nn import Callback, Module, RunningMean, Trainer, get_scheduler
+from tklearn.nn import (
+    Callback,
+    Module,
+    RunningMean,
+    Trainer,
+    TrainerState,
+    get_scheduler,
+)
 from tklearn.nn._outputs import BatchLogs
 from tklearn.nn.schedules import warmup_steps
 
@@ -225,32 +232,18 @@ class TrainerTestCase(unittest.TestCase):
         )
 
 
-class LastState(Callback):
-    """Keeps the state of the run it was last in, to read after it."""
-
-    def __init__(self):
-        self.last = None
-
-    def on_train_begin(self):
-        self.last = self.state
-
-    def on_test_begin(self):
-        if self.last is None or self.last.epochs == 0:
-            self.last = self.state
-
-    def on_predict_begin(self):
-        self.on_test_begin()
-
-
 def fit_state(trainer, *args, **kwargs):
     """Fit, and return the state of the run, to read after it."""
-    probe = LastState()
-    trainer.callbacks = [*trainer.callbacks, probe]
-    try:
+    states = []
+
+    def new_state(trainer):
+        states.append(TrainerState(trainer))
+        return states[-1]
+
+    with mock.patch("tklearn.nn.trainer.TrainerState", side_effect=new_state):
         trainer.fit(*args, **kwargs)
-    finally:
-        trainer.callbacks.remove(probe)
-    return probe.last
+    # the first: runs that callbacks start during the fit come after
+    return states[0]
 
 
 class TestFit(TrainerTestCase):
@@ -524,12 +517,14 @@ class TestStopping(TrainerTestCase):
             def on_train_batch_end(self, batch, logs):
                 raise KeyboardInterrupt
 
-        def stop(trainer):
-            trainer.callbacks = [StopAt("on_train_batch_end", 1)]
+        def stop(model):
+            callbacks = [StopAt("on_train_batch_end", 1)]
+            trainer = self.trainer(model, accumulation=4, callbacks=callbacks)
             trainer.fit(self.loader())
 
-        def interrupt(trainer):
-            trainer.callbacks = [Interrupt()]
+        def interrupt(model):
+            callbacks = [Interrupt()]
+            trainer = self.trainer(model, accumulation=4, callbacks=callbacks)
             with self.assertRaises(KeyboardInterrupt):
                 trainer.fit(self.loader())
 
@@ -538,10 +533,8 @@ class TestStopping(TrainerTestCase):
         for end in (stop, interrupt):
             with self.subTest(end=end.__name__):
                 model = Classifier()
-                trainer = self.trainer(model, accumulation=4)
-                end(trainer)
-                trainer.callbacks = []
-                trainer.fit(self.loader())
+                end(model)
+                self.trainer(model, accumulation=4).fit(self.loader())
                 for a, b in zip(model.parameters(), expected.parameters()):
                     torch.testing.assert_close(a, b)
 
@@ -614,8 +607,7 @@ class TestCallbacks(TrainerTestCase):
         self.assertNotIn("on_test_begin", shared.calls)
         # each run releases its callbacks when it ends, even when it raises
         other.evaluate(loader)
-        trainer.callbacks = [shared]
-        trainer.fit(loader)
+        self.trainer(callbacks=[shared]).fit(loader)
 
     def test_callback_state_during_a_run(self):
         seen = []
@@ -939,7 +931,8 @@ class TestEvaluate(TrainerTestCase):
 
     def test_nested_evaluate(self):
         # an evaluation started during another must not reset its metrics
-        trainer = self.trainer(metrics={"cm": ConfusionMatrix()})
+        metrics = {"cm": ConfusionMatrix()}
+        trainer = self.trainer(metrics=metrics)
         outer = self.loader(self.data[:48])
         inner = self.loader(self.data[48:64])
         expected = trainer.evaluate(outer)["cm"]
@@ -953,7 +946,9 @@ class TestEvaluate(TrainerTestCase):
                     self.done = True
                     self.state.evaluate(inner)
 
-        trainer.callbacks = [Nested()]
+        trainer = self.trainer(
+            trainer.model, metrics=metrics, callbacks=[Nested()]
+        )
         np.testing.assert_array_equal(trainer.evaluate(outer)["cm"], expected)
 
     def test_leaves_given_metrics_untouched(self):
@@ -983,17 +978,16 @@ class TestEvaluate(TrainerTestCase):
             list(trainer.evaluate(self.loader())), ["loss", "acc"]
         )
 
-    def test_assigning_metrics(self):
-        trainer = self.trainer()
-        trainer.metrics = {"acc": Accuracy()}
+    def test_metrics_are_a_collection(self):
+        trainer = self.trainer(metrics={"acc": Accuracy()})
         self.assertIsInstance(trainer.metrics, MetricCollection)
         self.assertEqual(
             list(trainer.evaluate(self.loader())), ["loss", "acc"]
         )
-        trainer.metrics = None
+        trainer = self.trainer()
         self.assertEqual(list(trainer.evaluate(self.loader())), ["loss"])
         with self.assertRaisesRegex(TypeError, "Metric"):
-            trainer.metrics = {"acc": "accuracy"}
+            self.trainer(metrics={"acc": "accuracy"})
 
 
 class TestPredict(TrainerTestCase):
@@ -1180,14 +1174,23 @@ class TestValidation(TrainerTestCase):
         self.assertIs(seen[0], seen[1])
         self.assertIsNot(seen[1], seen[2])
 
-    def test_model_and_optimizer_are_fixed(self):
+    def test_settings_are_fixed(self):
         # validated when the trainer is created
-        trainer = self.trainer()
-        model = Classifier()
+        trainer = self.trainer(callbacks=[Recorder()])
         replacements = {
-            "model": model,
+            "model": Classifier(),
             "optimizer": functools.partial(torch.optim.SGD, lr=0.1),
+            "lr_scheduler": "linear",
+            "warmup": 0.1,
+            "metrics": {"acc": Accuracy()},
+            "callbacks": [Recorder()],
+            "max_grad_norm": 1.0,
+            "mixed_precision": "bf16",
+            "gradient_accumulation_steps": 2,
+            "cpu": False,
         }
+        # a tuple, so that the list cannot be changed in place either
+        self.assertIsInstance(trainer.callbacks, tuple)
         for used in (False, True):
             if used:
                 trainer.fit(self.loader())

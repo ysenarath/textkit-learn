@@ -35,7 +35,9 @@ class Trainer:
     preference by Accelerate), with mixed precision, and on several GPUs
     when started with ``accelerate launch``.
 
-    A trainer holds configuration only. Each `fit`, `evaluate` or
+    A trainer holds configuration only, fixed when it is created: its
+    attributes are read-only, so for other settings create another
+    trainer, e.g. with the same model. Each `fit`, `evaluate` or
     `predict` call runs with a new `TrainerState`, which it drops when it
     returns, and builds a new optimizer and scheduler from the factories;
     a call writes nothing back to the trainer or to what it was given,
@@ -65,8 +67,8 @@ class Trainer:
         Callbacks receiving the hooks of `fit`, `evaluate` and `predict`.
         Each hook goes to them in the order given, except for wrapper
         callbacks (`Callback.wrapper`), which get ``*_begin`` hooks before
-        and ``*_end`` hooks after the others. Each run gets a copy of the
-        list, as `TrainerState.callbacks`.
+        and ``*_end`` hooks after the others. Each run gets them as a
+        list, `TrainerState.callbacks`.
     max_grad_norm : float, optional
         Clip the gradient norm to this value before each optimizer step.
     mixed_precision : {"no", "fp16", "bf16"}, optional
@@ -161,24 +163,34 @@ class Trainer:
             raise ValueError(msg)
         self._model = model
         self._optimizer = optimizer
-        self.lr_scheduler = lr_scheduler
-        self.warmup = warmup
-        self.metrics = metrics
-        self.callbacks = callbacks
-        self.max_grad_norm = max_grad_norm
-        self.mixed_precision = mixed_precision
-        self.gradient_accumulation_steps = gradient_accumulation_steps
-        self.cpu = cpu
+        self._lr_scheduler = lr_scheduler
+        self._warmup = warmup
+        self._metrics = MetricCollection(metrics)
+        self._callbacks = tuple(callbacks)
+        self._max_grad_norm = max_grad_norm
+        self._mixed_precision = mixed_precision
+        self._gradient_accumulation_steps = gradient_accumulation_steps
+        self._cpu = cpu
 
     @property
     def model(self) -> Module:
-        """The model, fixed when the trainer is created."""
+        """The model."""
         return self._model
 
     @property
     def optimizer(self) -> OptimizerFactory | None:
-        """The optimizer factory, fixed when the trainer is created."""
+        """The optimizer factory."""
         return self._optimizer
+
+    @property
+    def lr_scheduler(self) -> SchedulerFactory | None:
+        """The name or factory of the learning rate schedule."""
+        return self._lr_scheduler
+
+    @property
+    def warmup(self) -> int | float:
+        """The warmup of a named schedule."""
+        return self._warmup
 
     @property
     def metrics(self) -> MetricCollection:
@@ -188,9 +200,30 @@ class Trainer:
         """
         return self._metrics
 
-    @metrics.setter
-    def metrics(self, metrics: Mapping[str, Metric] | None) -> None:
-        self._metrics = MetricCollection(metrics)
+    @property
+    def callbacks(self) -> tuple[Callback, ...]:
+        """The callbacks, of which each run gets a copy."""
+        return self._callbacks
+
+    @property
+    def max_grad_norm(self) -> float | None:
+        """The gradient norm to clip to before each optimizer step."""
+        return self._max_grad_norm
+
+    @property
+    def mixed_precision(self) -> str | None:
+        """The mixed precision mode."""
+        return self._mixed_precision
+
+    @property
+    def gradient_accumulation_steps(self) -> int:
+        """Batches whose gradients are accumulated before each step."""
+        return self._gradient_accumulation_steps
+
+    @property
+    def cpu(self) -> bool:
+        """Whether to run on the CPU."""
+        return self._cpu
 
     @property
     def accelerator_args(self) -> dict[str, Any]:

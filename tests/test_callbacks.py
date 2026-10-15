@@ -501,8 +501,8 @@ class TestCSVLogger(TrainerTestCase):
         trainer.fit(self.loader(), epochs=2)
         trainer.fit(self.loader(), epochs=1)
         self.assertEqual(len(self.read()), 2)
-        trainer.callbacks = [CSVLogger(self.path, separator=";", append=True)]
-        trainer.fit(self.loader(), epochs=2)
+        append = CSVLogger(self.path, separator=";", append=True)
+        self.trainer(callbacks=[append]).fit(self.loader(), epochs=2)
         lines = self.path.read_text().splitlines()
         self.assertEqual(lines[0], "epoch,loss")
         self.assertEqual([line[:2] for line in lines[2:]], ["0;", "1;"])
@@ -565,11 +565,10 @@ class TestProgbarLogger(TrainerTestCase):
         self.assertEqual(len(history), 1)
         self.assertEqual(progbar._bars, [])
 
-        trainer.callbacks = [progbar]
         batches = torch.utils.data.DataLoader(
             _Unsized(self.data), batch_size=16
         )
-        trainer.predict(batches)
+        self.trainer(callbacks=[progbar]).predict(batches)
         self.assertEqual(progbar._bars, [])
 
     def test_closes_the_bars_when_a_run_raises(self):
