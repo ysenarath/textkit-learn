@@ -4,6 +4,7 @@ from collections.abc import Iterable, Iterator, Mapping
 from typing import Any, Callable, Union
 
 import torch
+from accelerate import Accelerator
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
@@ -81,9 +82,10 @@ class Trainer:
     cpu : bool, default=False
         Run on the CPU even when a GPU or MPS device is available.
 
-    Each call creates an `Accelerator` from these; anything else (plugins,
-    distributed settings) comes from ``accelerate config`` or
-    ``accelerate launch``.
+    Each call creates an `Accelerator` from these with
+    `create_accelerator`; anything else (plugins, distributed settings)
+    comes from ``accelerate config`` or ``accelerate launch``, or from a
+    subclass that overrides `create_accelerator`.
 
     Examples
     --------
@@ -225,14 +227,23 @@ class Trainer:
         """Whether to run on the CPU."""
         return self._cpu
 
-    @property
-    def accelerator_args(self) -> dict[str, Any]:
-        """The arguments of the `Accelerator` of each run."""
-        return {
-            "cpu": self.cpu,
-            "mixed_precision": self.mixed_precision,
-            "gradient_accumulation_steps": self.gradient_accumulation_steps,
-        }
+    def create_accelerator(self) -> Accelerator:
+        """Create the `Accelerator` of a run.
+
+        Each `fit`, `evaluate` or `predict` calls it when it starts.
+        Override it to give the accelerator more arguments, e.g. plugins
+        or kwargs handlers.
+
+        Accelerate fixes ``cpu`` and ``mixed_precision`` for the process
+        at the first accelerator, and raises when a later one asks
+        otherwise, so calling it outside a run fixes them for every later
+        run too.
+        """
+        return Accelerator(
+            cpu=self.cpu,
+            mixed_precision=self.mixed_precision,
+            gradient_accumulation_steps=self.gradient_accumulation_steps,
+        )
 
     def fit(
         self,

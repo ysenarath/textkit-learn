@@ -172,10 +172,7 @@ class TrainerState:
         # run
         dispatcher = Dispatcher(self)
         try:
-            # Accelerate fixes cpu and mixed_precision for the process at
-            # the first accelerator, and raises when a later one asks
-            # otherwise
-            accelerator = Accelerator(**trainer.accelerator_args)
+            accelerator = trainer.create_accelerator()
             wrapper = ModuleWrapper(self.model)
             if training:
                 factory = cast(Any, trainer.optimizer)

@@ -1174,6 +1174,38 @@ class TestValidation(TrainerTestCase):
         self.assertIs(seen[0], seen[1])
         self.assertIsNot(seen[1], seen[2])
 
+    def test_runs_use_create_accelerator(self):
+        created, seen = [], []
+
+        class Custom(Trainer):
+            def create_accelerator(self):
+                created.append(super().create_accelerator())
+                return created[-1]
+
+        class Capture(Callback):
+            def on_train_begin(self):
+                seen.append(self.state.accelerator)
+
+            def on_test_begin(self):
+                seen.append(self.state.accelerator)
+
+            def on_predict_begin(self):
+                seen.append(self.state.accelerator)
+
+        trainer = Custom(
+            Classifier(),
+            functools.partial(torch.optim.SGD, lr=0.5),
+            callbacks=[Capture()],
+            cpu=True,
+            mixed_precision="no",
+        )
+        trainer.fit(self.loader())
+        trainer.evaluate(self.loader())
+        trainer.predict(self.loader())
+        self.assertEqual((len(created), len(seen)), (3, 3))
+        for a, b in zip(seen, created):
+            self.assertIs(a, b)
+
     def test_settings_are_fixed(self):
         # validated when the trainer is created
         trainer = self.trainer(callbacks=[Recorder()])
