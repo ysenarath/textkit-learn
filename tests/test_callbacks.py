@@ -11,6 +11,7 @@ from safetensors.torch import load_model
 from test_nn import (
     Classifier,
     RaisingClassifier,
+    StopAt,
     TrainerTestCase,
     fit_state,
     skip_steps,
@@ -557,14 +558,11 @@ class TestProgbarLogger(TrainerTestCase):
         self.assertEqual(progbar._bars, [])
 
     def test_stopped_and_unsized_runs(self):
-        stop = LambdaCallback(
-            on_train_batch_end=lambda batch, logs: setattr(
-                trainer, "should_stop", True
-            )
-        )
         progbar = ProgbarLogger(file=io.StringIO())
+        stop = StopAt("on_train_batch_end", 1)
         trainer = self.trainer(callbacks=[progbar, stop])
-        trainer.fit(self.loader(), epochs=3)
+        history = trainer.fit(self.loader(), epochs=3)
+        self.assertEqual(len(history), 1)
         self.assertEqual(progbar._bars, [])
 
         trainer.callbacks = [progbar]
