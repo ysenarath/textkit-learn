@@ -23,12 +23,13 @@ class LambdaCallback(Callback):
 
     Examples
     --------
-    >>> log_steps = LambdaCallback(
-    ...     on_train_batch_end=lambda batch, logs: print(
-    ...         trainer.global_step, logs["loss"]
-    ...     )
+    >>> log_epochs = LambdaCallback(
+    ...     on_epoch_end=lambda logs: print(logs["loss"])
     ... )
-    >>> trainer = Trainer(model, optimizer, callbacks=[log_steps])
+    >>> trainer = Trainer(model, optimizer, callbacks=[log_epochs])
+
+    The functions do not get the run's `Callback.state`; subclass
+    `Callback` to read it.
     """
 
     def __init__(self, **hooks: Callable[..., None]) -> None:

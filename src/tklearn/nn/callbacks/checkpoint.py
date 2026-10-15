@@ -30,7 +30,7 @@ class ModelCheckpoint(MonitorCallback):
         Where to save. The suffix picks the format: ``.safetensors`` (load
         with `safetensors.torch.load_model`), or ``.pt`` and ``.pth`` (a
         `torch.save` state dict). It is formatted with ``epoch``
-        (one-based), ``step`` (`Trainer.global_step`) and the logs, e.g.
+        (one-based), ``step`` (`TrainerState.global_step`) and the logs, e.g.
         ``"ckpt/{epoch:02d}-{valid_loss:.3f}.safetensors"``; without any
         field, each save overwrites the last.
     monitor : str, default="valid_loss"
@@ -113,14 +113,14 @@ class ModelCheckpoint(MonitorCallback):
             self.best = float(initial_value_threshold)
 
     def on_train_begin(self) -> None:
-        self._saved_step = self.trainer.global_step
+        self._saved_step = self.state.global_step
 
     def on_train_batch_end(
         self, batch: Any, logs: Mapping[str, float]
     ) -> None:
         # global_step only advances on batches that step the optimizer, and
         # stays put when fp16 skips the step, so save each step number once
-        step = self.trainer.global_step
+        step = self.state.global_step
         if (
             self.save_freq != "epoch"
             and step != self._saved_step
@@ -140,28 +140,28 @@ class ModelCheckpoint(MonitorCallback):
                 return
             self.best = current
         path = self._format_path(logs)
-        if not self.trainer.accelerator.is_main_process:
+        if not self.state.accelerator.is_main_process:
             return
         path.parent.mkdir(parents=True, exist_ok=True)
         if path.suffix == ".safetensors":
             # unlike save_file, save_model handles tied weights
-            save_model(self.trainer.model, path)
+            save_model(self.state.model, path)
         else:
-            torch.save(self.trainer.model.state_dict(), path)
-        event = {"path": str(path), "step": self.trainer.global_step}
+            torch.save(self.state.model.state_dict(), path)
+        event = {"path": str(path), "step": self.state.global_step}
         if self.save_best_only:
             event[self.monitor] = self.best
         trace.get_current_span().add_event("checkpoint", event)
         if self.verbose:
             logger.info(
-                f"Step {self.trainer.global_step}: saved the model to {path}"
+                f"Step {self.state.global_step}: saved the model to {path}"
             )
 
     def _format_path(self, logs: Mapping[str, Any]) -> Path:
         fields = {
             **logs,
-            "epoch": self.trainer.epoch + 1,
-            "step": self.trainer.global_step,
+            "epoch": self.state.epoch + 1,
+            "step": self.state.global_step,
         }
         try:
             return Path(self.filepath.format_map(fields))

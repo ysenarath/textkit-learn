@@ -29,11 +29,11 @@ class TerminateOnNaN(Callback):
         loss = logs.get("loss")
         if loss is not None and not math.isfinite(loss):
             logger.warning(
-                f"Step {self.trainer.global_step}: the loss is {loss}; "
+                f"Step {self.state.global_step}: the loss is {loss}; "
                 "terminating training"
             )
-            self.trainer.should_stop = True
+            self.state.should_stop = True
             trace.get_current_span().add_event(
                 "terminate_on_nan",
-                {"loss": loss, "step": self.trainer.global_step},
+                {"loss": loss, "step": self.state.global_step},
             )

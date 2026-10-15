@@ -24,6 +24,7 @@ from test_nn import (
 
 from tklearn.metrics import Accuracy, ConfusionMatrix
 from tklearn.nn.callbacks import (
+    Callback,
     EarlyStopping,
     LambdaCallback,
     ModelCheckpoint,
@@ -154,14 +155,14 @@ class TestOpenTelemetryCallback(TrainerTestCase):
     def test_grad_norm_before_clipping(self):
         norms = []
 
-        def record(batch, logs):
-            if trainer.global_step % 2 == 0:
-                norms.append(float(trainer.grad_norm))
+        class Record(Callback):
+            def on_train_batch_end(self, batch, logs):
+                if self.state.global_step % 2 == 0:
+                    norms.append(float(self.state.grad_norm))
 
         callback = self.callback(log_every_n_steps=2)
         trainer = self.trainer(
-            max_grad_norm=1e-3,
-            callbacks=[LambdaCallback(on_train_batch_end=record), callback],
+            max_grad_norm=1e-3, callbacks=[Record(), callback]
         )
         trainer.fit(self.loader(), epochs=1)
         steps = self.spans("steps")
@@ -216,14 +217,13 @@ class TestOpenTelemetryCallback(TrainerTestCase):
                 self.assertEqual(_attribute_value(value), expected)
 
     def test_spans_of_a_fit_that_raised_end_with_an_error(self):
-        def fail(batch, logs):
-            if trainer.global_step == 3:
-                raise RuntimeError("stop")
+        class Fail(Callback):
+            def on_train_batch_end(self, batch, logs):
+                if self.state.global_step == 3:
+                    raise RuntimeError("stop")
 
         callback = self.callback()
-        trainer = self.trainer(
-            callbacks=[callback, LambdaCallback(on_train_batch_end=fail)]
-        )
+        trainer = self.trainer(callbacks=[callback, Fail()])
         with self.assertRaises(RuntimeError):
             trainer.fit(self.loader(), epochs=2)
         # ended by on_exception, innermost first, and no longer current

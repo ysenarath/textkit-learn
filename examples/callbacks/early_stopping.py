@@ -13,6 +13,7 @@ python examples/callbacks/early_stopping.py
 
 from __future__ import annotations
 
+import functools
 import math
 from pathlib import Path
 
@@ -24,9 +25,9 @@ from safetensors.torch import load_model
 from tklearn.metrics import Accuracy
 from tklearn.nn import Trainer
 from tklearn.nn.callbacks import (
+    Callback,
     CSVLogger,
     EarlyStopping,
-    LambdaCallback,
     ModelCheckpoint,
     ProgbarLogger,
     ReduceLROnPlateau,
@@ -64,14 +65,15 @@ def main(out: Path) -> None:
     )
     # the learning rate each epoch trains with
     lrs = []
-    record_lr = LambdaCallback(
-        on_epoch_begin=lambda: lrs.append(
-            trainer.optimizer.param_groups[0]["lr"]
-        )
-    )
+
+    class RecordLR(Callback):
+        def on_epoch_begin(self) -> None:
+            lrs.append(self.state.optimizer.param_groups[0]["lr"])
+
+    record_lr = RecordLR()
     trainer = Trainer(
         model,
-        torch.optim.AdamW(model.parameters(), lr=LR),
+        functools.partial(torch.optim.AdamW, lr=LR),
         metrics={"accuracy": Accuracy()},
         callbacks=[
             ProgbarLogger(),
@@ -156,7 +158,7 @@ def main(out: Path) -> None:
             for i, logs in enumerate(history)
             for key in logs
         ),
-        "the rows hold Trainer.history",
+        "the rows hold the history fit returned",
     )
 
 

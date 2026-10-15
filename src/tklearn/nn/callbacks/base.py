@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from tklearn.logging import get_logger
 
 if TYPE_CHECKING:
-    from tklearn.nn.trainer import Trainer
+    from tklearn.nn.state import TrainerState
 
 __all__ = [
     "Callback",
@@ -21,16 +21,17 @@ class Callback:
     """Code that runs at fixed points of `Trainer.fit`, `evaluate` and
     `predict`.
 
-    Override the hooks you need. In a hook, `trainer` is the trainer whose
-    run the callback is in, which exposes the run's state (``model``,
-    ``optimizer``, ``accelerator``, ``epochs``, ``epoch``,
-    ``global_step``, ``num_batches``, ``history``). A callback stops
-    training by setting ``self.trainer.should_stop = True``; training then
-    ends after the current batch, once the epoch has been evaluated and
-    ``on_epoch_end`` has run.
+    Override the hooks you need. In a hook, `state` is the `TrainerState`
+    of the run the callback is in (``model``, ``optimizer``,
+    ``accelerator``, ``epochs``, ``epoch``, ``global_step``,
+    ``num_batches``, ``history``), and ``state.trainer`` its
+    configuration. A callback stops training by setting
+    ``self.state.should_stop = True``; training then ends after the
+    current batch, once the epoch has been evaluated and ``on_epoch_end``
+    has run.
 
     Hooks run on every process. Callbacks that write files or print should
-    check ``self.trainer.accelerator.is_main_process``.
+    check ``self.state.accelerator.is_main_process``.
 
     The hooks are named as in Keras. `fit` runs::
 
@@ -57,9 +58,10 @@ class Callback:
     wrappers (`wrapper`), which enclose the others.
 
     A callback keeps the state of the run it is in, so it can be in one
-    at a time: a trainer raises when one of its callbacks is in the run
-    of another trainer, e.g. one evaluating from a callback. One callback
-    can serve several trainers in turn.
+    at a time: a run raises when one of its callbacks is in another run,
+    e.g. of a trainer evaluating from a callback. A callback evaluates
+    within its own run with ``self.state.evaluate``. One callback can
+    serve several runs in turn.
 
     Attributes
     ----------
@@ -75,24 +77,24 @@ class Callback:
 
     wrapper: ClassVar[bool] = False
 
-    # the trainer whose run the callback is in, set by the trainer for the
-    # run (see Dispatcher)
-    _trainer: Trainer | None = None
+    # the state of the run the callback is in, set for the run (see
+    # Dispatcher)
+    _state: TrainerState | None = None
 
     @property
-    def trainer(self) -> Trainer:
-        """The trainer whose run the callback is in.
+    def state(self) -> TrainerState:
+        """The state of the run the callback is in.
 
-        Set by the trainer when its `fit`, `evaluate` or `predict` starts,
-        and unset when it ends; only available in hooks.
+        Set when a `fit`, `evaluate` or `predict` starts, and unset when
+        it ends; only available in hooks.
         """
-        if self._trainer is None:
+        if self._state is None:
             msg = (
-                f"{type(self).__name__} has a trainer only during a fit, "
+                f"{type(self).__name__} has a state only during a fit, "
                 "evaluate or predict"
             )
             raise RuntimeError(msg)
-        return self._trainer
+        return self._state
 
     # --- fit ---------------------------------------------------------------
 
@@ -103,7 +105,7 @@ class Callback:
         """Called once after the last epoch."""
 
     def on_epoch_begin(self) -> None:
-        """Called at the start of epoch ``self.trainer.epoch`` (zero-based)."""
+        """Called at the start of epoch ``self.state.epoch`` (zero-based)."""
 
     def on_epoch_end(self, logs: dict[str, Any]) -> None:
         """Called with the epoch's mean training losses and, when there is
@@ -167,7 +169,7 @@ class Callback:
         It runs once, for the outermost of these calls: an exception in
         the evaluation after an epoch of `fit` reaches it once, from
         `fit`. It also runs when the run raises before any ``*_begin``
-        hook. ``self.trainer.accelerator`` is still available.
+        hook. ``self.state.accelerator`` is still available.
 
         On several processes, the others may not have raised, so it must
         not call collectives such as `RunningMean.compute`: they would
@@ -179,27 +181,27 @@ class Callback:
 
 
 class Dispatcher:
-    """Calls the hooks of a trainer's callbacks for one run.
+    """Calls the hooks of a run's callbacks.
 
-    `Trainer` creates one for each outermost `fit`, `evaluate` or
-    `predict`; a custom training loop can use one the same way.
+    `Trainer` creates one for each `fit`, `evaluate` or `predict`; a
+    custom training loop can use one the same way.
 
-    Each callback gets the trainer as `Callback.trainer` for the run: when
-    the run starts, and a callback added during the run before its first
-    hook. A callback keeps the state of its run, so it can be in one at a
-    time; taking one that is in the run of another trainer raises a
-    RuntimeError. `close` gives every callback back when the run ends,
-    and must be called even when the run raises, or the callbacks stay in
-    it and every later run of them raises.
+    Each callback gets the run's state as `Callback.state`: when the run
+    starts, and a callback added during the run before its first hook. A
+    callback keeps the state of its run, so it can be in one at a time;
+    taking one that is in another run raises a RuntimeError. `close`
+    gives every callback back when the run ends, and must be called even
+    when the run raises, or the callbacks stay in it and every later run
+    of them raises.
 
     Parameters
     ----------
-    trainer : Trainer
-        The trainer whose `callbacks` get the hooks.
+    state : TrainerState
+        The state of the run, whose `callbacks` get the hooks.
 
     Examples
     --------
-    >>> dispatcher = Dispatcher(trainer)
+    >>> dispatcher = Dispatcher(state)
     >>> try:
     ...     dispatcher("on_train_begin")
     ...     ...
@@ -211,11 +213,11 @@ class Dispatcher:
     ...     dispatcher.close()
     """
 
-    def __init__(self, trainer: Trainer) -> None:
-        self._trainer = trainer
+    def __init__(self, state: TrainerState) -> None:
+        self._state = state
         self._taken: list[Callback] = []
         try:
-            for callback in trainer.callbacks:
+            for callback in state.callbacks:
                 self._take(callback)
         except BaseException:
             self.close()
@@ -223,7 +225,7 @@ class Dispatcher:
 
     def __call__(self, hook: str, *args: Any) -> None:
         """Call `hook` of every callback with `args`."""
-        for callback in _hook_order(self._trainer.callbacks, hook):
+        for callback in _hook_order(self._state.callbacks, hook):
             self._take(callback)
             getattr(callback, hook)(*args)
 
@@ -234,9 +236,9 @@ class Dispatcher:
         opened, and the run's exception is the one that goes on: one
         raised by a callback is logged.
         """
-        for callback in _hook_order(self._trainer.callbacks, "on_exception"):
-            if callback._trainer not in (None, self._trainer):
-                continue  # in the run of another trainer
+        for callback in _hook_order(self._state.callbacks, "on_exception"):
+            if callback._state not in (None, self._state):
+                continue  # in another run
             try:
                 self._take(callback)
                 callback.on_exception(exception)
@@ -249,19 +251,20 @@ class Dispatcher:
     def close(self) -> None:
         """Give back every callback taken for the run."""
         for callback in self._taken:
-            callback._trainer = None
+            callback._state = None
         self._taken = []
 
     def _take(self, callback: Callback) -> None:
-        if callback._trainer is self._trainer:
+        if callback._state is self._state:
             return
-        if callback._trainer is not None:
+        if callback._state is not None:
             msg = (
-                f"{type(callback).__name__} is in a run of another "
-                "trainer; give each trainer its own callback"
+                f"{type(callback).__name__} is in another run; give each "
+                "trainer its own callback, and evaluate from a callback "
+                "with self.state.evaluate"
             )
             raise RuntimeError(msg)
-        callback._trainer = self._trainer
+        callback._state = self._state
         self._taken.append(callback)
 
 
@@ -270,8 +273,8 @@ def _hook_order(callbacks: list[Callback], hook: str) -> tuple[Callback, ...]:
     ``*_begin`` hooks and last, in reverse, on ``*_end`` hooks and
     ``on_exception``.
 
-    A copy, so that a callback changing `Trainer.callbacks` during the
-    hook changes who gets the next hook, not this one.
+    A copy, so that a callback changing `TrainerState.callbacks` during
+    the hook changes who gets the next hook, not this one.
     """
     wrappers = tuple(c for c in callbacks if c.wrapper)
     if wrappers and hook.endswith("_begin"):

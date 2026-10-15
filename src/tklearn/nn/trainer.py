@@ -1,56 +1,31 @@
 from __future__ import annotations
 
-import contextlib
-import copy
-import math
-from collections.abc import Iterable, Mapping
-from typing import Any, Callable, Generator, Union, cast
-from weakref import WeakKeyDictionary
+from collections.abc import Iterable, Iterator, Mapping
+from typing import Any, Callable, Union
 
 import torch
-from accelerate import Accelerator
-from accelerate.optimizer import AcceleratedOptimizer
-from accelerate.utils import send_to_device
-from datasets import IterableDataset
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
 
 from tklearn.metrics import Metric, MetricCollection
-from tklearn.nn._outputs import (
-    BatchLogs,
-    RunningMean,
-    concat,
-    example_losses,
-    split_loss,
-)
-from tklearn.nn.callbacks import Callback, Dispatcher
+from tklearn.nn.callbacks import Callback
 from tklearn.nn.module import Module
-from tklearn.nn.schedules import get_scheduler
+from tklearn.nn.state import TrainerState
 
 __all__ = [
+    "OptimizerFactory",
+    "SchedulerFactory",
     "Trainer",
 ]
 
-#: A scheduler, the name of a `get_scheduler` schedule, or
+#: Builds an optimizer from the model's parameters, e.g.
+#: ``functools.partial(torch.optim.AdamW, lr=2e-5)``.
+OptimizerFactory = Callable[[Iterator[torch.nn.Parameter]], Optimizer]
+
+#: The name of a `get_scheduler` schedule, or
 #: ``f(optimizer, num_training_steps)`` returning a scheduler.
-SchedulerLike = Union[
-    LRScheduler, str, Callable[[Optimizer, int], LRScheduler]
-]
-
-
-class ModuleWrapper(torch.nn.Module):
-    # Calls the step hooks through ``forward``, so that what `Accelerator`
-    # wraps around forward (DDP gradient sync, autocast) applies to them.
-
-    def __init__(self, module: Module) -> None:
-        super().__init__()
-        self.module = module
-        # training_step
-        # predict_step
-
-    def forward(self, step: str, batch: Any) -> Any:
-        return getattr(self.module, step)(batch)
+SchedulerFactory = Union[str, Callable[[Optimizer, int], LRScheduler]]
 
 
 class Trainer:
@@ -60,17 +35,25 @@ class Trainer:
     preference by Accelerate), with mixed precision, and on several GPUs
     when started with ``accelerate launch``.
 
+    A trainer holds configuration only. Each `fit`, `evaluate` or
+    `predict` call runs with a new `TrainerState`, which it drops when it
+    returns, and builds a new optimizer and scheduler from the factories;
+    a call writes nothing back to the trainer or to what it was given,
+    except the model, which it trains.
+
     Parameters
     ----------
     model : Module
         The model; see `Module` for the hooks it implements.
-    optimizer : Optimizer, optional
-        Optimizer over the model's parameters. Required by `fit`.
-    lr_scheduler : LRScheduler, str or callable, optional
-        Stepped after every optimizer step. Either a scheduler, the name of
-        a `get_scheduler` schedule (e.g. ``"linear"``), or
-        ``f(optimizer, num_training_steps)`` returning a scheduler. Names
-        and callables are built at the start of each `fit` call.
+    optimizer : callable, optional
+        Builds the optimizer from the model's parameters at the start of
+        each `fit`, e.g. ``functools.partial(torch.optim.AdamW, lr=2e-5)``.
+        Required by `fit`.
+    lr_scheduler : str or callable, optional
+        Stepped after every optimizer step. Either the name of a
+        `get_scheduler` schedule (e.g. ``"linear"``), or
+        ``f(optimizer, num_training_steps)`` returning a scheduler; built
+        at the start of each `fit`.
     warmup : int or float, default=0
         Warmup of a named schedule, in optimizer steps (int) or as a
         fraction of all steps (float).
@@ -82,8 +65,8 @@ class Trainer:
         Callbacks receiving the hooks of `fit`, `evaluate` and `predict`.
         Each hook goes to them in the order given, except for wrapper
         callbacks (`Callback.wrapper`), which get ``*_begin`` hooks before
-        and ``*_end`` hooks after the others. Kept as the `callbacks`
-        list; a change to it during a hook applies from the next hook.
+        and ``*_end`` hooks after the others. Each run gets a copy of the
+        list, as `TrainerState.callbacks`.
     max_grad_norm : float, optional
         Clip the gradient norm to this value before each optimizer step.
     mixed_precision : {"no", "fp16", "bf16"}, optional
@@ -96,37 +79,15 @@ class Trainer:
     cpu : bool, default=False
         Run on the CPU even when a GPU or MPS device is available.
 
-    The trainer creates an `Accelerator` from these for each `fit`,
-    `evaluate` or `predict` call; anything else (plugins, distributed
-    settings) comes from ``accelerate config`` or ``accelerate launch``.
-
-    Attributes
-    ----------
-    history : list of dict
-        Logs of each epoch of the last `fit` call.
-    epochs : int
-        Maximum number of epochs of the last `fit` call.
-    epoch : int
-        Current (zero-based) epoch.
-    global_step : int
-        Optimizer steps taken in the current `fit` call; steps that fp16
-        skipped for overflowing gradients do not count.
-    num_batches : int or None
-        Batches in the dataloader of the running loop (a training epoch,
-        `evaluate` or `predict`), or None when it has no length.
-    grad_norm : Tensor or None
-        Total gradient norm before clipping at the last optimizer step,
-        when `max_grad_norm` is set; a tensor, so that reading it is the
-        only thing that waits for the device.
-    should_stop : bool
-        Set to True (e.g. by a callback) to stop `fit` after the current
-        batch. On several processes, setting it on one stops them all.
+    Each call creates an `Accelerator` from these; anything else (plugins,
+    distributed settings) comes from ``accelerate config`` or
+    ``accelerate launch``.
 
     Examples
     --------
     >>> trainer = Trainer(
     ...     model,
-    ...     torch.optim.AdamW(model.parameters(), lr=2e-5),
+    ...     functools.partial(torch.optim.AdamW, lr=2e-5),
     ...     lr_scheduler="linear",
     ...     warmup=0.1,
     ...     metrics={"f1": F1(average="macro")},
@@ -141,9 +102,9 @@ class Trainer:
     def __init__(
         self,
         model: Module,
-        optimizer: Optimizer | None = None,
+        optimizer: OptimizerFactory | None = None,
         *,
-        lr_scheduler: SchedulerLike | None = None,
+        lr_scheduler: SchedulerFactory | None = None,
         warmup: int | float = 0,
         metrics: Mapping[str, Metric] | None = None,
         callbacks: Iterable[Callback] | None = None,
@@ -154,6 +115,26 @@ class Trainer:
     ) -> None:
         if not isinstance(model, Module):
             msg = f"expected a tklearn.nn.Module, got {type(model).__name__}"
+            raise TypeError(msg)
+        if isinstance(optimizer, Optimizer) or not (
+            optimizer is None or callable(optimizer)
+        ):
+            msg = (
+                "optimizer must build the optimizer from the model's "
+                "parameters, e.g. functools.partial(torch.optim.AdamW, "
+                f"lr=2e-5), got {type(optimizer).__name__}"
+            )
+            raise TypeError(msg)
+        if isinstance(lr_scheduler, LRScheduler) or not (
+            lr_scheduler is None
+            or isinstance(lr_scheduler, str)
+            or callable(lr_scheduler)
+        ):
+            msg = (
+                "lr_scheduler must be the name of a schedule or build the "
+                "scheduler as f(optimizer, num_training_steps), got "
+                f"{type(lr_scheduler).__name__}"
+            )
             raise TypeError(msg)
         if lr_scheduler is not None and optimizer is None:
             msg = "an lr_scheduler needs an optimizer"
@@ -180,37 +161,14 @@ class Trainer:
             raise ValueError(msg)
         self._model = model
         self._optimizer = optimizer
-        self._accelerator_args = {
-            "cpu": cpu,
-            "mixed_precision": mixed_precision,
-            "gradient_accumulation_steps": gradient_accumulation_steps,
-        }
         self.lr_scheduler = lr_scheduler
         self.warmup = warmup
         self.metrics = metrics
         self.callbacks = callbacks
         self.max_grad_norm = max_grad_norm
-        self.history: list[dict[str, Any]] = []
-        self.epochs = 0
-        self.epoch = 0
-        self.global_step = 0
-        self.num_batches: int | None = None
-        self.grad_norm: torch.Tensor | None = None
-        self.should_stop = False
-        # the accelerator of the running fit, evaluate or predict, with the
-        # model and optimizer it prepared, and the dispatcher that calls
-        # the callbacks; see _run
-        self._accelerator: Accelerator | None = None
-        self._dispatcher: Dispatcher | None = None
-        self._runner: ModuleWrapper | None = None
-        self._prepared_optimizer: AcceleratedOptimizer | None = None
-        # prepared dataloaders, kept as long as the caller keeps the originals
-        self._dataloaders: WeakKeyDictionary[DataLoader, DataLoader] = (
-            WeakKeyDictionary()
-        )
-
-    # The model and optimizer are fixed: a run uses prepared versions of
-    # them, so a replacement during one would be silently ignored.
+        self.mixed_precision = mixed_precision
+        self.gradient_accumulation_steps = gradient_accumulation_steps
+        self.cpu = cpu
 
     @property
     def model(self) -> Module:
@@ -218,24 +176,9 @@ class Trainer:
         return self._model
 
     @property
-    def optimizer(self) -> Optimizer | None:
-        """The optimizer, fixed when the trainer is created."""
+    def optimizer(self) -> OptimizerFactory | None:
+        """The optimizer factory, fixed when the trainer is created."""
         return self._optimizer
-
-    @property
-    def accelerator(self) -> Accelerator:
-        """The accelerator of the running `fit`, `evaluate` or `predict`.
-
-        The outermost of these calls creates it and releases it when it
-        returns, so that nothing the accelerator prepared outlives the run.
-        Only available during a run, e.g. from a callback hook.
-        """
-        if self._accelerator is None:
-            msg = (
-                "the accelerator exists only during a fit, evaluate or predict"
-            )
-            raise RuntimeError(msg)
-        return self._accelerator
 
     @property
     def metrics(self) -> MetricCollection:
@@ -249,7 +192,14 @@ class Trainer:
     def metrics(self, metrics: Mapping[str, Metric] | None) -> None:
         self._metrics = MetricCollection(metrics)
 
-    # --- fit ---------------------------------------------------------------
+    @property
+    def accelerator_args(self) -> dict[str, Any]:
+        """The arguments of the `Accelerator` of each run."""
+        return {
+            "cpu": self.cpu,
+            "mixed_precision": self.mixed_precision,
+            "gradient_accumulation_steps": self.gradient_accumulation_steps,
+        }
 
     def fit(
         self,
@@ -260,8 +210,8 @@ class Trainer:
     ) -> list[dict[str, Any]]:
         """Train the model.
 
-        Each call is a new run: `history`, `epoch` and `global_step` start
-        over, while the model and optimizer keep their state.
+        Each call is a new run, with a new optimizer and scheduler built
+        from the factories; the model keeps what it learned.
 
         Parameters
         ----------
@@ -276,9 +226,8 @@ class Trainer:
         Returns
         -------
         list of dict
-            The logs of each epoch (also kept as `history`): the mean
-            training ``loss`` and other logged terms, then the evaluation
-            results.
+            The logs of each epoch: the mean training ``loss`` and other
+            logged terms, then the evaluation results.
         """
         if self.optimizer is None:
             msg = "fit needs an optimizer; pass one to the Trainer"
@@ -286,122 +235,9 @@ class Trainer:
         if epochs < 1:
             msg = f"epochs must be at least 1, got {epochs}"
             raise ValueError(msg)
-        with self._run(training=True) as (runner, optimizer):
-            dataloader = self._prepare_dataloader(train_dataloader)
-            num_batches = _num_batches(dataloader)
-            if num_batches == 0:
-                msg = "cannot fit on an empty dataloader"
-                raise ValueError(msg)
-            scheduler = self._build_scheduler(num_batches, epochs)
-            # Accelerate keeps the accumulation steps process-wide, and an
-            # accelerator of another trainer (e.g. one evaluating from a
-            # callback) sets its own; read ours before any callback runs,
-            # and set them again before each batch
-            accumulation_steps = self.accelerator.gradient_accumulation_steps
-            self.history = []
-            self.epochs = epochs
-            self.epoch = self.global_step = 0
-            self.grad_norm = None
-            self.should_stop = False
-            # a stopped fit can end inside a gradient accumulation window,
-            # where Accelerate skips zero_grad; the flag is process-wide
-            # state, so start a new window without gradients
-            self.accelerator.sync_gradients = True
-            optimizer.zero_grad()
-            # also the length at each epoch: a nested evaluate restores it
-            self.num_batches = num_batches
-            self._callback("on_train_begin")
-            for epoch in range(epochs):
-                self.epoch = epoch
-                if hasattr(dataloader, "set_epoch"):  # reshuffle each epoch
-                    # required for synchronized shuffling across epochs
-                    dataloader = cast(IterableDataset, dataloader)
-                    dataloader.set_epoch(epoch)
-                self._callback("on_epoch_begin")
-                logs = self._train_epoch(
-                    runner,
-                    optimizer,
-                    scheduler,
-                    dataloader,
-                    accumulation_steps,
-                )
-                if eval_dataloader is not None:
-                    logs.update(
-                        self.evaluate(eval_dataloader, prefix="valid_")
-                    )
-                self.history.append(logs)
-                self._callback("on_epoch_end", logs)
-                if self._sync_should_stop():
-                    break
-            self._callback("on_train_end")
-        return self.history
-
-    def _train_epoch(
-        self,
-        runner: ModuleWrapper,
-        optimizer: AcceleratedOptimizer,
-        scheduler: LRScheduler | None,
-        dataloader: DataLoader,
-        accumulation_steps: int,
-    ) -> dict[str, float]:
-        runner.train()
-        # summed on the device, so that only the end of the epoch waits for
-        # it
-        means = RunningMean(self.accelerator)
-        for batch in dataloader:
-            self._callback("on_train_batch_begin", batch)
-            self.accelerator.gradient_accumulation_steps = accumulation_steps
-            with self.accelerator.accumulate(runner):
-                loss, logs = split_loss(runner("training_step", batch))
-                self.accelerator.backward(loss)
-                # true at the end of accumulation
-                if self.accelerator.sync_gradients:
-                    if self.max_grad_norm is not None:
-                        self.grad_norm = self.accelerator.clip_grad_norm_(
-                            self.model.parameters(), self.max_grad_norm
-                        )
-                    self._callback("on_before_optimizer_step")
-                    optimizer.step()
-                    optimizer.zero_grad()
-            # fp16 skips steps whose gradients overflowed
-            if (
-                self.accelerator.sync_gradients
-                and not optimizer.step_was_skipped
-            ):
-                self.global_step += 1
-                if scheduler is not None:
-                    scheduler.step()
-            means.update(logs)
-            self._callback("on_train_batch_end", batch, BatchLogs(logs))
-            if self._sync_should_stop():
-                break
-        return means.compute()
-
-    def _build_scheduler(
-        self, num_batches: int | None, epochs: int
-    ) -> LRScheduler | None:
-        lr_scheduler = self.lr_scheduler
-        if lr_scheduler is None or isinstance(lr_scheduler, LRScheduler):
-            return lr_scheduler
-        if num_batches is None:
-            msg = (
-                "a named or callable lr_scheduler needs a dataloader with a "
-                "length to count the training steps"
-            )
-            raise ValueError(msg)
-        num_steps = epochs * math.ceil(
-            num_batches / self.accelerator.gradient_accumulation_steps
-        )
-        if isinstance(self.lr_scheduler, str):
-            return get_scheduler(
-                self.lr_scheduler,
-                self.optimizer,
-                num_steps,
-                warmup=self.warmup,
-            )
-        return self.lr_scheduler(self.optimizer, num_steps)
-
-    # --- evaluate ----------------------------------------------------------
+        state = TrainerState(self)
+        with state._run(training=True):
+            return state._fit(train_dataloader, eval_dataloader, epochs)
 
     def evaluate(
         self,
@@ -411,6 +247,9 @@ class Trainer:
         metrics: Mapping[str, Metric] | None = None,
     ) -> dict[str, Any]:
         """Compute the mean loss and the metrics over a dataloader.
+
+        A callback evaluating during a run uses `TrainerState.evaluate`
+        instead, which reuses the run.
 
         Parameters
         ----------
@@ -431,61 +270,9 @@ class Trainer:
             processes, the duplicates that pad the last batch are left
             out, which is exact with a loss per example.
         """
-        with self._run(training=False) as (runner, _):
-            dataloader = self._prepare_dataloader(dataloader)
-            # update a copy, so that an evaluation started meanwhile (from
-            # a callback, or by another trainer sharing the metrics) cannot
-            # reset it
-            metrics = copy.deepcopy(
-                self.metrics if metrics is None else MetricCollection(metrics)
-            )
-            metrics.reset()
-            input_names = metrics.input_names
-            loss_sum, num_examples, num_batches = 0.0, 0, 0
-            self.num_batches = _num_batches(dataloader)
-            self._callback("on_test_begin")
-            with _eval_mode(self.model):
-                for batch in dataloader:
-                    self._callback("on_test_batch_begin", batch)
-                    outputs = runner("predict_step", batch)
-                    if not isinstance(outputs, Mapping):
-                        msg = (
-                            "predict_step must return a mapping of metric "
-                            "inputs to be evaluated, got "
-                            f"{type(outputs).__name__}"
-                        )
-                        raise TypeError(msg)
-                    if outputs.get("loss") is not None:
-                        # one loss per example, without the duplicates that
-                        # pad the last batch on several processes
-                        losses = self._gather(
-                            example_losses(
-                                outputs, batch, self.accelerator.device
-                            )
-                        )
-                        loss_sum += float(losses.float().sum())
-                        num_examples += losses.numel()
-                    if input_names:
-                        inputs = {
-                            k: v
-                            for k, v in outputs.items()
-                            if k in input_names
-                        }
-                        metrics.update(**self._gather(inputs))
-                    num_batches += 1
-                    self._callback("on_test_batch_end", batch, outputs)
-            if num_batches == 0:
-                msg = "cannot evaluate on an empty dataloader"
-                raise ValueError(msg)
-            results: dict[str, Any] = {}
-            if num_examples:
-                results["loss"] = loss_sum / num_examples
-            results.update(metrics.compute())
-            results = {f"{prefix}{k}": v for k, v in results.items()}
-            self._callback("on_test_end", results)
-        return results
-
-    # --- predict -----------------------------------------------------------
+        state = TrainerState(self)
+        with state._run(training=False):
+            return state.evaluate(dataloader, prefix=prefix, metrics=metrics)
 
     def predict(self, dataloader: DataLoader) -> Any:
         """Run `predict_step` over a dataloader and concatenate the outputs.
@@ -505,151 +292,6 @@ class Trainer:
             The outputs for the whole dataloader, structured like the
             output of one batch.
         """
-        chunks = []
-        with self._run(training=False) as (runner, _):
-            dataloader = self._prepare_dataloader(dataloader)
-            self.num_batches = _num_batches(dataloader)
-            self._callback("on_predict_begin")
-            with _eval_mode(self.model):
-                for batch in dataloader:
-                    self._callback("on_predict_batch_begin", batch)
-                    outputs = runner("predict_step", batch)
-                    self._callback("on_predict_batch_end", batch, outputs)
-                    if isinstance(outputs, Mapping):
-                        outputs = {
-                            k: v for k, v in outputs.items() if k != "loss"
-                        }
-                    chunks.append(send_to_device(self._gather(outputs), "cpu"))
-            self._callback("on_predict_end")
-        if not chunks:
-            msg = "cannot predict on an empty dataloader"
-            raise ValueError(msg)
-        return concat(chunks)
-
-    # --- helpers -----------------------------------------------------------
-
-    def _callback(self, hook: str, *args: Any) -> None:
-        # only called during a run, which creates the dispatcher
-        cast(Dispatcher, self._dispatcher)(hook, *args)
-
-    def _sync_should_stop(self) -> bool:
-        # a callback may stop training on one process only (e.g. on rank 0
-        # metrics); stop all of them, or the others hang in the next
-        # collective
-        if self.accelerator.num_processes > 1:
-            if self.should_stop:
-                self.accelerator.set_trigger()
-            if self.accelerator.check_trigger():
-                self.should_stop = True
-        return self.should_stop
-
-    @contextlib.contextmanager
-    def _run(
-        self, training: bool
-    ) -> Generator[tuple[ModuleWrapper, AcceleratedOptimizer | None]]:
-        """A `fit` (training) or an `evaluate` or `predict` run.
-
-        The outermost run creates the accelerator and prepares the model
-        (and, when training, the optimizer) with it; both are released when
-        it ends, so that nothing the accelerator prepared or wrapped
-        outlives the run. A run started from another, e.g. the evaluation
-        after each epoch of fit, reuses them. `num_batches` is restored
-        when the run ends, as fit evaluates in the middle of its epoch.
-        When the outermost run raises, the callbacks get `on_exception`.
-        The outermost run also gives the callbacks this trainer as
-        `Callback.trainer` until it ends, so that the run of another
-        trainer cannot share one.
-        """
-        previous = self.num_batches
-        created = self._accelerator is None
-        if created:
-            # gives the callbacks this trainer, or raises when one is in the
-            # run of another
-            dispatcher = Dispatcher(self)
-            try:
-                # Accelerate fixes cpu and mixed_precision for the process
-                # at the first accelerator, and raises when a later one
-                # asks otherwise
-                accelerator = Accelerator(**self._accelerator_args)
-                runner = ModuleWrapper(self.model)
-                if training:
-                    runner, optimizer = accelerator.prepare(
-                        runner, self.optimizer
-                    )
-                else:
-                    # device placement and autocast, without the distributed
-                    # wrapping (and its parameter broadcast) only training
-                    # needs
-                    runner = accelerator.prepare_model(
-                        runner, evaluation_mode=True
-                    )
-                    optimizer = None
-            except BaseException:
-                dispatcher.close()
-                raise
-            self._dispatcher = dispatcher
-            self._accelerator = accelerator
-            self._runner, self._prepared_optimizer = runner, optimizer
-        elif training and self._prepared_optimizer is None:
-            msg = "fit cannot be started from within evaluate or predict"
-            raise RuntimeError(msg)
-        try:
-            yield self._runner, self._prepared_optimizer
-        except BaseException as e:
-            # once, from the outermost run, while the accelerator exists
-            if created:
-                self._dispatcher.on_exception(e)
-            raise
-        finally:
-            self.num_batches = previous
-            if created:
-                self._dispatcher.close()
-                self._dispatcher = self._accelerator = None
-                self._runner = self._prepared_optimizer = None
-
-    def _prepare_dataloader(self, dataloader: DataLoader) -> DataLoader:
-        if not isinstance(dataloader, DataLoader):
-            msg = (
-                f"expected a torch DataLoader, got {type(dataloader).__name__}"
-                "; wrap ready-made batches with "
-                "DataLoader(batches, batch_size=None)"
-            )
-            raise TypeError(msg)
-        # prepare each dataloader once, so persistent workers are reused; a
-        # prepared dataloader does not depend on the accelerator that
-        # prepared it, so one from an earlier run is reused as it is
-        prepared = self._dataloaders.get(dataloader)
-        if prepared is None:
-            prepared = self.accelerator.prepare(dataloader)
-            self._dataloaders[dataloader] = prepared
-        return prepared
-
-    def _gather(self, data: Any) -> Any:
-        # collect the outputs of every process, without the duplicates
-        # that pad the last batch
-        if self.accelerator.num_processes == 1:
-            return data
-        if isinstance(data, Mapping):
-            return {k: self._gather(v) for k, v in data.items()}
-        return self.accelerator.gather_for_metrics(data)
-
-
-@contextlib.contextmanager
-def _eval_mode(model: Module) -> Generator[None]:
-    """Put the model in evaluation mode, without gradients, and restore its
-    mode afterwards."""
-    training = model.training
-    model.eval()
-    try:
-        with torch.no_grad():
-            yield
-    finally:
-        model.train(training)
-
-
-def _num_batches(dataloader: DataLoader) -> int | None:
-    """Length of a dataloader; None for an iterable dataset without one."""
-    try:
-        return len(dataloader)
-    except TypeError:
-        return None
+        state = TrainerState(self)
+        with state._run(training=False):
+            return state.predict(dataloader)

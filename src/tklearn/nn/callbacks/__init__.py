@@ -12,7 +12,7 @@ rest are ready-made:
 - `OpenTelemetryCallback` traces `fit`, `evaluate` and `predict` as
   OpenTelemetry spans, for any backend an OpenTelemetry SDK exports to.
 
-`Trainer.history` holds the epoch logs (Keras' ``History``), and
+`Trainer.fit` returns the epoch logs (Keras' ``History``), and
 ``Trainer(lr_scheduler=...)`` schedules the learning rate (Keras'
 ``LearningRateScheduler``).
 """

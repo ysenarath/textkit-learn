@@ -18,6 +18,7 @@ python -m tklearn runs monitor examples/outputs/callbacks/trace_training -n 1
 
 from __future__ import annotations
 
+import functools
 import math
 import os
 import subprocess
@@ -62,7 +63,7 @@ def train(out: Path, lr: float, delay: float) -> tuple[list[dict], dict]:
     )
     trainer = Trainer(
         model,
-        torch.optim.AdamW(model.parameters(), lr=lr),
+        functools.partial(torch.optim.AdamW, lr=lr),
         metrics={"accuracy": Accuracy(), "f1": F1(average="macro")},
         callbacks=[
             ModelCheckpoint(
@@ -125,7 +126,7 @@ def main(out: Path, delay: float = 0.0) -> None:
                 for row, logs in zip(run_epochs.to_dict("records"), history)
                 for key in ("loss", "valid_loss", "valid_f1")
             ),
-            "the epoch spans hold Trainer.history",
+            "the epoch spans hold the history fit returned",
         )
         check(
             len(steps) == fit_steps // LOG_EVERY_N_STEPS,

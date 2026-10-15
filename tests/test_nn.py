@@ -1,3 +1,4 @@
+import functools
 import gc
 import itertools
 import json
@@ -172,7 +173,7 @@ class StopAt(Callback):
         if hook == self.hook:
             self.count -= 1
             if self.count == 0:
-                self.trainer.should_stop = True
+                self.state.should_stop = True
 
 
 def skip_steps(*skipped):
@@ -214,10 +215,9 @@ class TrainerTestCase(unittest.TestCase):
         **kwargs,
     ):
         model = Classifier() if model is None else model
-        optimizer = torch.optim.SGD(model.parameters(), lr=lr)
         return Trainer(
             model,
-            optimizer,
+            functools.partial(torch.optim.SGD, lr=lr),
             cpu=True,
             mixed_precision=mixed_precision,
             gradient_accumulation_steps=accumulation,
@@ -225,19 +225,47 @@ class TrainerTestCase(unittest.TestCase):
         )
 
 
+class LastState(Callback):
+    """Keeps the state of the run it was last in, to read after it."""
+
+    def __init__(self):
+        self.last = None
+
+    def on_train_begin(self):
+        self.last = self.state
+
+    def on_test_begin(self):
+        if self.last is None or self.last.epochs == 0:
+            self.last = self.state
+
+    def on_predict_begin(self):
+        self.on_test_begin()
+
+
+def fit_state(trainer, *args, **kwargs):
+    """Fit, and return the state of the run, to read after it."""
+    probe = LastState()
+    trainer.callbacks = [*trainer.callbacks, probe]
+    try:
+        trainer.fit(*args, **kwargs)
+    finally:
+        trainer.callbacks.remove(probe)
+    return probe.last
+
+
 class TestFit(TrainerTestCase):
     def test_learns(self):
         trainer = self.trainer(metrics={"acc": Accuracy()})
-        history = trainer.fit(
-            self.loader(shuffle=True), self.loader(), epochs=5
+        state = fit_state(
+            trainer, self.loader(shuffle=True), self.loader(), epochs=5
         )
-        self.assertIs(history, trainer.history)
+        history = state.history
         self.assertEqual(len(history), 5)
         self.assertEqual(list(history[0]), ["loss", "valid_loss", "valid_acc"])
         self.assertLess(history[-1]["loss"], history[0]["loss"])
         self.assertGreater(history[-1]["valid_acc"], 0.9)
-        self.assertEqual(trainer.global_step, 5 * 6)
-        self.assertEqual(trainer.epoch, 4)
+        self.assertEqual(state.global_step, 5 * 6)
+        self.assertEqual(state.epoch, 4)
 
     def test_trains_with_a_loss_per_example(self):
         # the default training_step averages it, so this trains exactly
@@ -320,18 +348,22 @@ class TestFit(TrainerTestCase):
         with self.assertRaisesRegex(NotImplementedError, "predict_step"):
             trainer.predict(self.loader())
 
-    def test_history_restarts(self):
+    def test_each_fit_is_a_new_run(self):
         trainer = self.trainer()
-        trainer.fit(self.loader(), epochs=3)
-        trainer.fit(self.loader(), epochs=1)
-        self.assertEqual(len(trainer.history), 1)
-        self.assertEqual(trainer.global_step, 6)
+        first = fit_state(trainer, self.loader(), epochs=3)
+        second = fit_state(trainer, self.loader(), epochs=1)
+        self.assertEqual(len(second.history), 1)
+        self.assertEqual(second.global_step, 6)
+        # with an optimizer of its own, built by the factory
+        self.assertIsNot(second.optimizer, first.optimizer)
+        self.assertEqual(len(first.history), 3)
+        self.assertEqual(first.global_step, 18)
 
     def test_gradient_accumulation_matches_larger_batches(self):
         accumulated = Classifier()
         trainer = self.trainer(accumulated, accumulation=2)
-        trainer.fit(self.loader(batch_size=8), epochs=2)
-        self.assertEqual(trainer.global_step, 2 * 6)
+        state = fit_state(trainer, self.loader(batch_size=8), epochs=2)
+        self.assertEqual(state.global_step, 2 * 6)
 
         AcceleratorState._reset_state(reset_partial_state=True)
         GradientState._reset_state()
@@ -343,8 +375,10 @@ class TestFit(TrainerTestCase):
     def test_steps_at_end_of_epoch_when_accumulating(self):
         # 5 batches with 2 per step: the last step has a single batch
         trainer = self.trainer(accumulation=2)
-        trainer.fit(self.loader(self.data[:40], batch_size=8), epochs=2)
-        self.assertEqual(trainer.global_step, 2 * 3)
+        state = fit_state(
+            trainer, self.loader(self.data[:40], batch_size=8), epochs=2
+        )
+        self.assertEqual(state.global_step, 2 * 3)
 
     def test_another_trainer_does_not_change_the_accumulation(self):
         # accelerate keeps the accumulation steps process-wide, and every
@@ -365,8 +399,8 @@ class TestFit(TrainerTestCase):
         trainer = self.trainer(
             model, accumulation=2, callbacks=[EvaluateOther()]
         )
-        trainer.fit(self.loader(batch_size=8), epochs=2)
-        self.assertEqual(trainer.global_step, 2 * 6)
+        state = fit_state(trainer, self.loader(batch_size=8), epochs=2)
+        self.assertEqual(state.global_step, 2 * 6)
         for a, b in zip(model.parameters(), expected.parameters()):
             torch.testing.assert_close(a, b)
 
@@ -379,16 +413,16 @@ class TestFit(TrainerTestCase):
 
         trainer = self.trainer(lr_scheduler=schedule)
         with skip_steps(1, 8):
-            trainer.fit(self.loader(), epochs=2)
-        self.assertEqual(trainer.global_step, 2 * 6 - 2)
-        self.assertEqual(built[0].last_epoch, trainer.global_step)
+            state = fit_state(trainer, self.loader(), epochs=2)
+        self.assertEqual(state.global_step, 2 * 6 - 2)
+        self.assertEqual(built[0].last_epoch, state.global_step)
 
     def test_clips_gradients(self):
         norms = []
 
         class GradNorm(Callback):
             def on_before_optimizer_step(self):
-                params = self.trainer.model.parameters()
+                params = self.state.model.parameters()
                 grads = torch.cat([p.grad.flatten() for p in params])
                 norms.append(torch.linalg.vector_norm(grads))
 
@@ -408,7 +442,6 @@ class TestFit(TrainerTestCase):
         step.assert_not_called()
         # raised before on_train_begin, so no hook but on_exception
         self.assertEqual(recorder.calls, ["on_exception"])
-        self.assertEqual(trainer.global_step, 0)
 
     def test_empty_dataloader_without_a_length(self):
         # empty only once iterated; Accelerate dispatches the batches of an
@@ -419,7 +452,6 @@ class TestFit(TrainerTestCase):
             trainer.fit(self.loader(EmptyIterable()), self.loader(), epochs=3)
         self.assertNotIn("on_test_begin", recorder.calls)
         self.assertNotIn("on_epoch_end", recorder.calls)
-        self.assertEqual(trainer.history, [])
 
     def test_mixed_precision(self):
         trainer = self.trainer(
@@ -476,10 +508,11 @@ class TestStopping(TrainerTestCase):
         trainer = self.trainer(
             callbacks=[StopAt("on_train_batch_end", 2), recorder]
         )
-        history = trainer.fit(self.loader(), self.loader(), epochs=5)
+        state = fit_state(trainer, self.loader(), self.loader(), epochs=5)
+        history = state.history
         self.assertEqual(len(history), 1)
         self.assertIn("valid_loss", history[0])
-        self.assertEqual(trainer.global_step, 2)
+        self.assertEqual(state.global_step, 2)
         self.assertEqual(recorder.calls.count("on_train_batch_end"), 2)
         self.assertEqual(recorder.calls[-2:], ["on_epoch_end", "on_train_end"])
 
@@ -552,15 +585,15 @@ class TestCallbacks(TrainerTestCase):
         class Epochs(Callback):
             def on_epoch_end(self, logs):
                 seen.append((
-                    self.trainer.epoch,
-                    self.trainer.global_step,
+                    self.state.epoch,
+                    self.state.global_step,
                     logs,
                 ))
 
         trainer = self.trainer(callbacks=[Epochs()])
-        trainer.fit(self.loader(), epochs=2)
+        history = trainer.fit(self.loader(), epochs=2)
         self.assertEqual([s[:2] for s in seen], [(0, 6), (1, 12)])
-        self.assertEqual([s[2] for s in seen], trainer.history)
+        self.assertEqual([s[2] for s in seen], history)
 
     def test_callback_in_two_runs_at_once(self):
         # a callback keeps the state of its run (e.g. the patience of
@@ -575,7 +608,7 @@ class TestCallbacks(TrainerTestCase):
 
         trainer = self.trainer(callbacks=[shared, EvaluateOther()])
         with self.assertRaisesRegex(
-            RuntimeError, "Recorder is in a run of another trainer"
+            RuntimeError, "Recorder is in another run"
         ):
             trainer.fit(loader)
         self.assertNotIn("on_test_begin", shared.calls)
@@ -584,27 +617,31 @@ class TestCallbacks(TrainerTestCase):
         trainer.callbacks = [shared]
         trainer.fit(loader)
 
-    def test_callback_trainer_during_a_run(self):
+    def test_callback_state_during_a_run(self):
         seen = []
 
         class Note(Callback):
             def on_train_begin(self):
-                seen.append(("train", self.trainer))
+                seen.append(("train", self.state))
 
             def on_test_begin(self):
-                seen.append(("test", self.trainer))
+                seen.append(("test", self.state))
 
             def on_exception(self, exception):
-                seen.append(("exception", self.trainer))
+                seen.append(("exception", self.state))
 
         note = Note()
-        with self.assertRaisesRegex(RuntimeError, "Note has a trainer only"):
-            note.trainer
+        with self.assertRaisesRegex(RuntimeError, "Note has a state only"):
+            note.state
         trainer = self.trainer(callbacks=[note])
         trainer.fit(self.loader(), self.loader(), epochs=1)
-        self.assertEqual(seen, [("train", trainer), ("test", trainer)])
-        with self.assertRaisesRegex(RuntimeError, "Note has a trainer only"):
-            note.trainer
+        # one state for the fit and its evaluation, of this trainer
+        (_, state), (_, evaluation) = seen
+        self.assertEqual([name for name, _ in seen], ["train", "test"])
+        self.assertIs(evaluation, state)
+        self.assertIs(state.trainer, trainer)
+        with self.assertRaisesRegex(RuntimeError, "Note has a state only"):
+            note.state
 
         # also given back after a run that raised
         seen.clear()
@@ -613,29 +650,30 @@ class TestCallbacks(TrainerTestCase):
         )
         with self.assertRaises(RuntimeError):
             trainer.evaluate(self.loader())
-        self.assertEqual(seen, [("test", trainer), ("exception", trainer)])
-        with self.assertRaisesRegex(RuntimeError, "Note has a trainer only"):
-            note.trainer
+        self.assertEqual([name for name, _ in seen], ["test", "exception"])
+        self.assertIs(seen[0][1], seen[1][1])
+        with self.assertRaisesRegex(RuntimeError, "Note has a state only"):
+            note.state
 
     def test_callback_added_during_a_run(self):
         epochs = []
 
         class Read(Callback):
             def on_epoch_end(self, logs):
-                epochs.append(self.trainer.epoch)
+                epochs.append(self.state.epoch)
 
         read = Read()
 
         class Add(Callback):
             def on_train_begin(self):
-                self.trainer.callbacks.append(read)
+                self.state.callbacks.append(read)
 
         trainer = self.trainer(callbacks=[Add()])
         trainer.fit(self.loader(), epochs=2)
         self.assertEqual(epochs, [0, 1])
         # given back at the end of the run, though not there at its start
-        with self.assertRaisesRegex(RuntimeError, "Read has a trainer only"):
-            read.trainer
+        with self.assertRaisesRegex(RuntimeError, "Read has a state only"):
+            read.state
 
 
 class RaisingClassifier(Classifier):
@@ -675,7 +713,7 @@ class ExceptionRecorder(Recorder):
     def on_exception(self, exception):
         self.calls.append("on_exception")
         self.exceptions.append(exception)
-        self.accelerators.append(self.trainer.accelerator)
+        self.accelerators.append(self.state.accelerator)
 
 
 class TestExceptions(TrainerTestCase):
@@ -874,18 +912,18 @@ class TestEvaluate(TrainerTestCase):
         with self.assertRaisesRegex(ValueError, "empty"):
             self.trainer().evaluate(self.loader([]))
 
-    def test_prepares_each_dataloader_once(self):
-        # across runs too, so that persistent workers are reused
+    def test_prepares_each_dataloader_once_per_run(self):
+        # so that the evaluation after each epoch reuses the persistent
+        # workers of the one before
         loader = self.loader()
         prepared = []
 
         class Capture(Callback):
             def on_test_begin(self):
-                prepared.append(self.trainer._prepare_dataloader(loader))
+                prepared.append(self.state._prepare_dataloader(loader))
 
         trainer = self.trainer(callbacks=[Capture()])
-        trainer.evaluate(loader)
-        trainer.evaluate(loader)
+        trainer.fit(self.loader(), loader, epochs=2)
         self.assertIsNot(prepared[0], loader)
         self.assertIs(prepared[0], prepared[1])
 
@@ -913,7 +951,7 @@ class TestEvaluate(TrainerTestCase):
             def on_test_batch_end(self, batch, outputs):
                 if not self.done:
                     self.done = True
-                    self.trainer.evaluate(inner)
+                    self.state.evaluate(inner)
 
         trainer.callbacks = [Nested()]
         np.testing.assert_array_equal(trainer.evaluate(outer)["cm"], expected)
@@ -1032,7 +1070,7 @@ class TestSchedules(TrainerTestCase):
 
         class LearningRate(Callback):
             def on_before_optimizer_step(self):
-                lrs.append(self.trainer.optimizer.param_groups[0]["lr"])
+                lrs.append(self.state.optimizer.param_groups[0]["lr"])
 
         trainer = self.trainer(
             lr=1.0,
@@ -1041,10 +1079,12 @@ class TestSchedules(TrainerTestCase):
             warmup=2,
             callbacks=[LearningRate()],
         )
-        trainer.fit(self.loader(self.data[:40], batch_size=8), epochs=2)
+        state = fit_state(
+            trainer, self.loader(self.data[:40], batch_size=8), epochs=2
+        )
         # 3 steps per epoch: warmup to 1.0 over 2 steps, then decay to 0
         np.testing.assert_allclose(lrs, [0.0, 0.5, 1.0, 0.75, 0.5, 0.25])
-        self.assertEqual(trainer.optimizer.param_groups[0]["lr"], 0.0)
+        self.assertEqual(state.optimizer.param_groups[0]["lr"], 0.0)
 
     def test_callable_schedule_gets_step_count(self):
         built = []
@@ -1088,9 +1128,19 @@ class TestSchedules(TrainerTestCase):
 class TestValidation(TrainerTestCase):
     def test_constructor(self):
         model = Classifier()
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+        optimizer = functools.partial(torch.optim.SGD, lr=0.1)
+        # instances, which a run would change, instead of factories
+        sgd = torch.optim.SGD(model.parameters(), lr=0.1)
+        scheduler = LambdaLR(sgd, lambda step: 1.0)
         cases = [
             (dict(model=torch.nn.Linear(1, 1)), TypeError, "Module"),
+            (dict(optimizer=sgd), TypeError, "functools.partial"),
+            (dict(optimizer=0.1), TypeError, "functools.partial"),
+            (
+                dict(optimizer=optimizer, lr_scheduler=scheduler),
+                TypeError,
+                "num_training_steps",
+            ),
             (dict(lr_scheduler="linear"), ValueError, "optimizer"),
             (dict(optimizer=optimizer, warmup=2), ValueError, "named"),
             (dict(callbacks=[object()]), TypeError, "Callback"),
@@ -1116,31 +1166,27 @@ class TestValidation(TrainerTestCase):
 
         class Capture(Callback):
             def on_train_begin(self):
-                seen.append(self.trainer.accelerator)
+                seen.append(self.state.accelerator)
 
             def on_test_begin(self):
-                seen.append(self.trainer.accelerator)
+                seen.append(self.state.accelerator)
 
         trainer = self.trainer(callbacks=[Capture()])
-        with self.assertRaisesRegex(RuntimeError, "during a fit"):
-            trainer.accelerator
-        trainer.fit(self.loader(), self.loader())
+        state = fit_state(trainer, self.loader(), self.loader())
         trainer.evaluate(self.loader())
         with self.assertRaisesRegex(RuntimeError, "during a fit"):
-            trainer.accelerator
+            state.accelerator
         # the evaluation inside fit shares its accelerator; evaluate gets one
         self.assertIs(seen[0], seen[1])
         self.assertIsNot(seen[1], seen[2])
-        self.assertIsNone(trainer.num_batches)
 
     def test_model_and_optimizer_are_fixed(self):
-        # a run uses prepared versions of them, so a replacement would be
-        # silently ignored
+        # validated when the trainer is created
         trainer = self.trainer()
         model = Classifier()
         replacements = {
             "model": model,
-            "optimizer": torch.optim.SGD(model.parameters(), lr=0.1),
+            "optimizer": functools.partial(torch.optim.SGD, lr=0.1),
         }
         for used in (False, True):
             if used:
@@ -1224,8 +1270,8 @@ class TestMultipleProcesses(unittest.TestCase):
 
 class StopOnMainProcess(Callback):
     def on_train_batch_end(self, batch, logs):
-        if self.trainer.accelerator.is_main_process:
-            self.trainer.should_stop = True
+        if self.state.accelerator.is_main_process:
+            self.state.should_stop = True
 
 
 def _free_port():
@@ -1243,12 +1289,12 @@ def _run_on_two_processes(scenario):
         output = trainer.evaluate(loader)["loss"]
     else:
         model = SomeTermsClassifier()
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.5)
+        optimizer = functools.partial(torch.optim.SGD, lr=0.5)
         callbacks = [StopOnMainProcess()] if scenario == "stop" else []
         trainer = Trainer(model, optimizer, callbacks=callbacks, cpu=True)
         loader = DataLoader(INDEXED_DATA, batch_size=16)
-        history = trainer.fit(loader, epochs=2)
-        output = trainer.global_step if scenario == "stop" else history[:1]
+        run = fit_state(trainer, loader, epochs=2)
+        output = run.global_step if scenario == "stop" else run.history[:1]
     # print from one process, as lines printed at once can interleave
     outputs = gather_object([output])
     if state.is_main_process:

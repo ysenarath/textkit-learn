@@ -14,6 +14,7 @@ python examples/callbacks/terminate_on_nan.py
 
 from __future__ import annotations
 
+import functools
 import math
 from pathlib import Path
 
@@ -22,10 +23,19 @@ from common import Classifier, check, make_splits, parse_args
 from torch.utils.data import DataLoader
 
 from tklearn.nn import Trainer
-from tklearn.nn.callbacks import ModelCheckpoint, TerminateOnNaN
+from tklearn.nn.callbacks import Callback, ModelCheckpoint, TerminateOnNaN
 
 BATCH_SIZE = 16
 BAD_EXAMPLE = 100  # in batch 7, so the loss is NaN at step 7
+
+
+class LastStep(Callback):
+    """Keeps the number of optimizer steps the run took."""
+
+    step = 0
+
+    def on_train_end(self) -> None:
+        self.step = self.state.global_step
 
 
 def fit(out: Path, callbacks: list) -> tuple[Trainer, list[dict]]:
@@ -38,7 +48,7 @@ def fit(out: Path, callbacks: list) -> tuple[Trainer, list[dict]]:
     model = Classifier()
     trainer = Trainer(
         model,
-        torch.optim.AdamW(model.parameters(), lr=1e-3),
+        functools.partial(torch.optim.AdamW, lr=1e-3),
         callbacks=callbacks,
         cpu=True,
     )
@@ -60,15 +70,17 @@ def main(out: Path) -> None:
     )
 
     print("With TerminateOnNaN")
+    last_step = LastStep()
     trainer, history = fit(
         out,
         [
             TerminateOnNaN(),
             ModelCheckpoint(out / "step-{step:02d}.pt", save_freq=2),
+            last_step,
         ],
     )
     check(
-        trainer.global_step == bad_step,
+        last_step.step == bad_step,
         f"stopped after step {bad_step}, the batch with the NaN",
     )
     check(

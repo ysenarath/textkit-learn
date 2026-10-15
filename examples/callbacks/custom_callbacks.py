@@ -6,13 +6,14 @@
 2. `FreezeEncoder`, a `Callback` subclass, trains only the head for the
    first epochs.
 3. `StopAfterSteps` stops training in the middle of an epoch by setting
-   ``trainer.should_stop``.
+   ``self.state.should_stop``.
 
 python examples/callbacks/custom_callbacks.py
 """
 
 from __future__ import annotations
 
+import functools
 from pathlib import Path
 
 import torch
@@ -37,12 +38,12 @@ class FreezeEncoder(Callback):
         self.epochs = epochs
 
     def on_epoch_begin(self) -> None:
-        trainable = self.trainer.epoch >= self.epochs
-        for param in self.trainer.model.encoder.parameters():
+        trainable = self.state.epoch >= self.epochs
+        for param in self.state.model.encoder.parameters():
             param.requires_grad_(trainable)
 
     def on_train_end(self) -> None:
-        for param in self.trainer.model.encoder.parameters():
+        for param in self.state.model.encoder.parameters():
             param.requires_grad_(True)
 
 
@@ -53,9 +54,9 @@ class StopAfterSteps(Callback):
         self.max_steps = max_steps
 
     def on_train_batch_end(self, batch, logs) -> None:
-        if self.trainer.global_step >= self.max_steps:
+        if self.state.global_step >= self.max_steps:
             # fit ends after this batch, once the epoch is evaluated
-            self.trainer.should_stop = True
+            self.state.should_stop = True
 
 
 def hook_order() -> None:
@@ -70,7 +71,7 @@ def hook_order() -> None:
     model = Classifier()
     trainer = Trainer(
         model,
-        torch.optim.AdamW(model.parameters(), lr=1e-3),
+        functools.partial(torch.optim.AdamW, lr=1e-3),
         callbacks=[recorder],
         gradient_accumulation_steps=2,
     )
@@ -95,7 +96,7 @@ def hook_order() -> None:
     expected = ["on_train_begin", *epoch_hooks * 2, "on_train_end"]
     check(calls == expected, f"fit ran {len(calls)} hooks in order")
     check(
-        trainer.global_step == calls.count("on_before_optimizer_step") == 4,
+        calls.count("on_before_optimizer_step") == 4,
         "the optimizer stepped twice per epoch of 3 batches",
     )
 
@@ -123,13 +124,13 @@ def freeze_encoder() -> None:
     snapshots: list[dict[str, torch.Tensor]] = []
     trainer = Trainer(
         model,
-        torch.optim.AdamW(model.parameters(), lr=1e-3),
+        functools.partial(torch.optim.AdamW, lr=1e-3),
         callbacks=[
             FreezeEncoder(epochs=2),
             LambdaCallback(
                 on_epoch_end=lambda logs: snapshots.append({
                     k: v.detach().cpu().clone()
-                    for k, v in trainer.model.state_dict().items()
+                    for k, v in model.state_dict().items()
                 })
             ),
         ],
@@ -165,7 +166,7 @@ def stop_after_steps() -> None:
     losses: list[float] = []
     trainer = Trainer(
         model,
-        torch.optim.AdamW(model.parameters(), lr=1e-3),
+        functools.partial(torch.optim.AdamW, lr=1e-3),
         callbacks=[
             StopAfterSteps(7),
             LambdaCallback(
@@ -177,7 +178,7 @@ def stop_after_steps() -> None:
     )
     history = trainer.fit(train, valid, epochs=10)
     check(
-        trainer.global_step == len(losses) == 7,
+        len(losses) == 7,
         "stopped after step 7, in the middle of epoch 3",
     )
     check(

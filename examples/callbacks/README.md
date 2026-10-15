@@ -7,7 +7,7 @@ the callbacks did what they claim and prints a line per check.
 | File | Shows |
 |---|---|
 | [`early_stopping.py`](early_stopping.py) | `EarlyStopping`, `ModelCheckpoint`, `ReduceLROnPlateau`, `CSVLogger` and `ProgbarLogger` on a model that overfits |
-| [`custom_callbacks.py`](custom_callbacks.py) | Writing callbacks: the hook order, a `Callback` subclass that freezes layers, stopping with `trainer.should_stop`, and `LambdaCallback` |
+| [`custom_callbacks.py`](custom_callbacks.py) | Writing callbacks: the hook order, a `Callback` subclass that freezes layers, stopping with `self.state.should_stop`, and `LambdaCallback` |
 | [`terminate_on_nan.py`](terminate_on_nan.py) | `TerminateOnNaN` stopping on a corrupted example, with step checkpoints to fall back to |
 | [`trace_training.py`](trace_training.py) | `OpenTelemetryCallback` tracing a learning rate sweep into `tklearn.tracing.FileTracerProvider`, read back with `load_spans`, `load_events` and `tklearn runs monitor` |
 | [`common.py`](common.py) | The data, model and checks shared by the examples |
@@ -50,7 +50,7 @@ rate of 1e-3.
   so it is the rate the epoch trained with. `ReduceLROnPlateau` changes
   the rate at the end of an epoch, for the next one.
 - **The interrupted epoch is still logged.** After a callback sets
-  `trainer.should_stop`, training ends after the current batch. That
+  `self.state.should_stop`, training ends after the current batch. That
   epoch is evaluated and passed to `on_epoch_end` first.
 - **The optimizer steps at the end of every epoch** with gradient
   accumulation, even when the last window is short: 3 batches with

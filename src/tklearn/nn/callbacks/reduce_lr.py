@@ -80,7 +80,7 @@ class ReduceLROnPlateau(MonitorCallback):
         self.cooldown_counter = 0
 
     def on_train_begin(self) -> None:
-        if self.trainer.lr_scheduler is not None:
+        if self.state.trainer.lr_scheduler is not None:
             msg = (
                 "ReduceLROnPlateau sets the learning rate, which the "
                 "trainer's lr_scheduler would overwrite; use one of them"
@@ -109,7 +109,7 @@ class ReduceLROnPlateau(MonitorCallback):
     def _reduce(self) -> bool:
         """Reduce the learning rates; whether any changed."""
         reduced = False
-        for i, group in enumerate(self.trainer.optimizer.param_groups):
+        for i, group in enumerate(self.state.optimizer.param_groups):
             old_lr = float(group["lr"])
             new_lr = max(old_lr * self.factor, self.min_lr)
             if old_lr - new_lr > _EPS:
@@ -119,9 +119,9 @@ class ReduceLROnPlateau(MonitorCallback):
                     "reduce_lr",
                     {"group": i, "old_lr": old_lr, "new_lr": new_lr},
                 )
-                if self.verbose and self.trainer.accelerator.is_main_process:
+                if self.verbose and self.state.accelerator.is_main_process:
                     logger.info(
-                        f"Epoch {self.trainer.epoch + 1}: reduced the "
+                        f"Epoch {self.state.epoch + 1}: reduced the "
                         f"learning rate of group {i} from {old_lr:.4g} to "
                         f"{new_lr:.4g}"
                     )
