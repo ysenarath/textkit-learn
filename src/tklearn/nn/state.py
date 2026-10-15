@@ -13,7 +13,6 @@ import torch
 from accelerate import Accelerator
 from accelerate.optimizer import AcceleratedOptimizer
 from accelerate.utils import send_to_device
-from datasets import IterableDataset
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
@@ -236,9 +235,9 @@ class TrainerState:
         self._callback("on_train_begin")
         for epoch in range(epochs):
             self.epoch = epoch
-            if hasattr(dataloader, "set_epoch"):  # reshuffle each epoch
-                # required for synchronized shuffling across epochs
-                dataloader = cast(IterableDataset, dataloader)
+            # the dataloaders Accelerate prepares reshuffle by epoch, in
+            # sync across processes
+            if hasattr(dataloader, "set_epoch"):
                 dataloader.set_epoch(epoch)
             self._callback("on_epoch_begin")
             logs = self._train_epoch(dataloader, accumulation_steps)
