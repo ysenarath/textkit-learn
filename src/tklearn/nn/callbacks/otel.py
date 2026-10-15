@@ -12,8 +12,8 @@ from opentelemetry.context import Context
 from opentelemetry.trace import Span, Status, StatusCode, TracerProvider
 
 import tklearn
-from tklearn.nn._outputs import RunningMean
 from tklearn.nn.callbacks.base import Callback
+from tklearn.nn.running_mean import RunningMean
 from tklearn.utils.flatten import flatten, freeze
 
 if TYPE_CHECKING:

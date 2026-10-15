@@ -20,13 +20,13 @@ from torch.utils.data import DataLoader
 from tklearn.metrics import Metric, MetricCollection
 from tklearn.nn._outputs import (
     BatchLogs,
-    RunningMean,
     concat,
     example_losses,
     split_loss,
 )
 from tklearn.nn.callbacks import Callback, Dispatcher
 from tklearn.nn.module import Module
+from tklearn.nn.running_mean import RunningMean
 from tklearn.nn.schedules import get_scheduler
 
 if TYPE_CHECKING:
