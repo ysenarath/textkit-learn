@@ -17,7 +17,7 @@ from tklearn.nn.running_mean import RunningMean
 from tklearn.utils.flatten import flatten, freeze
 
 if TYPE_CHECKING:
-    from tklearn.nn.state import TrainerState
+    from tklearn.nn.session import Session
 
 __all__ = [
     "OpenTelemetryCallback",
@@ -36,7 +36,7 @@ class OpenTelemetryCallback(Callback):
     `fit` gives a ``"fit"`` span, holding
 
     - an ``"epoch"`` span per epoch, with ``epoch``, ``step`` and the
-      epoch's logs, as in `TrainerState.history`; it holds the ``"evaluate"``
+      epoch's logs, as in `Session.history`; it holds the ``"evaluate"``
       span of the epoch;
     - a ``"steps"`` span every `log_every_n_steps` optimizer steps,
       covering those steps, with ``step``, ``epoch``, the mean training
@@ -141,15 +141,15 @@ class OpenTelemetryCallback(Callback):
     def on_train_begin(self) -> None:
         self._reset_window(0)
         self._grad_norm = None
-        if not self.state.accelerator.is_main_process:
+        if not self.session.accelerator.is_main_process:
             return
-        device = self.state.accelerator.device
+        device = self.session.accelerator.device
         if device.type == "cuda":
             torch.cuda.reset_peak_memory_stats(device)
         attributes = _attributes({
-            "model": _describe_model(self.state.model),
-            "optimizer": _describe_optimizer(self.state.optimizer),
-            "trainer": _describe_trainer(self.state),
+            "model": _describe_model(self.session.model),
+            "optimizer": _describe_optimizer(self.session.optimizer),
+            "trainer": _describe_trainer(self.session),
         })
         self._fit_span = self.tracer.start_span("fit", attributes=attributes)
         self._enter(self._fit_span)
@@ -160,35 +160,35 @@ class OpenTelemetryCallback(Callback):
         self._epoch_span = self.tracer.start_span(
             "epoch",
             context=trace.set_span_in_context(self._fit_span),
-            attributes={"epoch": self.state.epoch},
+            attributes={"epoch": self.session.epoch},
         )
         self._enter(self._epoch_span)
 
     def on_before_optimizer_step(self) -> None:
         # the step about to be taken is global_step + 1
-        if not self._is_recorded_step(self.state.global_step + 1):
+        if not self._is_recorded_step(self.session.global_step + 1):
             return
         if (
-            self.state.trainer.max_grad_norm is not None
-            and self.state.grad_norm is not None
+            self.session.trainer.max_grad_norm is not None
+            and self.session.grad_norm is not None
         ):
-            self._grad_norm = self.state.grad_norm
+            self._grad_norm = self.session.grad_norm
         else:
             # fp16 gradients are scaled until the optimizer steps; unscaling
             # them here keeps the optimizer from doing it again
-            self.state.accelerator.unscale_gradients()
-            self._grad_norm = _grad_norm(self.state.model)
+            self.session.accelerator.unscale_gradients()
+            self._grad_norm = _grad_norm(self.session.model)
 
     def on_train_batch_end(
         self, batch: Any, logs: Mapping[str, float]
     ) -> None:
         if self._means is None:
-            self._means = RunningMean(self.state.accelerator)
+            self._means = RunningMean(self.session.accelerator)
         # summed on the device, without waiting for it
         self._means.update(logs)
-        step = self.state.global_step
+        step = self.session.global_step
         if (
-            self.state.accelerator.sync_gradients
+            self.session.accelerator.sync_gradients
             and step > self._window_step
             and self._is_recorded_step(step)
         ):
@@ -198,7 +198,7 @@ class OpenTelemetryCallback(Callback):
         if self._epoch_span is None:
             return
         self._epoch_span.set_attributes(
-            _attributes({**logs, "step": self.state.global_step})
+            _attributes({**logs, "step": self.session.global_step})
         )
         self._exit()
         self._epoch_span.end()
@@ -208,8 +208,8 @@ class OpenTelemetryCallback(Callback):
         if self._fit_span is None:
             return
         self._fit_span.set_attributes({
-            "step": self.state.global_step,
-            "stopped": self.state.should_stop,
+            "step": self.session.global_step,
+            "stopped": self.session.should_stop,
         })
         self._exit()
         self._fit_span.end()
@@ -254,11 +254,11 @@ class OpenTelemetryCallback(Callback):
         return None
 
     def _start_span(self, name: str) -> None:
-        if not self.state.accelerator.is_main_process:
+        if not self.session.accelerator.is_main_process:
             return
         attributes = {}
-        if self.state.num_batches is not None:
-            attributes["num_batches"] = self.state.num_batches
+        if self.session.num_batches is not None:
+            attributes["num_batches"] = self.session.num_batches
         span = self.tracer.start_span(
             name, context=self._context(), attributes=attributes
         )
@@ -312,7 +312,7 @@ class OpenTelemetryCallback(Callback):
         self._paused = 0.0
 
     def _record_steps(self, window: RunningMean) -> None:
-        step = self.state.global_step
+        step = self.session.global_step
         # reduces over processes, so every process takes part
         means = window.compute()
         step_time = (
@@ -323,7 +323,7 @@ class OpenTelemetryCallback(Callback):
         self._grad_norm = None
         if self._fit_span is None:  # not the main process
             return
-        groups = self.state.optimizer.param_groups
+        groups = self.session.optimizer.param_groups
         if len(groups) == 1:
             lrs = {"lr": float(groups[0]["lr"])}
         else:
@@ -332,10 +332,10 @@ class OpenTelemetryCallback(Callback):
             **means,
             **lrs,
             "step": step,
-            "epoch": self.state.epoch,
+            "epoch": self.session.epoch,
             "grad_norm": None if grad_norm is None else float(grad_norm),
             "step_time": step_time,
-            "memory_gb": _memory_gb(self.state.accelerator.device),
+            "memory_gb": _memory_gb(self.session.accelerator.device),
         }
         span = self.tracer.start_span(
             "steps",
@@ -424,15 +424,15 @@ def _describe_optimizer(optimizer: torch.optim.Optimizer) -> dict[str, Any]:
     return {"class": _qualname(type(optimizer)), "param_groups": groups}
 
 
-def _describe_trainer(state: TrainerState) -> dict[str, Any]:
-    trainer = state.trainer
-    scheduler = state.scheduler
+def _describe_trainer(session: Session) -> dict[str, Any]:
+    trainer = session.trainer
+    scheduler = session.scheduler
     if scheduler is not None:
         scheduler = _qualname(type(scheduler))
-    accelerator = state.accelerator
+    accelerator = session.accelerator
     return {
-        "epochs": state.epochs,
-        "num_batches": state.num_batches,
+        "epochs": session.epochs,
+        "num_batches": session.num_batches,
         "lr_scheduler": scheduler,
         "max_grad_norm": trainer.max_grad_norm,
         "mixed_precision": accelerator.mixed_precision,
@@ -440,7 +440,7 @@ def _describe_trainer(state: TrainerState) -> dict[str, Any]:
         "num_processes": accelerator.num_processes,
         "device": str(accelerator.device),
         "metrics": list(trainer.metrics),
-        "callbacks": [_qualname(type(c)) for c in state.callbacks],
+        "callbacks": [_qualname(type(c)) for c in session.callbacks],
         "torch": torch.__version__,
     }
 

@@ -26,8 +26,8 @@ from tklearn.nn import (
     Callback,
     Module,
     RunningMean,
+    Session,
     Trainer,
-    TrainerState,
     get_scheduler,
 )
 from tklearn.nn._outputs import BatchLogs
@@ -189,7 +189,7 @@ class StopAt(Callback):
         if hook == self.hook:
             self.count -= 1
             if self.count == 0:
-                self.state.should_stop = True
+                self.session.should_stop = True
 
 
 def skip_steps(*skipped):
@@ -241,33 +241,33 @@ class TrainerTestCase(unittest.TestCase):
         )
 
 
-def fit_state(trainer, *args, **kwargs):
-    """Fit, and return the state of the run, to read after it."""
-    states = []
+def fit_session(trainer, *args, **kwargs):
+    """Fit, and return the session of the fit, to read after it."""
+    sessions = []
 
     def new_state(trainer):
-        states.append(TrainerState(trainer))
-        return states[-1]
+        sessions.append(Session(trainer))
+        return sessions[-1]
 
-    with mock.patch("tklearn.nn.trainer.TrainerState", side_effect=new_state):
+    with mock.patch("tklearn.nn.trainer.Session", side_effect=new_state):
         trainer.fit(*args, **kwargs)
-    # the first: runs that callbacks start during the fit come after
-    return states[0]
+    # the first: sessions that callbacks open during the fit come after
+    return sessions[0]
 
 
 class TestFit(TrainerTestCase):
     def test_learns(self):
         trainer = self.trainer(metrics={"acc": Accuracy()})
-        state = fit_state(
+        session = fit_session(
             trainer, self.loader(shuffle=True), self.loader(), epochs=5
         )
-        history = state.history
+        history = session.history
         self.assertEqual(len(history), 5)
         self.assertEqual(list(history[0]), ["loss", "valid_loss", "valid_acc"])
         self.assertLess(history[-1]["loss"], history[0]["loss"])
         self.assertGreater(history[-1]["valid_acc"], 0.9)
-        self.assertEqual(state.global_step, 5 * 6)
-        self.assertEqual(state.epoch, 4)
+        self.assertEqual(session.global_step, 5 * 6)
+        self.assertEqual(session.epoch, 4)
 
     def test_trains_with_a_loss_per_example(self):
         # the default training_step averages it, so this trains exactly
@@ -350,10 +350,10 @@ class TestFit(TrainerTestCase):
         with self.assertRaisesRegex(NotImplementedError, "predict_step"):
             trainer.predict(self.loader())
 
-    def test_each_fit_is_a_new_run(self):
+    def test_each_fit_is_a_new_session(self):
         trainer = self.trainer()
-        first = fit_state(trainer, self.loader(), epochs=3)
-        second = fit_state(trainer, self.loader(), epochs=1)
+        first = fit_session(trainer, self.loader(), epochs=3)
+        second = fit_session(trainer, self.loader(), epochs=1)
         self.assertEqual(len(second.history), 1)
         self.assertEqual(second.global_step, 6)
         # with an optimizer of its own, built by the factory
@@ -364,8 +364,8 @@ class TestFit(TrainerTestCase):
     def test_gradient_accumulation_matches_larger_batches(self):
         accumulated = Classifier()
         trainer = self.trainer(accumulated, accumulation=2)
-        state = fit_state(trainer, self.loader(batch_size=8), epochs=2)
-        self.assertEqual(state.global_step, 2 * 6)
+        session = fit_session(trainer, self.loader(batch_size=8), epochs=2)
+        self.assertEqual(session.global_step, 2 * 6)
 
         AcceleratorState._reset_state(reset_partial_state=True)
         GradientState._reset_state()
@@ -377,10 +377,10 @@ class TestFit(TrainerTestCase):
     def test_steps_at_end_of_epoch_when_accumulating(self):
         # 5 batches with 2 per step: the last step has a single batch
         trainer = self.trainer(accumulation=2)
-        state = fit_state(
+        session = fit_session(
             trainer, self.loader(self.data[:40], batch_size=8), epochs=2
         )
-        self.assertEqual(state.global_step, 2 * 3)
+        self.assertEqual(session.global_step, 2 * 3)
 
     def test_another_trainer_does_not_change_the_accumulation(self):
         # accelerate keeps the accumulation steps process-wide, and every
@@ -401,8 +401,8 @@ class TestFit(TrainerTestCase):
         trainer = self.trainer(
             model, accumulation=2, callbacks=[EvaluateOther()]
         )
-        state = fit_state(trainer, self.loader(batch_size=8), epochs=2)
-        self.assertEqual(state.global_step, 2 * 6)
+        session = fit_session(trainer, self.loader(batch_size=8), epochs=2)
+        self.assertEqual(session.global_step, 2 * 6)
         for a, b in zip(model.parameters(), expected.parameters()):
             torch.testing.assert_close(a, b)
 
@@ -415,16 +415,16 @@ class TestFit(TrainerTestCase):
 
         trainer = self.trainer(lr_scheduler=schedule)
         with skip_steps(1, 8):
-            state = fit_state(trainer, self.loader(), epochs=2)
-        self.assertEqual(state.global_step, 2 * 6 - 2)
-        self.assertEqual(built[0].last_epoch, state.global_step)
+            session = fit_session(trainer, self.loader(), epochs=2)
+        self.assertEqual(session.global_step, 2 * 6 - 2)
+        self.assertEqual(built[0].last_epoch, session.global_step)
 
     def test_clips_gradients(self):
         norms = []
 
         class GradNorm(Callback):
             def on_before_optimizer_step(self):
-                params = self.state.model.parameters()
+                params = self.session.model.parameters()
                 grads = torch.cat([p.grad.flatten() for p in params])
                 norms.append(torch.linalg.vector_norm(grads))
 
@@ -510,11 +510,11 @@ class TestStopping(TrainerTestCase):
         trainer = self.trainer(
             callbacks=[StopAt("on_train_batch_end", 2), recorder]
         )
-        state = fit_state(trainer, self.loader(), self.loader(), epochs=5)
-        history = state.history
+        session = fit_session(trainer, self.loader(), self.loader(), epochs=5)
+        history = session.history
         self.assertEqual(len(history), 1)
         self.assertIn("valid_loss", history[0])
-        self.assertEqual(state.global_step, 2)
+        self.assertEqual(session.global_step, 2)
         self.assertEqual(recorder.calls.count("on_train_batch_end"), 2)
         self.assertEqual(recorder.calls[-2:], ["on_epoch_end", "on_train_end"])
 
@@ -587,8 +587,8 @@ class TestCallbacks(TrainerTestCase):
         class Epochs(Callback):
             def on_epoch_end(self, logs):
                 seen.append((
-                    self.state.epoch,
-                    self.state.global_step,
+                    self.session.epoch,
+                    self.session.global_step,
                     logs,
                 ))
 
@@ -597,9 +597,9 @@ class TestCallbacks(TrainerTestCase):
         self.assertEqual([s[:2] for s in seen], [(0, 6), (1, 12)])
         self.assertEqual([s[2] for s in seen], history)
 
-    def test_callback_in_two_runs_at_once(self):
-        # a callback keeps the state of its run (e.g. the patience of
-        # EarlyStopping), which the run of another trainer would change
+    def test_callback_in_two_sessions_at_once(self):
+        # a callback keeps the state of its session (e.g. the patience of
+        # EarlyStopping), which the session of another trainer would change
         shared = Recorder()
         other = self.trainer(callbacks=[shared])
         loader = self.loader(self.data[:16])
@@ -610,41 +610,42 @@ class TestCallbacks(TrainerTestCase):
 
         trainer = self.trainer(callbacks=[shared, EvaluateOther()])
         with self.assertRaisesRegex(
-            RuntimeError, "Recorder is in another run"
+            RuntimeError, "Recorder is in another session"
         ):
             trainer.fit(loader)
         self.assertNotIn("on_test_begin", shared.calls)
-        # each run releases its callbacks when it ends, even when it raises
+        # each session releases its callbacks when it ends, even when it
+        # raises
         other.evaluate(loader)
         self.trainer(callbacks=[shared]).fit(loader)
 
-    def test_callback_state_during_a_run(self):
+    def test_callback_session(self):
         seen = []
 
         class Note(Callback):
             def on_train_begin(self):
-                seen.append(("train", self.state))
+                seen.append(("train", self.session))
 
             def on_test_begin(self):
-                seen.append(("test", self.state))
+                seen.append(("test", self.session))
 
             def on_exception(self, exception):
-                seen.append(("exception", self.state))
+                seen.append(("exception", self.session))
 
         note = Note()
-        with self.assertRaisesRegex(RuntimeError, "Note has a state only"):
-            note.state
+        with self.assertRaisesRegex(RuntimeError, "Note has a session only"):
+            note.session
         trainer = self.trainer(callbacks=[note])
         trainer.fit(self.loader(), self.loader(), epochs=1)
-        # one state for the fit and its evaluation, of this trainer
-        (_, state), (_, evaluation) = seen
+        # one session for the fit and its evaluation, of this trainer
+        (_, session), (_, evaluation) = seen
         self.assertEqual([name for name, _ in seen], ["train", "test"])
-        self.assertIs(evaluation, state)
-        self.assertIs(state.trainer, trainer)
-        with self.assertRaisesRegex(RuntimeError, "Note has a state only"):
-            note.state
+        self.assertIs(evaluation, session)
+        self.assertIs(session.trainer, trainer)
+        with self.assertRaisesRegex(RuntimeError, "Note has a session only"):
+            note.session
 
-        # also given back after a run that raised
+        # also given back after a session that raised
         seen.clear()
         trainer = self.trainer(
             RaisingClassifier("predict_step", 1), callbacks=[note]
@@ -653,28 +654,29 @@ class TestCallbacks(TrainerTestCase):
             trainer.evaluate(self.loader())
         self.assertEqual([name for name, _ in seen], ["test", "exception"])
         self.assertIs(seen[0][1], seen[1][1])
-        with self.assertRaisesRegex(RuntimeError, "Note has a state only"):
-            note.state
+        with self.assertRaisesRegex(RuntimeError, "Note has a session only"):
+            note.session
 
-    def test_callback_added_during_a_run(self):
+    def test_callback_added_during_a_session(self):
         epochs = []
 
         class Read(Callback):
             def on_epoch_end(self, logs):
-                epochs.append(self.state.epoch)
+                epochs.append(self.session.epoch)
 
         read = Read()
 
         class Add(Callback):
             def on_train_begin(self):
-                self.state.callbacks.append(read)
+                self.session.callbacks.append(read)
 
         trainer = self.trainer(callbacks=[Add()])
         trainer.fit(self.loader(), epochs=2)
         self.assertEqual(epochs, [0, 1])
-        # given back at the end of the run, though not there at its start
-        with self.assertRaisesRegex(RuntimeError, "Read has a state only"):
-            read.state
+        # given back at the end of the session, though not there at its
+        # start
+        with self.assertRaisesRegex(RuntimeError, "Read has a session only"):
+            read.session
 
 
 class RaisingClassifier(Classifier):
@@ -714,7 +716,7 @@ class ExceptionRecorder(Recorder):
     def on_exception(self, exception):
         self.calls.append("on_exception")
         self.exceptions.append(exception)
-        self.accelerators.append(self.state.accelerator)
+        self.accelerators.append(self.session.accelerator)
 
 
 class TestExceptions(TrainerTestCase):
@@ -803,7 +805,8 @@ class TestExceptions(TrainerTestCase):
         self.assertEqual(recorder.calls, ["on_exception"])
 
     def test_on_exception_that_raises(self):
-        # the other callbacks still get it, and the run's exception goes on
+        # the other callbacks still get it, and the session's exception
+        # goes on
         class Broken(Callback):
             def on_exception(self, exception):
                 raise OSError("cannot clean up")
@@ -821,7 +824,7 @@ class TestExceptions(TrainerTestCase):
         self.assertIn("Broken.on_exception raised", logs.output[0])
         self.assertIn("cannot clean up", logs.output[0])
 
-    def test_a_finished_run_does_not_call_it(self):
+    def test_a_finished_session_does_not_call_it(self):
         recorder = ExceptionRecorder()
         trainer = self.trainer(callbacks=[recorder])
         trainer.fit(self.loader(), self.loader())
@@ -913,7 +916,7 @@ class TestEvaluate(TrainerTestCase):
         with self.assertRaisesRegex(ValueError, "empty"):
             self.trainer().evaluate(self.loader([]))
 
-    def test_prepares_each_dataloader_once_per_run(self):
+    def test_prepares_each_dataloader_once_per_session(self):
         # so that the evaluation after each epoch reuses the persistent
         # workers of the one before
         loader = self.loader()
@@ -921,7 +924,7 @@ class TestEvaluate(TrainerTestCase):
 
         class Capture(Callback):
             def on_test_begin(self):
-                prepared.append(self.state._prepare_dataloader(loader))
+                prepared.append(self.session._prepare_dataloader(loader))
 
         trainer = self.trainer(callbacks=[Capture()])
         trainer.fit(self.loader(), loader, epochs=2)
@@ -953,7 +956,7 @@ class TestEvaluate(TrainerTestCase):
             def on_test_batch_end(self, batch, outputs):
                 if not self.done:
                     self.done = True
-                    self.state.evaluate(inner)
+                    self.session.evaluate(inner)
 
         trainer = self.trainer(
             trainer.model, metrics=metrics, callbacks=[Nested()]
@@ -1073,7 +1076,7 @@ class TestSchedules(TrainerTestCase):
 
         class LearningRate(Callback):
             def on_before_optimizer_step(self):
-                lrs.append(self.state.optimizer.param_groups[0]["lr"])
+                lrs.append(self.session.optimizer.param_groups[0]["lr"])
 
         trainer = self.trainer(
             lr=1.0,
@@ -1082,12 +1085,12 @@ class TestSchedules(TrainerTestCase):
             warmup=2,
             callbacks=[LearningRate()],
         )
-        state = fit_state(
+        session = fit_session(
             trainer, self.loader(self.data[:40], batch_size=8), epochs=2
         )
         # 3 steps per epoch: warmup to 1.0 over 2 steps, then decay to 0
         np.testing.assert_allclose(lrs, [0.0, 0.5, 1.0, 0.75, 0.5, 0.25])
-        self.assertEqual(state.optimizer.param_groups[0]["lr"], 0.0)
+        self.assertEqual(session.optimizer.param_groups[0]["lr"], 0.0)
 
     def test_callable_schedule_gets_step_count(self):
         built = []
@@ -1124,9 +1127,9 @@ class TestSchedules(TrainerTestCase):
             cpu=True,
             mixed_precision="no",
         )
-        state = fit_state(trainer, self.loader(), epochs=2)
-        self.assertIsInstance(state.scheduler, LambdaLR)
-        self.assertEqual(state.optimizer.param_groups[0]["lr"], 0.5)
+        session = fit_session(trainer, self.loader(), epochs=2)
+        self.assertIsInstance(session.scheduler, LambdaLR)
+        self.assertEqual(session.optimizer.param_groups[0]["lr"], 0.5)
         trainer.fit(self.loader(Stream(self.data)))
         self.assertEqual(num_steps, [2 * 6, None])
 
@@ -1159,7 +1162,7 @@ class TestValidation(TrainerTestCase):
     def test_constructor(self):
         model = Classifier()
         optimizer = functools.partial(torch.optim.SGD, lr=0.1)
-        # instances, which a run would change, instead of factories
+        # instances, which a session would change, instead of factories
         sgd = torch.optim.SGD(model.parameters(), lr=0.1)
         scheduler = LambdaLR(sgd, lambda step: 1.0)
         cases = [
@@ -1191,21 +1194,21 @@ class TestValidation(TrainerTestCase):
                 with self.assertRaisesRegex(error, message):
                     Trainer(**kwargs)
 
-    def test_accelerator_exists_during_a_run(self):
+    def test_accelerator_exists_during_a_session(self):
         seen = []
 
         class Capture(Callback):
             def on_train_begin(self):
-                seen.append(self.state.accelerator)
+                seen.append(self.session.accelerator)
 
             def on_test_begin(self):
-                seen.append(self.state.accelerator)
+                seen.append(self.session.accelerator)
 
         trainer = self.trainer(callbacks=[Capture()])
-        state = fit_state(trainer, self.loader(), self.loader())
+        session = fit_session(trainer, self.loader(), self.loader())
         trainer.evaluate(self.loader())
         with self.assertRaisesRegex(RuntimeError, "during a fit"):
-            state.accelerator
+            session.accelerator
         # the evaluation inside fit shares its accelerator; evaluate gets one
         self.assertIs(seen[0], seen[1])
         self.assertIsNot(seen[1], seen[2])
@@ -1235,12 +1238,12 @@ class TestValidation(TrainerTestCase):
         model = Classifier()
         weight, bias = model.linear.weight.clone(), model.linear.bias.clone()
         trainer = Grouped(model, cpu=True, mixed_precision="no")
-        state = fit_state(trainer, self.loader())
-        self.assertEqual(len(state.optimizer.param_groups), 2)
+        session = fit_session(trainer, self.loader())
+        self.assertEqual(len(session.optimizer.param_groups), 2)
         self.assertFalse(torch.equal(model.linear.weight, weight))
         torch.testing.assert_close(model.linear.bias, bias)
 
-    def test_runs_use_create_accelerator(self):
+    def test_sessions_use_create_accelerator(self):
         created, seen = [], []
 
         class Custom(Trainer):
@@ -1250,13 +1253,13 @@ class TestValidation(TrainerTestCase):
 
         class Capture(Callback):
             def on_train_begin(self):
-                seen.append(self.state.accelerator)
+                seen.append(self.session.accelerator)
 
             def on_test_begin(self):
-                seen.append(self.state.accelerator)
+                seen.append(self.session.accelerator)
 
             def on_predict_begin(self):
-                seen.append(self.state.accelerator)
+                seen.append(self.session.accelerator)
 
         trainer = Custom(
             Classifier(),
@@ -1368,8 +1371,8 @@ class TestMultipleProcesses(unittest.TestCase):
 
 class StopOnMainProcess(Callback):
     def on_train_batch_end(self, batch, logs):
-        if self.state.accelerator.is_main_process:
-            self.state.should_stop = True
+        if self.session.accelerator.is_main_process:
+            self.session.should_stop = True
 
 
 def _free_port():
@@ -1391,8 +1394,10 @@ def _run_on_two_processes(scenario):
         callbacks = [StopOnMainProcess()] if scenario == "stop" else []
         trainer = Trainer(model, optimizer, callbacks=callbacks, cpu=True)
         loader = DataLoader(INDEXED_DATA, batch_size=16)
-        run = fit_state(trainer, loader, epochs=2)
-        output = run.global_step if scenario == "stop" else run.history[:1]
+        session = fit_session(trainer, loader, epochs=2)
+        output = (
+            session.global_step if scenario == "stop" else session.history[:1]
+        )
     # print from one process, as lines printed at once can interleave
     outputs = gather_object([output])
     if state.is_main_process:

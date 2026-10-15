@@ -28,7 +28,7 @@ class LambdaCallback(Callback):
     ... )
     >>> trainer = Trainer(model, optimizer, callbacks=[log_epochs])
 
-    The functions do not get the run's `Callback.state`; subclass
+    The functions do not get the `Callback.session`; subclass
     `Callback` to read it.
     """
 

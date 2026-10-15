@@ -6,7 +6,7 @@
 2. `FreezeEncoder`, a `Callback` subclass, trains only the head for the
    first epochs.
 3. `StopAfterSteps` stops training in the middle of an epoch by setting
-   ``self.state.should_stop``.
+   ``self.session.should_stop``.
 
 python examples/callbacks/custom_callbacks.py
 """
@@ -38,12 +38,12 @@ class FreezeEncoder(Callback):
         self.epochs = epochs
 
     def on_epoch_begin(self) -> None:
-        trainable = self.state.epoch >= self.epochs
-        for param in self.state.model.encoder.parameters():
+        trainable = self.session.epoch >= self.epochs
+        for param in self.session.model.encoder.parameters():
             param.requires_grad_(trainable)
 
     def on_train_end(self) -> None:
-        for param in self.state.model.encoder.parameters():
+        for param in self.session.model.encoder.parameters():
             param.requires_grad_(True)
 
 
@@ -54,9 +54,9 @@ class StopAfterSteps(Callback):
         self.max_steps = max_steps
 
     def on_train_batch_end(self, batch, logs) -> None:
-        if self.state.global_step >= self.max_steps:
+        if self.session.global_step >= self.max_steps:
             # fit ends after this batch, once the epoch is evaluated
-            self.state.should_stop = True
+            self.session.should_stop = True
 
 
 def hook_order() -> None:

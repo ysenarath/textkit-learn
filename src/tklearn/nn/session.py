@@ -1,5 +1,5 @@
-"""The state of one `Trainer.fit`, `evaluate` or `predict` call, and the
-loops that run it."""
+"""The session of one `Trainer.fit`, `evaluate` or `predict` call: its
+state, what it prepared, and the loops that run it."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import contextlib
 import copy
 import math
 from collections.abc import Generator, Mapping
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import torch
 from accelerate import Accelerator
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "ModuleWrapper",
-    "TrainerState",
+    "Session",
 ]
 
 
@@ -49,27 +49,30 @@ class ModuleWrapper(torch.nn.Module):
         return getattr(self.module, step)(batch)
 
 
-class TrainerState:
-    """The state of one `Trainer.fit`, `evaluate` or `predict` call.
+class Session:
+    """The session of one `Trainer.fit`, `evaluate` or `predict` call.
 
-    The trainer creates one when the call starts, and drops it when the
-    call returns; nothing of it is written back to the trainer, so the
-    next call starts over. Callbacks read it as `Callback.state`.
+    The trainer opens one when the call starts: it creates the
+    accelerator and prepares the model with it, and holds the progress
+    of the call. It closes the session and drops it when the call
+    returns; nothing of it is written back to the trainer, so the next
+    call starts over. Callbacks read it as `Callback.session`.
 
     Attributes
     ----------
     trainer : Trainer
-        The configuration of the run.
+        The configuration of the session.
     model : Module
         The trainer's model.
     callbacks : list of Callback
-        The callbacks of the run, a copy of the trainer's; a change to it
-        during a hook applies from the next hook of this run.
+        The callbacks of the session, a copy of the trainer's; a change
+        to it during a hook applies from the next hook of this session.
     optimizer : Optimizer or None
-        The optimizer this `fit` built from the trainer's factory; None
-        for `evaluate` and `predict`.
+        The optimizer of this `fit`, from `Trainer.create_optimizer`;
+        None for `evaluate` and `predict`.
     scheduler : LRScheduler or None
-        The learning rate scheduler this `fit` built, if any.
+        The learning rate scheduler of this `fit`, from
+        `Trainer.create_scheduler`, if any.
     history : list of dict
         Logs of each epoch so far.
     epochs : int
@@ -104,7 +107,8 @@ class TrainerState:
         self.num_batches: int | None = None
         self.grad_norm: torch.Tensor | None = None
         self.should_stop = False
-        # what the accelerator prepared, while the run lasts; see _run
+        # what the accelerator prepared, while the session is open; see
+        # _open
         self._accelerator: Accelerator | None = None
         self._dispatcher: Dispatcher | None = None
         self._wrapper: ModuleWrapper | None = None
@@ -115,7 +119,8 @@ class TrainerState:
 
     @property
     def accelerator(self) -> Accelerator:
-        """The accelerator of the run; only available while it lasts."""
+        """The accelerator of the session; only available while it is
+        open."""
         if self._accelerator is None:
             msg = (
                 "the accelerator exists only during a fit, evaluate or predict"
@@ -132,11 +137,11 @@ class TrainerState:
         prefix: str = "",
         metrics: Mapping[str, Metric] | None = None,
     ) -> dict[str, Any]:
-        """Evaluate within this run, as `Trainer.evaluate` does.
+        """Evaluate within this session, as `Trainer.evaluate` does.
 
-        For callbacks: it reuses the run's accelerator and prepared model,
-        and gives the callbacks its ``on_test_*`` hooks. `num_batches` is
-        restored when it returns.
+        For callbacks: it reuses the session's accelerator and prepared
+        model, and gives the callbacks its ``on_test_*`` hooks.
+        `num_batches` is restored when it returns.
         """
         previous = self.num_batches
         try:
@@ -145,7 +150,7 @@ class TrainerState:
             self.num_batches = previous
 
     def predict(self, dataloader: DataLoader) -> Any:
-        """Predict within this run, as `Trainer.predict` does.
+        """Predict within this session, as `Trainer.predict` does.
 
         For callbacks, as `evaluate`.
         """
@@ -155,20 +160,21 @@ class TrainerState:
         finally:
             self.num_batches = previous
 
-    # --- the run -----------------------------------------------------------
+    # --- the session -------------------------------------------------------
 
     @contextlib.contextmanager
-    def _run(self, training: bool) -> Generator[None]:
-        """Prepare the run, and release what it prepared when it ends.
+    def _open(self, training: bool) -> Generator[None]:
+        """Open the session, and close it, releasing what it prepared,
+        when the block ends.
 
         Builds the optimizer when training, creates the accelerator and
         prepares the model (and optimizer) with it, and gives the callbacks
-        this state until the run ends. When the run raises, the callbacks
-        get `on_exception`.
+        this session until it closes. When the session raises, the
+        callbacks get `on_exception`.
         """
         trainer = self.trainer
-        # gives the callbacks this state, or raises when one is in another
-        # run
+        # gives the callbacks this session, or raises when one is in
+        # another
         dispatcher = Dispatcher(self)
         try:
             # before the accelerator, so that a fit without an optimizer
@@ -211,7 +217,7 @@ class TrainerState:
         epochs: int,
     ) -> list[dict[str, Any]]:
         accelerator = self.accelerator
-        optimizer = cast(AcceleratedOptimizer, self._prepared_optimizer)
+        optimizer: AcceleratedOptimizer = self._prepared_optimizer
         dataloader = self._prepare_dataloader(train_dataloader)
         num_batches = _num_batches(dataloader)
         if num_batches == 0:
@@ -219,9 +225,9 @@ class TrainerState:
             raise ValueError(msg)
         self.scheduler = self._build_scheduler(num_batches, epochs)
         # Accelerate keeps the accumulation steps process-wide, and an
-        # accelerator of another run (e.g. one evaluating from a callback)
-        # sets its own; read ours before any callback runs, and set them
-        # again before each batch
+        # accelerator of another session (e.g. one evaluating from a
+        # callback) sets its own; read ours before any callback runs, and
+        # set them again before each batch
         accumulation_steps = accelerator.gradient_accumulation_steps
         self.epochs = epochs
         # a stopped fit can end inside a gradient accumulation window,
@@ -253,8 +259,8 @@ class TrainerState:
         self, dataloader: DataLoader, accumulation_steps: int
     ) -> dict[str, float]:
         accelerator = self.accelerator
-        wrapper = cast(ModuleWrapper, self._wrapper)
-        optimizer = cast(AcceleratedOptimizer, self._prepared_optimizer)
+        wrapper: ModuleWrapper = self._wrapper
+        optimizer: AcceleratedOptimizer = self._prepared_optimizer
         max_grad_norm = self.trainer.max_grad_norm
         wrapper.train()
         # summed on the device, so that only the end of the epoch waits for
@@ -294,7 +300,7 @@ class TrainerState:
             num_steps = epochs * math.ceil(
                 num_batches / self.accelerator.gradient_accumulation_steps
             )
-        optimizer = cast(Optimizer, self.optimizer)
+        optimizer: Optimizer = self.optimizer
         return self.trainer.create_scheduler(optimizer, num_steps)
 
     def _evaluate(
@@ -303,7 +309,7 @@ class TrainerState:
         prefix: str,
         metrics: Mapping[str, Metric] | None,
     ) -> dict[str, Any]:
-        wrapper = cast(ModuleWrapper, self._wrapper)
+        wrapper: ModuleWrapper = self._wrapper
         dataloader = self._prepare_dataloader(dataloader)
         # update a copy, so that an evaluation started meanwhile (from a
         # callback, or by another trainer sharing the metrics) cannot reset
@@ -355,7 +361,7 @@ class TrainerState:
         return results
 
     def _predict(self, dataloader: DataLoader) -> Any:
-        wrapper = cast(ModuleWrapper, self._wrapper)
+        wrapper: ModuleWrapper = self._wrapper
         dataloader = self._prepare_dataloader(dataloader)
         self.num_batches = _num_batches(dataloader)
         chunks = []
@@ -377,8 +383,9 @@ class TrainerState:
     # --- helpers -----------------------------------------------------------
 
     def _callback(self, hook: str, *args: Any) -> None:
-        # only called during the run, which creates the dispatcher
-        cast(Dispatcher, self._dispatcher)(hook, *args)
+        # only called while the session is open, which creates the
+        # dispatcher
+        self._dispatcher(hook, *args)
 
     def _sync_should_stop(self) -> bool:
         # a callback may stop training on one process only (e.g. on rank 0
@@ -400,8 +407,8 @@ class TrainerState:
                 "DataLoader(batches, batch_size=None)"
             )
             raise TypeError(msg)
-        # prepare each dataloader once per run, so that persistent workers
-        # are reused across epochs
+        # prepare each dataloader once per session, so that persistent
+        # workers are reused across epochs
         prepared = self._dataloaders.get(dataloader)
         if prepared is None:
             prepared = self.accelerator.prepare(dataloader)

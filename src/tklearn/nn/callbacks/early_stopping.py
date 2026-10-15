@@ -98,28 +98,28 @@ class EarlyStopping(MonitorCallback):
         self._reset()
 
     def on_epoch_end(self, logs: dict[str, Any]) -> None:
-        if self.state.epoch < self.start_from_epoch:
+        if self.session.epoch < self.start_from_epoch:
             return
         current = self._get_monitor_value(logs)
         if current is None:
             return
         if self.restore_best_weights and self.best_weights is None:
             # restore the first monitored weights if no epoch improves
-            self.best_weights = _copy_state(self.state.model)
-            self.best_epoch = self.state.epoch
+            self.best_weights = _copy_state(self.session.model)
+            self.best_epoch = self.session.epoch
         self.wait += 1
         if self._is_improvement(current, self.best):
-            self.best, self.best_epoch = current, self.state.epoch
+            self.best, self.best_epoch = current, self.session.epoch
             if self.restore_best_weights:
-                self.best_weights = _copy_state(self.state.model)
+                self.best_weights = _copy_state(self.session.model)
             if self.baseline is None or self._is_improvement(
                 current, self.baseline
             ):
                 self.wait = 0
         # unlike Keras, this also stops when improving short of the baseline
         if self.wait >= max(self.patience, 1):
-            self.stopped_epoch = self.state.epoch
-            self.state.should_stop = True
+            self.stopped_epoch = self.session.epoch
+            self.session.should_stop = True
             trace.get_current_span().add_event(
                 "early_stopping",
                 {
@@ -131,7 +131,7 @@ class EarlyStopping(MonitorCallback):
             )
 
     def on_train_end(self) -> None:
-        verbose = self.verbose and self.state.accelerator.is_main_process
+        verbose = self.verbose and self.session.accelerator.is_main_process
         if self.stopped_epoch is not None and verbose:
             # epochs are zero-based, but shown one-based like ProgbarLogger
             logger.info(
@@ -145,7 +145,7 @@ class EarlyStopping(MonitorCallback):
                     f"{self.best_epoch + 1}, the best with "
                     f"{self.monitor}={self.best:.4g}"
                 )
-            self.state.model.load_state_dict(self.best_weights)
+            self.session.model.load_state_dict(self.best_weights)
             trace.get_current_span().add_event(
                 "restore_best_weights",
                 {

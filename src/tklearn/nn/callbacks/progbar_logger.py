@@ -37,7 +37,7 @@ class ProgbarLogger(Callback):
 
     def on_epoch_begin(self) -> None:
         self._totals, self._counts = {}, {}
-        desc = f"Epoch {self.state.epoch + 1}/{self.state.epochs}"
+        desc = f"Epoch {self.session.epoch + 1}/{self.session.epochs}"
         self._open(desc, leave=True)
 
     def on_train_batch_end(
@@ -75,18 +75,18 @@ class ProgbarLogger(Callback):
         self._bars.pop().close()
 
     def on_exception(self, exception: BaseException) -> None:
-        # the bars of the unfinished run, innermost first
+        # the bars of the unfinished session, innermost first
         while self._bars:
             self._bars.pop().close()
 
     def _open(self, desc: str, leave: bool) -> None:
         kwargs = {
             "desc": desc,
-            "total": self.state.num_batches,
+            "total": self.session.num_batches,
             "unit": "batch",
             "leave": leave,
             "dynamic_ncols": True,
-            "disable": not self.state.accelerator.is_main_process,
+            "disable": not self.session.accelerator.is_main_process,
             **self.kwargs,
         }
         self._bars.append(tqdm(**kwargs))

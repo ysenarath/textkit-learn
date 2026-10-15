@@ -24,13 +24,13 @@ class RunningMean:
     Parameters
     ----------
     accelerator : Accelerator
-        The accelerator of the run, e.g. ``self.state.accelerator`` in a
-        callback, whose device holds the sums and whose processes
+        The accelerator of the session, e.g. ``self.session.accelerator``
+        in a callback, whose device holds the sums and whose processes
         `compute` reduces over.
 
     Examples
     --------
-    >>> means = RunningMean(self.state.accelerator)
+    >>> means = RunningMean(self.session.accelerator)
     >>> means.update({"loss": torch.tensor(0.5)})
     >>> means.update(logs)  # the logs of on_train_batch_end
     >>> means.compute()

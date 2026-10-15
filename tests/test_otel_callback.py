@@ -160,8 +160,8 @@ class TestOpenTelemetryCallback(TrainerTestCase):
 
         class Record(Callback):
             def on_train_batch_end(self, batch, logs):
-                if self.state.global_step % 2 == 0:
-                    norms.append(float(self.state.grad_norm))
+                if self.session.global_step % 2 == 0:
+                    norms.append(float(self.session.grad_norm))
 
         callback = self.callback(log_every_n_steps=2)
         trainer = self.trainer(
@@ -222,7 +222,7 @@ class TestOpenTelemetryCallback(TrainerTestCase):
     def test_spans_of_a_fit_that_raised_end_with_an_error(self):
         class Fail(Callback):
             def on_train_batch_end(self, batch, logs):
-                if self.state.global_step == 3:
+                if self.session.global_step == 3:
                     raise RuntimeError("stop")
 
         callback = self.callback()

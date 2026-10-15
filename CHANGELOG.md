@@ -58,13 +58,14 @@ modules listed under Removed.
 - A `Trainer` holds configuration only, read-only once created. It takes
   the optimizer as a factory, e.g.
   `functools.partial(torch.optim.AdamW, lr=2e-5)`. Each `fit`, `evaluate`
-  or `predict` runs with a new `TrainerState`, which builds the optimizer
-  and scheduler, holds the run's progress, and is dropped when the call
-  returns, so one run does not affect the next.
-- The trainer builds each run's optimizer, scheduler and `Accelerator`
-  with `create_optimizer`, `create_scheduler` and `create_accelerator`.
-  A subclass overrides them to build these otherwise, e.g. the optimizer
-  with parameter groups or the accelerator with plugins.
+  or `predict` opens a new `Session`, which prepares the model, holds
+  the call's progress, and is closed and dropped when the call returns,
+  so one call does not affect the next.
+- The trainer builds each session's optimizer, scheduler and
+  `Accelerator` with `create_optimizer`, `create_scheduler` and
+  `create_accelerator`. A subclass overrides them to build these
+  otherwise, e.g. the optimizer with parameter groups or the accelerator
+  with plugins.
 - `Module` has two hooks. `predict_step(batch)` returns the metric inputs
   (`y_true`, `y_pred`, `y_score`, ...) and optionally a `"loss"`.
   `training_step(batch)` defaults to that loss. It replaces
@@ -78,16 +79,16 @@ modules listed under Removed.
   `evaluate(loader, metrics=...)` uses other metrics for one call. Results
   from evaluation during `fit` are logged with a `valid_` prefix, and
   `fit` returns the logs of each epoch as a list of dicts.
-- Callbacks read the state of their run as `self.state` (`model`,
-  `optimizer`, `epoch`, `global_step`, `history`, ...; `self.state.trainer`
-  is the configuration), and setting `self.state.should_stop = True`
-  stops training, on every process when set on one. Hooks take no
-  trainer (`on_epoch_end(logs)`). `set_model`, `set_trainer` and
-  `set_params` are gone. Hooks keep their Keras names (`on_train_begin`,
-  `on_test_end`, ...).
-- A callback is in one run at a time, and evaluates within its run with
-  `self.state.evaluate`. `Dispatcher` calls the hooks of a run's
-  callbacks, also from a custom training loop.
+- Callbacks read the session they are in as `self.session` (`model`,
+  `optimizer`, `epoch`, `global_step`, `history`, ...;
+  `self.session.trainer` is the configuration), and setting
+  `self.session.should_stop = True` stops training, on every process
+  when set on one. Hooks take no trainer (`on_epoch_end(logs)`).
+  `set_model`, `set_trainer` and `set_params` are gone. Hooks keep their
+  Keras names (`on_train_begin`, `on_test_end`, ...).
+- A callback is in one session at a time, and evaluates within its
+  session with `self.session.evaluate`. `Dispatcher` calls the hooks of
+  a session's callbacks, also from a custom training loop.
 - Built-in callbacks follow `keras.callbacks`: `EarlyStopping`,
   `ModelCheckpoint` (`.safetensors` or `.pt` state dicts),
   `ReduceLROnPlateau`, `TerminateOnNaN`, `CSVLogger`, `ProgbarLogger` and
@@ -109,10 +110,10 @@ modules listed under Removed.
   callbacks keep the order given. `OpenTelemetryCallback` is a wrapper.
 - `Callback.on_exception(exception)` runs when `fit`,
   `evaluate` or `predict` raises, including on `KeyboardInterrupt`, in
-  place of the `*_end` hooks of the unfinished run. `ProgbarLogger`,
+  place of the `*_end` hooks of the unfinished session. `ProgbarLogger`,
   `CSVLogger` and `OpenTelemetryCallback` close their bars, file and
   spans there.
-- `TrainerState.grad_norm` holds the gradient norm before clipping.
+- `Session.grad_norm` holds the gradient norm before clipping.
 - `RunningMean` (`tklearn.nn.running_mean`) averages logged values over
   batches and every process, as `fit` does for each epoch; a callback can
   average the batch logs over a window the same way. It sums on the

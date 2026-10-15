@@ -68,7 +68,7 @@ def main(out: Path) -> None:
 
     class RecordLR(Callback):
         def on_epoch_begin(self) -> None:
-            lrs.append(self.state.optimizer.param_groups[0]["lr"])
+            lrs.append(self.session.optimizer.param_groups[0]["lr"])
 
     record_lr = RecordLR()
     trainer = Trainer(

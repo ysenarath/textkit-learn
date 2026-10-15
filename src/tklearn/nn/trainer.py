@@ -13,7 +13,7 @@ from tklearn.metrics import Metric, MetricCollection
 from tklearn.nn.callbacks import Callback
 from tklearn.nn.module import Module
 from tklearn.nn.schedules import get_scheduler
-from tklearn.nn.state import TrainerState
+from tklearn.nn.session import Session
 
 __all__ = [
     "OptimizerFactory",
@@ -40,7 +40,7 @@ class Trainer:
     A trainer holds configuration only, fixed when it is created: its
     attributes are read-only, so for other settings create another
     trainer, e.g. with the same model. Each `fit`, `evaluate` or
-    `predict` call runs with a new `TrainerState`, which it drops when it
+    `predict` call opens a new `Session`, which it closes when it
     returns, and each `fit` builds a new optimizer and scheduler with
     `create_optimizer` and `create_scheduler`; a call writes nothing back
     to the trainer or to what it was given, except the model, which it
@@ -70,8 +70,8 @@ class Trainer:
         Callbacks receiving the hooks of `fit`, `evaluate` and `predict`.
         Each hook goes to them in the order given, except for wrapper
         callbacks (`Callback.wrapper`), which get ``*_begin`` hooks before
-        and ``*_end`` hooks after the others. Each run gets them as a
-        list, `TrainerState.callbacks`.
+        and ``*_end`` hooks after the others. Each session gets them as
+        a list, `Session.callbacks`.
     max_grad_norm : float, optional
         Clip the gradient norm to this value before each optimizer step.
     mixed_precision : {"no", "fp16", "bf16"}, optional
@@ -191,7 +191,7 @@ class Trainer:
 
     @property
     def callbacks(self) -> tuple[Callback, ...]:
-        """The callbacks, of which each run gets a copy."""
+        """The callbacks, of which each session gets a copy."""
         return self._callbacks
 
     @property
@@ -215,7 +215,7 @@ class Trainer:
         return self._cpu
 
     def create_accelerator(self) -> Accelerator:
-        """Create the `Accelerator` of a run.
+        """Create the `Accelerator` of a session.
 
         Each `fit`, `evaluate` or `predict` calls it when it starts.
         Override it to give the accelerator more arguments, e.g. plugins
@@ -223,8 +223,8 @@ class Trainer:
 
         Accelerate fixes ``cpu`` and ``mixed_precision`` for the process
         at the first accelerator, and raises when a later one asks
-        otherwise, so calling it outside a run fixes them for every later
-        run too.
+        otherwise, so calling it outside a session fixes them for every
+        later session too.
         """
         return Accelerator(
             cpu=self.cpu,
@@ -296,7 +296,7 @@ class Trainer:
     ) -> list[dict[str, Any]]:
         """Train the model.
 
-        Each call is a new run, with a new optimizer and scheduler from
+        Each call is a new session, with a new optimizer and scheduler from
         `create_optimizer` and `create_scheduler`; the model keeps what it
         learned.
 
@@ -319,9 +319,9 @@ class Trainer:
         if epochs < 1:
             msg = f"epochs must be at least 1, got {epochs}"
             raise ValueError(msg)
-        state = TrainerState(self)
-        with state._run(training=True):
-            return state._fit(train_dataloader, eval_dataloader, epochs)
+        session = Session(self)
+        with session._open(training=True):
+            return session._fit(train_dataloader, eval_dataloader, epochs)
 
     def evaluate(
         self,
@@ -332,8 +332,8 @@ class Trainer:
     ) -> dict[str, Any]:
         """Compute the mean loss and the metrics over a dataloader.
 
-        A callback evaluating during a run uses `TrainerState.evaluate`
-        instead, which reuses the run.
+        A callback evaluating during a session uses `Session.evaluate`
+        instead, which reuses the session.
 
         Parameters
         ----------
@@ -354,9 +354,9 @@ class Trainer:
             processes, the duplicates that pad the last batch are left
             out, which is exact with a loss per example.
         """
-        state = TrainerState(self)
-        with state._run(training=False):
-            return state.evaluate(dataloader, prefix=prefix, metrics=metrics)
+        session = Session(self)
+        with session._open(training=False):
+            return session.evaluate(dataloader, prefix=prefix, metrics=metrics)
 
     def predict(self, dataloader: DataLoader) -> Any:
         """Run `predict_step` over a dataloader and concatenate the outputs.
@@ -376,6 +376,6 @@ class Trainer:
             The outputs for the whole dataloader, structured like the
             output of one batch.
         """
-        state = TrainerState(self)
-        with state._run(training=False):
-            return state.predict(dataloader)
+        session = Session(self)
+        with session._open(training=False):
+            return session.predict(dataloader)

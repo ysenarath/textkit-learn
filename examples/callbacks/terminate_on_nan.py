@@ -30,12 +30,12 @@ BAD_EXAMPLE = 100  # in batch 7, so the loss is NaN at step 7
 
 
 class LastStep(Callback):
-    """Keeps the number of optimizer steps the run took."""
+    """Keeps the number of optimizer steps the fit took."""
 
     step = 0
 
     def on_train_end(self) -> None:
-        self.step = self.state.global_step
+        self.step = self.session.global_step
 
 
 def fit(out: Path, callbacks: list) -> tuple[Trainer, list[dict]]:

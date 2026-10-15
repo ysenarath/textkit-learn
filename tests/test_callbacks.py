@@ -14,7 +14,7 @@ from test_nn import (
     RaisingClassifier,
     StopAt,
     TrainerTestCase,
-    fit_state,
+    fit_session,
     skip_steps,
 )
 from torch.optim.lr_scheduler import LambdaLR
@@ -44,9 +44,9 @@ class Feed(Callback):
         self.weights = []
 
     def on_epoch_end(self, logs):
-        logs[self.key] = self.values[self.state.epoch]
+        logs[self.key] = self.values[self.session.epoch]
         self.weights.append({
-            k: v.clone() for k, v in self.state.model.state_dict().items()
+            k: v.clone() for k, v in self.session.model.state_dict().items()
         })
 
 
@@ -55,7 +55,7 @@ def assert_weights_equal(model, weights):
         torch.testing.assert_close(value, weights[key])
 
 
-class TestTrainerState(TrainerTestCase):
+class TestSession(TrainerTestCase):
     def test_epochs_and_num_batches(self):
         seen = []
 
@@ -73,7 +73,11 @@ class TestTrainerState(TrainerTestCase):
                 self.note("p")
 
             def note(self, name):
-                seen.append((name, self.state.epochs, self.state.num_batches))
+                seen.append((
+                    name,
+                    self.session.epochs,
+                    self.session.num_batches,
+                ))
 
         trainer = self.trainer(callbacks=[Record()])
         # 6 training batches, 2 evaluation batches
@@ -88,7 +92,7 @@ class TestTrainerState(TrainerTestCase):
             * 2,
         )
         seen.clear()
-        # a new run, which knows nothing of the fit before it
+        # a new session, which knows nothing of the fit before it
         trainer.predict(self.loader(batch_size=48))
         self.assertEqual(seen, [("p", 0, 2)])
 
@@ -179,7 +183,7 @@ class TestWrapperCallbacks(TrainerTestCase):
 
                 class Add(Callback):
                     def on_train_begin(self):
-                        self.state.callbacks.append(added)
+                        self.session.callbacks.append(added)
 
                 callbacks = [Add(), Recorder("first", calls, wrapper=wrapper)]
                 trainer = self.trainer(callbacks=callbacks)
@@ -189,7 +193,7 @@ class TestWrapperCallbacks(TrainerTestCase):
                     self.order("on_train_begin", calls), ["first"]
                 )
                 self.assertIn("added", self.order("on_epoch_begin", calls))
-                # of this run only
+                # of this session only
                 self.assertNotIn(added, trainer.callbacks)
 
     def test_without_wrappers_hooks_run_in_order(self):
@@ -326,10 +330,10 @@ class TestTerminateOnNaN(TrainerTestCase):
 
         model.training_step = training_step
         trainer = self.trainer(model, callbacks=[TerminateOnNaN()])
-        state = fit_state(trainer, self.loader(), epochs=3)
-        history = state.history
+        session = fit_session(trainer, self.loader(), epochs=3)
+        history = session.history
         self.assertEqual(len(history), 1)
-        self.assertEqual(state.global_step, 3)
+        self.assertEqual(session.global_step, 3)
         self.assertTrue(math.isnan(history[0]["loss"]))
 
     def test_keeps_training_on_finite_loss(self):
@@ -443,7 +447,7 @@ class TestReduceLROnPlateau(TrainerTestCase):
 
         class Record(Callback):
             def on_epoch_end(self, logs):
-                lrs.append(self.state.optimizer.param_groups[0]["lr"])
+                lrs.append(self.session.optimizer.param_groups[0]["lr"])
 
         trainer = self.trainer(lr=lr, callbacks=[feed, reduce_lr, Record()])
         trainer.fit(self.loader(), epochs=len(values))
@@ -589,7 +593,7 @@ class TestProgbarLogger(TrainerTestCase):
         self.trainer(callbacks=[progbar]).predict(batches)
         self.assertEqual(progbar._bars, [])
 
-    def test_closes_the_bars_when_a_run_raises(self):
+    def test_closes_the_bars_when_a_session_raises(self):
         cases = [
             ("fit", RaisingClassifier("training_step", 3)),
             ("fit", RaisingClassifier("predict_step", 2)),

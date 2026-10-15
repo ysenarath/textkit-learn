@@ -1,7 +1,7 @@
 """Callbacks of `Trainer`, modelled on ``keras.callbacks``.
 
 `Callback` is the base class; `LambdaCallback` builds one from functions.
-`Dispatcher` calls the hooks of a trainer's callbacks during a run. The
+`Dispatcher` calls the hooks of a trainer's callbacks in a session. The
 rest are ready-made:
 
 - `EarlyStopping` and `TerminateOnNaN` stop training.

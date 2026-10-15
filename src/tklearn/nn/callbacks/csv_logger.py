@@ -44,7 +44,7 @@ class CSVLogger(Callback):
         self._write_header = True
 
     def on_train_begin(self) -> None:
-        if not self.state.accelerator.is_main_process:
+        if not self.session.accelerator.is_main_process:
             return
         self._write_header = not (
             self.append
@@ -68,7 +68,7 @@ class CSVLogger(Callback):
             if self._write_header:
                 self._writer.writeheader()
         row = {k: _to_builtin(v) for k, v in logs.items()}
-        self._writer.writerow({**row, "epoch": self.state.epoch})
+        self._writer.writerow({**row, "epoch": self.session.epoch})
         self._file.flush()
 
     def on_train_end(self) -> None:
