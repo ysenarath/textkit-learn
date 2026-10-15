@@ -108,7 +108,7 @@ class TrainerState:
         # what the accelerator prepared, while the run lasts; see _run
         self._accelerator: Accelerator | None = None
         self._dispatcher: Dispatcher | None = None
-        self._runner: ModuleWrapper | None = None
+        self._wrapper: ModuleWrapper | None = None
         self._prepared_optimizer: AcceleratedOptimizer | None = None
         # prepared dataloaders, so that the evaluation after each epoch
         # reuses the persistent workers of the one before
@@ -176,16 +176,18 @@ class TrainerState:
             # the first accelerator, and raises when a later one asks
             # otherwise
             accelerator = Accelerator(**trainer.accelerator_args)
-            runner = ModuleWrapper(self.model)
+            wrapper = ModuleWrapper(self.model)
             if training:
                 factory = cast(Any, trainer.optimizer)
                 self.optimizer = factory(self.model.parameters())
-                runner, optimizer = accelerator.prepare(runner, self.optimizer)
+                wrapper, optimizer = accelerator.prepare(
+                    wrapper, self.optimizer
+                )
             else:
                 # device placement and autocast, without the distributed
                 # wrapping (and its parameter broadcast) only training needs
-                runner = accelerator.prepare_model(
-                    runner, evaluation_mode=True
+                wrapper = accelerator.prepare_model(
+                    wrapper, evaluation_mode=True
                 )
                 optimizer = None
         except BaseException:
@@ -193,7 +195,7 @@ class TrainerState:
             raise
         self._dispatcher = dispatcher
         self._accelerator = accelerator
-        self._runner, self._prepared_optimizer = runner, optimizer
+        self._wrapper, self._prepared_optimizer = wrapper, optimizer
         try:
             yield
         except BaseException as e:
@@ -202,7 +204,7 @@ class TrainerState:
         finally:
             dispatcher.close()
             self._dispatcher = self._accelerator = None
-            self._runner = self._prepared_optimizer = None
+            self._wrapper = self._prepared_optimizer = None
             self._dataloaders = {}
 
     def _fit(
@@ -254,24 +256,24 @@ class TrainerState:
         self, dataloader: DataLoader, accumulation_steps: int
     ) -> dict[str, float]:
         accelerator = self.accelerator
-        runner = cast(ModuleWrapper, self._runner)
+        wrapper = cast(ModuleWrapper, self._wrapper)
         optimizer = cast(AcceleratedOptimizer, self._prepared_optimizer)
         max_grad_norm = self.trainer.max_grad_norm
-        runner.train()
+        wrapper.train()
         # summed on the device, so that only the end of the epoch waits for
         # it
         means = RunningMean(accelerator)
         for batch in dataloader:
             self._callback("on_train_batch_begin", batch)
             accelerator.gradient_accumulation_steps = accumulation_steps
-            with accelerator.accumulate(runner):
-                loss, logs = split_loss(runner("training_step", batch))
+            with accelerator.accumulate(wrapper):
+                loss, logs = split_loss(wrapper("training_step", batch))
                 accelerator.backward(loss)
                 # true at the end of accumulation
                 if accelerator.sync_gradients:
                     if max_grad_norm is not None:
                         self.grad_norm = accelerator.clip_grad_norm_(
-                            runner.parameters(), max_grad_norm
+                            wrapper.parameters(), max_grad_norm
                         )
                     self._callback("on_before_optimizer_step")
                     optimizer.step()
@@ -315,7 +317,7 @@ class TrainerState:
         prefix: str,
         metrics: Mapping[str, Metric] | None,
     ) -> dict[str, Any]:
-        runner = cast(ModuleWrapper, self._runner)
+        wrapper = cast(ModuleWrapper, self._wrapper)
         dataloader = self._prepare_dataloader(dataloader)
         # update a copy, so that an evaluation started meanwhile (from a
         # callback, or by another trainer sharing the metrics) cannot reset
@@ -333,7 +335,7 @@ class TrainerState:
         with _eval_mode(self.model):
             for batch in dataloader:
                 self._callback("on_test_batch_begin", batch)
-                outputs = runner("predict_step", batch)
+                outputs = wrapper("predict_step", batch)
                 if not isinstance(outputs, Mapping):
                     msg = (
                         "predict_step must return a mapping of metric inputs "
@@ -367,7 +369,7 @@ class TrainerState:
         return results
 
     def _predict(self, dataloader: DataLoader) -> Any:
-        runner = cast(ModuleWrapper, self._runner)
+        wrapper = cast(ModuleWrapper, self._wrapper)
         dataloader = self._prepare_dataloader(dataloader)
         self.num_batches = _num_batches(dataloader)
         chunks = []
@@ -375,7 +377,7 @@ class TrainerState:
         with _eval_mode(self.model):
             for batch in dataloader:
                 self._callback("on_predict_batch_begin", batch)
-                outputs = runner("predict_step", batch)
+                outputs = wrapper("predict_step", batch)
                 self._callback("on_predict_batch_end", batch, outputs)
                 if isinstance(outputs, Mapping):
                     outputs = {k: v for k, v in outputs.items() if k != "loss"}
