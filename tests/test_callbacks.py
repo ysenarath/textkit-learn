@@ -1,4 +1,5 @@
 import csv
+import functools
 import io
 import math
 import tempfile
@@ -16,8 +17,10 @@ from test_nn import (
     fit_state,
     skip_steps,
 )
+from torch.optim.lr_scheduler import LambdaLR
 
 from tklearn.metrics import ConfusionMatrix
+from tklearn.nn import Trainer
 from tklearn.nn.callbacks import (
     Callback,
     CSVLogger,
@@ -465,6 +468,21 @@ class TestReduceLROnPlateau(TrainerTestCase):
             lr_scheduler="constant", callbacks=[ReduceLROnPlateau()]
         )
         with self.assertRaisesRegex(ValueError, "lr_scheduler"):
+            trainer.fit(self.loader())
+
+    def test_rejects_an_overridden_scheduler(self):
+        class Custom(Trainer):
+            def create_scheduler(self, optimizer, num_training_steps):
+                return LambdaLR(optimizer, lambda step: 1.0)
+
+        trainer = Custom(
+            Classifier(),
+            functools.partial(torch.optim.SGD, lr=0.5),
+            callbacks=[ReduceLROnPlateau()],
+            cpu=True,
+            mixed_precision="no",
+        )
+        with self.assertRaisesRegex(ValueError, "scheduler"):
             trainer.fit(self.loader())
 
     def test_validates_factor(self):

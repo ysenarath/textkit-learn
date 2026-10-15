@@ -27,7 +27,6 @@ from tklearn.nn._outputs import (
 from tklearn.nn.callbacks import Callback, Dispatcher
 from tklearn.nn.module import Module
 from tklearn.nn.running_mean import RunningMean
-from tklearn.nn.schedules import get_scheduler
 
 if TYPE_CHECKING:
     from tklearn.nn.trainer import Trainer
@@ -172,11 +171,12 @@ class TrainerState:
         # run
         dispatcher = Dispatcher(self)
         try:
+            # before the accelerator, so that a fit without an optimizer
+            # raises before Accelerate fixes the process's settings
+            self.optimizer = trainer.create_optimizer() if training else None
             accelerator = trainer.create_accelerator()
             wrapper = ModuleWrapper(self.model)
             if training:
-                factory = cast(Any, trainer.optimizer)
-                self.optimizer = factory(self.model.parameters())
                 wrapper, optimizer = accelerator.prepare(
                     wrapper, self.optimizer
                 )
@@ -289,24 +289,13 @@ class TrainerState:
     def _build_scheduler(
         self, num_batches: int | None, epochs: int
     ) -> LRScheduler | None:
-        lr_scheduler = self.trainer.lr_scheduler
-        if lr_scheduler is None:
-            return None
-        if num_batches is None:
-            msg = (
-                "an lr_scheduler needs a dataloader with a length to count "
-                "the training steps"
+        num_steps = None
+        if num_batches is not None:
+            num_steps = epochs * math.ceil(
+                num_batches / self.accelerator.gradient_accumulation_steps
             )
-            raise ValueError(msg)
-        num_steps = epochs * math.ceil(
-            num_batches / self.accelerator.gradient_accumulation_steps
-        )
         optimizer = cast(Optimizer, self.optimizer)
-        if isinstance(lr_scheduler, str):
-            return get_scheduler(
-                lr_scheduler, optimizer, num_steps, warmup=self.trainer.warmup
-            )
-        return lr_scheduler(optimizer, num_steps)
+        return self.trainer.create_scheduler(optimizer, num_steps)
 
     def _evaluate(
         self,

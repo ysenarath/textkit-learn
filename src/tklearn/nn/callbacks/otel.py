@@ -426,15 +426,14 @@ def _describe_optimizer(optimizer: torch.optim.Optimizer) -> dict[str, Any]:
 
 def _describe_trainer(state: TrainerState) -> dict[str, Any]:
     trainer = state.trainer
-    scheduler = trainer.lr_scheduler
-    if callable(scheduler):
-        scheduler = _qualname(scheduler)
+    scheduler = state.scheduler
+    if scheduler is not None:
+        scheduler = _qualname(type(scheduler))
     accelerator = state.accelerator
     return {
         "epochs": state.epochs,
         "num_batches": state.num_batches,
         "lr_scheduler": scheduler,
-        "warmup": trainer.warmup,
         "max_grad_norm": trainer.max_grad_norm,
         "mixed_precision": accelerator.mixed_precision,
         "gradient_accumulation_steps": accelerator.gradient_accumulation_steps,

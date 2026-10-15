@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 from tklearn.metrics import Metric, MetricCollection
 from tklearn.nn.callbacks import Callback
 from tklearn.nn.module import Module
+from tklearn.nn.schedules import get_scheduler
 from tklearn.nn.state import TrainerState
 
 __all__ = [
@@ -40,9 +41,10 @@ class Trainer:
     attributes are read-only, so for other settings create another
     trainer, e.g. with the same model. Each `fit`, `evaluate` or
     `predict` call runs with a new `TrainerState`, which it drops when it
-    returns, and builds a new optimizer and scheduler from the factories;
-    a call writes nothing back to the trainer or to what it was given,
-    except the model, which it trains.
+    returns, and each `fit` builds a new optimizer and scheduler with
+    `create_optimizer` and `create_scheduler`; a call writes nothing back
+    to the trainer or to what it was given, except the model, which it
+    trains.
 
     Parameters
     ----------
@@ -51,7 +53,7 @@ class Trainer:
     optimizer : callable, optional
         Builds the optimizer from the model's parameters at the start of
         each `fit`, e.g. ``functools.partial(torch.optim.AdamW, lr=2e-5)``.
-        Required by `fit`.
+        Required by `fit`, unless a subclass overrides `create_optimizer`.
     lr_scheduler : str or callable, optional
         Stepped after every optimizer step. Either the name of a
         `get_scheduler` schedule (e.g. ``"linear"``), or
@@ -180,21 +182,6 @@ class Trainer:
         return self._model
 
     @property
-    def optimizer(self) -> OptimizerFactory | None:
-        """The optimizer factory."""
-        return self._optimizer
-
-    @property
-    def lr_scheduler(self) -> SchedulerFactory | None:
-        """The name or factory of the learning rate schedule."""
-        return self._lr_scheduler
-
-    @property
-    def warmup(self) -> int | float:
-        """The warmup of a named schedule."""
-        return self._warmup
-
-    @property
     def metrics(self) -> MetricCollection:
         """Metrics computed by `evaluate`.
 
@@ -245,6 +232,61 @@ class Trainer:
             gradient_accumulation_steps=self.gradient_accumulation_steps,
         )
 
+    def create_optimizer(self) -> Optimizer:
+        """Create the optimizer of a `fit`, from the `optimizer` factory.
+
+        Each `fit` calls it when it starts. Override it to build the
+        optimizer otherwise, e.g. with parameter groups::
+
+            def create_optimizer(self):
+                params = dict(self.model.named_parameters())
+                decay = [p for n, p in params.items() if "bias" not in n]
+                rest = [p for n, p in params.items() if "bias" in n]
+                return self._optimizer([
+                    {"params": decay},
+                    {"params": rest, "weight_decay": 0.0},
+                ])
+        """
+        if self._optimizer is None:
+            msg = "fit needs an optimizer; pass one to the Trainer"
+            raise ValueError(msg)
+        return self._optimizer(self.model.parameters())
+
+    def create_scheduler(
+        self, optimizer: Optimizer, num_training_steps: int | None
+    ) -> LRScheduler | None:
+        """Create the learning rate scheduler of a `fit`, from
+        `lr_scheduler` and `warmup`; None without one.
+
+        Each `fit` calls it after `create_optimizer`, with the optimizer
+        it created. Override it to build the scheduler otherwise.
+
+        Parameters
+        ----------
+        optimizer : Optimizer
+            The optimizer of the `fit`.
+        num_training_steps : int or None
+            Optimizer steps of the `fit`; None when the training
+            dataloader has no length.
+        """
+        lr_scheduler = self._lr_scheduler
+        if lr_scheduler is None:
+            return None
+        if num_training_steps is None:
+            msg = (
+                "an lr_scheduler needs a dataloader with a length to count "
+                "the training steps"
+            )
+            raise ValueError(msg)
+        if isinstance(lr_scheduler, str):
+            return get_scheduler(
+                lr_scheduler,
+                optimizer,
+                num_training_steps,
+                warmup=self._warmup,
+            )
+        return lr_scheduler(optimizer, num_training_steps)
+
     def fit(
         self,
         train_dataloader: DataLoader,
@@ -254,8 +296,9 @@ class Trainer:
     ) -> list[dict[str, Any]]:
         """Train the model.
 
-        Each call is a new run, with a new optimizer and scheduler built
-        from the factories; the model keeps what it learned.
+        Each call is a new run, with a new optimizer and scheduler from
+        `create_optimizer` and `create_scheduler`; the model keeps what it
+        learned.
 
         Parameters
         ----------
@@ -273,9 +316,6 @@ class Trainer:
             The logs of each epoch: the mean training ``loss`` and other
             logged terms, then the evaluation results.
         """
-        if self.optimizer is None:
-            msg = "fit needs an optimizer; pass one to the Trainer"
-            raise ValueError(msg)
         if epochs < 1:
             msg = f"epochs must be at least 1, got {epochs}"
             raise ValueError(msg)

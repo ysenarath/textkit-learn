@@ -61,6 +61,10 @@ modules listed under Removed.
   or `predict` runs with a new `TrainerState`, which builds the optimizer
   and scheduler, holds the run's progress, and is dropped when the call
   returns, so one run does not affect the next.
+- The trainer builds each run's optimizer, scheduler and `Accelerator`
+  with `create_optimizer`, `create_scheduler` and `create_accelerator`.
+  A subclass overrides them to build these otherwise, e.g. the optimizer
+  with parameter groups or the accelerator with plugins.
 - `Module` has two hooks. `predict_step(batch)` returns the metric inputs
   (`y_true`, `y_pred`, `y_score`, ...) and optionally a `"loss"`.
   `training_step(batch)` defaults to that loss. It replaces

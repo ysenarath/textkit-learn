@@ -98,7 +98,10 @@ class TestOpenTelemetryCallback(TrainerTestCase):
         )
         self.assertEqual(attributes["trainer.epochs"], 2)
         self.assertEqual(attributes["trainer.num_batches"], 6)
-        self.assertEqual(attributes["trainer.lr_scheduler"], "linear")
+        self.assertEqual(
+            attributes["trainer.lr_scheduler"],
+            "torch.optim.lr_scheduler.LambdaLR",
+        )
         self.assertEqual(attributes["trainer.max_grad_norm"], 1.0)
         self.assertEqual(attributes["trainer.metrics"], ("acc",))
         self.assertEqual(

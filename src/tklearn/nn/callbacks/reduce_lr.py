@@ -47,8 +47,9 @@ class ReduceLROnPlateau(MonitorCallback):
 
     Notes
     -----
-    The callback sets the learning rate itself, so the trainer must not
-    have an ``lr_scheduler``, which would overwrite it.
+    The callback sets the learning rate itself, so the fit must not have a
+    scheduler (``Trainer(lr_scheduler=...)`` or `Trainer.create_scheduler`),
+    which would overwrite it.
     """
 
     def __init__(
@@ -80,10 +81,11 @@ class ReduceLROnPlateau(MonitorCallback):
         self.cooldown_counter = 0
 
     def on_train_begin(self) -> None:
-        if self.state.trainer.lr_scheduler is not None:
+        if self.state.scheduler is not None:
             msg = (
-                "ReduceLROnPlateau sets the learning rate, which the "
-                "trainer's lr_scheduler would overwrite; use one of them"
+                "ReduceLROnPlateau sets the learning rate, which the fit's "
+                "scheduler (the trainer's lr_scheduler) would overwrite; use "
+                "one of them"
             )
             raise ValueError(msg)
         self._reset()

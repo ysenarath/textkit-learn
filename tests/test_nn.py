@@ -131,6 +131,15 @@ class EmptyIterable(IterableDataset):
         return iter(())
 
 
+class Stream(IterableDataset):
+    # the items of a list, as an iterable dataset without a length
+    def __init__(self, items):
+        self.items = items
+
+    def __iter__(self):
+        return iter(self.items)
+
+
 class OutputModel(Classifier):
     """Returns ``outputs(batch)`` from predict_step."""
 
@@ -1094,6 +1103,33 @@ class TestSchedules(TrainerTestCase):
         self.assertEqual(num_steps, 3 * 2)
         self.assertEqual(scheduler.last_epoch, num_steps)
 
+    def test_named_schedule_needs_a_length(self):
+        trainer = self.trainer(lr_scheduler="linear")
+        with self.assertRaisesRegex(ValueError, "length"):
+            trainer.fit(self.loader(Stream(self.data)))
+
+    def test_overridden_schedule(self):
+        # without an lr_scheduler, and without a step count when the
+        # dataloader has no length
+        num_steps = []
+
+        class Custom(Trainer):
+            def create_scheduler(self, optimizer, num_training_steps):
+                num_steps.append(num_training_steps)
+                return LambdaLR(optimizer, lambda step: 0.5)
+
+        trainer = Custom(
+            Classifier(),
+            functools.partial(torch.optim.SGD, lr=1.0),
+            cpu=True,
+            mixed_precision="no",
+        )
+        state = fit_state(trainer, self.loader(), epochs=2)
+        self.assertIsInstance(state.scheduler, LambdaLR)
+        self.assertEqual(state.optimizer.param_groups[0]["lr"], 0.5)
+        trainer.fit(self.loader(Stream(self.data)))
+        self.assertEqual(num_steps, [2 * 6, None])
+
     def test_get_scheduler_warmup_fraction(self):
         param = torch.nn.Parameter(torch.zeros(1))
         optimizer = torch.optim.SGD([param], lr=1.0)
@@ -1174,6 +1210,36 @@ class TestValidation(TrainerTestCase):
         self.assertIs(seen[0], seen[1])
         self.assertIsNot(seen[1], seen[2])
 
+    def test_fit_needs_an_optimizer(self):
+        trainer = Trainer(Classifier(), cpu=True, mixed_precision="no")
+        with self.assertRaisesRegex(ValueError, "optimizer"):
+            trainer.fit(self.loader())
+        # evaluate and predict do not
+        trainer.evaluate(self.loader())
+        trainer.predict(self.loader())
+
+    def test_overridden_optimizer(self):
+        # parameter groups, without an optimizer factory
+
+        class Grouped(Trainer):
+            def create_optimizer(self):
+                params = dict(self.model.named_parameters())
+                return torch.optim.SGD(
+                    [
+                        {"params": [params["linear.weight"]]},
+                        {"params": [params["linear.bias"]], "lr": 0.0},
+                    ],
+                    lr=0.5,
+                )
+
+        model = Classifier()
+        weight, bias = model.linear.weight.clone(), model.linear.bias.clone()
+        trainer = Grouped(model, cpu=True, mixed_precision="no")
+        state = fit_state(trainer, self.loader())
+        self.assertEqual(len(state.optimizer.param_groups), 2)
+        self.assertFalse(torch.equal(model.linear.weight, weight))
+        torch.testing.assert_close(model.linear.bias, bias)
+
     def test_runs_use_create_accelerator(self):
         created, seen = [], []
 
@@ -1211,9 +1277,6 @@ class TestValidation(TrainerTestCase):
         trainer = self.trainer(callbacks=[Recorder()])
         replacements = {
             "model": Classifier(),
-            "optimizer": functools.partial(torch.optim.SGD, lr=0.1),
-            "lr_scheduler": "linear",
-            "warmup": 0.1,
             "metrics": {"acc": Accuracy()},
             "callbacks": [Recorder()],
             "max_grad_norm": 1.0,
