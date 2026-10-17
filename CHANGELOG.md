@@ -11,9 +11,9 @@ modules listed under Removed.
 - `tklearn.embeddings`, `tklearn.plotting` and most of `tklearn.utils`.
   They are being redesigned.
 - From `tklearn.nn`: models (backbones, classifiers, K-BERT),
-  calibration, `ModelRepo`, `Encoder`, `TargetBasedLoss` and the data
-  collators. They are being redesigned. The `History` callback is gone
-  (`fit` returns the logs of each epoch), and so is `TrackingCallback`
+  `ModelRepo`, `Encoder`, `TargetBasedLoss` and the data collators.
+  They are being redesigned. The `History` callback is gone (`fit`
+  returns the logs of each epoch), and so is `TrackingCallback`
   (MLflow).
 - `tklearn.agents` (vendored smolagents). Use the `smolagents` package.
 - nightjar configs, `Auto*` factories and lookup by name. Import the class
@@ -119,6 +119,15 @@ modules listed under Removed.
   average the batch logs over a window the same way. It sums on the
   device, so only `compute` waits for it; on several processes, every
   process must call `compute`.
+- `tklearn.nn.calibration.calibrate(trainer, loader, activation=...)`
+  fits a temperature to the `"logits"` that `predict_step` returns on
+  held-out data, and returns a `CalibratedModule` whose probabilities
+  and loss use the scaled logits, with the same predictions.
+  `activation` is `"softmax"` for a multiclass classifier or
+  `"sigmoid"` for a binary or multilabel one; it is not inferred, and
+  logits and labels of the wrong shapes for it raise. It replaces
+  `calibrate_model`. `fit_temperature(logits, y_true, activation=...)`
+  fits one from tensors.
 - `lr_scheduler` accepts a name with `warmup` (steps or a fraction), or
   `f(optimizer, num_training_steps)`, built at the start of each `fit`.
   `get_scheduler` builds named schedules. Schedules count optimizer

@@ -7,10 +7,11 @@ logits by one number, the temperature, fit on held-out data to minimize
 the negative log-likelihood. The argmax does not change, so neither do
 the predictions; only the probabilities do.
 
-The example trains a classifier on a small noisy training set, fits the
-temperature on the validation set's logits from `Trainer.predict`, and
-evaluates both models on the test set through `Trainer`, with the
-calibrated one as a `Module` that wraps the trained one.
+The example trains a classifier on a small noisy training set, then
+`tklearn.nn.calibration.calibrate` fits the temperature on the
+validation set's logits, from `Trainer.predict`, and returns the
+calibrated model: a `CalibratedModule` wrapping the trained one. Both
+models are evaluated on the test set through `Trainer`.
 
 python examples/calibration/temperature_scaling.py
 """
@@ -25,6 +26,7 @@ from torch.utils.data import DataLoader
 
 from tklearn.metrics import Accuracy
 from tklearn.nn import Module, Trainer
+from tklearn.nn.calibration import calibrate
 
 NUM_FEATURES = 16
 NUM_CLASSES = 3
@@ -45,50 +47,16 @@ class Classifier(Module):
         return self.head(self.encoder(x))
 
     def predict_step(self, batch):
-        return outputs_of(self(batch["x"]), batch)
-
-
-class Calibrated(Module):
-    """`model` with its logits divided by `temperature`."""
-
-    def __init__(self, model: Module, temperature: float) -> None:
-        super().__init__()
-        self.model = model
-        self.register_buffer("temperature", torch.tensor(temperature))
-
-    def predict_step(self, batch):
-        logits = self.model.predict_step(batch)["logits"]
-        return outputs_of(logits / self.temperature, batch)
-
-
-def outputs_of(logits: torch.Tensor, batch) -> dict[str, torch.Tensor]:
-    """The `predict_step` outputs of a batch's logits."""
-    outputs = {
-        "logits": logits,
-        "y_pred": logits.argmax(-1),
-        "y_score": logits.softmax(-1),
-    }
-    if "labels" in batch:  # absent at inference time
-        outputs["y_true"] = batch["labels"]
-        outputs["loss"] = F.cross_entropy(logits, batch["labels"])
-    return outputs
-
-
-def fit_temperature(logits: torch.Tensor, labels: torch.Tensor) -> float:
-    """The temperature that minimizes the negative log-likelihood of
-    `labels` under ``softmax(logits / temperature)``."""
-    # the log of the temperature, so that the temperature stays positive
-    log_t = torch.zeros((), requires_grad=True)
-    optimizer = torch.optim.LBFGS([log_t], lr=0.1, max_iter=100)
-
-    def nll() -> torch.Tensor:
-        optimizer.zero_grad()
-        loss = F.cross_entropy(logits / log_t.exp(), labels)
-        loss.backward()
-        return loss
-
-    optimizer.step(nll)
-    return log_t.exp().item()
+        logits = self(batch["x"])
+        outputs = {
+            "logits": logits,  # what calibration scales
+            "y_pred": logits.argmax(-1),
+            "y_score": logits.softmax(-1),
+        }
+        if "labels" in batch:  # absent at inference time
+            outputs["y_true"] = batch["labels"]
+            outputs["loss"] = F.cross_entropy(logits, batch["labels"])
+        return outputs
 
 
 def expected_calibration_error(
@@ -175,13 +143,11 @@ def main() -> None:
     )
     trainer.fit(train, epochs=100)
 
-    # fit on validation data: the training data's logits are the ones the
-    # model fits, so they would make it look even more confident
-    outputs = trainer.predict(valid)
-    temperature = fit_temperature(outputs["logits"], outputs["y_true"])
-    calibrated = Trainer(
-        Calibrated(model, temperature), metrics=metrics, cpu=True
-    )
+    # on validation data: the training data's logits are the ones the
+    # model was fit to, so they would make it look even more confident
+    model = calibrate(trainer, valid, activation="softmax")
+    temperature = model.temperature.item()
+    calibrated = Trainer(model, metrics=metrics, cpu=True)
 
     before, after = report(trainer, test), report(calibrated, test)
     print(f"temperature: {temperature:.2f}\n")
