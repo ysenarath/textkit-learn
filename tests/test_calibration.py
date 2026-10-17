@@ -42,7 +42,8 @@ class TestFitTemperature(unittest.TestCase):
                 temperature = fit_temperature(
                     z * 3, y_true, activation=activation
                 )
-                self.assertAlmostEqual(temperature, 3, delta=0.15)
+                self.assertEqual(temperature.shape, ())
+                self.assertAlmostEqual(temperature.item(), 3, delta=0.15)
 
     def test_invalid_shapes(self):
         indices = torch.zeros(4, dtype=torch.long)
@@ -61,6 +62,74 @@ class TestFitTemperature(unittest.TestCase):
             ):
                 with self.assertRaisesRegex(ValueError, "expects logits"):
                     fit_temperature(logits, y_true, activation=activation)
+
+    def test_per_label(self):
+        # labels drawn from sigmoid(z) with the logits scaled by 0.5, 1
+        # and 3, so each label's temperature differs from the others
+        g = torch.Generator().manual_seed(0)
+        z = torch.randn(20000, 3, generator=g)
+        y_true = sample(z.sigmoid(), "sigmoid", g)
+        temperature = fit_temperature(
+            z * torch.tensor([0.5, 1.0, 3.0]),
+            y_true,
+            activation="sigmoid",
+            per_label=True,
+        )
+        self.assertEqual(temperature.shape, (3,))
+        torch.testing.assert_close(
+            temperature, torch.tensor([0.5, 1.0, 3.0]), rtol=0.05, atol=0
+        )
+
+    def test_per_label_shrinks_unsettled_labels(self):
+        # a label with no positives, and one with 3 positives all above the
+        # negatives: fit alone, their temperatures tend to 0
+        g = torch.Generator().manual_seed(0)
+        n = 1000
+        z = torch.randn(n, 1, generator=g)
+        separable = torch.cat([
+            torch.rand(3, generator=g) + 0.5,
+            -torch.rand(n - 3) - 0.5,
+        ])
+        logits = torch.cat(
+            [z, separable[:, None], -torch.rand(n, 1, generator=g) * 3], 1
+        )
+        y_true = torch.cat(
+            [
+                sample(z.sigmoid(), "sigmoid", g),
+                (torch.arange(n) < 3).float()[:, None],
+                torch.zeros(n, 1),
+            ],
+            1,
+        )
+        shared = fit_temperature(logits, y_true, activation="sigmoid")
+        alone = fit_temperature(
+            logits, y_true, activation="sigmoid", per_label=True, shrinkage=0
+        )
+        shrunk = fit_temperature(
+            logits, y_true, activation="sigmoid", per_label=True
+        )
+        self.assertTrue((alone[1:] < 0.05).all())
+        self.assertTrue((shrunk[1:] > shared / 2).all())
+
+    def test_per_label_needs_multilabel_logits(self):
+        cases = [
+            (torch.zeros(4, 3), torch.zeros(4, dtype=torch.long), "softmax"),
+            (torch.zeros(4), torch.zeros(4), "sigmoid"),
+        ]
+        for logits, y_true, activation in cases:
+            with self.subTest(activation=activation):
+                with self.assertRaisesRegex(ValueError, "per_label"):
+                    fit_temperature(
+                        logits, y_true, activation=activation, per_label=True
+                    )
+        with self.assertRaisesRegex(ValueError, "shrinkage"):
+            fit_temperature(
+                torch.zeros(4, 3),
+                torch.zeros(4, 3),
+                activation="sigmoid",
+                per_label=True,
+                shrinkage=-1,
+            )
 
     def test_invalid_activation(self):
         with self.assertRaisesRegex(ValueError, "softmax or sigmoid"):
@@ -202,9 +271,45 @@ class TestCalibrate(TrainerTestCase):
                 activation="softmax",
             )
 
+    def test_per_label_outputs(self):
+        class Multilabel(Module):
+            def __init__(self):
+                super().__init__()
+                torch.manual_seed(0)
+                self.net = torch.nn.Linear(8, 3)
+
+            def predict_step(self, batch):
+                logits = self.net(batch["x"])
+                return {
+                    "logits": logits,
+                    "y_pred": (logits > 0).long(),
+                    "y_score": logits.sigmoid(),
+                    "y_true": batch["labels"],
+                }
+
+        model = Multilabel()
+        temperature = torch.tensor([0.5, 1.0, 2.0])
+        calibrated = CalibratedModule(model, temperature, "sigmoid")
+        batch = {"x": torch.randn(5, 8), "labels": torch.ones(5, 3)}
+        with torch.no_grad():
+            original = model.predict_step(batch)
+            outputs = calibrated.predict_step(batch)
+        logits = original["logits"] / temperature
+        torch.testing.assert_close(outputs["logits"], logits)
+        torch.testing.assert_close(outputs["y_score"], logits.sigmoid())
+        torch.testing.assert_close(outputs["y_pred"], original["y_pred"])
+        # one temperature per label, for logits with another label count
+        calibrated = CalibratedModule(model, torch.ones(4), "sigmoid")
+        with self.assertRaisesRegex(ValueError, "4 temperatures"):
+            calibrated.predict_step(batch)
+
     def test_invalid_arguments(self):
         with self.assertRaisesRegex(ValueError, "positive"):
             CalibratedModule(Classifier(), 0.0, "softmax")
+        with self.assertRaisesRegex(ValueError, "positive"):
+            CalibratedModule(Classifier(), torch.tensor([1.0, 0.0]), "sigmoid")
+        with self.assertRaisesRegex(ValueError, "one per label"):
+            CalibratedModule(Classifier(), torch.ones(3), "softmax")
         with self.assertRaisesRegex(ValueError, "softmax or sigmoid"):
             CalibratedModule(Classifier(), 1.0, "tanh")
 

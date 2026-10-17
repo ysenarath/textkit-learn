@@ -6,12 +6,14 @@ its probabilities are higher than its accuracy. Temperature scaling
 divides its logits by one number, the temperature, fit on held-out data
 to minimize the negative log-likelihood. Dividing by a positive number
 keeps the order of the logits, so the predictions stay the same; only
-the probabilities change.
+the probabilities change. A multilabel classifier can have one
+temperature per label instead, as each label is a binary problem of
+its own.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Any, Literal
 
 import torch
@@ -41,6 +43,8 @@ def calibrate(
     dataloader: DataLoader,
     *,
     activation: Activation,
+    per_label: bool = False,
+    shrinkage: float = 1.0,
 ) -> CalibratedModule:
     """Calibrate the model of `trainer` on the labelled `dataloader`.
 
@@ -52,7 +56,9 @@ def calibrate(
     fit to. `activation` is how the model's logits become probabilities:
     ``"softmax"`` for a multiclass classifier, or a binary one with two
     logits per example; ``"sigmoid"`` for a binary classifier with one
-    logit per example, or a multilabel one.
+    logit per example, or a multilabel one. `per_label` and `shrinkage`
+    fit one temperature per label of a multilabel classifier (see
+    `fit_temperature`).
 
     Examples
     --------
@@ -75,15 +81,23 @@ def calibrate(
         outputs["logits"],
         outputs["y_true"],
         activation=activation,
+        per_label=per_label,
+        shrinkage=shrinkage,
     )
     return CalibratedModule(trainer.model, temperature, activation)
 
 
 def fit_temperature(
-    logits: torch.Tensor, y_true: torch.Tensor, *, activation: Activation
-) -> float:
+    logits: torch.Tensor,
+    y_true: torch.Tensor,
+    *,
+    activation: Activation,
+    per_label: bool = False,
+    shrinkage: float = 1.0,
+) -> torch.Tensor:
     """The temperature that minimizes the negative log-likelihood of
-    `y_true` under the probabilities of ``logits / temperature``.
+    `y_true` under the probabilities of ``logits / temperature``: a
+    scalar, or one per label ``(num_labels,)`` with `per_label`.
 
     Parameters
     ----------
@@ -97,26 +111,76 @@ def fit_temperature(
     activation : {"softmax", "sigmoid"}
         ``"softmax"`` for a multiclass classifier, ``"sigmoid"`` for a
         binary or multilabel one.
+    per_label : bool, default False
+        Fit one temperature per label of a multilabel classifier, with
+        ``"sigmoid"`` and logits ``(n, num_labels)``. A label's
+        predictions stay the same at the 0.5 threshold.
+    shrinkage : float, default 1.0
+        With `per_label`, how strongly each label's temperature is
+        pulled toward the one temperature shared by all labels, which is
+        fit first. Without it, the temperature of a label whose examples
+        do not settle it (no positives, or a few positives all above the
+        negatives) tends to 0, and its probabilities to 0 or 1. The pull
+        weakens as the count of a label's rarer class, positives or
+        negatives, grows: by default it holds a label with none or a few
+        near the shared temperature, and barely moves one with hundreds.
+        0 fits each label alone.
     """
     _check_shapes(logits, y_true, activation)
+    if per_label and (activation != "sigmoid" or logits.ndim != 2):
+        msg = (
+            "per_label needs the logits (n, num_labels) of a multilabel "
+            'classifier, with activation="sigmoid"'
+        )
+        raise ValueError(msg)
+    if shrinkage < 0:
+        msg = f"shrinkage must be at least 0, got {shrinkage}"
+        raise ValueError(msg)
     logits = logits.detach().float().cpu()
     y_true = y_true.detach().cpu()
     if activation == "sigmoid":
         y_true = y_true.float()
-    # the log of the temperature, so that the temperature stays positive
-    log_t = torch.zeros((), requires_grad=True)
+    # fit the log of the temperature, so that the temperature stays positive
+    shared = _minimize(
+        torch.zeros(()),
+        lambda log_t: _nll(logits / log_t.exp(), y_true, activation).mean(),
+    )
+    if not per_label:
+        return shared.exp()
+    # what settles a label's temperature is how many examples its rarer
+    # class has, not how many it has in all: a label with 3 positives
+    # among thousands of easy negatives is barely settled
+    minority = torch.minimum(y_true.sum(0), (1 - y_true).sum(0))
+    weight = shrinkage / (1 + minority)
+
+    def loss(log_t: torch.Tensor) -> torch.Tensor:
+        # each label's mean negative log-likelihood, plus its pull toward
+        # the shared temperature; the labels' terms are independent
+        nll = F.binary_cross_entropy_with_logits(
+            logits / log_t.exp(), y_true, reduction="none"
+        ).mean(0)
+        return (nll + weight * (log_t - shared) ** 2).sum()
+
+    return _minimize(shared.repeat(logits.shape[1]), loss).exp()
+
+
+def _minimize(
+    log_t: torch.Tensor, loss: Callable[[torch.Tensor], torch.Tensor]
+) -> torch.Tensor:
+    """The `log_t` that minimizes `loss`, starting from `log_t`."""
+    log_t = log_t.clone().requires_grad_()
     optimizer = torch.optim.LBFGS(
         [log_t], max_iter=100, line_search_fn="strong_wolfe"
     )
 
     def closure() -> torch.Tensor:
         optimizer.zero_grad()
-        loss = _nll(logits / log_t.exp(), y_true, activation).mean()
-        loss.backward()
-        return loss
+        value = loss(log_t)
+        value.backward()
+        return value
 
     optimizer.step(closure)
-    return log_t.exp().item()
+    return log_t.detach()
 
 
 class CalibratedModule(Module):
@@ -136,23 +200,37 @@ class CalibratedModule(Module):
     ----------
     model : Module
         The classifier; its `predict_step` returns ``"logits"``.
-    temperature : float
-        What the logits are divided by.
+    temperature : float or Tensor
+        What the logits are divided by: a scalar, or one per label
+        ``(num_labels,)`` of a multilabel classifier with ``"sigmoid"``.
     activation : {"softmax", "sigmoid"}
         How the model's logits become probabilities.
     """
 
     def __init__(
-        self, model: Module, temperature: float, activation: Activation
+        self,
+        model: Module,
+        temperature: float | torch.Tensor,
+        activation: Activation,
     ) -> None:
         super().__init__()
-        if temperature <= 0:
+        _check_activation(activation)
+        temperature = torch.as_tensor(temperature).detach().float().cpu()
+        if temperature.ndim > 1 or (
+            temperature.ndim == 1 and activation != "sigmoid"
+        ):
+            msg = (
+                "the temperature must be a scalar, or one per label with "
+                f'activation="sigmoid"; got {tuple(temperature.shape)} with '
+                f"{activation!r}"
+            )
+            raise ValueError(msg)
+        if (temperature <= 0).any():
             msg = f"the temperature must be positive, got {temperature}"
             raise ValueError(msg)
-        _check_activation(activation)
         self.model = model
         self.activation: Activation = activation
-        self.register_buffer("temperature", torch.tensor(float(temperature)))
+        self.register_buffer("temperature", temperature.clone())
 
     def forward(self, *args: Any, **kwargs: Any) -> Any:
         return self.model(*args, **kwargs)
@@ -166,7 +244,16 @@ class CalibratedModule(Module):
             )
             raise ValueError(msg)
         outputs = dict(outputs)
-        logits = outputs["logits"] / self.temperature
+        logits = outputs["logits"]
+        if self.temperature.ndim == 1 and (
+            logits.ndim != 2 or logits.shape[1] != len(self.temperature)
+        ):
+            msg = (
+                f"{len(self.temperature)} temperatures, one per label, "
+                f"cannot scale logits {tuple(logits.shape)}"
+            )
+            raise ValueError(msg)
+        logits = logits / self.temperature
         outputs["logits"] = logits
         if self.activation == "softmax":
             scores = logits.softmax(-1)

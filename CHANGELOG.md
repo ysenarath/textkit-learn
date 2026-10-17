@@ -127,7 +127,11 @@ modules listed under Removed.
   `"sigmoid"` for a binary or multilabel one; it is not inferred, and
   logits and labels of the wrong shapes for it raise. It replaces
   `calibrate_model`. `fit_temperature(logits, y_true, activation=...)`
-  fits one from tensors.
+  fits one from tensors, returned as a tensor. With `per_label=True`, a
+  multilabel classifier gets one temperature per label, each pulled
+  toward the shared one by `shrinkage`, more strongly the fewer
+  examples the label's rarer class has, so that a label with no or few
+  positives does not get a temperature near 0.
 - `lr_scheduler` accepts a name with `warmup` (steps or a fraction), or
   `f(optimizer, num_training_steps)`, built at the start of each `fit`.
   `get_scheduler` builds named schedules. Schedules count optimizer
