@@ -10,8 +10,9 @@ modules listed under Removed.
 
 - `tklearn.embeddings`, `tklearn.plotting` and most of `tklearn.utils`.
   They are being redesigned.
-- From `tklearn.nn`: models (backbones, classifiers, K-BERT),
-  `ModelRepo`, `Encoder`, `TargetBasedLoss` and the data collators.
+- From `tklearn.nn`: backbones, the linear and prototype classifiers,
+  K-BERT, `ModelRepo`, `Encoder`, `TargetBasedLoss` and the data
+  collators.
   They are being redesigned. The `History` callback is gone (`fit`
   returns the logs of each epoch), and so is `TrackingCallback`
   (MLflow).
@@ -136,6 +137,14 @@ modules listed under Removed.
   batches padded to different lengths, to the largest: signed integers
   with -100 and the rest with 0 (False). `evaluate` sums the loss on the
   device, so it no longer waits for it on every batch.
+- `tklearn.nn.models`: `SequenceClassifier` (multiclass, binary,
+  multilabel or regression) and `TokenClassifier` wrap a Hugging Face
+  model, by name or loaded, with a `predict_step` that returns the
+  logits, `y_pred`, `y_score` (`mask` for tokens), `y_true` and the loss,
+  ready for `tklearn.metrics` and `calibrate`
+  (`activation=model.activation`). With `label_names`, a
+  `TokenClassifier`'s `y_true` and `y_pred` are tag sequences for
+  `SpanF1`. They replace the backbone and classifier modules.
 - `RunningMean` (`tklearn.nn.running_mean`) averages logged values over
   batches and every process, as `fit` does for each epoch; a callback can
   average the batch logs over a window the same way. It sums on the
