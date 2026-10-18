@@ -45,6 +45,11 @@ modules listed under Removed.
   `SpearmanCorrelation`.
 - Spans: `SpanPrecision`, `SpanRecall` and `SpanF1` score spans read from
   BIO/IOBES tags, matching seqeval's default mode.
+- Calibration: `LogLoss`, `BrierScore` and `ExpectedCalibrationError`
+  (top-label, `n_bins` equal-width bins) read probabilities as `y_score`,
+  for binary, multiclass and multilabel targets. The log loss and the
+  binary Brier score match scikit-learn; the multiclass Brier score sums
+  over the classes.
 - `MetricCollection.update(**inputs)` passes each metric the inputs it
   accepts, and `input_names` lists them; `result()` is now `compute()`.
 

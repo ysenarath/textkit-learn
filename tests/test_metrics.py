@@ -11,8 +11,11 @@ from tklearn.metrics import (
     Accuracy,
     AveragePrecision,
     BalancedAccuracy,
+    BrierScore,
     ConfusionMatrix,
+    ExpectedCalibrationError,
     FBeta,
+    LogLoss,
     MeanAbsoluteError,
     MeanSquaredError,
     MetricCollection,
@@ -583,6 +586,114 @@ class TestRanking(unittest.TestCase):
         metric.update(self.bin_true, self.bin_score)
         with self.assertRaises(ValueError):
             metric.update(self.y_true, self.y_score)
+
+
+class TestCalibration(unittest.TestCase):
+    def setUp(self):
+        rng = np.random.default_rng(5)
+        self.y_score = rng.dirichlet(np.ones(4), size=200)
+        self.y_true = np.array([rng.choice(4, p=p) for p in self.y_score])
+        self.bin_score = rng.uniform(size=200)
+        self.bin_true = (rng.uniform(size=200) < self.bin_score).astype(int)
+        self.ml_score = rng.uniform(size=(200, 3))
+        self.ml_true = (rng.uniform(size=(200, 3)) < self.ml_score).astype(int)
+
+    def test_log_loss_matches_sklearn(self):
+        self.assertAlmostEqual(
+            accumulate(LogLoss(), self.y_true, self.y_score),
+            sk.log_loss(self.y_true, self.y_score, labels=range(4)),
+        )
+        self.assertAlmostEqual(
+            accumulate(LogLoss(), self.bin_true, self.bin_score),
+            sk.log_loss(self.bin_true, self.bin_score),
+        )
+        # multilabel: the mean binary log loss over every probability
+        self.assertAlmostEqual(
+            accumulate(LogLoss(), self.ml_true, self.ml_score),
+            sk.log_loss(self.ml_true.ravel(), self.ml_score.ravel()),
+        )
+
+    def test_log_loss_of_a_confident_mistake_is_finite(self):
+        self.assertTrue(np.isfinite(LogLoss()([1, 0], [0.0, 1.0])))
+
+    def test_brier_score_matches_sklearn(self):
+        self.assertAlmostEqual(
+            accumulate(BrierScore(), self.bin_true, self.bin_score),
+            sk.brier_score_loss(self.bin_true, self.bin_score),
+        )
+        self.assertAlmostEqual(
+            accumulate(BrierScore(), self.ml_true, self.ml_score),
+            sk.brier_score_loss(self.ml_true.ravel(), self.ml_score.ravel()),
+        )
+        # multiclass: the sum over classes, averaged over samples
+        onehot = label_binarize(self.y_true, classes=range(4))
+        self.assertAlmostEqual(
+            accumulate(BrierScore(), self.y_true, self.y_score),
+            ((self.y_score - onehot) ** 2).sum(axis=1).mean(),
+        )
+
+    def test_expected_calibration_error(self):
+        def ece(confidence, correct, n_bins):
+            index = np.minimum((confidence * n_bins).astype(int), n_bins - 1)
+            return sum(
+                abs(confidence[index == b].mean() - correct[index == b].mean())
+                * (index == b).mean()
+                for b in range(n_bins)
+                if (index == b).any()
+            )
+
+        pred = self.y_score.argmax(axis=1)
+        self.assertAlmostEqual(
+            accumulate(
+                ExpectedCalibrationError(10), self.y_true, self.y_score
+            ),
+            ece(self.y_score.max(axis=1), pred == self.y_true, 10),
+        )
+        score, true = self.ml_score.ravel(), self.ml_true.ravel()
+        self.assertAlmostEqual(
+            accumulate(
+                ExpectedCalibrationError(), self.ml_true, self.ml_score
+            ),
+            ece(np.maximum(score, 1 - score), (score >= 0.5) == true, 15),
+        )
+
+    def test_calibrated_scores_have_a_small_error(self):
+        # labels drawn from the scores themselves
+        self.assertLess(
+            ExpectedCalibrationError()(self.bin_true, self.bin_score), 0.1
+        )
+        self.assertGreater(
+            ExpectedCalibrationError()(
+                self.bin_true, (self.bin_score > 0.5).astype(float)
+            ),
+            0.15,
+        )
+
+    def test_merge(self):
+        for metric in (LogLoss, BrierScore, ExpectedCalibrationError):
+            with self.subTest(metric.__name__):
+                a, b = metric(), metric()
+                a.update(self.y_true[:120], self.y_score[:120])
+                b.update(self.y_true[120:], self.y_score[120:])
+                a.merge(b)
+                self.assertAlmostEqual(
+                    a.compute(), metric()(self.y_true, self.y_score)
+                )
+        with self.assertRaisesRegex(ValueError, "bins"):
+            ExpectedCalibrationError(10).merge(ExpectedCalibrationError(15))
+
+    def test_invalid_inputs(self):
+        for metric in (LogLoss(), BrierScore(), ExpectedCalibrationError()):
+            with self.subTest(type(metric).__name__):
+                with self.assertRaisesRegex(ValueError, "probabilities"):
+                    metric([0, 1], [0.5, 1.5])
+                with self.assertRaisesRegex(ValueError, "no samples"):
+                    metric.compute()
+                metric.update(self.bin_true, self.bin_score)
+                with self.assertRaises(ValueError):
+                    metric.update(self.y_true, self.y_score)
+        with self.assertRaisesRegex(ValueError, "n_bins"):
+            ExpectedCalibrationError(0)
 
 
 class TestRegression(unittest.TestCase):

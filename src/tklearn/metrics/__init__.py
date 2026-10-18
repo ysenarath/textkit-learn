@@ -1,4 +1,9 @@
 from tklearn.metrics.base import Metric, MetricCollection
+from tklearn.metrics.calibration import (
+    BrierScore,
+    ExpectedCalibrationError,
+    LogLoss,
+)
 from tklearn.metrics.classification import (
     F1,
     Accuracy,
@@ -39,6 +44,10 @@ __all__ = [
     "FBeta",
     "Precision",
     "Recall",
+    # --- Calibration ---
+    "BrierScore",
+    "ExpectedCalibrationError",
+    "LogLoss",
     # --- Ranking ---
     "AUROC",
     "AveragePrecision",

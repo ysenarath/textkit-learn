@@ -11,7 +11,8 @@ The example trains a classifier on a small noisy training set, then
 `tklearn.nn.calibration.calibrate` fits the temperature on the
 validation set's logits, from `Trainer.predict`, and returns the
 calibrated model: a `CalibratedModule` wrapping the trained one. Both
-models are evaluated on the test set through `Trainer`.
+models are evaluated on the test set through `Trainer`, with the
+calibration metrics of `tklearn.metrics`.
 
 python examples/calibration/temperature_scaling.py
 """
@@ -24,7 +25,12 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from tklearn.metrics import Accuracy
+from tklearn.metrics import (
+    Accuracy,
+    BrierScore,
+    ExpectedCalibrationError,
+    LogLoss,
+)
 from tklearn.nn import Module, Trainer
 from tklearn.nn.calibration import calibrate
 
@@ -57,38 +63,6 @@ class Classifier(Module):
             outputs["y_true"] = batch["labels"]
             outputs["loss"] = F.cross_entropy(logits, batch["labels"])
         return outputs
-
-
-def expected_calibration_error(
-    y_score: torch.Tensor, y_true: torch.Tensor, num_bins: int = 10
-) -> float:
-    """The gap between confidence and accuracy, averaged over equal-width
-    confidence bins weighted by their number of examples."""
-    confidence, y_pred = y_score.max(-1)
-    correct = (y_pred == y_true).float()
-    bins = (confidence * num_bins).long().clamp(max=num_bins - 1)
-    ece = 0.0
-    for b in range(num_bins):
-        in_bin = bins == b
-        if in_bin.any():
-            gap = confidence[in_bin].mean() - correct[in_bin].mean()
-            ece += in_bin.float().mean().item() * gap.abs().item()
-    return ece
-
-
-def report(trainer: Trainer, loader: DataLoader) -> dict[str, float]:
-    """Accuracy, negative log-likelihood, Brier score and expected
-    calibration error over `loader`."""
-    results = trainer.evaluate(loader)  # the loss is the NLL
-    outputs = trainer.predict(loader)
-    y_score, y_true = outputs["y_score"], outputs["y_true"]
-    one_hot = F.one_hot(y_true, NUM_CLASSES).float()
-    return {
-        "accuracy": results["accuracy"],
-        "nll": results["loss"],
-        "brier": ((y_score - one_hot) ** 2).sum(-1).mean().item(),
-        "ece": expected_calibration_error(y_score, y_true),
-    }
 
 
 def make_splits(
@@ -132,7 +106,12 @@ def main() -> None:
     generator = torch.Generator().manual_seed(0)
     train = DataLoader(train, 32, shuffle=True, generator=generator)
     valid, test = DataLoader(valid, 256), DataLoader(test, 256)
-    metrics = {"accuracy": Accuracy()}
+    metrics = {
+        "accuracy": Accuracy(),
+        "nll": LogLoss(),
+        "brier": BrierScore(),
+        "ece": ExpectedCalibrationError(n_bins=10),
+    }
 
     model = Classifier()
     trainer = Trainer(
@@ -149,7 +128,8 @@ def main() -> None:
     temperature = model.temperature.item()
     calibrated = Trainer(model, metrics=metrics, cpu=True)
 
-    before, after = report(trainer, test), report(calibrated, test)
+    before, after = trainer.evaluate(test), calibrated.evaluate(test)
+    del before["loss"], after["loss"]  # the NLL, as LogLoss
     print(f"temperature: {temperature:.2f}\n")
     print(f"{'test':<10} {'before':>8} {'after':>8}")
     for name in before:
