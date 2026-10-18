@@ -9,7 +9,7 @@ the callbacks did what they claim and prints a line per check.
 | [`early_stopping.py`](early_stopping.py) | `EarlyStopping`, `ModelCheckpoint`, `ReduceLROnPlateau`, `CSVLogger` and `ProgbarLogger` on a model that overfits |
 | [`custom_callbacks.py`](custom_callbacks.py) | Writing callbacks: the hook order, a `Callback` subclass that freezes layers, stopping with `self.session.should_stop`, and `LambdaCallback` |
 | [`terminate_on_nan.py`](terminate_on_nan.py) | `TerminateOnNaN` stopping on a corrupted example, with step checkpoints to fall back to |
-| [`backup_and_restore.py`](backup_and_restore.py) | `BackupAndRestore` resuming a fit killed in the middle of an epoch, run again as a new process, to the same weights and history as an uninterrupted fit |
+| [`backup_and_restore.py`](backup_and_restore.py) | `BackupAndRestore` resuming a fit killed in the middle of an epoch, run again as a new process, from the end of the last epoch backed up |
 | [`trace_training.py`](trace_training.py) | `OpenTelemetryCallback` tracing a learning rate sweep into `tklearn.tracing.FileTracerProvider`, read back with `load_spans`, `load_events` and `tklearn runs monitor` |
 | [`common.py`](common.py) | The data, model and checks shared by the examples |
 
@@ -61,11 +61,12 @@ rate of 1e-3.
   `trace_training.py`, `ModelCheckpoint` and `EarlyStopping` come before
   `OpenTelemetryCallback`, yet their `checkpoint`, `early_stopping` and
   `restore_best_weights` events land in its epoch and fit spans.
-- **A resumed fit replays the interrupted epoch.** `Trainer` shuffles
-  each epoch from the torch seed and the epoch, so the program run again
-  with the same seed yields the same batches; `BackupAndRestore` skips
-  those already trained and restores the random number generators, so
-  the resumed fit matches the uninterrupted one exactly.
+- **A resumed fit is close to, not equal to, an uninterrupted one.**
+  `BackupAndRestore` restores the model, optimizer, scheduler and
+  history, but not the random number generators, as in Keras: the
+  epochs after the restart shuffle differently, and
+  `backup_and_restore.py` ends within a fraction of a percent of the
+  uninterrupted fit's validation loss.
 - **`TerminateOnNaN` sees only the loss.** On Apple MPS, ReLU turns NaN
   into 0. A NaN input then turns the weights NaN while the loss stays
   finite, so `terminate_on_nan.py` runs on the CPU.

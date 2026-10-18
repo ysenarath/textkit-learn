@@ -5,7 +5,6 @@ from typing import Any, Callable, Union
 
 import torch
 from accelerate import Accelerator
-from accelerate.utils import DataLoaderConfiguration
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.data import DataLoader
@@ -222,12 +221,6 @@ class Trainer:
         Override it to give the accelerator more arguments, e.g. plugins
         or kwargs handlers.
 
-        Shuffling dataloaders are reshuffled at each epoch from the seed
-        of torch (`torch.initial_seed`, e.g. from `torch.manual_seed`)
-        and the epoch, rather than from the dataloader's generator, so
-        that a run is repeatable and `BackupAndRestore` can replay the
-        order of an epoch it resumes.
-
         Accelerate fixes ``cpu`` and ``mixed_precision`` for the process
         at the first accelerator, and raises when a later one asks
         otherwise, so calling it outside a session fixes them for every
@@ -237,11 +230,6 @@ class Trainer:
             cpu=self.cpu,
             mixed_precision=self.mixed_precision,
             gradient_accumulation_steps=self.gradient_accumulation_steps,
-            # shuffle each epoch from the torch seed and the epoch, so that
-            # a resumed fit replays the order of the epoch it resumes
-            dataloader_config=DataLoaderConfiguration(
-                use_seedable_sampler=True
-            ),
         )
 
     def create_optimizer(self) -> Optimizer:

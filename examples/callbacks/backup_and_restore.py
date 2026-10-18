@@ -2,15 +2,16 @@
 
 A job on a cluster can stop before its fit ends: preempted, past its
 time limit, or crashed. Run again, the same program restores the last
-backup and goes on from there, as if it had not stopped.
+backup and goes on from the start of the epoch after it.
 
 The example runs the training program three times as separate
-processes, as a scheduler would: once killed at step 21 (with
-``os._exit``, which skips all cleanup, as a SIGKILL would), once again,
-which resumes from the backup of step 18, after the second batch of the
-fifth epoch, and once without interruption. The resumed fit trains only the batches
-left, and ends with the same weights and history as the uninterrupted
-one.
+processes, as a scheduler would: once killed in the sixth epoch, at
+step 22 (with ``os._exit``, which skips all cleanup, as a SIGKILL
+would), once again, which restores the backup of the end of the fifth
+epoch and trains the last five, and once without interruption. The
+resumed fit's first five epochs are those of the uninterrupted one. The
+random number generators are not restored, so the last five shuffle
+differently, and end close to the uninterrupted fit rather than equal.
 
 On SLURM, submit with ``#SBATCH --requeue``: a requeued job runs the
 same command, which resumes from the last backup.
@@ -42,9 +43,8 @@ from tklearn.nn import Trainer
 from tklearn.nn.callbacks import BackupAndRestore, Callback
 
 EPOCHS = 10  # of 4 batches: 40 steps
-SAVE_FREQ = 6
-KILL_AT = 21
-BACKUP_STEP = 18
+KILL_AT = 22  # in the sixth epoch
+BACKUP_EPOCHS = 5  # backed up at the end of the fifth
 
 
 class Kill(Callback):
@@ -72,7 +72,7 @@ def train(out: Path, name: str, kill_at: int | None) -> None:
     train, valid, _ = make_splits()
     model = Classifier()
     count = CountBatches()
-    callbacks = [BackupAndRestore(out / f"{name}-backup", SAVE_FREQ), count]
+    callbacks = [BackupAndRestore(out / f"{name}-backup"), count]
     if kill_at is not None:
         callbacks.append(Kill(kill_at))
     trainer = Trainer(
@@ -110,23 +110,33 @@ def main(out: Path) -> None:
     backup = out / "resumed-backup"
     check(
         code != 0 and (backup / "state.pt").exists(),
-        f"killed at step {KILL_AT}, leaving the backup of step {BACKUP_STEP}",
+        f"killed at step {KILL_AT}, leaving the backup of epoch "
+        f"{BACKUP_EPOCHS}",
     )
     check(run(out, "resumed") == 0, "the second run finished the fit")
     full = json.loads((out / "full.json").read_text())
     resumed = json.loads((out / "resumed.json").read_text())
+    left = 4 * (EPOCHS - BACKUP_EPOCHS)
     check(
-        resumed["batches"] == 40 - BACKUP_STEP,
-        f"it trained only the {40 - BACKUP_STEP} batches after the backup",
+        resumed["batches"] == left,
+        f"it trained only the {left} batches of the last "
+        f"{EPOCHS - BACKUP_EPOCHS} epochs",
     )
-    a, b = torch.load(out / "full.pt"), torch.load(out / "resumed.pt")
+    done = BACKUP_EPOCHS
     check(
-        all(torch.equal(a[k], b[k]) for k in a),
-        "its weights equal the uninterrupted fit's",
+        len(resumed["history"]) == EPOCHS
+        and resumed["history"][:done] == full["history"][:done],
+        f"it returned all {EPOCHS} epochs, the first {done} those of the "
+        "uninterrupted fit",
+    )
+    a, b = full["history"][-1], resumed["history"][-1]
+    print(
+        f"  last epoch: valid_loss {b['valid_loss']:.4f}, uninterrupted "
+        f"{a['valid_loss']:.4f}"
     )
     check(
-        resumed["history"] == full["history"],
-        "its history, all 10 epochs, equals the uninterrupted fit's",
+        abs(a["valid_loss"] - b["valid_loss"]) < 0.1 * a["valid_loss"],
+        "its last validation loss is within 10% of the uninterrupted fit's",
     )
     check(not backup.exists(), "the backup was deleted once the fit ended")
 

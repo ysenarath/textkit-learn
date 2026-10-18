@@ -8,7 +8,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 from accelerate.state import AcceleratorState, GradientState
 from safetensors.torch import load_model
 from test_nn import (
@@ -22,7 +21,7 @@ from test_nn import (
 from torch.optim.lr_scheduler import LambdaLR
 
 from tklearn.metrics import ConfusionMatrix
-from tklearn.nn import Module, Trainer
+from tklearn.nn import Trainer
 from tklearn.nn.callbacks import (
     BackupAndRestore,
     Callback,
@@ -442,28 +441,6 @@ class TestModelCheckpoint(TrainerTestCase):
                     ModelCheckpoint("model.pt", save_freq=save_freq)
 
 
-class DropoutClassifier(Module):
-    """A classifier with dropout, whose training depends on the random
-    number generators."""
-
-    def __init__(self):
-        super().__init__()
-        self.net = torch.nn.Sequential(
-            torch.nn.Linear(4, 16),
-            torch.nn.ReLU(),
-            torch.nn.Dropout(0.5),
-            torch.nn.Linear(16, 2),
-        )
-
-    def predict_step(self, batch):
-        logits = self.net(batch["x"])
-        outputs = {"y_pred": logits.argmax(-1)}
-        if "labels" in batch:
-            outputs["y_true"] = batch["labels"]
-            outputs["loss"] = F.cross_entropy(logits, batch["labels"])
-        return outputs
-
-
 class Preempted(Exception):
     pass
 
@@ -483,9 +460,13 @@ class Preempt(Callback):
 class CountBatches(Callback):
     def __init__(self):
         self.count = 0
+        self.steps = None
 
     def on_train_batch_begin(self, batch):
         self.count += 1
+
+    def on_train_end(self):
+        self.steps = self.session.global_step
 
 
 class TestBackupAndRestore(TrainerTestCase):
@@ -495,12 +476,12 @@ class TestBackupAndRestore(TrainerTestCase):
         self.addCleanup(self.tmp.cleanup)
 
     def run_fit(self, backup, preempt_at=None, accumulation=1, epochs=3):
-        """Fit as a new program would: fresh process-wide state, the same
-        seed, a new model and trainer."""
+        """Fit as a new program would: fresh process-wide state, a new
+        model and trainer. Without shuffling or dropout, fits from the
+        same state train the same."""
         AcceleratorState._reset_state(reset_partial_state=True)
         GradientState._reset_state()
-        torch.manual_seed(1)
-        model = DropoutClassifier()
+        model = Classifier()
         self.batches = CountBatches()
         callbacks = [backup, self.batches]
         if preempt_at is not None:
@@ -515,10 +496,8 @@ class TestBackupAndRestore(TrainerTestCase):
             gradient_accumulation_steps=accumulation,
             callbacks=callbacks,
         )
-        # 6 batches per epoch, shuffled
-        history = trainer.fit(
-            self.loader(shuffle=True), self.loader(), epochs=epochs
-        )
+        # 6 batches per epoch
+        history = trainer.fit(self.loader(), self.loader(), epochs=epochs)
         return model, history
 
     def backup(self, name="backup", **kwargs):
@@ -533,46 +512,59 @@ class TestBackupAndRestore(TrainerTestCase):
             for key in logs_a:
                 self.assertAlmostEqual(logs_a[key], logs_b[key], places=10)
 
-    def test_resumes_as_if_not_interrupted(self):
-        uninterrupted = self.run_fit(self.backup("full", save_freq=4))
-        # of the 18 batches, the resumed fit trains those after the backup
+    def test_resumes_at_the_epoch_after_the_backup(self):
+        uninterrupted = self.run_fit(self.backup("full"))
+        # backed up after the first epoch, at step 6
+        with self.assertRaises(Preempted):
+            self.run_fit(self.backup(), preempt_at=10)
+        self.assertTrue((Path(self.tmp.name) / "backup").exists())
+        resumed = self.run_fit(self.backup())
+        # the 12 batches of the last two epochs
+        self.assertEqual(self.batches.count, 12)
+        self.assertEqual(self.batches.steps, 18)
+        self.assert_same_fit(resumed, uninterrupted)
+        # deleted once the fit completes
+        self.assertFalse((Path(self.tmp.name) / "backup").exists())
+
+    def test_trains_the_epoch_of_a_step_backup_again(self):
         cases = {
-            # backed up at step 8, in the second epoch after batch 2
-            "steps": dict(save_freq=4, preempt_at=10, left=10),
-            # backed up after the first epoch
-            "epochs": dict(save_freq="epoch", preempt_at=10, left=12),
-            # 3 steps per epoch, backed up at step 4: in the second epoch
-            # after batch 2
-            "accumulation": dict(
-                save_freq=2, preempt_at=5, accumulation=2, left=10
-            ),
+            # backed up at step 8, 2 steps into the second epoch
+            "steps": dict(save_freq=4, preempt_at=10, accumulation=1),
+            # 3 steps per epoch, backed up at step 4, 1 step into the
+            # second epoch
+            "accumulation": dict(save_freq=2, preempt_at=5, accumulation=2),
         }
         for name, case in cases.items():
             with self.subTest(name):
-                accumulation = case.pop("accumulation", 1)
+                accumulation = case.pop("accumulation")
                 preempt_at = case.pop("preempt_at")
-                left = case.pop("left")
+                steps_per_epoch = 6 // accumulation
+                backup_step = preempt_at - preempt_at % case["save_freq"]
+                full_model, full_history = self.run_fit(
+                    self.backup(f"{name}-full", **case),
+                    accumulation=accumulation,
+                )
                 with self.assertRaises(Preempted):
                     self.run_fit(
                         self.backup(name, **case),
                         preempt_at=preempt_at,
                         accumulation=accumulation,
                     )
-                self.assertTrue((Path(self.tmp.name) / name).exists())
-                resumed = self.run_fit(
+                model, history = self.run_fit(
                     self.backup(name, **case), accumulation=accumulation
                 )
-                self.assertEqual(self.batches.count, left)
-                if accumulation == 1:
-                    self.assert_same_fit(resumed, uninterrupted)
-                else:
-                    expected = self.run_fit(
-                        self.backup(f"{name}-full", **case),
-                        accumulation=accumulation,
-                    )
-                    self.assert_same_fit(resumed, expected)
-                # deleted once the fit completes
-                self.assertFalse((Path(self.tmp.name) / name).exists())
+                # the second and third epochs, from their first batch
+                self.assertEqual(self.batches.count, 12)
+                # the steps of the second epoch before the backup twice
+                self.assertEqual(
+                    self.batches.steps, 2 * steps_per_epoch + backup_step
+                )
+                self.assertEqual(len(history), 3)
+                self.assertEqual(history[0], full_history[0])
+                self.assertNotEqual(history[1], full_history[1])
+                self.assertFalse(
+                    torch.equal(model.linear.weight, full_model.linear.weight)
+                )
 
     def test_keeps_the_backup_when_asked(self):
         backup = self.backup(delete_checkpoint=False)
@@ -580,53 +572,35 @@ class TestBackupAndRestore(TrainerTestCase):
         self.assertTrue(backup.backup_dir.exists())
         # the next fit restores the end of this one: nothing to train
         again = self.run_fit(self.backup(delete_checkpoint=False))
+        self.assertEqual(self.batches.count, 0)
         self.assert_same_fit(again, (model, history))
 
     def test_double_checkpoint_restores_the_previous_backup(self):
-        uninterrupted = self.run_fit(self.backup("full", save_freq=4))
+        uninterrupted = self.run_fit(self.backup("full"))
+        # backed up after the first and second epochs
         with self.assertRaises(Preempted):
-            self.run_fit(
-                self.backup(save_freq=4, double_checkpoint=True),
-                preempt_at=10,
-            )
+            self.run_fit(self.backup(double_checkpoint=True), preempt_at=16)
         backup_dir = Path(self.tmp.name) / "backup"
         self.assertTrue((backup_dir / "state.prev.pt").exists())
         (backup_dir / "state.pt").write_bytes(b"truncated")
         with self.assertLogs("tklearn", level="ERROR"):
-            resumed = self.run_fit(
-                self.backup(save_freq=4, double_checkpoint=True)
-            )
-        # resumed from step 4 instead of 8, still as if not interrupted
-        self.assertEqual(self.batches.count, 14)
+            resumed = self.run_fit(self.backup(double_checkpoint=True))
+        # resumed after the first epoch instead of the second
+        self.assertEqual(self.batches.count, 12)
         self.assert_same_fit(resumed, uninterrupted)
-
-    def test_resumes_without_a_matching_local_state(self):
-        uninterrupted = self.run_fit(self.backup("full", save_freq=4))
-        with self.assertRaises(Preempted):
-            self.run_fit(self.backup(save_freq=4), preempt_at=10)
-        (Path(self.tmp.name) / "backup" / "local-0.pt").unlink()
-        with self.assertLogs("tklearn", level="WARNING") as logs:
-            model, history = self.run_fit(self.backup(save_freq=4))
-        self.assertIn("random number generator", logs.output[-1])
-        self.assertEqual(self.batches.count, 10)
-        self.assertEqual(len(history), 3)
-        # other dropout masks than the uninterrupted fit's
-        self.assertFalse(
-            torch.equal(model.net[0].weight, uninterrupted[0].net[0].weight)
-        )
 
     def test_rejects_a_changed_scheduler(self):
         with self.assertRaises(Preempted):
-            self.run_fit(self.backup(save_freq=4), preempt_at=10)
+            self.run_fit(self.backup(), preempt_at=10)
         AcceleratorState._reset_state(reset_partial_state=True)
         trainer = Trainer(
-            DropoutClassifier(),
+            Classifier(),
             functools.partial(torch.optim.SGD, lr=0.1),
             cpu=True,
-            callbacks=[self.backup(save_freq=4)],
+            callbacks=[self.backup()],
         )
         with self.assertRaisesRegex(ValueError, "scheduler"):
-            trainer.fit(self.loader(shuffle=True), epochs=3)
+            trainer.fit(self.loader(), epochs=3)
 
     def test_validates_arguments(self):
         for save_freq in (0, -1, 1.5, True, "batch"):

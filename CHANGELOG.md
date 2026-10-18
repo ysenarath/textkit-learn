@@ -101,16 +101,12 @@ modules listed under Removed.
   `LambdaCallback` and `BackupAndRestore`.
 - `BackupAndRestore(backup_dir, save_freq=..., double_checkpoint=...,
   delete_checkpoint=...)` backs up the state of `fit` (model, optimizer,
-  scheduler, gradient scaler, progress, history, and each process's
-  random number generators) every epoch or every few optimizer steps,
-  and when the program runs again after an interruption, such as a
-  requeued SLURM job, restores it and goes on, within an epoch skipping
-  the batches already trained. The resumed fit matches an uninterrupted
-  one. `Session.state_dict` and `load_state_dict` hold that state.
-- `Trainer` shuffles each epoch from the torch seed and the epoch
-  (Accelerate's seedable sampler, as the Hugging Face Trainer does),
-  rather than from the dataloader's generator, so that runs repeat and a
-  resumed fit replays the order of its epoch.
+  scheduler, gradient scaler, progress and history) every epoch or every
+  few optimizer steps, and when the program runs again after an
+  interruption, such as a requeued SLURM job, restores it and goes on
+  from the start of the epoch it was taken in, as Keras does: a backup
+  taken during an epoch trains that epoch again from its first batch.
+  `Session.state_dict` and `load_state_dict` hold that state.
 - `OpenTelemetryCallback` traces training with the OpenTelemetry API: a
   `fit` span holding an `epoch` span per epoch (with its logs and its
   `evaluate` span) and a `steps` span every few optimizer steps (mean

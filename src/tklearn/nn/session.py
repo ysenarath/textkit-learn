@@ -5,13 +5,10 @@ from __future__ import annotations
 
 import contextlib
 import copy
-import itertools
 import math
-import random
-from collections.abc import Generator, Iterable, Iterator, Mapping
+from collections.abc import Generator, Mapping
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
 import torch
 from accelerate import Accelerator
 from accelerate.optimizer import AcceleratedOptimizer
@@ -115,14 +112,6 @@ class Session:
         self.num_batches: int | None = None
         self.grad_norm: torch.Tensor | None = None
         self.should_stop = False
-        # the epoch and the batches of it done, where a state_dict resumes
-        self._position = (0, 0)
-        # the running means of the epoch's training logs
-        self._means: RunningMean | None = None
-        # where load_state_dict left the fit to resume: the batches of the
-        # epoch to skip, and the running means of the ones done
-        self._start_batch = 0
-        self._start_means: dict[str, Any] | None = None
         # what the accelerator prepared, while the session is open; see
         # _open
         self._accelerator: Accelerator | None = None
@@ -180,24 +169,18 @@ class Session:
         """The state of the fit, from which `load_state_dict` resumes it.
 
         It holds the state dicts of the model, optimizer, scheduler and
-        gradient scaler (with fp16), the progress (``epoch``, the
-        ``batch`` of it to resume at, `global_step`) and `history`, which
-        are the same on every process, and, under ``"local"``, this
-        process's own: its random number generators and the running
-        means of the epoch's training logs.
+        gradient scaler (with fp16), the ``epoch`` to resume at (the
+        number of epochs done), `global_step` and `history`.
 
-        For callbacks, during `fit`: in `Callback.on_train_batch_end`, it
-        resumes after the batch, and in `Callback.on_epoch_end`, at the
-        next epoch. Reading it waits for the device. With gradient
-        accumulation, take it after optimizer steps, as a resumed fit
-        starts a new accumulation window.
+        For callbacks, during `fit`: in `Callback.on_epoch_end`, it
+        resumes at the next epoch; during an epoch, it resumes that epoch
+        from its first batch, with the weights and steps of when it was
+        taken. Reading it waits for the device.
         """
         if self.optimizer is None:
             msg = "the state of a fit exists only during fit"
             raise RuntimeError(msg)
-        epoch, batch = self._position
         scaler = self.accelerator.scaler
-        means = self._means if batch else None
         return {
             "model": self.model.state_dict(),
             "optimizer": self.optimizer.state_dict(),
@@ -205,26 +188,19 @@ class Session:
             if self.scheduler is None
             else self.scheduler.state_dict(),
             "scaler": None if scaler is None else scaler.state_dict(),
-            "epoch": epoch,
-            "batch": batch,
+            # fit appends an epoch's logs before on_epoch_end
+            "epoch": len(self.history),
             "global_step": self.global_step,
             "history": copy.deepcopy(self.history),
-            "local": {
-                "rng": _rng_state(),
-                "means": None if means is None else means.state_dict(),
-            },
         }
 
     def load_state_dict(self, state: Mapping[str, Any]) -> None:
         """Restore the state of a fit from `state_dict`.
 
         For callbacks, in `Callback.on_train_begin`: the fit then goes on
-        from where the state was taken, skipping the batches of the epoch
-        already done, which the dataloader yields in the same order as in
-        the interrupted fit when the program seeds torch the same way.
-        Without ``"local"`` (e.g. from another process), the random
-        number generators are left as they are, and the means of the
-        resumed epoch's logs cover only the batches after it.
+        from the start of the state's ``epoch``. The random number
+        generators are left as they are, so the resumed fit shuffles and
+        drops out differently from the interrupted one.
         """
         if self.optimizer is None:
             msg = "the state of a fit can be loaded only during fit"
@@ -242,15 +218,9 @@ class Session:
         scaler = self.accelerator.scaler
         if scaler is not None and state.get("scaler") is not None:
             scaler.load_state_dict(state["scaler"])
-        self.epoch, self._start_batch = state["epoch"], state["batch"]
-        self._position = (self.epoch, self._start_batch)
+        self.epoch = state["epoch"]
         self.global_step = state["global_step"]
         self.history = copy.deepcopy(list(state["history"]))
-        local = state.get("local")
-        self._start_means = None
-        if local is not None:
-            _set_rng_state(local["rng"])
-            self._start_means = local["means"]
 
     # --- the session -------------------------------------------------------
 
@@ -342,7 +312,6 @@ class Session:
             if eval_dataloader is not None:
                 logs.update(self.evaluate(eval_dataloader, prefix="valid_"))
             self.history.append(logs)
-            self._position = (epoch + 1, 0)
             self._callback("on_epoch_end", logs)
             if self._sync_should_stop():
                 break
@@ -359,20 +328,8 @@ class Session:
         wrapper.train()
         # summed on the device, so that only the end of the epoch waits for
         # it
-        means = self._means = RunningMean(accelerator)
-        # resuming an epoch: skip the batches done, from the dataloader
-        # replaying the epoch's order
-        start, self._start_batch = self._start_batch, 0
-        if start and self._start_means is not None:
-            means.load_state_dict(self._start_means)
-        self._start_means = None
-        batches = dataloader
-        if start:
-            batches = accelerator.skip_first_batches(dataloader, start)
-            if hasattr(batches, "set_epoch"):
-                batches.set_epoch(self.epoch)
-            batches = _resumed(batches)
-        for index, batch in enumerate(batches, start):
+        means = RunningMean(accelerator)
+        for batch in dataloader:
             self._callback("on_train_batch_begin", batch)
             accelerator.gradient_accumulation_steps = accumulation_steps
             with accelerator.accumulate(wrapper):
@@ -393,7 +350,6 @@ class Session:
                 if self.scheduler is not None:
                     self.scheduler.step()
             means.update(logs)
-            self._position = (self.epoch, index + 1)
             self._callback("on_train_batch_end", batch, BatchLogs(logs))
             if self._sync_should_stop():
                 break
@@ -566,49 +522,6 @@ def _eval_mode(model: Module) -> Generator[None]:
             yield
     finally:
         model.train(training)
-
-
-def _resumed(batches: Iterable[Any]) -> Iterator[Any]:
-    """Iterate the rest of a resumed epoch, leaving the random number
-    generators as restored: starting a dataloader draws its workers' seed
-    from torch's generator, which the interrupted epoch did at its start,
-    before the state was taken."""
-    state = _rng_state()
-    iterator = iter(batches)
-    try:
-        first = next(iterator)
-    except StopIteration:
-        return iter(())
-    finally:
-        _set_rng_state(state)
-    return itertools.chain([first], iterator)
-
-
-def _rng_state() -> dict[str, Any]:
-    """The states of the random number generators of this process."""
-    state = {
-        "python": random.getstate(),
-        "numpy": np.random.get_state(),
-        "torch": torch.get_rng_state(),
-    }
-    if torch.cuda.is_available():
-        state["cuda"] = torch.cuda.get_rng_state_all()
-    if torch.backends.mps.is_available():
-        state["mps"] = torch.mps.get_rng_state()
-    return state
-
-
-def _set_rng_state(state: Mapping[str, Any]) -> None:
-    """Restore the random number generators from `_rng_state`, those of
-    devices only when this process has the same ones."""
-    random.setstate(state["python"])
-    np.random.set_state(state["numpy"])
-    torch.set_rng_state(state["torch"])
-    cuda = state.get("cuda")
-    if cuda is not None and len(cuda) == torch.cuda.device_count():
-        torch.cuda.set_rng_state_all(cuda)
-    if state.get("mps") is not None and torch.backends.mps.is_available():
-        torch.mps.set_rng_state(state["mps"])
 
 
 def _sum_dtype(device: torch.device) -> torch.dtype:
