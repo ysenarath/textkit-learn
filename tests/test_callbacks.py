@@ -81,9 +81,15 @@ class TestSession(TrainerTestCase):
                     self.session.num_batches,
                 ))
 
-        trainer = self.trainer(callbacks=[Record()])
+        callbacks = [Record()]
+        trainer = self.trainer()
         # 6 training batches, 2 evaluation batches
-        trainer.fit(self.loader(), self.loader(self.data[:32]), epochs=2)
+        trainer.fit(
+            self.loader(),
+            self.loader(self.data[:32]),
+            epochs=2,
+            callbacks=callbacks,
+        )
         self.assertEqual(
             seen,
             [
@@ -95,7 +101,7 @@ class TestSession(TrainerTestCase):
         )
         seen.clear()
         # a new session, which knows nothing of the fit before it
-        trainer.predict(self.loader(batch_size=48))
+        trainer.predict(self.loader(batch_size=48), callbacks=callbacks)
         self.assertEqual(seen, [("p", 0, 2)])
 
 
@@ -106,8 +112,8 @@ class TestLambdaCallback(TrainerTestCase):
             on_train_begin=lambda: calls.append("begin"),
             on_epoch_end=lambda logs: calls.append(logs["loss"]),
         )
-        history = self.trainer(callbacks=[callback]).fit(
-            self.loader(), epochs=2
+        history = self.trainer().fit(
+            self.loader(), epochs=2, callbacks=[callback]
         )
         self.assertEqual(calls, ["begin", *(logs["loss"] for logs in history)])
 
@@ -144,9 +150,11 @@ class TestWrapperCallbacks(TrainerTestCase):
             Recorder("b", calls),
             Recorder("inner", calls, wrapper=True),
         ]
-        trainer = self.trainer(callbacks=callbacks)
-        trainer.fit(self.loader(), self.loader(), epochs=1)
-        trainer.predict(self.loader())
+        trainer = self.trainer()
+        trainer.fit(
+            self.loader(), self.loader(), epochs=1, callbacks=callbacks
+        )
+        trainer.predict(self.loader(), callbacks=callbacks)
         begin = ["outer", "inner", "a", "b"]
         end = ["a", "b", "inner", "outer"]
         for kind in ("train", "epoch", "train_batch", "test", "predict"):
@@ -170,9 +178,9 @@ class TestWrapperCallbacks(TrainerTestCase):
             Recorder("inner", calls, wrapper=True),
         ]
         model = RaisingClassifier("training_step", 2)
-        trainer = self.trainer(model, callbacks=callbacks)
+        trainer = self.trainer(model)
         with self.assertRaises(RuntimeError):
-            trainer.fit(self.loader())
+            trainer.fit(self.loader(), callbacks=callbacks)
         self.assertEqual(
             self.order("on_exception", calls), ["a", "b", "inner", "outer"]
         )
@@ -188,20 +196,20 @@ class TestWrapperCallbacks(TrainerTestCase):
                         self.session.callbacks.append(added)
 
                 callbacks = [Add(), Recorder("first", calls, wrapper=wrapper)]
-                trainer = self.trainer(callbacks=callbacks)
-                trainer.fit(self.loader(), epochs=1)
+                trainer = self.trainer()
+                trainer.fit(self.loader(), epochs=1, callbacks=callbacks)
                 # not this hook, but the ones after it
                 self.assertEqual(
                     self.order("on_train_begin", calls), ["first"]
                 )
                 self.assertIn("added", self.order("on_epoch_begin", calls))
-                # of this session only
-                self.assertNotIn(added, trainer.callbacks)
+                # of this session only, not the list given to fit
+                self.assertNotIn(added, callbacks)
 
     def test_without_wrappers_hooks_run_in_order(self):
         calls = []
         callbacks = [Recorder("a", calls), Recorder("b", calls)]
-        self.trainer(callbacks=callbacks).fit(self.loader(), epochs=1)
+        self.trainer().fit(self.loader(), epochs=1, callbacks=callbacks)
         self.assertEqual(self.order("on_train_end", calls), ["a", "b"])
         self.assertFalse(Callback.wrapper)
 
@@ -210,8 +218,12 @@ class TestEarlyStopping(TrainerTestCase):
     def fit(self, values, epochs=None, **kwargs):
         feed = Feed(values)
         early_stopping = EarlyStopping("score", mode="min", **kwargs)
-        trainer = self.trainer(callbacks=[feed, early_stopping])
-        history = trainer.fit(self.loader(), epochs=epochs or len(values))
+        trainer = self.trainer()
+        history = trainer.fit(
+            self.loader(),
+            epochs=epochs or len(values),
+            callbacks=[feed, early_stopping],
+        )
         return history, trainer, feed, early_stopping
 
     def test_stops_after_patience(self):
@@ -239,8 +251,10 @@ class TestEarlyStopping(TrainerTestCase):
         feed = Feed([0.5, 0.7, 0.6, 0.9], key="valid_f1")
         early_stopping = EarlyStopping("valid_f1")  # inferred
         self.assertEqual(early_stopping.mode, "max")
-        trainer = self.trainer(callbacks=[feed, early_stopping])
-        history = trainer.fit(self.loader(), epochs=4)
+        trainer = self.trainer()
+        history = trainer.fit(
+            self.loader(), epochs=4, callbacks=[feed, early_stopping]
+        )
         self.assertEqual(len(history), 3)
         self.assertEqual(early_stopping.best, 0.7)
 
@@ -290,16 +304,25 @@ class TestEarlyStopping(TrainerTestCase):
     def test_resets_between_fits(self):
         feed = Feed([1.0, 2.0, 3.0])
         early_stopping = EarlyStopping("score", mode="min")
-        trainer = self.trainer(callbacks=[feed, early_stopping])
-        self.assertEqual(len(trainer.fit(self.loader(), epochs=3)), 2)
+        callbacks = [feed, early_stopping]
+        trainer = self.trainer()
+        self.assertEqual(
+            len(trainer.fit(self.loader(), epochs=3, callbacks=callbacks)), 2
+        )
         feed.values = [5.0, 4.0, 3.0]
-        self.assertEqual(len(trainer.fit(self.loader(), epochs=3)), 3)
+        self.assertEqual(
+            len(trainer.fit(self.loader(), epochs=3, callbacks=callbacks)), 3
+        )
         self.assertIsNone(early_stopping.stopped_epoch)
 
     def test_warns_when_monitor_is_missing(self):
-        trainer = self.trainer(callbacks=[EarlyStopping("valid_loss")])
+        trainer = self.trainer()
         with self.assertWarnsRegex(UserWarning, "'valid_loss'.*loss"):
-            history = trainer.fit(self.loader(), epochs=2)
+            history = trainer.fit(
+                self.loader(),
+                epochs=2,
+                callbacks=[EarlyStopping("valid_loss")],
+            )
         self.assertEqual(len(history), 2)
 
     def test_validates_arguments(self):
@@ -313,10 +336,14 @@ class TestEarlyStopping(TrainerTestCase):
     def test_rejects_non_numeric_monitor(self):
         trainer = self.trainer(
             metrics={"cm": ConfusionMatrix()},
-            callbacks=[EarlyStopping("valid_cm", mode="max")],
         )
         with self.assertRaisesRegex(TypeError, "must be a number"):
-            trainer.fit(self.loader(), self.loader(), epochs=1)
+            trainer.fit(
+                self.loader(),
+                self.loader(),
+                epochs=1,
+                callbacks=[EarlyStopping("valid_cm", mode="max")],
+            )
 
 
 class TestTerminateOnNaN(TrainerTestCase):
@@ -331,16 +358,25 @@ class TestTerminateOnNaN(TrainerTestCase):
             return loss * math.nan if len(calls) == 3 else loss
 
         model.training_step = training_step
-        trainer = self.trainer(model, callbacks=[TerminateOnNaN()])
-        session = fit_session(trainer, self.loader(), epochs=3)
+        trainer = self.trainer(model)
+        session = fit_session(
+            trainer, self.loader(), epochs=3, callbacks=[TerminateOnNaN()]
+        )
         history = session.history
         self.assertEqual(len(history), 1)
         self.assertEqual(session.global_step, 3)
         self.assertTrue(math.isnan(history[0]["loss"]))
 
     def test_keeps_training_on_finite_loss(self):
-        trainer = self.trainer(callbacks=[TerminateOnNaN()])
-        self.assertEqual(len(trainer.fit(self.loader(), epochs=2)), 2)
+        trainer = self.trainer()
+        self.assertEqual(
+            len(
+                trainer.fit(
+                    self.loader(), epochs=2, callbacks=[TerminateOnNaN()]
+                )
+            ),
+            2,
+        )
 
 
 class TestModelCheckpoint(TrainerTestCase):
@@ -358,8 +394,8 @@ class TestModelCheckpoint(TrainerTestCase):
         checkpoint = ModelCheckpoint(
             self.dir / "{epoch:02d}-{score:.3f}.safetensors"
         )
-        trainer = self.trainer(callbacks=[feed, checkpoint])
-        trainer.fit(self.loader(), epochs=3)
+        trainer = self.trainer()
+        trainer.fit(self.loader(), epochs=3, callbacks=[feed, checkpoint])
         self.assertEqual(
             self.files(),
             [
@@ -377,8 +413,8 @@ class TestModelCheckpoint(TrainerTestCase):
         checkpoint = ModelCheckpoint(
             self.dir / "ckpt-{epoch}.pt", save_best_only=True
         )
-        trainer = self.trainer(callbacks=[feed, checkpoint])
-        trainer.fit(self.loader(), epochs=4)
+        trainer = self.trainer()
+        trainer.fit(self.loader(), epochs=4, callbacks=[feed, checkpoint])
         self.assertEqual(self.files(), ["ckpt-1.pt", "ckpt-2.pt", "ckpt-4.pt"])
         self.assertEqual(checkpoint.best, 0.4)
         state = torch.load(self.dir / "ckpt-2.pt")
@@ -389,10 +425,11 @@ class TestModelCheckpoint(TrainerTestCase):
         feed = Feed([0.5, 0.4], key="valid_loss")
         path = self.dir / "best.safetensors"
         checkpoint = ModelCheckpoint(path, save_best_only=True)
-        trainer = self.trainer(callbacks=[feed, checkpoint])
-        trainer.fit(self.loader(), epochs=2)
+        callbacks = [feed, checkpoint]
+        trainer = self.trainer()
+        trainer.fit(self.loader(), epochs=2, callbacks=callbacks)
         feed.values = [0.9, 0.8]
-        trainer.fit(self.loader(), epochs=2)
+        trainer.fit(self.loader(), epochs=2, callbacks=callbacks)
         model = Classifier()
         load_model(model, path)
         assert_weights_equal(model, feed.weights[1])
@@ -404,14 +441,16 @@ class TestModelCheckpoint(TrainerTestCase):
             save_best_only=True,
             initial_value_threshold=0.2,
         )
-        self.trainer(callbacks=[feed, checkpoint]).fit(self.loader(), epochs=3)
+        self.trainer().fit(
+            self.loader(), epochs=3, callbacks=[feed, checkpoint]
+        )
         self.assertEqual(self.files(), ["3.pt"])
 
     def test_saves_every_n_steps(self):
         # 6 batches, 2 per optimizer step: steps 1..3 per epoch
         checkpoint = ModelCheckpoint(self.dir / "step{step}.pt", save_freq=2)
-        trainer = self.trainer(accumulation=2, callbacks=[checkpoint])
-        trainer.fit(self.loader(), epochs=2)
+        trainer = self.trainer(accumulation=2)
+        trainer.fit(self.loader(), epochs=2, callbacks=[checkpoint])
         self.assertEqual(self.files(), ["step2.pt", "step4.pt", "step6.pt"])
 
     def test_saves_each_step_once_when_steps_are_skipped(self):
@@ -419,18 +458,18 @@ class TestModelCheckpoint(TrainerTestCase):
         checkpoint = ModelCheckpoint(
             self.dir / "step{step}.pt", save_freq=2, verbose=True
         )
-        trainer = self.trainer(callbacks=[checkpoint])
+        trainer = self.trainer()
         logger = "tklearn.nn.callbacks.checkpoint"
         with skip_steps(1, 4), self.assertLogs(logger) as logs:
-            trainer.fit(self.loader(), epochs=2)
+            trainer.fit(self.loader(), epochs=2, callbacks=[checkpoint])
         steps = [int(r.getMessage().split()[1][:-1]) for r in logs.records]
         self.assertEqual(steps, [2, 4, 6, 8, 10])
 
     def test_missing_format_key(self):
         checkpoint = ModelCheckpoint(self.dir / "{valid_f1}.pt")
-        trainer = self.trainer(callbacks=[checkpoint])
+        trainer = self.trainer()
         with self.assertRaisesRegex(KeyError, "'valid_f1'"):
-            trainer.fit(self.loader(), epochs=1)
+            trainer.fit(self.loader(), epochs=1, callbacks=[checkpoint])
 
     def test_validates_arguments(self):
         with self.assertRaisesRegex(ValueError, "filepath"):
@@ -494,10 +533,11 @@ class TestBackupAndRestore(TrainerTestCase):
             cpu=True,
             mixed_precision="no",
             gradient_accumulation_steps=accumulation,
-            callbacks=callbacks,
         )
         # 6 batches per epoch
-        history = trainer.fit(self.loader(), self.loader(), epochs=epochs)
+        history = trainer.fit(
+            self.loader(), self.loader(), epochs=epochs, callbacks=callbacks
+        )
         return model, history
 
     def backup(self, name="backup", **kwargs):
@@ -597,10 +637,9 @@ class TestBackupAndRestore(TrainerTestCase):
             Classifier(),
             functools.partial(torch.optim.SGD, lr=0.1),
             cpu=True,
-            callbacks=[self.backup()],
         )
         with self.assertRaisesRegex(ValueError, "scheduler"):
-            trainer.fit(self.loader(), epochs=3)
+            trainer.fit(self.loader(), epochs=3, callbacks=[self.backup()])
 
     def test_validates_arguments(self):
         for save_freq in (0, -1, 1.5, True, "batch"):
@@ -619,8 +658,12 @@ class TestReduceLROnPlateau(TrainerTestCase):
             def on_epoch_end(self, logs):
                 lrs.append(self.session.optimizer.param_groups[0]["lr"])
 
-        trainer = self.trainer(lr=lr, callbacks=[feed, reduce_lr, Record()])
-        trainer.fit(self.loader(), epochs=len(values))
+        trainer = self.trainer(lr=lr)
+        trainer.fit(
+            self.loader(),
+            epochs=len(values),
+            callbacks=[feed, reduce_lr, Record()],
+        )
         return lrs
 
     def test_reduces_after_patience(self):
@@ -638,11 +681,9 @@ class TestReduceLROnPlateau(TrainerTestCase):
         self.assertEqual(lrs, [0.5, 0.05, 0.01, 0.01])
 
     def test_rejects_lr_scheduler(self):
-        trainer = self.trainer(
-            lr_scheduler="constant", callbacks=[ReduceLROnPlateau()]
-        )
+        trainer = self.trainer(lr_scheduler="constant")
         with self.assertRaisesRegex(ValueError, "lr_scheduler"):
-            trainer.fit(self.loader())
+            trainer.fit(self.loader(), callbacks=[ReduceLROnPlateau()])
 
     def test_rejects_an_overridden_scheduler(self):
         class Custom(Trainer):
@@ -652,12 +693,11 @@ class TestReduceLROnPlateau(TrainerTestCase):
         trainer = Custom(
             Classifier(),
             functools.partial(torch.optim.SGD, lr=0.5),
-            callbacks=[ReduceLROnPlateau()],
             cpu=True,
             mixed_precision="no",
         )
         with self.assertRaisesRegex(ValueError, "scheduler"):
-            trainer.fit(self.loader())
+            trainer.fit(self.loader(), callbacks=[ReduceLROnPlateau()])
 
     def test_validates_factor(self):
         for factor in (0, 1, 1.5):
@@ -678,8 +718,13 @@ class TestCSVLogger(TrainerTestCase):
             return list(csv.reader(f))
 
     def test_writes_history(self):
-        trainer = self.trainer(callbacks=[CSVLogger(self.path)])
-        history = trainer.fit(self.loader(), self.loader(), epochs=3)
+        trainer = self.trainer()
+        history = trainer.fit(
+            self.loader(),
+            self.loader(),
+            epochs=3,
+            callbacks=[CSVLogger(self.path)],
+        )
         rows = self.read()
         self.assertEqual(rows[0], ["epoch", "loss", "valid_loss"])
         self.assertEqual(len(rows), 4)
@@ -689,12 +734,13 @@ class TestCSVLogger(TrainerTestCase):
             self.assertEqual(float(row[2]), logs["valid_loss"])
 
     def test_overwrites_or_appends(self):
-        trainer = self.trainer(callbacks=[CSVLogger(self.path)])
-        trainer.fit(self.loader(), epochs=2)
-        trainer.fit(self.loader(), epochs=1)
+        callbacks = [CSVLogger(self.path)]
+        trainer = self.trainer()
+        trainer.fit(self.loader(), epochs=2, callbacks=callbacks)
+        trainer.fit(self.loader(), epochs=1, callbacks=callbacks)
         self.assertEqual(len(self.read()), 2)
         append = CSVLogger(self.path, separator=";", append=True)
-        self.trainer(callbacks=[append]).fit(self.loader(), epochs=2)
+        self.trainer().fit(self.loader(), epochs=2, callbacks=[append])
         lines = self.path.read_text().splitlines()
         self.assertEqual(lines[0], "epoch,loss")
         self.assertEqual([line[:2] for line in lines[2:]], ["0;", "1;"])
@@ -709,9 +755,13 @@ class TestCSVLogger(TrainerTestCase):
 
         trainer = self.trainer(
             metrics={"cm": ConfusionMatrix()},
+        )
+        history = trainer.fit(
+            self.loader(),
+            self.loader(),
+            epochs=2,
             callbacks=[feed, DropNone(), CSVLogger(self.path)],
         )
-        history = trainer.fit(self.loader(), self.loader(), epochs=2)
         rows = self.read()
         self.assertEqual(
             rows[0], ["epoch", "loss", "valid_loss", "valid_cm", "extra"]
@@ -724,9 +774,9 @@ class TestCSVLogger(TrainerTestCase):
     def test_closes_the_file_when_fit_raises(self):
         logger = CSVLogger(self.path)
         model = RaisingClassifier("training_step", 8)
-        trainer = self.trainer(model, callbacks=[logger])
+        trainer = self.trainer(model)
         with self.assertRaises(RuntimeError):
-            trainer.fit(self.loader(), epochs=2)
+            trainer.fit(self.loader(), epochs=2, callbacks=[logger])
         self.assertIsNone(logger._file)
         # the finished epoch was written
         self.assertEqual([row[0] for row in self.read()], ["epoch", "0"])
@@ -736,10 +786,16 @@ class TestProgbarLogger(TrainerTestCase):
     def test_shows_progress(self):
         output = io.StringIO()
         progbar = ProgbarLogger(file=output, mininterval=0)
-        trainer = self.trainer(callbacks=[progbar])
-        trainer.fit(self.loader(), self.loader(self.data[:32]), epochs=2)
-        trainer.evaluate(self.loader())
-        trainer.predict(self.loader())
+        callbacks = [progbar]
+        trainer = self.trainer()
+        trainer.fit(
+            self.loader(),
+            self.loader(self.data[:32]),
+            epochs=2,
+            callbacks=callbacks,
+        )
+        trainer.evaluate(self.loader(), callbacks=callbacks)
+        trainer.predict(self.loader(), callbacks=callbacks)
         text = output.getvalue()
         self.assertIn("Epoch 1/2", text)
         self.assertIn("Epoch 2/2", text)
@@ -752,15 +808,17 @@ class TestProgbarLogger(TrainerTestCase):
     def test_stopped_and_unsized_runs(self):
         progbar = ProgbarLogger(file=io.StringIO())
         stop = StopAt("on_train_batch_end", 1)
-        trainer = self.trainer(callbacks=[progbar, stop])
-        history = trainer.fit(self.loader(), epochs=3)
+        trainer = self.trainer()
+        history = trainer.fit(
+            self.loader(), epochs=3, callbacks=[progbar, stop]
+        )
         self.assertEqual(len(history), 1)
         self.assertEqual(progbar._bars, [])
 
         batches = torch.utils.data.DataLoader(
             _Unsized(self.data), batch_size=16
         )
-        self.trainer(callbacks=[progbar]).predict(batches)
+        self.trainer().predict(batches, callbacks=[progbar])
         self.assertEqual(progbar._bars, [])
 
     def test_closes_the_bars_when_a_session_raises(self):
@@ -773,11 +831,11 @@ class TestProgbarLogger(TrainerTestCase):
         for name, model in cases:
             with self.subTest(name=name, step=model.step):
                 progbar = ProgbarLogger(file=io.StringIO())
-                trainer = self.trainer(model, callbacks=[progbar])
+                trainer = self.trainer(model)
                 run = getattr(trainer, name)
                 args = (self.loader(),) * (2 if name == "fit" else 1)
                 with self.assertRaises(RuntimeError):
-                    run(*args)
+                    run(*args, callbacks=[progbar])
                 self.assertEqual(progbar._bars, [])
 
 

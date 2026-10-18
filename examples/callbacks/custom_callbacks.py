@@ -72,10 +72,9 @@ def hook_order() -> None:
     trainer = Trainer(
         model,
         functools.partial(torch.optim.AdamW, lr=1e-3),
-        callbacks=[recorder],
         gradient_accumulation_steps=2,
     )
-    trainer.fit(train, valid, epochs=2)
+    trainer.fit(train, valid, epochs=2, callbacks=[recorder])
 
     test_hooks = (
         ["on_test_begin"]
@@ -101,11 +100,11 @@ def hook_order() -> None:
     )
 
     calls.clear()
-    trainer.evaluate(valid)
+    trainer.evaluate(valid, callbacks=[recorder])
     check(calls == test_hooks, "evaluate ran the on_test_* hooks")
 
     calls.clear()
-    trainer.predict(test)
+    trainer.predict(test, callbacks=[recorder])
     expected = (
         ["on_predict_begin"]
         + ["on_predict_batch_begin", "on_predict_batch_end"] * 2
@@ -122,9 +121,11 @@ def freeze_encoder() -> None:
     initial = {k: v.clone() for k, v in model.state_dict().items()}
     # the weights after each epoch
     snapshots: list[dict[str, torch.Tensor]] = []
-    trainer = Trainer(
-        model,
-        functools.partial(torch.optim.AdamW, lr=1e-3),
+    trainer = Trainer(model, functools.partial(torch.optim.AdamW, lr=1e-3))
+    trainer.fit(
+        train,
+        valid,
+        epochs=3,
         callbacks=[
             FreezeEncoder(epochs=2),
             LambdaCallback(
@@ -135,7 +136,6 @@ def freeze_encoder() -> None:
             ),
         ],
     )
-    trainer.fit(train, valid, epochs=3)
 
     def changed(epoch: int, key: str) -> bool:
         return not torch.equal(snapshots[epoch][key], initial[key])
@@ -164,9 +164,11 @@ def stop_after_steps() -> None:
     train, valid, _ = make_loaders(sizes=(96, 256, 256))
     model = Classifier()
     losses: list[float] = []
-    trainer = Trainer(
-        model,
-        functools.partial(torch.optim.AdamW, lr=1e-3),
+    trainer = Trainer(model, functools.partial(torch.optim.AdamW, lr=1e-3))
+    history = trainer.fit(
+        train,
+        valid,
+        epochs=10,
         callbacks=[
             StopAfterSteps(7),
             LambdaCallback(
@@ -176,7 +178,6 @@ def stop_after_steps() -> None:
             ),
         ],
     )
-    history = trainer.fit(train, valid, epochs=10)
     check(
         len(losses) == 7,
         "stopped after step 7, in the middle of epoch 3",

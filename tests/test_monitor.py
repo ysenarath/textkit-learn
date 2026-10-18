@@ -199,10 +199,10 @@ class TestMonitorTraining(TrainerTestCase, MonitorTestCase):
         callback = OpenTelemetryCallback(
             tracer_provider=provider, log_every_n_steps=4
         )
-        trainer = self.trainer(
-            metrics={"acc": Accuracy()}, callbacks=[callback]
+        trainer = self.trainer(metrics={"acc": Accuracy()})
+        history = trainer.fit(
+            self.loader(), self.loader(), epochs=2, callbacks=[callback]
         )
-        history = trainer.fit(self.loader(), self.loader(), epochs=2)
         (status,) = snapshot(self.dir)
         self.assertEqual(status.status, "finished")
         self.assertEqual((status.epoch, status.epochs), (1, 2))

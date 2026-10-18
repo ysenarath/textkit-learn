@@ -61,7 +61,11 @@ class EarlyStopping(MonitorCallback):
     >>> early_stopping = EarlyStopping(
     ...     "valid_f1", patience=3, restore_best_weights=True
     ... )
-    >>> trainer = Trainer(model, optimizer, callbacks=[early_stopping])
+    >>> trainer = Trainer(model, optimizer)
+    >>> trainer.fit(
+    ...     train_loader, valid_loader, epochs=50, callbacks=[early_stopping]
+    ... )
+    >>> early_stopping.stopped_epoch
     """
 
     def __init__(

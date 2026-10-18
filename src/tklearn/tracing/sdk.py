@@ -103,8 +103,8 @@ class FileTracerProvider(trace.TracerProvider):
     ...     "/nfs/project/runs", resource={"model": "roberta-base", "lr": 2e-5}
     ... )
     >>> callback = OpenTelemetryCallback(tracer_provider=provider)
-    >>> trainer = Trainer(model, optimizer, callbacks=[callback])
-    >>> trainer.fit(train_loader, valid_loader, epochs=3)
+    >>> trainer = Trainer(model, optimizer)
+    >>> trainer.fit(train_loader, valid_loader, epochs=3, callbacks=[callback])
     >>> load_spans("/nfs/project/runs", name="epoch")  # one row per epoch
     """
 

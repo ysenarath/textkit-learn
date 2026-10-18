@@ -44,7 +44,8 @@ class Trainer:
     returns, and each `fit` builds a new optimizer and scheduler with
     `create_optimizer` and `create_scheduler`; a call writes nothing back
     to the trainer or to what it was given, except the model, which it
-    trains.
+    trains. Callbacks, which keep state, are given to each call instead,
+    and keep theirs for the caller to read.
 
     Parameters
     ----------
@@ -66,12 +67,6 @@ class Trainer:
         Metrics computed by `evaluate`, keyed by result name. Each reads
         its inputs (``y_true``, ``y_pred``, ``y_score``, ...) from the
         `predict_step` outputs.
-    callbacks : iterable of Callback, optional
-        Callbacks receiving the hooks of `fit`, `evaluate` and `predict`.
-        Each hook goes to them in the order given, except for wrapper
-        callbacks (`Callback.wrapper`), which get ``*_begin`` hooks before
-        and ``*_end`` hooks after the others. Each session gets them as
-        a list, `Session.callbacks`.
     max_grad_norm : float, optional
         Clip the gradient norm to this value before each optimizer step.
     mixed_precision : {"no", "fp16", "bf16"}, optional
@@ -98,7 +93,12 @@ class Trainer:
     ...     warmup=0.1,
     ...     metrics={"f1": F1(average="macro")},
     ... )
-    >>> history = trainer.fit(train_loader, valid_loader, epochs=3)
+    >>> history = trainer.fit(
+    ...     train_loader,
+    ...     valid_loader,
+    ...     epochs=3,
+    ...     callbacks=[EarlyStopping("valid_f1", mode="max")],
+    ... )
     >>> pd.DataFrame(history)  # loss, valid_loss, valid_f1 per epoch
     >>> trainer.evaluate(test_loader)
     {'loss': 0.41, 'f1': 0.83}
@@ -113,7 +113,6 @@ class Trainer:
         lr_scheduler: SchedulerFactory | None = None,
         warmup: int | float = 0,
         metrics: Mapping[str, Metric] | None = None,
-        callbacks: Iterable[Callback] | None = None,
         max_grad_norm: float | None = None,
         mixed_precision: str | None = None,
         gradient_accumulation_steps: int = 1,
@@ -151,11 +150,6 @@ class Trainer:
                 "scheduler you build instead"
             )
             raise ValueError(msg)
-        callbacks = list(callbacks or [])
-        for callback in callbacks:
-            if not isinstance(callback, Callback):
-                msg = f"expected a Callback, got {type(callback).__name__}"
-                raise TypeError(msg)
         if (
             not isinstance(gradient_accumulation_steps, int)
             or gradient_accumulation_steps < 1
@@ -170,7 +164,6 @@ class Trainer:
         self._lr_scheduler = lr_scheduler
         self._warmup = warmup
         self._metrics = MetricCollection(metrics)
-        self._callbacks = tuple(callbacks)
         self._max_grad_norm = max_grad_norm
         self._mixed_precision = mixed_precision
         self._gradient_accumulation_steps = gradient_accumulation_steps
@@ -188,11 +181,6 @@ class Trainer:
         Each evaluation updates a copy, so these keep their own state.
         """
         return self._metrics
-
-    @property
-    def callbacks(self) -> tuple[Callback, ...]:
-        """The callbacks, of which each session gets a copy."""
-        return self._callbacks
 
     @property
     def max_grad_norm(self) -> float | None:
@@ -293,6 +281,7 @@ class Trainer:
         eval_dataloader: DataLoader | None = None,
         *,
         epochs: int = 1,
+        callbacks: Iterable[Callback] | None = None,
     ) -> list[dict[str, Any]]:
         """Train the model.
 
@@ -309,6 +298,12 @@ class Trainer:
             ``valid_`` prefix (``valid_loss``, ``valid_f1``, ...).
         epochs : int, default=1
             Maximum number of epochs.
+        callbacks : iterable of Callback, optional
+            Callbacks receiving the hooks of this call, in the order
+            given, except for wrapper callbacks (`Callback.wrapper`),
+            which get ``*_begin`` hooks before and ``*_end`` hooks after
+            the others. The session gets them as a list,
+            `Session.callbacks`.
 
         Returns
         -------
@@ -319,7 +314,7 @@ class Trainer:
         if epochs < 1:
             msg = f"epochs must be at least 1, got {epochs}"
             raise ValueError(msg)
-        session = Session(self)
+        session = Session(self, _callbacks(callbacks))
         with session._open(training=True):
             return session._fit(train_dataloader, eval_dataloader, epochs)
 
@@ -329,6 +324,7 @@ class Trainer:
         *,
         prefix: str = "",
         metrics: Mapping[str, Metric] | None = None,
+        callbacks: Iterable[Callback] | None = None,
     ) -> dict[str, Any]:
         """Compute the mean loss and the metrics over a dataloader.
 
@@ -343,6 +339,12 @@ class Trainer:
             Prepended to every result key.
         metrics : Mapping[str, Metric], optional
             Metrics for this call instead of the trainer's `metrics`.
+        callbacks : iterable of Callback, optional
+            Callbacks receiving the hooks of this call, in the order
+            given, except for wrapper callbacks (`Callback.wrapper`),
+            which get ``*_begin`` hooks before and ``*_end`` hooks after
+            the others. The session gets them as a list,
+            `Session.callbacks`.
 
         Returns
         -------
@@ -354,11 +356,16 @@ class Trainer:
             processes, the duplicates that pad the last batch are left
             out, which is exact with a loss per example.
         """
-        session = Session(self)
+        session = Session(self, _callbacks(callbacks))
         with session._open(training=False):
             return session.evaluate(dataloader, prefix=prefix, metrics=metrics)
 
-    def predict(self, dataloader: DataLoader) -> Any:
+    def predict(
+        self,
+        dataloader: DataLoader,
+        *,
+        callbacks: Iterable[Callback] | None = None,
+    ) -> Any:
         """Run `predict_step` over a dataloader and concatenate the outputs.
 
         Tensors and arrays are concatenated along the first dimension and
@@ -376,6 +383,12 @@ class Trainer:
         ----------
         dataloader : DataLoader
             Batches to run the model on.
+        callbacks : iterable of Callback, optional
+            Callbacks receiving the hooks of this call, in the order
+            given, except for wrapper callbacks (`Callback.wrapper`),
+            which get ``*_begin`` hooks before and ``*_end`` hooks after
+            the others. The session gets them as a list,
+            `Session.callbacks`.
 
         Returns
         -------
@@ -383,6 +396,16 @@ class Trainer:
             The outputs for the whole dataloader, structured like the
             output of one batch.
         """
-        session = Session(self)
+        session = Session(self, _callbacks(callbacks))
         with session._open(training=False):
             return session.predict(dataloader)
+
+
+def _callbacks(callbacks: Iterable[Callback] | None) -> list[Callback]:
+    """The callbacks of a call, checked."""
+    callbacks = list(callbacks or [])
+    for callback in callbacks:
+        if not isinstance(callback, Callback):
+            msg = f"expected a Callback, got {type(callback).__name__}"
+            raise TypeError(msg)
+    return callbacks

@@ -245,8 +245,8 @@ def fit_session(trainer, *args, **kwargs):
     """Fit, and return the session of the fit, to read after it."""
     sessions = []
 
-    def new_state(trainer):
-        sessions.append(Session(trainer))
+    def new_state(trainer, callbacks=()):
+        sessions.append(Session(trainer, callbacks))
         return sessions[-1]
 
     with mock.patch("tklearn.nn.trainer.Session", side_effect=new_state):
@@ -281,16 +281,16 @@ class TestFit(TrainerTestCase):
 
     def test_epoch_loss_is_mean_of_batch_losses(self):
         recorder = Recorder()
-        trainer = self.trainer(callbacks=[recorder])
-        history = trainer.fit(self.loader(), epochs=1)
+        trainer = self.trainer()
+        history = trainer.fit(self.loader(), epochs=1, callbacks=[recorder])
         losses = [logs["loss"] for logs in recorder.batch_logs]
         self.assertEqual(len(losses), 6)
         self.assertAlmostEqual(history[0]["loss"], np.mean(losses))
 
     def test_logs_loss_terms(self):
         recorder = Recorder()
-        trainer = self.trainer(TermsClassifier(), callbacks=[recorder])
-        history = trainer.fit(self.loader(), epochs=2)
+        trainer = self.trainer(TermsClassifier())
+        history = trainer.fit(self.loader(), epochs=2, callbacks=[recorder])
         self.assertEqual(list(history[0]), ["loss", "ce", "l2"])
         for logs in recorder.batch_logs:
             self.assertAlmostEqual(
@@ -311,8 +311,8 @@ class TestFit(TrainerTestCase):
         self.assertAlmostEqual(history[0]["probe"], 1.0)
 
         recorder = Recorder()
-        self.trainer(ProbeClassifier(), callbacks=[recorder]).fit(
-            self.loader()
+        self.trainer(ProbeClassifier()).fit(
+            self.loader(), callbacks=[recorder]
         )
         self.assertEqual(FloatCounter.reads, 0)
         for logs in recorder.batch_logs:
@@ -398,10 +398,13 @@ class TestFit(TrainerTestCase):
             self.loader(batch_size=8), epochs=2
         )
         model = Classifier()
-        trainer = self.trainer(
-            model, accumulation=2, callbacks=[EvaluateOther()]
+        trainer = self.trainer(model, accumulation=2)
+        session = fit_session(
+            trainer,
+            self.loader(batch_size=8),
+            epochs=2,
+            callbacks=[EvaluateOther()],
         )
-        session = fit_session(trainer, self.loader(batch_size=8), epochs=2)
         self.assertEqual(session.global_step, 2 * 6)
         for a, b in zip(model.parameters(), expected.parameters()):
             torch.testing.assert_close(a, b)
@@ -428,8 +431,8 @@ class TestFit(TrainerTestCase):
                 grads = torch.cat([p.grad.flatten() for p in params])
                 norms.append(torch.linalg.vector_norm(grads))
 
-        trainer = self.trainer(max_grad_norm=1e-3, callbacks=[GradNorm()])
-        trainer.fit(self.loader(), epochs=1)
+        trainer = self.trainer(max_grad_norm=1e-3)
+        trainer.fit(self.loader(), epochs=1, callbacks=[GradNorm()])
         self.assertEqual(len(norms), 6)
         for norm in norms:
             self.assertLessEqual(float(norm), 1e-3 + 1e-6)
@@ -437,10 +440,15 @@ class TestFit(TrainerTestCase):
     def test_empty_dataloader(self):
         # a named schedule would otherwise be built for 0 steps
         recorder = Recorder()
-        trainer = self.trainer(lr_scheduler="linear", callbacks=[recorder])
+        trainer = self.trainer(lr_scheduler="linear")
         with mock.patch.object(AcceleratedOptimizer, "step") as step:
             with self.assertRaisesRegex(ValueError, "empty"):
-                trainer.fit(self.loader([]), self.loader(), epochs=3)
+                trainer.fit(
+                    self.loader([]),
+                    self.loader(),
+                    epochs=3,
+                    callbacks=[recorder],
+                )
         step.assert_not_called()
         # raised before on_train_begin, so no hook but on_exception
         self.assertEqual(recorder.calls, ["on_exception"])
@@ -449,9 +457,14 @@ class TestFit(TrainerTestCase):
         # empty only once iterated; Accelerate dispatches the batches of an
         # iterable dataset, and raises when there are none
         recorder = Recorder()
-        trainer = self.trainer(callbacks=[recorder])
+        trainer = self.trainer()
         with self.assertRaises(ValueError):
-            trainer.fit(self.loader(EmptyIterable()), self.loader(), epochs=3)
+            trainer.fit(
+                self.loader(EmptyIterable()),
+                self.loader(),
+                epochs=3,
+                callbacks=[recorder],
+            )
         self.assertNotIn("on_test_begin", recorder.calls)
         self.assertNotIn("on_epoch_end", recorder.calls)
 
@@ -501,16 +514,22 @@ class TestRunningMean(unittest.TestCase):
 
 class TestStopping(TrainerTestCase):
     def test_stops_after_epoch(self):
-        trainer = self.trainer(callbacks=[StopAt("on_epoch_end", 2)])
-        history = trainer.fit(self.loader(), epochs=5)
+        trainer = self.trainer()
+        history = trainer.fit(
+            self.loader(), epochs=5, callbacks=[StopAt("on_epoch_end", 2)]
+        )
         self.assertEqual(len(history), 2)
 
     def test_stops_within_epoch(self):
         recorder = Recorder()
-        trainer = self.trainer(
-            callbacks=[StopAt("on_train_batch_end", 2), recorder]
+        trainer = self.trainer()
+        session = fit_session(
+            trainer,
+            self.loader(),
+            self.loader(),
+            epochs=5,
+            callbacks=[StopAt("on_train_batch_end", 2), recorder],
         )
-        session = fit_session(trainer, self.loader(), self.loader(), epochs=5)
         history = session.history
         self.assertEqual(len(history), 1)
         self.assertIn("valid_loss", history[0])
@@ -528,14 +547,14 @@ class TestStopping(TrainerTestCase):
 
         def stop(model):
             callbacks = [StopAt("on_train_batch_end", 1)]
-            trainer = self.trainer(model, accumulation=4, callbacks=callbacks)
-            trainer.fit(self.loader())
+            trainer = self.trainer(model, accumulation=4)
+            trainer.fit(self.loader(), callbacks=callbacks)
 
         def interrupt(model):
             callbacks = [Interrupt()]
-            trainer = self.trainer(model, accumulation=4, callbacks=callbacks)
+            trainer = self.trainer(model, accumulation=4)
             with self.assertRaises(KeyboardInterrupt):
-                trainer.fit(self.loader())
+                trainer.fit(self.loader(), callbacks=callbacks)
 
         expected = Classifier()
         self.trainer(expected, accumulation=4).fit(self.loader())
@@ -551,9 +570,12 @@ class TestStopping(TrainerTestCase):
 class TestCallbacks(TrainerTestCase):
     def test_hook_order(self):
         recorder = Recorder()
-        trainer = self.trainer(callbacks=[recorder])
+        callbacks = [recorder]
+        trainer = self.trainer()
         loader = self.loader(self.data[:32])
-        trainer.fit(loader, self.loader(self.data[:16]), epochs=2)
+        trainer.fit(
+            loader, self.loader(self.data[:16]), epochs=2, callbacks=callbacks
+        )
         train_batch = [
             "on_train_batch_begin",
             "on_before_optimizer_step",
@@ -571,7 +593,7 @@ class TestCallbacks(TrainerTestCase):
         )
 
         recorder.calls = []
-        trainer.predict(loader)
+        trainer.predict(loader, callbacks=callbacks)
         self.assertEqual(
             recorder.calls,
             [
@@ -592,8 +614,8 @@ class TestCallbacks(TrainerTestCase):
                     logs,
                 ))
 
-        trainer = self.trainer(callbacks=[Epochs()])
-        history = trainer.fit(self.loader(), epochs=2)
+        trainer = self.trainer()
+        history = trainer.fit(self.loader(), epochs=2, callbacks=[Epochs()])
         self.assertEqual([s[:2] for s in seen], [(0, 6), (1, 12)])
         self.assertEqual([s[2] for s in seen], history)
 
@@ -601,23 +623,24 @@ class TestCallbacks(TrainerTestCase):
         # a callback keeps the state of its session (e.g. the patience of
         # EarlyStopping), which the session of another trainer would change
         shared = Recorder()
-        other = self.trainer(callbacks=[shared])
+        callbacks = [shared]
+        other = self.trainer()
         loader = self.loader(self.data[:16])
 
         class EvaluateOther(Callback):
             def on_epoch_begin(self):
-                other.evaluate(loader)
+                other.evaluate(loader, callbacks=callbacks)
 
-        trainer = self.trainer(callbacks=[shared, EvaluateOther()])
+        trainer = self.trainer()
         with self.assertRaisesRegex(
             RuntimeError, "Recorder is in another session"
         ):
-            trainer.fit(loader)
+            trainer.fit(loader, callbacks=[shared, EvaluateOther()])
         self.assertNotIn("on_test_begin", shared.calls)
         # each session releases its callbacks when it ends, even when it
         # raises
-        other.evaluate(loader)
-        self.trainer(callbacks=[shared]).fit(loader)
+        other.evaluate(loader, callbacks=callbacks)
+        self.trainer().fit(loader, callbacks=[shared])
 
     def test_callback_session(self):
         seen = []
@@ -635,8 +658,8 @@ class TestCallbacks(TrainerTestCase):
         note = Note()
         with self.assertRaisesRegex(RuntimeError, "Note has a session only"):
             note.session
-        trainer = self.trainer(callbacks=[note])
-        trainer.fit(self.loader(), self.loader(), epochs=1)
+        trainer = self.trainer()
+        trainer.fit(self.loader(), self.loader(), epochs=1, callbacks=[note])
         # one session for the fit and its evaluation, of this trainer
         (_, session), (_, evaluation) = seen
         self.assertEqual([name for name, _ in seen], ["train", "test"])
@@ -647,11 +670,9 @@ class TestCallbacks(TrainerTestCase):
 
         # also given back after a session that raised
         seen.clear()
-        trainer = self.trainer(
-            RaisingClassifier("predict_step", 1), callbacks=[note]
-        )
+        trainer = self.trainer(RaisingClassifier("predict_step", 1))
         with self.assertRaises(RuntimeError):
-            trainer.evaluate(self.loader())
+            trainer.evaluate(self.loader(), callbacks=[note])
         self.assertEqual([name for name, _ in seen], ["test", "exception"])
         self.assertIs(seen[0][1], seen[1][1])
         with self.assertRaisesRegex(RuntimeError, "Note has a session only"):
@@ -670,8 +691,8 @@ class TestCallbacks(TrainerTestCase):
             def on_train_begin(self):
                 self.session.callbacks.append(read)
 
-        trainer = self.trainer(callbacks=[Add()])
-        trainer.fit(self.loader(), epochs=2)
+        trainer = self.trainer()
+        trainer.fit(self.loader(), epochs=2, callbacks=[Add()])
         self.assertEqual(epochs, [0, 1])
         # given back at the end of the session, though not there at its
         # start
@@ -721,10 +742,11 @@ class ExceptionRecorder(Recorder):
 
 class TestExceptions(TrainerTestCase):
     def run_raising(self, model, run):
+        """Run `run(trainer, callbacks)`, which raises, with a recorder."""
         recorder = ExceptionRecorder()
-        trainer = self.trainer(model, callbacks=[recorder])
+        trainer = self.trainer(model)
         with self.assertRaises(BaseException) as raised:
-            run(trainer)
+            run(trainer, [recorder])
         self.assertIs(raised.exception, model.exception)
         self.assertEqual(recorder.exceptions, [model.exception])
         self.assertEqual(recorder.calls[-1], "on_exception")
@@ -734,7 +756,9 @@ class TestExceptions(TrainerTestCase):
     def test_fit_that_raises(self):
         calls = self.run_raising(
             RaisingClassifier("training_step", 3),
-            lambda t: t.fit(self.loader(), epochs=2),
+            lambda t, callbacks: t.fit(
+                self.loader(), epochs=2, callbacks=callbacks
+            ),
         )
         train_batch = [
             "on_train_batch_begin",
@@ -756,7 +780,9 @@ class TestExceptions(TrainerTestCase):
         # once, from fit, and no on_test_end, on_epoch_end or on_train_end
         calls = self.run_raising(
             RaisingClassifier("predict_step", 2),
-            lambda t: t.fit(self.loader(), self.loader(), epochs=2),
+            lambda t, callbacks: t.fit(
+                self.loader(), self.loader(), epochs=2, callbacks=callbacks
+            ),
         )
         self.assertEqual(
             calls[-6:],
@@ -776,7 +802,9 @@ class TestExceptions(TrainerTestCase):
             with self.subTest(name=name):
                 calls = self.run_raising(
                     RaisingClassifier("predict_step", 2),
-                    lambda t, name=name: getattr(t, name)(self.loader()),
+                    lambda t, callbacks, name=name: getattr(t, name)(
+                        self.loader(), callbacks=callbacks
+                    ),
                 )
                 kind = "test" if name == "evaluate" else "predict"
                 self.assertEqual(
@@ -793,15 +821,15 @@ class TestExceptions(TrainerTestCase):
     def test_keyboard_interrupt(self):
         calls = self.run_raising(
             RaisingClassifier("training_step", 2, KeyboardInterrupt()),
-            lambda t: t.fit(self.loader()),
+            lambda t, callbacks: t.fit(self.loader(), callbacks=callbacks),
         )
         self.assertEqual(calls.count("on_exception"), 1)
 
     def test_raised_before_any_begin_hook(self):
         recorder = ExceptionRecorder()
-        trainer = self.trainer(callbacks=[recorder])
+        trainer = self.trainer()
         with self.assertRaisesRegex(ValueError, "empty"):
-            trainer.fit(self.loader([]))
+            trainer.fit(self.loader([]), callbacks=[recorder])
         self.assertEqual(recorder.calls, ["on_exception"])
 
     def test_on_exception_that_raises(self):
@@ -813,12 +841,12 @@ class TestExceptions(TrainerTestCase):
 
         recorder = ExceptionRecorder()
         model = RaisingClassifier("training_step", 1)
-        trainer = self.trainer(model, callbacks=[Broken(), recorder])
+        trainer = self.trainer(model)
         with (
             self.assertLogs("tklearn.nn.trainer", "ERROR") as logs,
             self.assertRaises(RuntimeError) as raised,
         ):
-            trainer.fit(self.loader())
+            trainer.fit(self.loader(), callbacks=[Broken(), recorder])
         self.assertIs(raised.exception, model.exception)
         self.assertEqual(recorder.exceptions, [model.exception])
         self.assertIn("Broken.on_exception raised", logs.output[0])
@@ -826,9 +854,10 @@ class TestExceptions(TrainerTestCase):
 
     def test_a_finished_session_does_not_call_it(self):
         recorder = ExceptionRecorder()
-        trainer = self.trainer(callbacks=[recorder])
-        trainer.fit(self.loader(), self.loader())
-        trainer.predict(self.loader())
+        callbacks = [recorder]
+        trainer = self.trainer()
+        trainer.fit(self.loader(), self.loader(), callbacks=callbacks)
+        trainer.predict(self.loader(), callbacks=callbacks)
         self.assertNotIn("on_exception", recorder.calls)
 
 
@@ -926,8 +955,8 @@ class TestEvaluate(TrainerTestCase):
             def on_test_begin(self):
                 prepared.append(self.session._prepare_dataloader(loader))
 
-        trainer = self.trainer(callbacks=[Capture()])
-        trainer.fit(self.loader(), loader, epochs=2)
+        trainer = self.trainer()
+        trainer.fit(self.loader(), loader, epochs=2, callbacks=[Capture()])
         self.assertIsNot(prepared[0], loader)
         self.assertIs(prepared[0], prepared[1])
 
@@ -958,10 +987,10 @@ class TestEvaluate(TrainerTestCase):
                     self.done = True
                     self.session.evaluate(inner)
 
-        trainer = self.trainer(
-            trainer.model, metrics=metrics, callbacks=[Nested()]
+        trainer = self.trainer(trainer.model, metrics=metrics)
+        np.testing.assert_array_equal(
+            trainer.evaluate(outer, callbacks=[Nested()])["cm"], expected
         )
-        np.testing.assert_array_equal(trainer.evaluate(outer)["cm"], expected)
 
     def test_leaves_given_metrics_untouched(self):
         # metrics shared with other code keep their state, and that state
@@ -1119,10 +1148,12 @@ class TestSchedules(TrainerTestCase):
             accumulation=2,
             lr_scheduler="linear",
             warmup=2,
-            callbacks=[LearningRate()],
         )
         session = fit_session(
-            trainer, self.loader(self.data[:40], batch_size=8), epochs=2
+            trainer,
+            self.loader(self.data[:40], batch_size=8),
+            epochs=2,
+            callbacks=[LearningRate()],
         )
         # 3 steps per epoch: warmup to 1.0 over 2 steps, then decay to 0
         np.testing.assert_allclose(lrs, [0.0, 0.5, 1.0, 0.75, 0.5, 0.25])
@@ -1212,7 +1243,6 @@ class TestValidation(TrainerTestCase):
             ),
             (dict(lr_scheduler="linear"), ValueError, "optimizer"),
             (dict(optimizer=optimizer, warmup=2), ValueError, "named"),
-            (dict(callbacks=[object()]), TypeError, "Callback"),
             (
                 dict(gradient_accumulation_steps=0),
                 ValueError,
@@ -1240,9 +1270,12 @@ class TestValidation(TrainerTestCase):
             def on_test_begin(self):
                 seen.append(self.session.accelerator)
 
-        trainer = self.trainer(callbacks=[Capture()])
-        session = fit_session(trainer, self.loader(), self.loader())
-        trainer.evaluate(self.loader())
+        callbacks = [Capture()]
+        trainer = self.trainer()
+        session = fit_session(
+            trainer, self.loader(), self.loader(), callbacks=callbacks
+        )
+        trainer.evaluate(self.loader(), callbacks=callbacks)
         with self.assertRaisesRegex(RuntimeError, "during a fit"):
             session.accelerator
         # the evaluation inside fit shares its accelerator; evaluate gets one
@@ -1300,40 +1333,49 @@ class TestValidation(TrainerTestCase):
         trainer = Custom(
             Classifier(),
             functools.partial(torch.optim.SGD, lr=0.5),
-            callbacks=[Capture()],
             cpu=True,
             mixed_precision="no",
         )
-        trainer.fit(self.loader())
-        trainer.evaluate(self.loader())
-        trainer.predict(self.loader())
+        callbacks = [Capture()]
+        trainer.fit(self.loader(), callbacks=callbacks)
+        trainer.evaluate(self.loader(), callbacks=callbacks)
+        trainer.predict(self.loader(), callbacks=callbacks)
         self.assertEqual((len(created), len(seen)), (3, 3))
         for a, b in zip(seen, created):
             self.assertIs(a, b)
 
     def test_settings_are_fixed(self):
         # validated when the trainer is created
-        trainer = self.trainer(callbacks=[Recorder()])
+        trainer = self.trainer()
         replacements = {
             "model": Classifier(),
             "metrics": {"acc": Accuracy()},
-            "callbacks": [Recorder()],
             "max_grad_norm": 1.0,
             "mixed_precision": "bf16",
             "gradient_accumulation_steps": 2,
             "cpu": False,
         }
-        # a tuple, so that the list cannot be changed in place either
-        self.assertIsInstance(trainer.callbacks, tuple)
         for used in (False, True):
             if used:
-                trainer.fit(self.loader())
+                trainer.fit(self.loader(), callbacks=[Recorder()])
             for name, value in replacements.items():
                 with self.subTest(name=name, used=used):
                     before = getattr(trainer, name)
                     with self.assertRaises(AttributeError):
                         setattr(trainer, name, value)
                     self.assertIs(getattr(trainer, name), before)
+
+    def test_rejects_callbacks_that_are_not_callbacks(self):
+        trainer = self.trainer()
+        calls = {
+            "fit": trainer.fit,
+            "evaluate": trainer.evaluate,
+            "predict": trainer.predict,
+        }
+        for name, call in calls.items():
+            with self.subTest(name):
+                with self.assertRaisesRegex(TypeError, "Callback"):
+                    call(self.loader(), callbacks=[object()])
 
     def test_fit_arguments(self):
         trainer = self.trainer()
@@ -1428,9 +1470,9 @@ def _run_on_two_processes(scenario):
         model = SomeTermsClassifier()
         optimizer = functools.partial(torch.optim.SGD, lr=0.5)
         callbacks = [StopOnMainProcess()] if scenario == "stop" else []
-        trainer = Trainer(model, optimizer, callbacks=callbacks, cpu=True)
+        trainer = Trainer(model, optimizer, cpu=True)
         loader = DataLoader(INDEXED_DATA, batch_size=16)
-        session = fit_session(trainer, loader, epochs=2)
+        session = fit_session(trainer, loader, epochs=2, callbacks=callbacks)
         output = (
             session.global_step if scenario == "stop" else session.history[:1]
         )

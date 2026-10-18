@@ -80,13 +80,13 @@ def train(out: Path, name: str, kill_at: int | None) -> None:
         functools.partial(torch.optim.AdamW, lr=1e-3),
         lr_scheduler="linear",
         warmup=0.1,
-        callbacks=callbacks,
         cpu=True,
     )
     history = trainer.fit(
         DataLoader(train, 32, shuffle=True),
         DataLoader(valid, 128),
         epochs=EPOCHS,
+        callbacks=callbacks,
     )
     torch.save(model.state_dict(), out / f"{name}.pt")
     result = {"history": history, "batches": count.count}

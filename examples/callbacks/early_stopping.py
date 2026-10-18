@@ -75,6 +75,11 @@ def main(out: Path) -> None:
         model,
         functools.partial(torch.optim.AdamW, lr=LR),
         metrics={"accuracy": Accuracy()},
+    )
+    history = trainer.fit(
+        train,
+        valid,
+        epochs=MAX_EPOCHS,
         callbacks=[
             ProgbarLogger(),
             CSVLogger(out / "history.csv"),
@@ -85,7 +90,6 @@ def main(out: Path) -> None:
             early_stopping,
         ],
     )
-    history = trainer.fit(train, valid, epochs=MAX_EPOCHS)
 
     valid_losses = [logs["valid_loss"] for logs in history]
     best_epoch = min(range(len(history)), key=valid_losses.__getitem__)

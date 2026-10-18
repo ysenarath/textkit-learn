@@ -49,12 +49,14 @@ def fit(out: Path, callbacks: list) -> tuple[Trainer, list[dict]]:
     trainer = Trainer(
         model,
         functools.partial(torch.optim.AdamW, lr=1e-3),
-        callbacks=callbacks,
         cpu=True,
     )
     # not shuffled, so the bad example is always in the same batch
     history = trainer.fit(
-        DataLoader(train, BATCH_SIZE), DataLoader(valid, 128), epochs=5
+        DataLoader(train, BATCH_SIZE),
+        DataLoader(valid, 128),
+        epochs=5,
+        callbacks=callbacks,
     )
     return trainer, history
 

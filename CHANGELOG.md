@@ -67,6 +67,10 @@ modules listed under Removed.
   or `predict` opens a new `Session`, which prepares the model, holds
   the call's progress, and is closed and dropped when the call returns,
   so one call does not affect the next.
+- Callbacks, which keep state, are given to each call, as in Keras:
+  `fit(train, valid, epochs=3, callbacks=[...])`, and likewise
+  `evaluate`, `predict` and `calibrate`. The caller keeps them and reads
+  their state afterwards, e.g. `ModelCheckpoint.best`.
 - The trainer builds each session's optimizer, scheduler and
   `Accelerator` with `create_optimizer`, `create_scheduler` and
   `create_accelerator`. A subclass overrides them to build these

@@ -6,7 +6,7 @@ from __future__ import annotations
 import contextlib
 import copy
 import math
-from collections.abc import Generator, Mapping
+from collections.abc import Generator, Iterable, Mapping
 from typing import TYPE_CHECKING, Any
 
 import torch
@@ -66,8 +66,8 @@ class Session:
     model : Module
         The trainer's model.
     callbacks : list of Callback
-        The callbacks of the session, a copy of the trainer's; a change
-        to it during a hook applies from the next hook of this session.
+        The callbacks given to the call; a change to the list during a
+        hook applies from the next hook of this session.
     optimizer : Optimizer or None
         The optimizer of this `fit`, from `Trainer.create_optimizer`;
         None for `evaluate` and `predict`.
@@ -99,10 +99,12 @@ class Session:
     `tklearn.nn.callbacks.BackupAndRestore`.
     """
 
-    def __init__(self, trainer: Trainer) -> None:
+    def __init__(
+        self, trainer: Trainer, callbacks: Iterable[Callback] = ()
+    ) -> None:
         self.trainer = trainer
         self.model: Module = trainer.model
-        self.callbacks: list[Callback] = list(trainer.callbacks)
+        self.callbacks: list[Callback] = list(callbacks)
         self.optimizer: Optimizer | None = None
         self.scheduler: LRScheduler | None = None
         self.history: list[dict[str, Any]] = []

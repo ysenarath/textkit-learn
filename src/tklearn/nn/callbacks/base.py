@@ -19,7 +19,7 @@ logger = get_logger("tklearn.nn.trainer")
 
 class Callback:
     """Code that runs at fixed points of `Trainer.fit`, `evaluate` and
-    `predict`.
+    `predict`, given to each call as ``callbacks=[...]``.
 
     Override the hooks you need. In a hook, `session` is the `Session`
     the callback is in (``model``, ``callbacks``, ``optimizer``,
@@ -58,10 +58,12 @@ class Callback:
     wrappers (`wrapper`), which enclose the others.
 
     A callback keeps the session it is in, so it can be in one at a
-    time: a session raises when one of its callbacks is in another
-    session, e.g. of a trainer evaluating from a callback. A callback
-    evaluates within its own session with ``self.session.evaluate``. One
-    callback can serve several sessions in turn.
+    time: a session raises when one of its callbacks is in another,
+    e.g. when a callback passes itself to a trainer's `evaluate`. A
+    callback evaluates within its own session with
+    ``self.session.evaluate``. One callback can serve several calls in
+    turn, and keeps its state from one to the next, e.g. the best value
+    of `ModelCheckpoint`.
 
     Attributes
     ----------

@@ -13,6 +13,7 @@ from tklearn.nn.calibration import (
     calibrate,
     fit_temperature,
 )
+from tklearn.nn.callbacks import Callback
 
 
 def sample(probs, activation, generator):
@@ -212,6 +213,21 @@ class TestCalibrate(TrainerTestCase):
         ).evaluate(test)
         self.assertEqual(after["accuracy"], before["accuracy"])
         self.assertLess(after["loss"], before["loss"])
+
+    def test_gives_the_callbacks_the_predict_hooks(self):
+        calls = []
+
+        class Record(Callback):
+            def on_predict_begin(self):
+                calls.append("begin")
+
+            def on_predict_end(self):
+                calls.append("end")
+
+        trainer = Trainer(Classifier(), cpu=True)
+        valid = DataLoader(make_data(64, 3, seed=1), 32)
+        calibrate(trainer, valid, activation="softmax", callbacks=[Record()])
+        self.assertEqual(calls, ["begin", "end"])
 
     def test_outputs(self):
         model = Classifier()

@@ -78,8 +78,8 @@ class BackupAndRestore(Callback):
     Examples
     --------
     >>> backup = BackupAndRestore("runs/42/backup", save_freq=500)
-    >>> trainer = Trainer(model, optimizer, callbacks=[backup])
-    >>> trainer.fit(train_loader, valid_loader, epochs=10)
+    >>> trainer = Trainer(model, optimizer)
+    >>> trainer.fit(train_loader, valid_loader, epochs=10, callbacks=[backup])
     """
 
     # restores before the other callbacks begin, and backs up after they

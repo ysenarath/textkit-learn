@@ -26,7 +26,7 @@ class LambdaCallback(Callback):
     >>> log_epochs = LambdaCallback(
     ...     on_epoch_end=lambda logs: print(logs["loss"])
     ... )
-    >>> trainer = Trainer(model, optimizer, callbacks=[log_epochs])
+    >>> trainer.fit(train_loader, epochs=3, callbacks=[log_epochs])
 
     The functions do not get the `Callback.session`; subclass
     `Callback` to read it.

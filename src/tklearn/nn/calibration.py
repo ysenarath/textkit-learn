@@ -13,7 +13,7 @@ its own.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from typing import TYPE_CHECKING, Any, Literal
 
 import torch
@@ -23,6 +23,7 @@ from torch.utils.data import DataLoader
 from tklearn.nn.module import Module
 
 if TYPE_CHECKING:
+    from tklearn.nn.callbacks import Callback
     from tklearn.nn.trainer import Trainer
 
 __all__ = [
@@ -45,6 +46,7 @@ def calibrate(
     activation: Activation,
     per_label: bool = False,
     shrinkage: float = 1.0,
+    callbacks: Iterable[Callback] | None = None,
 ) -> CalibratedModule:
     """Calibrate the model of `trainer` on the labelled `dataloader`.
 
@@ -58,7 +60,8 @@ def calibrate(
     logits per example; ``"sigmoid"`` for a binary classifier with one
     logit per example, or a multilabel one. `per_label` and `shrinkage`
     fit one temperature per label of a multilabel classifier (see
-    `fit_temperature`).
+    `fit_temperature`). `callbacks`, e.g. a `ProgbarLogger`, get the
+    hooks of the `predict`.
 
     Examples
     --------
@@ -67,7 +70,7 @@ def calibrate(
     tensor(2.7100)
     >>> Trainer(calibrated, metrics=metrics).evaluate(test_loader)
     """
-    outputs = trainer.predict(dataloader)
+    outputs = trainer.predict(dataloader, callbacks=callbacks)
     if not isinstance(outputs, Mapping) or "logits" not in outputs:
         msg = 'calibrate needs predict_step to return the "logits"'
         raise ValueError(msg)

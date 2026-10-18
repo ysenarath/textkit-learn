@@ -65,6 +65,14 @@ def train(out: Path, lr: float, delay: float) -> tuple[list[dict], dict]:
         model,
         functools.partial(torch.optim.AdamW, lr=lr),
         metrics={"accuracy": Accuracy(), "f1": F1(average="macro")},
+    )
+    tracing = OpenTelemetryCallback(
+        tracer_provider=provider, log_every_n_steps=LOG_EVERY_N_STEPS
+    )
+    history = trainer.fit(
+        train_loader,
+        valid_loader,
+        epochs=MAX_EPOCHS,
         callbacks=[
             ModelCheckpoint(
                 out / "checkpoints" / f"lr={lr:g}.pt",
@@ -77,14 +85,13 @@ def train(out: Path, lr: float, delay: float) -> tuple[list[dict], dict]:
                 on_train_batch_end=lambda batch, logs: time.sleep(delay)
             ),
             # last in the list, but it encloses the callbacks above
-            OpenTelemetryCallback(
-                tracer_provider=provider, log_every_n_steps=LOG_EVERY_N_STEPS
-            ),
+            tracing,
         ],
     )
-    history = trainer.fit(train_loader, valid_loader, epochs=MAX_EPOCHS)
     # outside fit, evaluate is a span of its own
-    test_results = trainer.evaluate(test_loader, prefix="test_")
+    test_results = trainer.evaluate(
+        test_loader, prefix="test_", callbacks=[tracing]
+    )
     return history, test_results
 
 

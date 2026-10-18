@@ -55,10 +55,10 @@ class TestOpenTelemetryCallback(TrainerTestCase):
 
     def test_traces_a_fit(self):
         callback = self.callback(log_every_n_steps=2)
-        trainer = self.trainer(
-            metrics={"acc": Accuracy()}, callbacks=[callback]
+        trainer = self.trainer(metrics={"acc": Accuracy()})
+        history = trainer.fit(
+            self.loader(), self.loader(), epochs=2, callbacks=[callback]
         )
-        history = trainer.fit(self.loader(), self.loader(), epochs=2)
         # in the order they end; 6 batches per epoch, one step each
         per_epoch = [*["steps"] * 3, "evaluate", "epoch"]
         self.assertEqual(
@@ -83,12 +83,11 @@ class TestOpenTelemetryCallback(TrainerTestCase):
         callback = self.callback()
         trainer = self.trainer(
             metrics={"acc": Accuracy()},
-            callbacks=[callback],
             lr_scheduler="linear",
             warmup=2,
             max_grad_norm=1.0,
         )
-        trainer.fit(self.loader(), epochs=2)
+        trainer.fit(self.loader(), epochs=2, callbacks=[callback])
         attributes = self.spans("fit")[0].attributes
         self.assertTrue(attributes["model.class"].endswith("Classifier"))
         self.assertEqual(attributes["model.parameters"], 4 * 2 + 2)
@@ -118,8 +117,8 @@ class TestOpenTelemetryCallback(TrainerTestCase):
             on_train_batch_end=lambda batch, logs: losses.append(logs["loss"])
         )
         callback = self.callback(log_every_n_steps=4)
-        trainer = self.trainer(callbacks=[record, callback])
-        trainer.fit(self.loader(), epochs=2)
+        trainer = self.trainer()
+        trainer.fit(self.loader(), epochs=2, callbacks=[record, callback])
         steps = self.spans("steps")
         self.assertEqual([s.attributes["step"] for s in steps], [4, 8, 12])
         self.assertEqual([s.attributes["epoch"] for s in steps], [0, 1, 1])
@@ -140,8 +139,8 @@ class TestOpenTelemetryCallback(TrainerTestCase):
         # the means are summed on it and converted once per steps span
         FloatCounter.reads = 0
         callback = self.callback(log_every_n_steps=2)
-        trainer = self.trainer(ProbeClassifier(), callbacks=[callback])
-        trainer.fit(self.loader(), epochs=1)
+        trainer = self.trainer(ProbeClassifier())
+        trainer.fit(self.loader(), epochs=1, callbacks=[callback])
         self.assertEqual(FloatCounter.reads, 0)
         steps = self.spans("steps")
         self.assertEqual(len(steps), 3)
@@ -150,8 +149,8 @@ class TestOpenTelemetryCallback(TrainerTestCase):
 
     def test_steps_with_gradient_accumulation(self):
         callback = self.callback(log_every_n_steps=1)
-        trainer = self.trainer(accumulation=2, callbacks=[callback])
-        trainer.fit(self.loader(), epochs=1)
+        trainer = self.trainer(accumulation=2)
+        trainer.fit(self.loader(), epochs=1, callbacks=[callback])
         steps = self.spans("steps")
         self.assertEqual([s.attributes["step"] for s in steps], [1, 2, 3])
 
@@ -164,10 +163,8 @@ class TestOpenTelemetryCallback(TrainerTestCase):
                     norms.append(float(self.session.grad_norm))
 
         callback = self.callback(log_every_n_steps=2)
-        trainer = self.trainer(
-            max_grad_norm=1e-3, callbacks=[Record(), callback]
-        )
-        trainer.fit(self.loader(), epochs=1)
+        trainer = self.trainer(max_grad_norm=1e-3)
+        trainer.fit(self.loader(), epochs=1, callbacks=[Record(), callback])
         steps = self.spans("steps")
         self.assertEqual(len(steps), 3)
         for span, norm in zip(steps, norms):
@@ -175,13 +172,14 @@ class TestOpenTelemetryCallback(TrainerTestCase):
             self.assertGreater(span.attributes["grad_norm"], 1e-3)
 
     def test_evaluate_and_predict_in_the_current_span(self):
-        trainer = self.trainer(
-            metrics={"acc": Accuracy()}, callbacks=[self.callback()]
-        )
+        callbacks = [self.callback()]
+        trainer = self.trainer(metrics={"acc": Accuracy()})
         tracer = self.provider.get_tracer("test")
         with tracer.start_as_current_span("experiment"):
-            results = trainer.evaluate(self.loader(), prefix="test_")
-            trainer.predict(self.loader())
+            results = trainer.evaluate(
+                self.loader(), prefix="test_", callbacks=callbacks
+            )
+            trainer.predict(self.loader(), callbacks=callbacks)
         (experiment,) = self.spans("experiment")
         (evaluate,) = self.spans("evaluate")
         (predict,) = self.spans("predict")
@@ -193,10 +191,10 @@ class TestOpenTelemetryCallback(TrainerTestCase):
 
     def test_values_attributes_cannot_hold(self):
         callback = self.callback()
-        trainer = self.trainer(
-            metrics={"cm": ConfusionMatrix()}, callbacks=[callback]
+        trainer = self.trainer(metrics={"cm": ConfusionMatrix()})
+        history = trainer.fit(
+            self.loader(), self.loader(), epochs=1, callbacks=[callback]
         )
-        history = trainer.fit(self.loader(), self.loader(), epochs=1)
         attributes = self.spans("epoch")[0].attributes
         # a confusion matrix, as JSON text
         self.assertEqual(
@@ -226,9 +224,9 @@ class TestOpenTelemetryCallback(TrainerTestCase):
                     raise RuntimeError("stop")
 
         callback = self.callback()
-        trainer = self.trainer(callbacks=[callback, Fail()])
+        trainer = self.trainer()
         with self.assertRaises(RuntimeError):
-            trainer.fit(self.loader(), epochs=2)
+            trainer.fit(self.loader(), epochs=2, callbacks=[callback, Fail()])
         # ended by on_exception, innermost first, and no longer current
         self.assertFalse(trace.get_current_span().get_span_context().is_valid)
         spans = [s for s in self.spans() if s.name != "steps"]
@@ -247,9 +245,9 @@ class TestOpenTelemetryCallback(TrainerTestCase):
 
     def test_spans_of_an_evaluate_that_raised_end_with_an_error(self):
         model = RaisingClassifier("predict_step", 2)
-        trainer = self.trainer(model, callbacks=[self.callback()])
+        trainer = self.trainer(model)
         with self.assertRaises(RuntimeError):
-            trainer.evaluate(self.loader())
+            trainer.evaluate(self.loader(), callbacks=[self.callback()])
         self.assertFalse(trace.get_current_span().get_span_context().is_valid)
         [span] = self.spans()
         self.assertEqual(span.name, "evaluate")
@@ -257,27 +255,37 @@ class TestOpenTelemetryCallback(TrainerTestCase):
         self.assertEqual([e.name for e in span.events], ["exception"])
 
     def test_epochs_only(self):
-        trainer = self.trainer(callbacks=[self.callback(log_every_n_steps=0)])
-        trainer.fit(self.loader(), epochs=2)
+        trainer = self.trainer()
+        trainer.fit(
+            self.loader(),
+            epochs=2,
+            callbacks=[self.callback(log_every_n_steps=0)],
+        )
         self.assertEqual(
             [s.name for s in self.spans()], ["epoch", "epoch", "fit"]
         )
 
     def test_only_the_main_process_records(self):
-        trainer = self.trainer(callbacks=[self.callback(log_every_n_steps=2)])
+        callbacks = [self.callback(log_every_n_steps=2)]
+        trainer = self.trainer()
         with mock.patch.object(
             Accelerator, "is_main_process", new_callable=mock.PropertyMock
         ) as is_main_process:
             is_main_process.return_value = False
-            trainer.fit(self.loader(), self.loader(), epochs=1)
-            trainer.predict(self.loader())
+            trainer.fit(
+                self.loader(), self.loader(), epochs=1, callbacks=callbacks
+            )
+            trainer.predict(self.loader(), callbacks=callbacks)
         self.assertEqual(self.spans(), [])
 
     def test_without_an_sdk(self):
         # the global provider records nothing until an SDK sets one
-        trainer = self.trainer(callbacks=[OpenTelemetryCallback()])
-        trainer.fit(self.loader(), self.loader(), epochs=1)
-        trainer.evaluate(self.loader())
+        callbacks = [OpenTelemetryCallback()]
+        trainer = self.trainer()
+        trainer.fit(
+            self.loader(), self.loader(), epochs=1, callbacks=callbacks
+        )
+        trainer.evaluate(self.loader(), callbacks=callbacks)
         self.assertEqual(self.spans(), [])
 
     def test_spans_are_current_whatever_the_order(self):
@@ -299,8 +307,13 @@ class TestOpenTelemetryCallback(TrainerTestCase):
             on_epoch_end=note("epoch_end"),
             on_train_end=note("train_end"),
         )
-        trainer = self.trainer(callbacks=[early, self.callback()])
-        trainer.fit(self.loader(), self.loader(), epochs=1)
+        trainer = self.trainer()
+        trainer.fit(
+            self.loader(),
+            self.loader(),
+            epochs=1,
+            callbacks=[early, self.callback()],
+        )
         (fit,) = self.spans("fit")
         (epoch,) = self.spans("epoch")
         (evaluate,) = self.spans("evaluate")
@@ -329,8 +342,8 @@ class TestOpenTelemetryCallback(TrainerTestCase):
                 with tracer.start_as_current_span("forward"):
                     return super().training_step(batch)
 
-        trainer = self.trainer(Traced(), callbacks=[self.callback()])
-        trainer.fit(self.loader(), epochs=1)
+        trainer = self.trainer(Traced())
+        trainer.fit(self.loader(), epochs=1, callbacks=[self.callback()])
         (epoch,) = self.spans("epoch")
         forwards = self.spans("forward")
         self.assertEqual(len(forwards), 6)
@@ -353,8 +366,10 @@ class TestOpenTelemetryCallback(TrainerTestCase):
                 ),
                 self.callback(),
             ]
-            trainer = self.trainer(callbacks=callbacks)
-            trainer.fit(self.loader(), self.loader(), epochs=4)
+            trainer = self.trainer()
+            trainer.fit(
+                self.loader(), self.loader(), epochs=4, callbacks=callbacks
+            )
         (fit,) = self.spans("fit")
         epochs = self.spans("epoch")
         self.assertEqual(len(epochs), 4)
@@ -399,10 +414,12 @@ class TestOpenTelemetryCallback(TrainerTestCase):
             def training_step(self, batch):
                 return super().training_step(batch) * math.nan
 
-        trainer = self.trainer(
-            NaN(), callbacks=[TerminateOnNaN(), self.callback()]
+        trainer = self.trainer(NaN())
+        trainer.fit(
+            self.loader(),
+            epochs=2,
+            callbacks=[TerminateOnNaN(), self.callback()],
         )
-        trainer.fit(self.loader(), epochs=2)
         (epoch,) = self.spans("epoch")
         (event,) = epoch.events
         self.assertEqual(event.name, "terminate_on_nan")

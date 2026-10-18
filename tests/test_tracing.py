@@ -314,12 +314,14 @@ class TestTraining(TrainerTestCase, TracingTestCase):
         callback = OpenTelemetryCallback(
             tracer_provider=provider, log_every_n_steps=3
         )
+        callbacks = [callback]
         trainer = self.trainer(
             metrics={"acc": Accuracy(), "cm": ConfusionMatrix()},
-            callbacks=[callback],
         )
-        history = trainer.fit(self.loader(), self.loader(), epochs=2)
-        trainer.evaluate(self.loader(), prefix="test_")
+        history = trainer.fit(
+            self.loader(), self.loader(), epochs=2, callbacks=callbacks
+        )
+        trainer.evaluate(self.loader(), prefix="test_", callbacks=callbacks)
         spans = load_spans(self.dir)
         self.assertEqual(
             list(spans["name"]),

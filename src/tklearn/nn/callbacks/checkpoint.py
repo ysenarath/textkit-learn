@@ -69,8 +69,10 @@ class ModelCheckpoint(MonitorCallback):
     >>> checkpoint = ModelCheckpoint(
     ...     "ckpt/best.safetensors", monitor="valid_f1", save_best_only=True
     ... )
-    >>> trainer = Trainer(model, optimizer, callbacks=[checkpoint])
-    >>> trainer.fit(train_loader, valid_loader, epochs=10)
+    >>> trainer = Trainer(model, optimizer)
+    >>> trainer.fit(
+    ...     train_loader, valid_loader, epochs=10, callbacks=[checkpoint]
+    ... )
     >>> safetensors.torch.load_model(model, "ckpt/best.safetensors")
     """
 

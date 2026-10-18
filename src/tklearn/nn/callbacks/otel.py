@@ -98,11 +98,11 @@ class OpenTelemetryCallback(Callback):
     >>> provider = TracerProvider()
     >>> provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
     >>> trace.set_tracer_provider(provider)
-    >>> callback = OpenTelemetryCallback()
-    >>> trainer = Trainer(model, optimizer, callbacks=[callback])
+    >>> trainer = Trainer(model, optimizer)
+    >>> callbacks = [OpenTelemetryCallback()]
     >>> with trace.get_tracer(__name__).start_as_current_span("experiment"):
-    ...     trainer.fit(train_loader, valid_loader, epochs=3)
-    ...     trainer.evaluate(test_loader, prefix="test_")
+    ...     trainer.fit(train_loader, epochs=3, callbacks=callbacks)
+    ...     trainer.evaluate(test_loader, prefix="test_", callbacks=callbacks)
     """
 
     wrapper = True
