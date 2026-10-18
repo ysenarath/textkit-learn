@@ -6,6 +6,8 @@ rest are ready-made:
 
 - `EarlyStopping` and `TerminateOnNaN` stop training.
 - `ModelCheckpoint` saves the model weights.
+- `BackupAndRestore` backs up the state of `fit`, and resumes an
+  interrupted fit from it.
 - `ReduceLROnPlateau` lowers the learning rate when progress stalls.
 - `ProgbarLogger` shows progress bars, and `CSVLogger` writes the epoch
   logs to a file.
@@ -17,6 +19,7 @@ rest are ready-made:
 ``LearningRateScheduler``).
 """
 
+from tklearn.nn.callbacks.backup_and_restore import BackupAndRestore
 from tklearn.nn.callbacks.base import Callback, Dispatcher
 from tklearn.nn.callbacks.checkpoint import ModelCheckpoint
 from tklearn.nn.callbacks.csv_logger import CSVLogger
@@ -28,6 +31,7 @@ from tklearn.nn.callbacks.reduce_lr import ReduceLROnPlateau
 from tklearn.nn.callbacks.terminate_on_nan import TerminateOnNaN
 
 __all__ = [
+    "BackupAndRestore",
     "CSVLogger",
     "Callback",
     "Dispatcher",

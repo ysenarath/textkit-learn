@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import Any
 
 import torch
 from accelerate import Accelerator
@@ -62,6 +63,24 @@ class RunningMean:
                 )
             self._totals[key] += value
             self._counts[key] = self._counts.get(key, 0) + 1
+
+    def state_dict(self) -> dict[str, Any]:
+        """The sums and counts of this process, for `load_state_dict`.
+
+        Reading the sums waits for the device.
+        """
+        return {
+            "totals": {k: float(v) for k, v in self._totals.items()},
+            "counts": dict(self._counts),
+        }
+
+    def load_state_dict(self, state: Mapping[str, Any]) -> None:
+        """Restore the sums and counts from `state_dict`."""
+        self._totals = {
+            k: torch.tensor(v, dtype=self._dtype, device=self._device)
+            for k, v in state["totals"].items()
+        }
+        self._counts = dict(state["counts"])
 
     def compute(self) -> dict[str, float]:
         """The mean of each value over the batches that logged it.
