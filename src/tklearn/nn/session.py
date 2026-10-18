@@ -321,7 +321,9 @@ class Session:
         )
         metrics.reset()
         input_names = metrics.input_names
-        loss_sum, num_examples, num_batches = 0.0, 0, 0
+        # summed on the device, so that only the end waits for it
+        loss_sum: torch.Tensor | None = None
+        num_examples, num_batches = 0, 0
         self.num_batches = _num_batches(dataloader)
         self._callback("on_test_begin")
         with _eval_mode(self.model):
@@ -340,7 +342,8 @@ class Session:
                     losses = self._gather(
                         example_losses(outputs, batch, self.accelerator.device)
                     )
-                    loss_sum += float(losses.float().sum())
+                    total = losses.to(_sum_dtype(losses.device)).sum()
+                    loss_sum = total if loss_sum is None else loss_sum + total
                     num_examples += losses.numel()
                 if input_names:
                     inputs = {
@@ -354,7 +357,7 @@ class Session:
             raise ValueError(msg)
         results: dict[str, Any] = {}
         if num_examples:
-            results["loss"] = loss_sum / num_examples
+            results["loss"] = float(loss_sum) / num_examples
         results.update(metrics.compute())
         results = {f"{prefix}{k}": v for k, v in results.items()}
         self._callback("on_test_end", results)
@@ -436,6 +439,11 @@ def _eval_mode(model: Module) -> Generator[None]:
             yield
     finally:
         model.train(training)
+
+
+def _sum_dtype(device: torch.device) -> torch.dtype:
+    """float64 for exact sums, except on MPS, which has no float64."""
+    return torch.float32 if device.type == "mps" else torch.float64
 
 
 def _num_batches(dataloader: DataLoader) -> int | None:
