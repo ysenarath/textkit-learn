@@ -365,6 +365,13 @@ class Trainer:
         lists are joined; tuples and mappings are concatenated item by item,
         leaving out the ``"loss"`` of a mapping. The result is on the CPU.
 
+        Tensors and arrays whose other dimensions differ between batches
+        (or processes), such as per-token outputs padded to each batch's
+        longest sequence, are padded at the end to the largest: signed
+        integers with -100, the label index losses and metrics ignore,
+        and the rest, e.g. floats and bools, with 0 (False). Return masks
+        as bools, so that padding reads as masked out.
+
         Parameters
         ----------
         dataloader : DataLoader

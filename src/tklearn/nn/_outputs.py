@@ -13,9 +13,11 @@ import torch
 from tklearn.nn.module import Loss
 
 __all__ = [
+    "PAD_INDEX",
     "BatchLogs",
     "concat",
     "example_losses",
+    "pad_value",
     "split_loss",
 ]
 
@@ -125,16 +127,38 @@ class BatchLogs(Mapping[str, float]):
         return repr(dict(self))
 
 
+#: The padding of integer outputs, the label index that losses and
+#: metrics ignore by convention; other outputs are padded with 0 (False).
+PAD_INDEX = -100
+
+
+def pad_value(dtype: torch.dtype | np.dtype) -> int:
+    """What outputs of `dtype` are padded with: `PAD_INDEX` for signed
+    integers, 0 (False) for the rest, e.g. floats, bools and unsigned
+    integers."""
+    if isinstance(dtype, torch.dtype):
+        signed = not dtype.is_floating_point and dtype.is_signed
+    else:
+        signed = np.issubdtype(dtype, np.signedinteger)
+    return PAD_INDEX if signed else 0
+
+
 def concat(chunks: list[Any]) -> Any:
-    """Concatenate per-batch outputs of the same structure."""
+    """Concatenate per-batch outputs of the same structure.
+
+    Tensors and arrays whose dimensions after the first differ between
+    batches, such as per-token outputs padded to each batch's longest
+    sequence, are padded at the end to the largest size of each
+    dimension, with `pad_value`.
+    """
     first = chunks[0]
     if first is None:
         return None
     if isinstance(first, torch.Tensor):
         _validate_tensor_chunks(first, chunks)
-        return torch.cat(chunks)
+        return torch.cat(_pad_chunks(chunks))
     if isinstance(first, np.ndarray):
-        return np.concatenate(chunks)
+        return np.concatenate(_pad_chunks(chunks))
     if isinstance(first, Mapping):
         _validate_mapping_chunks(first, chunks)
         return {k: concat([chunk[k] for chunk in chunks]) for k in first}
@@ -148,6 +172,35 @@ def concat(chunks: list[Any]) -> Any:
         return [item for chunk in chunks for item in chunk]
     msg = f"cannot concatenate outputs of type {type(first).__name__}"
     raise TypeError(msg)
+
+
+def _pad_chunks(chunks: list[Any]) -> list[Any]:
+    """Tensors or arrays padded at the end of every dimension after the
+    first to the largest size among them."""
+    if len({chunk.ndim for chunk in chunks}) > 1:
+        msg = (
+            "predict_step must return tensors with the same number of "
+            "dimensions for every batch; got "
+            f"{sorted({tuple(chunk.shape) for chunk in chunks})}"
+        )
+        raise ValueError(msg)
+    shape = tuple(max(sizes) for sizes in zip(*(c.shape[1:] for c in chunks)))
+    if all(chunk.shape[1:] == shape for chunk in chunks):
+        return chunks
+    padded = []
+    for chunk in chunks:
+        if chunk.shape[1:] == shape:
+            padded.append(chunk)
+            continue
+        size = (len(chunk), *shape)
+        value = pad_value(chunk.dtype)
+        if isinstance(chunk, torch.Tensor):
+            out = chunk.new_full(size, value)
+        else:
+            out = np.full(size, value, dtype=chunk.dtype)
+        out[tuple(slice(0, n) for n in chunk.shape)] = chunk
+        padded.append(out)
+    return padded
 
 
 def _validate_mapping_chunks(first: Mapping, chunks: list[Mapping]) -> None:

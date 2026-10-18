@@ -1029,6 +1029,42 @@ class TestPredict(TrainerTestCase):
         self.assertEqual(result.second["ids"], x[:, 0].tolist())
         self.assertIsNone(result.second["none"])
 
+    def test_pads_outputs_of_different_lengths(self):
+        # per-token outputs of batches padded to lengths 5, 7 and 6
+        lengths = [5, 7, 6]
+
+        def outputs(batch):
+            n = len(batch["x"])
+            length = lengths[batch["index"][0].item() // 32]
+            return {
+                "labels": torch.ones(n, length, dtype=torch.long),
+                "logits": torch.ones(n, length, 3),
+                "mask": torch.ones(n, length, dtype=torch.bool),
+                "array": np.ones((n, length), dtype=np.int32),
+                "width": torch.ones(n, 2),
+            }
+
+        trainer = self.trainer(OutputModel(outputs))
+        result = trainer.predict(self.loader(INDEXED_DATA, batch_size=32))
+        self.assertEqual(result["labels"].shape, (96, 7))
+        self.assertEqual(result["logits"].shape, (96, 7, 3))
+        self.assertEqual(result["width"].shape, (96, 2))
+        # the first batch, of length 5, is padded with 2 columns
+        self.assertEqual(result["labels"][0].tolist(), [1] * 5 + [-100] * 2)
+        self.assertEqual(result["logits"][0, 5:].tolist(), [[0.0] * 3] * 2)
+        self.assertEqual(result["mask"][0].tolist(), [True] * 5 + [False] * 2)
+        self.assertEqual(result["array"][0].tolist(), [1] * 5 + [-100] * 2)
+        self.assertEqual(result["labels"][40].tolist(), [1] * 7)
+
+    def test_rejects_outputs_with_different_dimensions(self):
+        def outputs(batch):
+            x = batch["x"]
+            return {"x": x[:, :, None] if batch["index"][0] >= 80 else x}
+
+        model = OutputModel(outputs)
+        with self.assertRaisesRegex(ValueError, "number of dimensions"):
+            self.trainer(model).predict(self.loader(INDEXED_DATA))
+
     def test_rejects_scalars(self):
         model = OutputModel(lambda batch: {"mean": batch["x"].mean()})
         with self.assertRaisesRegex(ValueError, "one value per example"):

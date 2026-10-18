@@ -22,6 +22,7 @@ from tklearn.nn._outputs import (
     BatchLogs,
     concat,
     example_losses,
+    pad_value,
     split_loss,
 )
 from tklearn.nn.callbacks import Callback, Dispatcher
@@ -425,7 +426,27 @@ class Session:
             return data
         if isinstance(data, Mapping):
             return {k: self._gather(v) for k, v in data.items()}
-        return self.accelerator.gather_for_metrics(data)
+        return self.accelerator.gather_for_metrics(self._pad(data))
+
+    def _pad(self, data: Any) -> Any:
+        # gathering needs tensors of the same shape on every process: pad
+        # each dimension after the first to the largest, as concat pads
+        # the batches of one process
+        if isinstance(data, (list, tuple)) and not isinstance(data, str):
+            padded = [self._pad(item) for item in data]
+            if hasattr(data, "_fields"):  # namedtuple
+                return type(data)(*padded)
+            return type(data)(padded)
+        if not isinstance(data, torch.Tensor):
+            return data
+        dtype = data.dtype
+        for dim in range(1, data.ndim):
+            data = self.accelerator.pad_across_processes(
+                data, dim=dim, pad_index=pad_value(dtype)
+            )
+        # padding adds the pad index to zeros, which makes bools int64 on
+        # the processes that pad
+        return data.to(dtype)
 
 
 @contextlib.contextmanager

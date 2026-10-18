@@ -119,8 +119,11 @@ modules listed under Removed.
   `CSVLogger` and `OpenTelemetryCallback` close their bars, file and
   spans there.
 - `Session.grad_norm` holds the gradient norm before clipping.
-- `evaluate` sums the loss on the device, so it no longer waits for it
-  on every batch.
+- `predict` pads tensors and arrays whose dimensions after the first
+  differ between batches or processes, such as per-token outputs of
+  batches padded to different lengths, to the largest: signed integers
+  with -100 and the rest with 0 (False). `evaluate` sums the loss on the
+  device, so it no longer waits for it on every batch.
 - `RunningMean` (`tklearn.nn.running_mean`) averages logged values over
   batches and every process, as `fit` does for each epoch; a callback can
   average the batch logs over a window the same way. It sums on the
