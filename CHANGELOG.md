@@ -234,6 +234,9 @@ modules listed under Removed.
 - `extract_mentions(..., exact_form=False)` makes the lemma filter
   explicit and `stopwords` accepts a custom list. `extract_relations`
   returns all relations by default.
+- New. `tklearn kb senses WORD`, `relations WORD`, `mentions TEXT` and
+  `augment TEXT` query the Wiktionary store from the command line, or a
+  `TableStore` with `tklearn kb --path DIR ...`.
 
 ### Embeddings (`tklearn.embeddings`)
 

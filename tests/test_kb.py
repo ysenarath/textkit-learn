@@ -10,7 +10,9 @@ from unittest import mock
 
 import numpy as np
 import orjson
+from click.testing import CliRunner
 
+from tklearn.cli import main
 from tklearn.embeddings import Embedding
 from tklearn.kb import (
     Augmentation,
@@ -510,6 +512,58 @@ class TestBuildEmbeddings(unittest.TestCase):
         embedding = FakeEmbedding("other")
         build_embeddings(embedding, self.path, batch_size=1)
         self.assertEqual(embedding.calls, 2)
+
+
+class TestCommand(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.path = Path(self.tmp.name) / "tiny"
+        write_tiny_store(self.path)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def invoke(self, *args):
+        result = CliRunner().invoke(main, ["kb", "--path", self.path, *args])
+        self.assertEqual(result.exit_code, 0, result.output)
+        return result.output.splitlines()
+
+    def test_senses(self):
+        self.assertEqual(self.invoke("senses", "dog"), ["#0\ta canine"])
+
+    def test_relations(self):
+        self.assertEqual(
+            self.invoke("relations", "dog"),
+            ["dog#0\thypernym\tanimal", "dog#0\tsynonym\thound"],
+        )
+        self.assertEqual(
+            self.invoke("relations", "dog", "-s", "0", "-p", "synonym"),
+            ["dog#0\tsynonym\thound"],
+        )
+
+    def test_mentions(self):
+        self.assertEqual(
+            self.invoke("mentions", "The happy dogs."),
+            [
+                "happy (4-9)",
+                "  happy#1\tfeeling joy",
+                "dogs (10-14)",
+                "  dog#0\ta canine",
+            ],
+        )
+
+    def test_augment(self):
+        lines = self.invoke("augment", "The happy dogs.", "-p", "hypernym")
+        self.assertEqual(lines, ["The happy animal."])
+
+    def test_defaults_to_wiktionary(self):
+        with mock.patch(
+            "tklearn.kb.WiktionaryStore",
+            side_effect=lambda: TableStore(self.path),
+        ) as store:
+            result = CliRunner().invoke(main, ["kb", "senses", "happy"])
+        self.assertEqual(result.output, "#1\tfeeling joy\n")
+        store.assert_called_once_with()
 
 
 if __name__ == "__main__":
