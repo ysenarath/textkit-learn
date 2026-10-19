@@ -159,3 +159,5 @@ agentic_examples/*
 /projects/
 examples/hf_trainer_comparison/
 /backups/
+/AGENTS.md
+/.agents/
