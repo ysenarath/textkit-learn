@@ -1,538 +1,72 @@
 from __future__ import annotations
 
 import functools
-import gzip
 import os
-import pickle
-import re
 import shutil
-import subprocess
-from collections import defaultdict
-from collections.abc import Mapping
-from dataclasses import dataclass
+import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
 
-import numpy as np
-import requests
-from datasets import Dataset
-from huggingface_hub import HfApi
-from tqdm import auto as tqdm
+from huggingface_hub import snapshot_download
 
-from tklearn import config, logging
-from tklearn.exceptions import UnexpectedValueError
-from tklearn.kb.base import KnowledgeStore
-from tklearn.kb.lexicon import Lexicon
-from tklearn.kb.triple_store import TripleStore, load_pickle
-from tklearn.kb.wiktionary.models import Sense, Word, parse_jsonl
-from tklearn.utils.hf import suppress_hf_output
-
-if TYPE_CHECKING:
-    from sentence_transformers import SentenceTransformer
+from tklearn import config
+from tklearn.kb.table_store import FORMAT_VERSION, TableStore
 
 __all__ = [
-    "WiktionaryProcessor",
     "WiktionaryStore",
 ]
 
-logger = logging.get_logger(__name__)
-G = int | None
-WS = tuple[str, G]
-
-WIKTIONARY_URL = "https://kaikki.org/dictionary/raw-wiktextract-data.jsonl.gz"
-# glosses are embedded with this model; the cached embeddings depend on it
-GLOSS_EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
-SUPPORTED_PREDICATES = {
-    "synonym",
-    "antonym",
-    "hypernym",
-    "hyponym",
-    "category",
-}
+TABLES = [
+    "glosses.parquet",
+    "senses.parquet",
+    "lexicon.parquet",
+    "triples.parquet",
+]
 
 
-def count_lines_fast(path):
-    return int(subprocess.check_output(f"wc -l {path}", shell=True).split()[0])
-
-
-def setup_wiktionary_words(
-    extracted_path: Path, wiktionary_path: Path, language: str = "en"
-) -> bool:
-    words = []
-    data_iter = parse_jsonl(extracted_path)
-    num_lines = count_lines_fast(extracted_path)
-    if language in {"en", "english"}:
-        languages = {"en", "english"}
-    else:
-        raise NotImplementedError(f"Language {language} not supported.")
-    desc = "Caching Wiktionary"
-    for wd in tqdm.tqdm(data_iter, total=num_lines, desc=desc):
-        if wd.lang is not None and (
-            wd.lang.lower() not in languages
-            or wd.lang_code.lower() not in languages
-        ):
-            continue
-        words.append(wd)
-    with open(wiktionary_path, "wb") as f:
-        pickle.dump(words, f)
-    return True
-
-
-def download_wiktionary(wiktionary_url: str, output_path: Path):
-    logger.info(f"Downloading from {wiktionary_url}")
-    response = requests.get(wiktionary_url, stream=True)
-    response.raise_for_status()  # Raise an exception for HTTP errors
-    total_size = response.headers.get("content-length")
-    # remove the file if it exists
-    if output_path.exists():
-        os.remove(output_path)
-    # Download the file in chunks
-    with open(output_path, "wb") as f:
-        if total_size is None:  # no content length header
-            f.write(response.content)
-        else:
-            total_size = int(total_size)
-            progress_bar = tqdm.tqdm(
-                total=total_size,
-                unit="B",
-                unit_scale=True,
-                desc=f"Downloading {os.path.basename(output_path)}",
-                ascii=True,
-            )
-            for chunk in response.iter_content(chunk_size=4096):
-                if chunk:  # filter out keep-alive chunks
-                    f.write(chunk)
-                    progress_bar.update(len(chunk))
-            progress_bar.close()
-
-
-def setup_wiktionary(
-    wiktionary_url: str,
-    temp_download_path: Path,
-    temp_extracted_path: Path,
-    wiktionary_path: Path,
-    language: str = "en",
-    remove_downloaded: bool = True,
-) -> Path:
-    logger.info("Downloading wiktionary data.")
-    if wiktionary_path is None or not wiktionary_path.exists():
-        logger.info("Wiktionary data not found.")
-        if not temp_extracted_path.exists():
-            # Download the gzip file
-            download_wiktionary(
-                wiktionary_url=wiktionary_url,
-                output_path=temp_download_path,
-            )
-            logger.info("Download complete.")
-            # Extract the gzip file
-            logger.info("Extracting wiktionary data.")
-            with gzip.open(temp_download_path, "rb") as f_in:
-                with open(temp_extracted_path, "wb") as f_out:
-                    # Create a progress bar for extraction (can't know size in advance for gzip)
-                    shutil.copyfileobj(f_in, f_out)
-            logger.info("Extraction complete.")
-            # remove the compressed file after extraction
-            os.remove(temp_download_path)
-        # Cache English words
-        if wiktionary_path is not None:
-            setup_wiktionary_words(
-                extracted_path=temp_extracted_path,
-                wiktionary_path=wiktionary_path,
-                language=language,
-            )
-        # remove the extracted jsonl file after caching
-        if remove_downloaded:
-            os.remove(temp_extracted_path)
-    else:
-        logger.info("Wiktionary data already exists.")
-    return temp_extracted_path
-
-
-def load_from_cache(data: list[dict[str, Any]]):
-    for item in data:
-        yield item
-
-
-def batch_embedding_func(
-    batch: dict[str, list[Any]], *, encoder: SentenceTransformer
-) -> dict[str, list[np.ndarray]]:
-    embeddings = encoder.encode_document(
-        batch["gloss"], show_progress_bar=False
-    )
-    return {"embedding": embeddings}
-
-
-class EmbeddingsMapping(Mapping[int, np.ndarray]):
-    def __init__(self, dataset: Dataset, gloss2idx: dict[str, int]):
-        self.dataset = dataset
-        id2iloc = {}
-        DESC = "Loading Gloss Embeddings"
-        for index, gloss in enumerate(tqdm.tqdm(dataset["gloss"], desc=DESC)):
-            id2iloc[gloss2idx[gloss]] = index
-        self.id2iloc = id2iloc
-
-    def __getitem__(self, key: int) -> np.ndarray:
-        index = self.id2iloc[key]
-        return self.dataset[index]["embedding"]
-
-    def __iter__(self):
-        return iter(self.id2iloc.keys())
-
-    def __len__(self) -> int:
-        return len(self.id2iloc)
-
-    def __contains__(self, key: int) -> bool:
-        return key in self.id2iloc
-
-
-def compute_gloss_embeddings(
-    gloss2idx: dict[str, int], cache_file_name: str | Path
-) -> EmbeddingsMapping:
-    cache_file_name = Path(cache_file_name)
-    if not cache_file_name.exists():
-        from sentence_transformers import SentenceTransformer
-
-        ds = Dataset.from_generator(
-            load_from_cache,
-            gen_kwargs={
-                "data": [{"gloss": gloss} for gloss in gloss2idx.keys()]
-            },
-        )
-        ds = ds.map(
-            batch_embedding_func,
-            batched=True,
-            batch_size=10_000,
-            num_proc=1,
-            load_from_cache_file=True,
-            fn_kwargs={
-                "encoder": SentenceTransformer(GLOSS_EMBEDDING_MODEL),
-            },
-            desc="Computing Gloss Embeddings",
-        )
-        ds = ds.save_to_disk(cache_file_name)
-        del ds
-    dataset = Dataset.load_from_disk(cache_file_name)
-    dataset.set_format("numpy")
-    return EmbeddingsMapping(dataset, gloss2idx=gloss2idx)
-
-
-def format_triple(triple: tuple[WS, str, WS]):
-    subject, predicate, object_ = triple
-    if subject[1] is None and object_[1] is None:
-        return
-    if predicate == "hyponym":
-        rev_triple = (object_, "hypernym", subject)
-        return rev_triple
-    return triple
-
-
-@dataclass
-class WordSense:
-    word: str
-    sense: str | None = None
-
-    def __init__(self, word: str, sense: str | None = None):
-        # asset word is str
-        if not isinstance(word, str):
-            raise UnexpectedValueError(
-                got=type(word).__name__,
-                expected="str",
-            )
-        self.word = word
-        self.sense = sense
-
-
-def predicate_getattr(subj: Word | Sense, predicate: str) -> list[WordSense]:
-    value = None
-    if predicate == "synonym":
-        value = subj.synonyms
-    elif predicate == "antonym":
-        value = subj.antonyms
-    elif predicate == "hypernym":
-        value = subj.hypernyms
-    elif predicate == "hyponym":
-        value = subj.hyponyms
-    elif predicate == "category":
-        if subj.categories:
-            value = list(map(WordSense, subj.categories))
-    else:
-        raise UnexpectedValueError(
-            got=predicate, expected=SUPPORTED_PREDICATES
-        )
-    return value or []
-
-
-class WiktionaryProcessor:
-    """Build the knowledge store artifacts from a Wiktionary dump.
-
-    Each step caches its output in `cache_dir` (``processed-words.pkl``,
-    ``lexicon.pkl``, ``senses.pkl``, ``embeddings/``) and reuses it when
-    present. The raw dump is only downloaded when nothing is cached.
-    """
-
-    ANTI_PATTERNS = [
-        # antonym(s) of "{definition}" -> definition
-        # (see https://en.wiktionary.org/wiki/Template:antsense)
-        re.compile(r'antonym\(s\) of [“"](.*)[”"]')
-    ]
-
-    def __init__(
-        self,
-        wiktionary_path: Path,
-        cache_dir: Path,
-        language: str,
-        predicates: set[str] | None = None,
-    ):
-        self.language = language
-        self._wiktionary_path = wiktionary_path
-        if predicates is None:
-            predicates = SUPPORTED_PREDICATES
-        self.predicates = set(predicates)
-        self.cache_dir = cache_dir
-
-    @property
-    def wiktionary_path(self) -> Path:
-        setup_wiktionary(
-            wiktionary_url=WIKTIONARY_URL,
-            temp_download_path=self.cache_dir / "wiktionary.jsonl.gz",
-            temp_extracted_path=self.cache_dir / "wiktionary.jsonl",
-            wiktionary_path=self._wiktionary_path,
-            language=self.language,
-        )
-        return self._wiktionary_path
-
-    def get_or_set_sense_id(self, definition: str | None) -> int | None:
-        if definition is None:
-            return None
-        if not isinstance(definition, str):
-            raise UnexpectedValueError(
-                got=type(definition).__name__,
-                expected="str",
-            )
-        for pattern in self.ANTI_PATTERNS:
-            m = pattern.match(definition)
-            if m:
-                definition = m.group(1)
-                break
-        if definition not in self.gloss2idx:
-            self.gloss2idx[definition] = len(self.gloss2idx)
-        return self.gloss2idx[definition]
-
-    def process_sense(self, word: Word, sense: Sense):
-        # Determine sense ID based on glosses
-        definition = " ".join(sense.glosses or []).strip() or None
-        if not definition:
-            definition = " ".join(sense.raw_glosses or []).strip() or None
-        sense_id = None
-        if definition:
-            sense_id = self.get_or_set_sense_id(definition)
-            self.sense2words[sense_id].add(word.word)
-        # Add form-of relations
-        for form_of in sense.form_of or []:
-            self.form2senses[word.word].add((form_of.word, sense_id))
-        # Add other relations
-        for predicate in self.predicates:
-            objects = predicate_getattr(sense, predicate)
-            for obj in objects:
-                rel_sense_id = None
-                if obj.sense:
-                    assert isinstance(obj.sense, str), (
-                        "expected str, got {}".format(type(obj.sense).__name__)
-                    )
-                    rel_sense_id = self.get_or_set_sense_id(obj.sense)
-                    self.sense2words[rel_sense_id].add(word.word)
-                triple = (
-                    (word.word, sense_id or rel_sense_id),
-                    predicate,
-                    (obj.word, None),
-                )
-                triple = format_triple(triple)
-                if triple is None:
-                    continue
-                self.triples.add(triple)
-
-    def process_word(self, word: Word):
-        self.form2senses[word.word].add((word.word, None))
-        for form in word.forms or []:
-            word_form: str = form.form
-            self.form2senses[word_form].add((word.word, None))
-        for predicate in self.predicates:
-            objects = predicate_getattr(word, predicate)
-            for obj in objects:
-                rel_sense_id = None
-                if obj.sense:
-                    rel_sense_id = self.get_or_set_sense_id(obj.sense)
-                    self.sense2words[rel_sense_id].add(word.word)
-                triple = (
-                    (word.word, rel_sense_id),
-                    predicate,
-                    (obj.word, None),
-                )
-                triple = format_triple(triple)
-                if triple is None:
-                    continue
-                self.triples.add(triple)
-        for sense in word.senses or []:
-            self.process_sense(word, sense)
-
-    def process_words(self):
-        self.triples = TripleStore()
-        self.sense2words: defaultdict[G, set[str]] = defaultdict(set)
-        self.form2senses: defaultdict[str, set[WS]] = defaultdict(set)
-        self.gloss2idx: dict[str, int] = {}
-        try:
-            logger.info("Loading processed words from cache.")
-            cache_data = load_pickle(self.cache_dir / "processed-words.pkl")
-            logger.info("Loaded processed words from cache.")
-            self.triples = cache_data["triples"]
-            self.sense2words = cache_data["sense2words"]
-            self.form2senses = cache_data["form2senses"]
-            self.gloss2idx = cache_data["gloss2idx"]
-        except FileNotFoundError:
-            with open(self.wiktionary_path, "rb") as f:
-                words: list[Word] = pickle.load(f)
-            for word in tqdm.tqdm(words, desc="Processing Words"):
-                self.process_word(word)
-            # save intermediate cache
-            cache_data = {
-                "triples": self.triples,
-                "sense2words": self.sense2words,
-                "form2senses": self.form2senses,
-                "gloss2idx": self.gloss2idx,
-            }
-            with open(self.cache_dir / "processed-words.pkl", "wb") as f:
-                pickle.dump(cache_data, f)
-
-    def build(self) -> dict[str, Any]:
-        self.process_words()
-
-        lexicon: Lexicon[set[tuple[str, int]]]
-        try:
-            logger.info("Loading lexicon from cache.")
-            lexicon = Lexicon.load(self.cache_dir / "lexicon.pkl")
-            logger.info("Loaded lexicon from cache.")
-        except FileNotFoundError:
-            logger.info("Failed to load lexicon from cache. Building lexicon.")
-            lexicon = Lexicon()
-            for form, words_set in self.form2senses.items():
-                if form is None:
-                    continue
-                form = form.strip()
-                if not form:
-                    continue
-                if form in lexicon:
-                    lexicon[form].update({
-                        word for word in words_set if word[0] is not None
-                    })
-                else:
-                    lexicon[form] = {
-                        word for word in words_set if word[0] is not None
-                    }
-            logger.info("Saving lexicon to cache.")
-            lexicon.dump(self.cache_dir / "lexicon.pkl")
-            logger.info("Completed building lexicon.")
-
-        try:
-            logger.info("Loading senses from cache.")
-            with open(self.cache_dir / "senses.pkl", "rb") as f:
-                senses = pickle.load(f)
-            logger.info("Loaded senses from cache.")
-        except FileNotFoundError:
-            logger.info("Failed to load senses from cache. Building senses.")
-            senses = defaultdict(set)
-            for sense_id, words in self.sense2words.items():
-                for word in words:
-                    senses[word].add(sense_id)
-            logger.info("Saving senses to cache.")
-            with open(self.cache_dir / "senses.pkl", "wb") as f:
-                pickle.dump(senses, f)
-            logger.info("Completed building senses.")
-
-        logger.info("Loading embeddings from cache.")
-        self.embeddings = compute_gloss_embeddings(
-            gloss2idx=self.gloss2idx,
-            cache_file_name=self.cache_dir / "embeddings",
-        )
-        logger.info("Completed loading embeddings from cache.")
-
-        return {
-            "triples": self.triples,
-            "lexicon": lexicon,
-            "gloss2idx": self.gloss2idx,
-            "idx2gloss": {idx: gloss for gloss, idx in self.gloss2idx.items()},
-            "senses": senses,
-            "embeddings": self.embeddings,
-            "attrs": {},
-        }
-
-
-class WiktionaryStore(KnowledgeStore):
+class WiktionaryStore(TableStore):
     """English Wiktionary as a knowledge store.
 
-    Prebuilt artifacts are downloaded from the Hugging Face Hub into
-    ``config.assets_dir/wiktionary-<version>``. Anything missing is built
-    locally from the kaikki.org Wiktionary dump, which is a large download
-    and takes a long time to process.
+    Reads the tables from `path`. Those that are missing are downloaded
+    from the Hugging Face Hub, once; nothing else contacts the Hub.
 
     Parameters
     ----------
-    language : str, default="en"
-        Language of the entries to keep. Only English is supported.
-    version : str, default="v1.0"
-        Artifact version; selects the local directory and Hub repository.
+    version : str, default="v0.5"
+        Version of the tables; selects the default `path` and `repo_id`.
     repo_id : str, optional
-        Hub dataset repository; by default ``textkit-learn/wiktionary-<version>``.
-    offline : bool, default=False
-        Use only local files and never contact the Hub.
-    verbose : bool, default=False
-        Log progress at info level.
-
-    Notes
-    -----
-    Loading never writes to the Hub. Call `push_to_hub` to publish locally
-    built artifacts.
+        Hub dataset to download from; by default
+        ``textkit-learn/wiktionary-<version>``.
+    path : str or Path, optional
+        Directory of the tables; by default
+        ``config.assets_dir/wiktionary-<version>``.
+    embeddings : bool, default=False
+        Also download the gloss embeddings (a few GB). Without them,
+        candidates have no embedding unless the file is already in `path`.
     """
 
     def __init__(
         self,
-        language: str = "en",
-        version: str = "v1.0",
+        version: str = f"v{FORMAT_VERSION}",
         repo_id: str | None = None,
-        offline: bool = False,
-        verbose: bool = False,
+        path: str | Path | None = None,
+        embeddings: bool = False,
     ) -> None:
         self._init_kwargs = dict(
-            language=language,
-            version=version,
-            repo_id=repo_id,
-            offline=offline,
-            verbose=verbose,
+            version=version, repo_id=repo_id, path=path, embeddings=embeddings
         )
-        self.language = language
         self.version = version
         self.repo_id = repo_id or f"textkit-learn/wiktionary-{version}"
-        self.offline = offline
-        logger.setLevel(logging.INFO if verbose else logging.WARNING)
-        self.local_dir = Path(config.assets_dir) / f"wiktionary-{version}"
-        self.local_dir.mkdir(parents=True, exist_ok=True)
-        if not offline:
-            HfApi().snapshot_download(
-                repo_id=self.repo_id,
-                repo_type="dataset",
-                local_dir=self.local_dir,
-            )
-        processor = WiktionaryProcessor(
-            wiktionary_path=self.local_dir / "words.pkl",
-            cache_dir=self.local_dir,
-            language=language,
-        )
-        artifacts = processor.build()
-        self.triples = artifacts["triples"]
-        self.lexicon = artifacts["lexicon"]
-        self.gloss2idx = artifacts["gloss2idx"]
-        self.idx2gloss = artifacts["idx2gloss"]
-        self.senses = artifacts["senses"]
-        self.embeddings = artifacts["embeddings"]
+        if path is None:
+            path = Path(config.assets_dir) / f"wiktionary-{version}"
+        path = Path(path)
+        # manifest.json last: it marks the tables as complete
+        files = TABLES + ["manifest.json"]
+        if embeddings:
+            files.insert(0, "embeddings.npy")
+        missing = [name for name in files if not (path / name).exists()]
+        if missing:
+            _download(self.repo_id, missing, path)
+        super().__init__(path)
 
     def __reduce__(self):
         return (functools.partial(type(self), **self._init_kwargs), ())
@@ -541,19 +75,24 @@ class WiktionaryStore(KnowledgeStore):
         args = ", ".join(f"{k}={v!r}" for k, v in self._init_kwargs.items())
         return f"{type(self).__name__}({args})"
 
-    def push_to_hub(self, private: bool = True) -> None:
-        """Upload the local artifacts to `repo_id`, creating it if needed."""
-        api = HfApi()
-        api.create_repo(
-            repo_id=self.repo_id,
-            private=private,
+
+def _download(repo_id: str, files: list[str], path: Path) -> None:
+    """Download files of a Hub dataset into `path`, in order."""
+    path.mkdir(parents=True, exist_ok=True)
+    tmp = tempfile.mkdtemp(prefix=f".{path.name}-", dir=path.parent)
+    try:
+        snapshot_download(
+            repo_id=repo_id,
             repo_type="dataset",
-            exist_ok=True,
+            local_dir=tmp,
+            allow_patterns=files,
         )
-        with suppress_hf_output():
-            api.upload_folder(
-                folder_path=self.local_dir,
-                repo_id=self.repo_id,
-                repo_type="dataset",
-                ignore_patterns=["*.jsonl", "*.jsonl.gz"],
-            )
+        for name in files:
+            if not (Path(tmp) / name).exists():
+                msg = f"{repo_id} has no {name}"
+                raise FileNotFoundError(msg)
+        for name in files:
+            # a file is replaced in one step, so readers never see part of it
+            os.replace(Path(tmp) / name, path / name)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)

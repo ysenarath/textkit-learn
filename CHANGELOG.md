@@ -21,6 +21,9 @@ modules listed under Removed.
   you need and call its constructor.
 - The v0 Wiktionary store (`"wiktionary:v0"`), the DuckDB `TripleStore` and
   `kb.wiktionary.helpers`.
+- From `tklearn.kb`: `Lexicon`, the in-memory `TripleStore`,
+  `WiktionaryProcessor` and `WiktionaryStore.push_to_hub`. The store
+  matches forms itself.
 - Dependencies: `nightjar`, `omegaconf`, `diskcache`, `openai`,
   `python-dotenv`.
 
@@ -202,9 +205,14 @@ modules listed under Removed.
   synonyms and antonyms both ways, hypernyms and hyponyms as each other's
   inverse. A relation found more than once is returned once, with the
   most senses known.
-- `WiktionaryStore` (was `WiktionaryArtifactStore`) no longer creates a Hub
-  repository or uploads on load. Use `offline=True` to skip the Hub and
-  `push_to_hub()` to publish. Existing local caches keep working.
+- `WiktionaryStore` (was `WiktionaryArtifactStore`) reads the v0.5 tables
+  from `config.assets_dir/wiktionary-v0.5` (or `path`) and downloads the
+  missing ones from the Hub dataset `textkit-learn/wiktionary-v0.5`,
+  once. It never builds the data or uploads it, and only contacts the Hub
+  when files are missing. Gloss embeddings are downloaded only with
+  `embeddings=True`. It takes `version`, `repo_id`, `path` and
+  `embeddings`; `language`, `offline` and `verbose` are gone. Caches
+  from earlier versions (pickles) aren't read.
 - `augment()` yields `Augmentation` objects instead of dicts, skips the
   unchanged text unless `include_original=True`, and takes `predicates`
   (default `("synonym",)`; the v1.0 data has `synonym`, `antonym`,
@@ -212,8 +220,6 @@ modules listed under Removed.
 - `extract_mentions(..., exact_form=False)` makes the lemma filter
   explicit and `stopwords` accepts a custom list. `extract_relations`
   returns all relations by default.
-- `Lexicon.tokeinze` is renamed `tokenize`. `Lexicon.extract` takes
-  `nested=True` and `Lexicon.load` takes `case_sensitive`.
 
 ### Other
 

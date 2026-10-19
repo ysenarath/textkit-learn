@@ -1,6 +1,5 @@
-from tklearn.kb.wiktionary.store import WiktionaryProcessor, WiktionaryStore
+from tklearn.kb.wiktionary.store import WiktionaryStore
 
 __all__ = [
-    "WiktionaryProcessor",
     "WiktionaryStore",
 ]

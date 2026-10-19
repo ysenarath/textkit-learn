@@ -1,7 +1,11 @@
 import pickle
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
+
+import numpy as np
 
 from tklearn.kb import (
     Augmentation,
@@ -9,7 +13,7 @@ from tklearn.kb import (
     Span,
     TableStore,
     Triple,
-    TripleStore,
+    WiktionaryStore,
     write_tables,
 )
 
@@ -213,19 +217,74 @@ class TestTableStore(unittest.TestCase):
             TableStore(self.path)
 
 
-class TestTripleStore(unittest.TestCase):
-    def test_get_merges_senses_for_bare_words(self):
-        store = TripleStore()
-        store.add((("bank", 0), "synonym", ("shore", None)))
-        store.add((("bank", 1), "synonym", ("lender", None)))
-        self.assertEqual(
-            store.get("bank"),
-            {"synonym": {("shore", None), ("lender", None)}},
+class TestWiktionaryStore(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        # what the Hub repo holds
+        self.hub = Path(self.tmp.name) / "hub"
+        write_tiny_store(self.hub)
+        np.save(self.hub / "embeddings.npy", np.eye(2, dtype=np.float32))
+        self.path = Path(self.tmp.name) / "wiktionary"
+        self.downloads = []
+        patcher = mock.patch(
+            "tklearn.kb.wiktionary.store.snapshot_download", self.download
         )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def download(self, repo_id, repo_type, local_dir, allow_patterns):
+        self.downloads.append((repo_id, sorted(allow_patterns)))
+        for name in allow_patterns:
+            if (self.hub / name).exists():
+                shutil.copy(self.hub / name, Path(local_dir) / name)
+
+    def test_downloads_the_tables_once(self):
+        store = WiktionaryStore(path=self.path)
         self.assertEqual(
-            store.get(("bank", 1)), {"synonym": {("lender", None)}}
+            self.downloads,
+            [
+                (
+                    "textkit-learn/wiktionary-v0.5",
+                    [
+                        "glosses.parquet",
+                        "lexicon.parquet",
+                        "manifest.json",
+                        "senses.parquet",
+                        "triples.parquet",
+                    ],
+                )
+            ],
         )
-        self.assertIsNone(store.get(("bank", 7)))
+        self.assertEqual(store.get_senses("dog"), [0])
+        self.assertIsNone(store.get_embedding(0))
+        WiktionaryStore(path=self.path)
+        self.assertEqual(len(self.downloads), 1)
+        self.assertEqual(
+            sorted(p.name for p in self.path.parent.iterdir()),
+            ["hub", "wiktionary"],
+        )
+
+    def test_downloads_embeddings_when_asked(self):
+        WiktionaryStore(path=self.path)
+        store = WiktionaryStore(path=self.path, embeddings=True)
+        self.assertEqual(self.downloads[1][1], ["embeddings.npy"])
+        np.testing.assert_array_equal(store.get_embedding(1), [0, 1])
+
+    def test_missing_hub_file(self):
+        (self.hub / "embeddings.npy").unlink()
+        with self.assertRaisesRegex(FileNotFoundError, "embeddings.npy"):
+            WiktionaryStore(path=self.path, embeddings=True)
+        self.assertEqual(list(self.path.iterdir()), [])
+
+    def test_pickles_as_its_arguments(self):
+        store = WiktionaryStore(repo_id="me/wiktionary", path=self.path)
+        copy = pickle.loads(pickle.dumps(store))
+        self.assertEqual(repr(copy), repr(store))
+        self.assertEqual(copy.get_gloss(0), "a canine")
+        self.assertEqual(len(self.downloads), 1)
 
 
 if __name__ == "__main__":
