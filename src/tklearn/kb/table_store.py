@@ -167,20 +167,25 @@ class TableStore(KnowledgeStore):
         else:
             msg = f"by must be 'subject' or 'object', got {by!r}"
             raise ValueError(msg)
+        # filter before converting rows to Python, which is the slow part
+        mask = None
+        if sense_id is not None:
+            senses = table[f"{by}_sense"]
+            # a triple with no sense holds for every sense
+            mask = pc.or_(
+                pc.is_null(senses),
+                pc.fill_null(pc.equal(senses, sense_id), False),
+            )
         if predicates is not None:
-            predicates = set(predicates)
-        triples = []
-        for s, ss, p, o, os_ in zip(*table.to_pydict().values()):
-            sense = ss if by == "subject" else os_
-            if (
-                sense_id is not None
-                and sense is not None
-                and sense != sense_id
-            ):
-                continue
-            if predicates is None or p in predicates:
-                triples.append(Triple((s, ss), p, (o, os_)))
-        return triples
+            value_set = pa.array(list(predicates), pa.string())
+            keep = pc.is_in(table["predicate"], value_set=value_set)
+            mask = keep if mask is None else pc.and_(mask, keep)
+        if mask is not None:
+            table = table.filter(mask)
+        return [
+            Triple((s, ss), p, (o, os_))
+            for s, ss, p, o, os_ in zip(*table.to_pydict().values())
+        ]
 
     def get_embedding(self, sense_id: int) -> np.ndarray | None:
         if self._embeddings is None:
@@ -246,6 +251,11 @@ object_sense)
     }
     manifest = {"format": FORMAT_VERSION, "metadata": dict(metadata or {})}
     tmp = Path(tempfile.mkdtemp(prefix=f".{path.name}-", dir=path.parent))
+    # mkdtemp makes the directory private; give it the usual permissions so
+    # that others sharing the directory (e.g. on NFS) can read the store
+    umask = os.umask(0)
+    os.umask(umask)
+    os.chmod(tmp, 0o777 & ~umask)
     try:
         for name, table in tables.items():
             pq.write_table(table, tmp / f"{name}.parquet")
@@ -277,7 +287,8 @@ def _table(rows: Iterable[tuple], schema: pa.Schema) -> pa.Table:
 
 
 def _read(path: Path) -> pa.Table:
-    return pq.read_table(path, memory_map=True)
+    # one chunk per column: taking rows from many chunks is slow
+    return pq.read_table(path, memory_map=True).combine_chunks()
 
 
 def _runs(column: pa.ChunkedArray | pa.Array) -> dict[str, tuple[int, int]]:

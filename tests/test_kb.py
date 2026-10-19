@@ -1,5 +1,7 @@
+import os
 import pickle
 import shutil
+import stat
 import tempfile
 import unittest
 from pathlib import Path
@@ -210,6 +212,16 @@ class TestTableStore(unittest.TestCase):
             sorted(p.name for p in self.path.parent.iterdir()), ["tiny"]
         )
         self.assertEqual(TableStore(self.path).get_gloss(0), "new")
+
+    def test_readable_by_others(self):
+        umask = os.umask(0o022)
+        try:
+            write_tables(
+                self.path, glosses=[], senses=[], lexicon=[], triples=[]
+            )
+        finally:
+            os.umask(umask)
+        self.assertEqual(stat.S_IMODE(self.path.stat().st_mode), 0o755)
 
     def test_rejects_another_format(self):
         (self.path / "manifest.json").write_text('{"format": "1.0"}')
