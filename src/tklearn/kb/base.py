@@ -229,7 +229,8 @@ class KnowledgeBase:
 
         For each mention, every word related to one of its candidates by one
         of `predicates` yields one augmentation, supported by all the
-        relations that lead to it.
+        relations that lead to it. A word equal to the mention, ignoring
+        case, is skipped: it would give back the same text.
 
         Parameters
         ----------
@@ -251,12 +252,15 @@ class KnowledgeBase:
             mentions = self.extract_mentions(text)
         for mention in mentions:
             start, end = mention.span
+            form = text[start:end].lower()
             replacements: defaultdict[str, set[tuple]] = defaultdict(set)
             for candidate in mention.candidates:
                 for triple in self.extract_relations(candidate, predicates):
                     if relation_filter is None or relation_filter(triple):
                         replacements[triple.object[0]].add(triple.to_tuple())
             for word, relations in replacements.items():
+                if word.lower() == form:
+                    continue
                 yield Augmentation(
                     text=text[:start] + word + text[end:],
                     original=text,

@@ -118,6 +118,23 @@ class TestKnowledgeBase(unittest.TestCase):
         first = next(self.kb.augment(self.text, include_original=True))
         self.assertEqual((first.text, first.support), (self.text, 0))
 
+    def test_augment_skips_the_mention_itself(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            write_tables(
+                Path(tmp) / "store",
+                glosses=["a canine", "a surname"],
+                senses=[("dog", 0), ("Dog", 1)],
+                lexicon=[("dog", "dog", None), ("dog", "Dog", None)],
+                triples=[
+                    ("dog", 0, "synonym", "hound", None),
+                    # a different word, but the same text as the mention
+                    ("Dog", 1, "synonym", "DOG", None),
+                ],
+            )
+            kb = KnowledgeBase(TableStore(Path(tmp) / "store"))
+            texts = [a.text for a in kb.augment("A dog.")]
+        self.assertEqual(texts, ["A hound."])
+
     def test_pickles_through_store(self):
         kb = pickle.loads(pickle.dumps(self.kb))
         self.assertIsInstance(kb.store, TableStore)

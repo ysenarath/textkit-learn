@@ -215,7 +215,8 @@ modules listed under Removed.
   `embeddings`; `language`, `offline` and `verbose` are gone. Caches
   from earlier versions (pickles) aren't read.
 - `augment()` yields `Augmentation` objects instead of dicts, skips the
-  unchanged text unless `include_original=True`, and takes `predicates`
+  unchanged text unless `include_original=True` (also when a related
+  word equals the mention, ignoring case), and takes `predicates`
   (default `("synonym",)`; the v0.5 data has `synonym`, `antonym`,
   `hypernym`, `hyponym` and `category`).
 - New. `tklearn.kb.wiktionary.build_wiktionary(dump, path)` builds the
