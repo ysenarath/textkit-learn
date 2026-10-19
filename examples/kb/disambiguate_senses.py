@@ -3,21 +3,23 @@
 Each sense in the Wiktionary store has an embedding of its gloss. Embed
 the sentence with the same model and the sense whose gloss is closest
 (highest dot product: the vectors have unit length) is the best guess at
-what the word means there. The store's metadata says which model made
-its embeddings.
+what the word means there.
 
-Needs `OPENROUTER_API_KEY` (the published embeddings come from
-qwen/qwen3-embedding-8b on OpenRouter; each sentence costs a fraction of
-a cent) and downloads the embeddings the first time (about 6.6 GB).
+The published embeddings were made with BAAI/bge-large-en-v1.5 through
+OpenRouter, which gives the same vectors as the model run locally, so
+the sentences here are embedded on this machine: no API key needed. The
+first run downloads the embeddings (about 6.6 GB) and the model (about
+1.3 GB).
 
 python examples/kb/disambiguate_senses.py
 """
 
 from __future__ import annotations
 
-from tklearn.embeddings import OpenRouterEmbedding
+from tklearn.embeddings import SentenceTransformerEmbedding
 from tklearn.kb import KnowledgeBase, WiktionaryStore
 
+MODEL = "BAAI/bge-large-en-v1.5"
 SENTENCES = [
     "We sat on the bank of the river.",
     "I deposited cash at the bank.",
@@ -34,9 +36,10 @@ def check(condition: bool, message: str) -> None:
 def main() -> None:
     store = WiktionaryStore(embeddings=True)
     kb = KnowledgeBase(store)
-    model = store.metadata["embeddings"]
-    embedding = OpenRouterEmbedding(model["model"], dimensions=model["dim"])
-    print(f"gloss embeddings: {model['embedding']}")
+    # OpenRouter's model ids are lowercase
+    built_with = store.metadata["embeddings"]["model"]
+    embedding = SentenceTransformerEmbedding(MODEL)
+    print(f"gloss embeddings: {built_with}; sentences: {embedding}")
 
     scores = {}
     for sentence in SENTENCES:
@@ -55,6 +58,10 @@ def main() -> None:
             print(f"  {score:.3f}  {definition[:70]}")
     print()
 
+    check(
+        built_with.lower() == MODEL.lower(),
+        f"the glosses were embedded with {MODEL}",
+    )
     river, money = (scores[s] for s in SENTENCES)
     edge = next(d for d in river if "watercourse" in d)
     institution = next(d for d in river if "borrow money" in d)
