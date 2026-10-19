@@ -22,8 +22,8 @@ modules listed under Removed.
 - The v0 Wiktionary store (`"wiktionary:v0"`), the DuckDB `TripleStore` and
   `kb.wiktionary.helpers`.
 - From `tklearn.kb`: `Lexicon`, the in-memory `TripleStore`,
-  `WiktionaryProcessor` and `WiktionaryStore.push_to_hub`. The store
-  matches forms itself.
+  `WiktionaryProcessor`, `WiktionaryStore.push_to_hub` and the pydantic
+  models in `kb.wiktionary.models`. The store matches forms itself.
 - Dependencies: `nightjar`, `omegaconf`, `diskcache`, `openai`,
   `python-dotenv`.
 
@@ -215,8 +215,15 @@ modules listed under Removed.
   from earlier versions (pickles) aren't read.
 - `augment()` yields `Augmentation` objects instead of dicts, skips the
   unchanged text unless `include_original=True`, and takes `predicates`
-  (default `("synonym",)`; the v1.0 data has `synonym`, `antonym`,
-  `hypernym` and `category`).
+  (default `("synonym",)`; the v0.5 data has `synonym`, `antonym`,
+  `hypernym`, `hyponym` and `category`).
+- New. `tklearn.kb.wiktionary.build_wiktionary(dump, path)` builds the
+  `WiktionaryStore` tables from the kaikki.org dump (`DUMP_URL`). Unlike
+  the v1.0 data, the tables keep relations that hold for a word in
+  general (no sense), including word-level categories, store hyponyms as
+  the hypernyms they imply, and skip relations of a word to itself. The
+  tables are about 165 MB (v1.0: 7.7 GB) and load in about 4 s with 4 GB
+  of memory (v1.0: 28 s and 21 GB).
 - `extract_mentions(..., exact_form=False)` makes the lemma filter
   explicit and `stopwords` accepts a custom list. `extract_relations`
   returns all relations by default.

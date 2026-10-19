@@ -1,3 +1,4 @@
+import gzip
 import os
 import pickle
 import shutil
@@ -8,6 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 import numpy as np
+import orjson
 
 from tklearn.kb import (
     Augmentation,
@@ -18,6 +20,7 @@ from tklearn.kb import (
     WiktionaryStore,
     write_tables,
 )
+from tklearn.kb.wiktionary import build_wiktionary
 
 
 def write_tiny_store(path):
@@ -297,6 +300,124 @@ class TestWiktionaryStore(unittest.TestCase):
         self.assertEqual(repr(copy), repr(store))
         self.assertEqual(copy.get_gloss(0), "a canine")
         self.assertEqual(len(self.downloads), 1)
+
+
+ENTRIES = [
+    {
+        "word": "dog",
+        "lang_code": "en",
+        "forms": [{"form": "dogs"}],
+        "synonyms": [
+            {"word": "pooch"},
+            # Thesaurus lists include the word itself
+            {"word": "dog"},
+            {"word": "cur", "sense": "a worthless person"},
+        ],
+        "categories": ["English nouns"],
+        "senses": [
+            {
+                "glosses": ["A canine."],
+                "synonyms": [{"word": "hound"}],
+                "hyponyms": [{"word": "puppy"}],
+                "categories": ["en:Dogs"],
+            }
+        ],
+    },
+    {
+        "word": "dogs",
+        "lang_code": "en",
+        "senses": [
+            {"glosses": ["plural of dog"], "form_of": [{"word": "dog"}]}
+        ],
+    },
+    {
+        "word": "glad",
+        "lang_code": "en",
+        "antonyms": [{"word": "sad", "sense": "antonym(s) of “joyful”"}],
+        "senses": [{"glosses": ["joyful"]}],
+    },
+    {"word": "Hund", "lang_code": "de", "senses": [{"glosses": ["dog"]}]},
+]
+
+
+class TestBuildWiktionary(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dump = Path(self.tmp.name) / "dump.jsonl.gz"
+        with gzip.open(self.dump, "wb") as f:
+            for entry in ENTRIES:
+                f.write(orjson.dumps(entry, option=orjson.OPT_APPEND_NEWLINE))
+        self.path = Path(self.tmp.name) / "wiktionary"
+        with mock.patch("tklearn.kb.wiktionary.build.tqdm"):
+            build_wiktionary(self.dump, self.path)
+        self.store = TableStore(self.path)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def relations(self, word):
+        triples = self.store.get_relations(word)
+        return sorted(
+            (
+                (tuple(t.subject), t.predicate, tuple(t.object))
+                for t in triples
+            ),
+            key=str,
+        )
+
+    def test_senses(self):
+        glosses = [self.store.get_gloss(i) for i in range(4)]
+        self.assertEqual(
+            glosses,
+            ["a worthless person", "A canine.", "plural of dog", "joyful"],
+        )
+        with self.assertRaises(KeyError):
+            self.store.get_gloss(4)
+        self.assertEqual(self.store.get_senses("dog"), [0, 1])
+        self.assertEqual(self.store.get_senses("Hund"), [])
+
+    def test_relations(self):
+        self.assertEqual(
+            self.relations("dog"),
+            [
+                (("dog", 0), "synonym", ("cur", None)),
+                (("dog", 1), "category", ("en:Dogs", None)),
+                (("dog", 1), "synonym", ("hound", None)),
+                (("dog", None), "category", ("English nouns", None)),
+                (("dog", None), "synonym", ("pooch", None)),
+            ],
+        )
+        # the hyponym is stored as the hypernym it implies
+        self.assertEqual(
+            self.relations("puppy"),
+            [(("puppy", None), "hypernym", ("dog", 1))],
+        )
+        # "antonym(s) of" labels name the sense they are about
+        self.assertEqual(
+            self.relations("glad"),
+            [(("glad", 3), "antonym", ("sad", None))],
+        )
+
+    def test_forms(self):
+        self.assertEqual(
+            sorted(next(self.store.find_forms("Dogs"))[2], key=str),
+            [("dog", 2), ("dog", None), ("dogs", None)],
+        )
+
+    def test_metadata(self):
+        self.assertEqual(self.store.metadata["dump"], "dump.jsonl.gz")
+        self.assertEqual(
+            self.store.metadata["predicates"],
+            ["antonym", "category", "hypernym", "hyponym", "synonym"],
+        )
+
+    def test_predicates(self):
+        build_wiktionary(self.dump, self.path, predicates=["antonym"])
+        store = TableStore(self.path)
+        self.assertEqual(store.get_relations("dog"), [])
+        self.assertEqual(len(store.get_relations("glad")), 1)
+        with self.assertRaisesRegex(ValueError, "unknown predicates"):
+            build_wiktionary(self.dump, self.path, predicates=["meronym"])
 
 
 if __name__ == "__main__":
