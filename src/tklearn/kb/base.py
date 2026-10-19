@@ -1,16 +1,16 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from collections import defaultdict
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator
 
 import numpy as np
 
-from tklearn.kb.lexicon import Lexicon
 from tklearn.kb.models import Augmentation, Candidate, Mention, Span, Triple
-from tklearn.kb.triple_store import TripleStore
 from tklearn.utils.lang import get_stopwords
 
 __all__ = [
+    "INVERSE_PREDICATES",
     "KnowledgeBase",
     "KnowledgeStore",
 ]
@@ -18,32 +18,65 @@ __all__ = [
 #: A word and an optional sense id.
 WordSense = tuple[str, "int | None"]
 
+#: How a relation reads from its object's side: ``x p y`` gives ``y q x``.
+INVERSE_PREDICATES = {
+    "synonym": "synonym",
+    "antonym": "antonym",
+    "hypernym": "hyponym",
+    "hyponym": "hypernym",
+}
 
-class KnowledgeStore:
+
+class KnowledgeStore(ABC):
     """The data behind a `KnowledgeBase`.
 
-    Subclasses load or build these attributes in their constructor.
-
-    Attributes
-    ----------
-    lexicon : Lexicon
-        Surface form -> set of ``(word, sense_id)`` it may refer to.
-    triples : TripleStore
-        Relations between ``(word, sense_id)`` pairs.
-    gloss2idx, idx2gloss : Mapping
-        Sense definitions (glosses) and their sense ids.
-    senses : Mapping[str, set[int]]
-        Word -> its sense ids.
-    embeddings : Mapping[int, np.ndarray]
-        Sense id -> embedding of its gloss.
+    A sense id identifies a gloss. A sense id of None means the word in
+    general, e.g. a relation that holds for every sense of a word.
     """
 
-    lexicon: Lexicon[set[WordSense]]
-    triples: TripleStore
-    gloss2idx: Mapping[str, int]
-    idx2gloss: Mapping[int, str]
-    senses: Mapping[str, set[int]]
-    embeddings: Mapping[int, np.ndarray]
+    @abstractmethod
+    def find_forms(
+        self, text: str
+    ) -> Iterator[tuple[int, int, list[WordSense]]]:
+        """Yield ``(start, end, word_senses)`` for each known form in a text.
+
+        Matches may overlap, e.g. "at the bank" and "bank".
+        """
+
+    @abstractmethod
+    def get_gloss(self, sense_id: int) -> str:
+        """Return the gloss of a sense; raise KeyError if it is unknown."""
+
+    @abstractmethod
+    def get_senses(self, word: str) -> list[int]:
+        """Return the sense ids of a word."""
+
+    @abstractmethod
+    def get_relations(
+        self,
+        word: str,
+        sense_id: int | None = None,
+        predicates: Iterable[str] | None = None,
+        by: str = "subject",
+    ) -> list[Triple]:
+        """Return the stored triples with a word as subject or object.
+
+        Parameters
+        ----------
+        word : str
+            The word to look up.
+        sense_id : int, optional
+            Keep triples where the word has this sense or no sense. By
+            default, all of them.
+        predicates : iterable of str, optional
+            Only these relations. By default, all of them.
+        by : {"subject", "object"}, default="subject"
+            The side of the triple the word is on.
+        """
+
+    def get_embedding(self, sense_id: int) -> np.ndarray | None:
+        """Return the embedding of a sense's gloss, or None."""
+        return None
 
 
 class KnowledgeBase:
@@ -80,34 +113,10 @@ class KnowledgeBase:
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.store!r})"
 
-    @property
-    def lexicon(self) -> Lexicon[set[WordSense]]:
-        return self.store.lexicon
-
-    @property
-    def triples(self) -> TripleStore:
-        return self.store.triples
-
-    @property
-    def gloss2idx(self) -> Mapping[str, int]:
-        return self.store.gloss2idx
-
-    @property
-    def idx2gloss(self) -> Mapping[int, str]:
-        return self.store.idx2gloss
-
-    @property
-    def senses(self) -> Mapping[str, set[int]]:
-        return self.store.senses
-
-    @property
-    def embeddings(self) -> Mapping[int, np.ndarray]:
-        return self.store.embeddings
-
     def get_candidate(self, word: str, sense_id: int) -> Candidate:
         """Return the candidate for a known word sense."""
-        gloss = self.idx2gloss[sense_id]
-        embedding = self.embeddings.get(sense_id)
+        gloss = self.store.get_gloss(sense_id)
+        embedding = self.store.get_embedding(sense_id)
         return Candidate(word, gloss, embedding, sense_id)
 
     def extract_candidates(
@@ -127,7 +136,7 @@ class KnowledgeBase:
         if sense_id is not None:
             yield self.get_candidate(word, sense_id)
             return
-        for sense_id in self.senses.get(word) or []:
+        for sense_id in self.store.get_senses(word):
             yield self.get_candidate(word, sense_id)
 
     def extract_mentions(
@@ -137,7 +146,7 @@ class KnowledgeBase:
         stopwords: Iterable[str] | str = "english",
         exact_form: bool = False,
     ) -> Iterator[Mention]:
-        """Find lexicon matches in a text with their candidate senses.
+        """Find known forms in a text with their candidate senses.
 
         Parameters
         ----------
@@ -156,7 +165,7 @@ class KnowledgeBase:
             stopwords = get_stopwords(stopwords)
         else:
             stopwords = {word.lower() for word in stopwords}
-        for words, start, end in self.lexicon.extract(text):
+        for start, end, words in self.store.find_forms(text):
             form = text[start:end]
             if len(form) < min_word_len or form.lower() in stopwords:
                 continue
@@ -173,6 +182,11 @@ class KnowledgeBase:
     ) -> list[Triple]:
         """Return the triples whose subject is the candidate's sense.
 
+        These include the relations of the word with no sense, and those
+        stated from the other word's side (see `INVERSE_PREDICATES`), e.g.
+        ``puppy hypernym dog`` gives ``dog hyponym puppy``. A relation
+        found more than once is returned once, with the most senses known.
+
         Parameters
         ----------
         candidate : Candidate
@@ -181,16 +195,27 @@ class KnowledgeBase:
             Only these relations (e.g. ``{"synonym", "hypernym"}``). By
             default, all of them.
         """
-        subject = (candidate.word, candidate.sense_id)
-        relations = self.triples.get(subject, {})
+        word, sense_id = candidate.word, candidate.sense_id
         if predicates is not None:
             predicates = set(predicates)
-        return [
-            Triple(subject, predicate, object_)
-            for predicate, objects in relations.items()
+        triples = self.store.get_relations(word, sense_id, predicates)
+        # stored predicate -> the predicate it gives from the object's side
+        inverses = {
+            stored: predicate
+            for predicate, stored in INVERSE_PREDICATES.items()
             if predicates is None or predicate in predicates
-            for object_ in objects
-        ]
+        }
+        if inverses:
+            for subject, stored, object_ in self.store.get_relations(
+                word, sense_id, inverses, by="object"
+            ):
+                triples.append(Triple(object_, inverses[stored], subject))
+        best: dict[tuple[str, str], Triple] = {}
+        for triple in triples:
+            key = (triple.predicate, triple.object[0])
+            if key not in best or _num_senses(triple) > _num_senses(best[key]):
+                best[key] = triple
+        return list(best.values())
 
     def augment(
         self,
@@ -239,3 +264,7 @@ class KnowledgeBase:
                     replacement=word,
                     relations=sorted(relations, key=str),
                 )
+
+
+def _num_senses(triple: Triple) -> int:
+    return (triple.subject[1] is not None) + (triple.object[1] is not None)

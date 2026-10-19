@@ -192,8 +192,16 @@ modules listed under Removed.
 ### Knowledge base (`tklearn.kb`)
 
 - `KnowledgeBase("wiktionary")` is now `KnowledgeBase(WiktionaryStore())`.
-  Store data is exposed as typed properties (`lexicon`, `triples`,
-  `senses`, ...).
+  A store is a `KnowledgeStore` with lookup methods (`find_forms`,
+  `get_gloss`, `get_senses`, `get_relations`, `get_embedding`);
+  `KnowledgeBase` no longer has `lexicon`, `triples`, `senses`, ...
+- New. `TableStore` reads a store from Parquet tables, which
+  `write_tables` writes.
+- `extract_relations` also returns the word's relations that hold for no
+  particular sense, and relations stated from the other word's side:
+  synonyms and antonyms both ways, hypernyms and hyponyms as each other's
+  inverse. A relation found more than once is returned once, with the
+  most senses known.
 - `WiktionaryStore` (was `WiktionaryArtifactStore`) no longer creates a Hub
   repository or uploads on load. Use `offline=True` to skip the Hub and
   `push_to_hub()` to publish. Existing local caches keep working.
