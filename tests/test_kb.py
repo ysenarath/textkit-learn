@@ -11,6 +11,7 @@ from unittest import mock
 import numpy as np
 import orjson
 
+from tklearn.embeddings import Embedding
 from tklearn.kb import (
     Augmentation,
     KnowledgeBase,
@@ -20,7 +21,7 @@ from tklearn.kb import (
     WiktionaryStore,
     write_tables,
 )
-from tklearn.kb.wiktionary import build_wiktionary
+from tklearn.kb.wiktionary import build_embeddings, build_wiktionary
 
 
 def write_tiny_store(path):
@@ -418,6 +419,80 @@ class TestBuildWiktionary(unittest.TestCase):
         self.assertEqual(len(store.get_relations("glad")), 1)
         with self.assertRaisesRegex(ValueError, "unknown predicates"):
             build_wiktionary(self.dump, self.path, predicates=["meronym"])
+
+
+class FakeEmbedding(Embedding):
+    """Embeds a text as [len(text), number of earlier calls]."""
+
+    def __init__(self, name="fake", fail_on_call=None):
+        self.name = name
+        self.fail_on_call = fail_on_call
+        self.calls = 0
+
+    @property
+    def dim(self):
+        return 2
+
+    def encode(self, texts):
+        self.calls += 1
+        if self.calls == self.fail_on_call:
+            raise RuntimeError("interrupted")
+        return np.array([[len(t), self.calls] for t in texts], np.float32)
+
+
+class TestBuildEmbeddings(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.path = Path(self.tmp.name) / "tiny"
+        write_tiny_store(self.path)
+        patcher = mock.patch("tklearn.kb.wiktionary.build.tqdm")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def embeddings(self):
+        store = TableStore(self.path)
+        return [store.get_embedding(i).tolist() for i in range(2)]
+
+    def test_writes_embeddings_and_metadata(self):
+        build_embeddings(FakeEmbedding(), self.path, batch_size=1)
+        # "a canine", "feeling joy"
+        self.assertEqual(self.embeddings(), [[8, 1], [11, 2]])
+        metadata = TableStore(self.path).metadata["embeddings"]
+        self.assertEqual(
+            (metadata["model"], metadata["embedding"], metadata["dim"]),
+            ("fake", "FakeEmbedding('fake')", 2),
+        )
+        self.assertEqual(TableStore(self.path).metadata["source"], "test")
+        self.assertEqual(
+            sorted(p.name for p in self.path.iterdir()),
+            [
+                "embeddings.npy",
+                "glosses.parquet",
+                "lexicon.parquet",
+                "manifest.json",
+                "senses.parquet",
+                "triples.parquet",
+            ],
+        )
+
+    def test_resumes_after_an_interruption(self):
+        with self.assertRaisesRegex(RuntimeError, "interrupted"):
+            build_embeddings(FakeEmbedding(fail_on_call=2), self.path, 1)
+        self.assertIsNone(TableStore(self.path).get_embedding(0))
+        embedding = FakeEmbedding()
+        build_embeddings(embedding, self.path, batch_size=1)
+        self.assertEqual(embedding.calls, 1)
+        self.assertEqual(self.embeddings(), [[8, 1], [11, 1]])
+
+    def test_starts_over_for_another_model(self):
+        with self.assertRaisesRegex(RuntimeError, "interrupted"):
+            build_embeddings(FakeEmbedding(fail_on_call=2), self.path, 1)
+        embedding = FakeEmbedding("other")
+        build_embeddings(embedding, self.path, batch_size=1)
+        self.assertEqual(embedding.calls, 2)
 
 
 if __name__ == "__main__":

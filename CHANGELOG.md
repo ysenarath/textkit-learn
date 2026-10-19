@@ -8,8 +8,9 @@ modules listed under Removed.
 
 ### Removed
 
-- `tklearn.embeddings`, `tklearn.plotting` and most of `tklearn.utils`.
-  They are being redesigned.
+- The word vectors in `tklearn.embeddings` (`WordEmbedding`,
+  `GensimEmbedding`, `FastTextEmbedding`), `tklearn.plotting` and most of
+  `tklearn.utils`. They are being redesigned.
 - From `tklearn.nn`: backbones, the linear and prototype classifiers,
   K-BERT, `ModelRepo`, `Encoder`, `TargetBasedLoss` and the data
   collators.
@@ -224,9 +225,26 @@ modules listed under Removed.
   the hypernyms they imply, and skip relations of a word to itself. The
   tables are about 165 MB (v1.0: 7.7 GB) and load in about 4 s with 4 GB
   of memory (v1.0: 28 s and 21 GB).
+- New. `tklearn.kb.wiktionary.build_embeddings(embedding, path)` embeds
+  the glosses of a store with any `Embedding` and saves them as its
+  `embeddings.npy`, recording the model in the store's metadata. It saves
+  its progress after each batch, so an interrupted run continues where it
+  stopped.
 - `extract_mentions(..., exact_form=False)` makes the lemma filter
   explicit and `stopwords` accepts a custom list. `extract_relations`
   returns all relations by default.
+
+### Embeddings (`tklearn.embeddings`)
+
+- `Embedding` (`dim`, `encode`, `encode_query`, `encode_document`) and
+  `SentenceTransformerEmbedding` are kept. `SentenceTransformerEmbedding`
+  needs the model name (no default) and picks the device as
+  sentence-transformers does when `device` isn't given.
+- New. `OpenRouterEmbedding(name, dimensions=None)` embeds texts with a
+  model served through the OpenRouter API (key from
+  `$OPENROUTER_API_KEY`), or any API with OpenAI's `/embeddings` format.
+  It sends batches in parallel and retries after rate limits, timeouts and
+  server errors.
 
 ### Other
 

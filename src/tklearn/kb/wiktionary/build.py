@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import gzip
+import json
 import os
 import re
 import sys
@@ -9,15 +10,19 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import orjson
+import pyarrow.parquet as pq
 from tqdm.auto import tqdm
 
 from tklearn import __version__, config
+from tklearn.embeddings import Embedding
 from tklearn.kb.table_store import FORMAT_VERSION, write_tables
 
 __all__ = [
     "DUMP_URL",
     "PREDICATES",
+    "build_embeddings",
     "build_wiktionary",
 ]
 
@@ -70,8 +75,7 @@ def build_wiktionary(
         Relations to keep.
     """
     dump = Path(dump)
-    if path is None:
-        path = Path(config.assets_dir) / f"wiktionary-v{FORMAT_VERSION}"
+    path = _default_path(path)
     predicates = sorted(set(predicates))
     unknown = set(predicates) - set(PREDICATES)
     if unknown:
@@ -114,6 +118,88 @@ def build_wiktionary(
             "built_with": f"tklearn {__version__}",
         },
     )
+
+
+def build_embeddings(
+    embedding: Embedding,
+    path: str | Path | None = None,
+    batch_size: int = 10_000,
+) -> None:
+    """Embed the glosses of a store and save them as its ``embeddings.npy``.
+
+    Progress is saved after each batch: run it again with the same model to
+    continue after an interruption. The model is recorded in the store's
+    metadata, under ``"embeddings"``.
+
+    Parameters
+    ----------
+    embedding : Embedding
+        The model, e.g. ``OpenRouterEmbedding("qwen/qwen3-embedding-8b",
+        dimensions=1024)``; glosses are embedded with
+        `Embedding.encode_document`.
+    path : str or Path, optional
+        Directory of the store's tables; by default the one
+        `WiktionaryStore()` reads, ``config.assets_dir/wiktionary-v0.5``.
+    batch_size : int, default=10_000
+        Glosses embedded between saves.
+    """
+    path = _default_path(path)
+    glosses = pq.read_table(path / "glosses.parquet")["gloss"]
+    if len(glosses) == 0:
+        msg = f"{path} has no glosses to embed"
+        raise ValueError(msg)
+    # the repr tells apart settings that change the vectors, e.g. their size
+    model = {"model": embedding.name, "embedding": repr(embedding)}
+    partial = path / "embeddings.npy.partial"
+    progress_file = path / "embeddings.progress.json"
+    done, vectors = 0, None
+    if partial.exists() and progress_file.exists():
+        progress = json.loads(progress_file.read_text())
+        if progress["model"] == model:
+            done = progress["done"]
+            vectors = np.lib.format.open_memmap(partial, mode="r+")
+    with tqdm(
+        total=len(glosses), initial=done, desc="Embedding glosses"
+    ) as bar:
+        while done < len(glosses):
+            batch = glosses.slice(done, batch_size).to_pylist()
+            embedded = embedding.encode_document(batch)
+            if vectors is None:
+                vectors = np.lib.format.open_memmap(
+                    partial,
+                    mode="w+",
+                    dtype=np.float32,
+                    shape=(len(glosses), embedded.shape[1]),
+                )
+            vectors[done : done + len(batch)] = embedded
+            vectors.flush()
+            done += len(batch)
+            _write_json(progress_file, {"model": model, "done": done})
+            bar.update(len(batch))
+    dim = vectors.shape[1]
+    del vectors
+    os.replace(partial, path / "embeddings.npy")
+    manifest = json.loads((path / "manifest.json").read_text())
+    manifest["metadata"]["embeddings"] = {
+        **model,
+        "dim": dim,
+        "built": datetime.date.today().isoformat(),
+    }
+    _write_json(path / "manifest.json", manifest)
+    progress_file.unlink()
+
+
+def _default_path(path: str | Path | None) -> Path:
+    if path is None:
+        return Path(config.assets_dir) / f"wiktionary-v{FORMAT_VERSION}"
+    return Path(path)
+
+
+def _write_json(path: Path, data: Any) -> None:
+    # replaced in one step, so a reader never sees a partial file
+    tmp = path.with_name(f".{path.name}.tmp")
+    tmp.write_text(json.dumps(data, indent=2))
+    os.replace(tmp, path)
 
 
 class _Builder:
